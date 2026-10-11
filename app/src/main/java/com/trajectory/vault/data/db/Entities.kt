@@ -16,6 +16,9 @@ enum class AttendanceStatus { PRESENT, ABSENT, CANCELLED }
 
 enum class NoteStatus { ACTIVE, FINISHED }
 
+/** How loudly an exam or holiday is surfaced. High is the exam alert, Low is a plain holiday. */
+enum class Priority { HIGH, NORMAL, LOW }
+
 enum class GuideType { QP, SYLLABUS, ANSWER_BANK }
 
 /**
@@ -62,6 +65,7 @@ data class HolidayEntity(
     val date: LocalDate,
     val title: String,
     @ColumnInfo(name = "auto_skip_flag") val autoSkip: Boolean = true,
+    @ColumnInfo(defaultValue = "'LOW'") val priority: Priority = Priority.LOW,
 )
 
 @Entity(
@@ -84,6 +88,7 @@ data class ExamEntity(
     val weightage: Double? = null,
     val room: String? = null,
     @ColumnInfo(name = "syllabus_notes") val syllabusNotes: String? = null,
+    @ColumnInfo(defaultValue = "'HIGH'") val priority: Priority = Priority.HIGH,
 )
 
 @Entity(

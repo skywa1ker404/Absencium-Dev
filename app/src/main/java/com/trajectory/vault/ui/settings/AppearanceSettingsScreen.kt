@@ -41,7 +41,7 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
             GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
         }
 
-        if (settings.colorEngine != ColorEngine.MONET_WALLPAPER) {
+        if (settings.colorEngine == ColorEngine.SOLID_ACCENT) {
             SectionTitle("Accent color")
             AppCard(modifier = Modifier.fillMaxWidth()) {
                 AccentColorPicker(

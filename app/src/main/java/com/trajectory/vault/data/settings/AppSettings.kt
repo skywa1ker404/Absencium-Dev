@@ -5,6 +5,11 @@ import com.trajectory.vault.data.ai.ApiStyle
 
 enum class ThemeMode {
     LIGHT,
+
+    /** A regular dark theme with tinted dark grey surfaces. */
+    DARK,
+
+    /** Pitch-black surfaces (#0D0D0D) that switch off OLED pixels. */
     DARK_OLED,
     SYSTEM_AUTO,
 }
@@ -22,6 +27,8 @@ enum class ColorEngine {
 /** Every user setting that is not stored in the database. [accentColor] is an ARGB int. */
 data class AppSettings(
     val onboardingComplete: Boolean = false,
+    /** Shown on the profile avatar and greeting. Empty until the user sets one. */
+    val displayName: String = "",
     val themeMode: ThemeMode = ThemeMode.SYSTEM_AUTO,
     val colorEngine: ColorEngine = ColorEngine.SOLID_ACCENT,
     val accentColor: Int = DEFAULT_ACCENT,

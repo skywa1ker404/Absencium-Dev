@@ -39,6 +39,8 @@ class SettingsRepository(context: Context) {
 
     suspend fun setOnboardingComplete(value: Boolean) = write(Keys.ONBOARDING_COMPLETE, value)
 
+    suspend fun setDisplayName(value: String) = write(Keys.DISPLAY_NAME, value.trim().take(40))
+
     suspend fun setThemeMode(value: ThemeMode) = write(Keys.THEME_MODE, value.name)
 
     suspend fun setColorEngine(value: ColorEngine) = write(Keys.COLOR_ENGINE, value.name)
@@ -83,6 +85,7 @@ class SettingsRepository(context: Context) {
 
     private object Keys {
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
+        val DISPLAY_NAME = stringPreferencesKey("display_name")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_ENGINE = stringPreferencesKey("color_engine")
         val ACCENT_COLOR = intPreferencesKey("accent_color")
@@ -104,6 +107,7 @@ class SettingsRepository(context: Context) {
         val defaults = AppSettings()
         return AppSettings(
             onboardingComplete = this[Keys.ONBOARDING_COMPLETE] ?: defaults.onboardingComplete,
+            displayName = this[Keys.DISPLAY_NAME] ?: defaults.displayName,
             themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode),
             colorEngine = enumOrDefault(this[Keys.COLOR_ENGINE], defaults.colorEngine),
             accentColor = this[Keys.ACCENT_COLOR] ?: defaults.accentColor,

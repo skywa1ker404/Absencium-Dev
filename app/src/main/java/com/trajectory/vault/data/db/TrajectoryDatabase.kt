@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.trajectory.vault.logging.DebugLogger
 
 /**
@@ -28,7 +30,7 @@ import com.trajectory.vault.logging.DebugLogger
         UserStatsEntity::class,
         MomentumLogEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -51,6 +53,16 @@ abstract class TrajectoryDatabase : RoomDatabase() {
         const val DATABASE_NAME = "Trajectory.db"
         private const val TAG = "Room"
 
+        /** Version 2 adds the priority column to exams and holidays (Add Calendar Entry's priority selector). */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                DebugLogger.i(TAG, "Migrating $DATABASE_NAME from version 1 to 2")
+                db.execSQL("ALTER TABLE `Exams_Table` ADD COLUMN `priority` TEXT NOT NULL DEFAULT 'HIGH'")
+                db.execSQL("ALTER TABLE `Holidays_Table` ADD COLUMN `priority` TEXT NOT NULL DEFAULT 'LOW'")
+                DebugLogger.i(TAG, "Migration 1 to 2 finished")
+            }
+        }
+
         @Volatile
         private var instance: TrajectoryDatabase? = null
 
@@ -60,7 +72,7 @@ abstract class TrajectoryDatabase : RoomDatabase() {
                     context.applicationContext,
                     TrajectoryDatabase::class.java,
                     DATABASE_NAME,
-                ).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2).build().also { instance = it }
             }
 
         /**

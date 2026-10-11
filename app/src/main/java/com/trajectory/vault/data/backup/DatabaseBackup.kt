@@ -72,9 +72,10 @@ class DatabaseBackup(context: Context) {
             val backupVersion = SQLiteDatabase.openDatabase(staged.path, null, SQLiteDatabase.OPEN_READONLY)
                 .use { it.version }
             val currentVersion = TrajectoryDatabase.get(appContext).openHelper.readableDatabase.version
-            if (backupVersion != currentVersion) {
+            // An older backup is migrated when the app opens it; a newer one cannot be read.
+            if (backupVersion > currentVersion || backupVersion < 1) {
                 staged.delete()
-                return "This backup was made by a different database version ($backupVersion, this app uses $currentVersion)."
+                return "This backup was made by a newer database version ($backupVersion, this app uses $currentVersion)."
             }
             DebugLogger.i(TAG, "Restore staged, applies on next app start")
             return null

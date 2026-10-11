@@ -25,6 +25,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     val settings: StateFlow<AppSettings> = repository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings())
 
+    fun setDisplayName(value: String) = launch { repository.setDisplayName(value) }
+
     fun setThemeMode(mode: ThemeMode) = launch { repository.setThemeMode(mode) }
 
     fun setColorEngine(engine: ColorEngine) = launch { repository.setColorEngine(engine) }

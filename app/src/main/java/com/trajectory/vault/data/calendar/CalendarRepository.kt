@@ -4,6 +4,7 @@ import com.trajectory.vault.data.db.AttendanceEntity
 import com.trajectory.vault.data.db.AttendanceStatus
 import com.trajectory.vault.data.db.ExamEntity
 import com.trajectory.vault.data.db.HolidayEntity
+import com.trajectory.vault.data.db.Priority
 import com.trajectory.vault.data.db.SubjectEntity
 import com.trajectory.vault.data.db.TimetableEntity
 import com.trajectory.vault.data.db.TrajectoryDatabase
@@ -49,8 +50,20 @@ class CalendarRepository(private val database: TrajectoryDatabase) {
         }
     }
 
-    suspend fun addHoliday(date: LocalDate, title: String, autoSkip: Boolean) {
-        database.holidayDao().insert(HolidayEntity(date = date, title = title, autoSkip = autoSkip))
+    /** Sets [status] for every subject in [subjectIds] on [date], replacing any other status already logged. */
+    suspend fun markDay(subjectIds: Collection<Long>, date: LocalDate, status: AttendanceStatus) {
+        val dao = database.attendanceDao()
+        for (id in subjectIds.distinct()) {
+            val existing = dao.getFor(id, date)
+            when {
+                existing == null -> dao.insert(AttendanceEntity(subjectId = id, date = date, status = status))
+                existing.status != status -> dao.update(existing.copy(status = status))
+            }
+        }
+    }
+
+    suspend fun addHoliday(date: LocalDate, title: String, autoSkip: Boolean, priority: Priority) {
+        database.holidayDao().insert(HolidayEntity(date = date, title = title, autoSkip = autoSkip, priority = priority))
     }
 
     suspend fun deleteHoliday(holiday: HolidayEntity) = database.holidayDao().delete(holiday)
@@ -62,6 +75,7 @@ class CalendarRepository(private val database: TrajectoryDatabase) {
         weightage: Double?,
         room: String?,
         syllabusNotes: String?,
+        priority: Priority,
     ) {
         database.examDao().insert(
             ExamEntity(
@@ -71,6 +85,7 @@ class CalendarRepository(private val database: TrajectoryDatabase) {
                 weightage = weightage,
                 room = room,
                 syllabusNotes = syllabusNotes,
+                priority = priority,
             ),
         )
     }

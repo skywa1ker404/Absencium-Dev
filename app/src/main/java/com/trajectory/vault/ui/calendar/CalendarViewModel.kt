@@ -7,6 +7,7 @@ import com.trajectory.vault.data.calendar.CalendarData
 import com.trajectory.vault.data.db.AttendanceStatus
 import com.trajectory.vault.data.db.ExamEntity
 import com.trajectory.vault.data.db.HolidayEntity
+import com.trajectory.vault.data.db.Priority
 import com.trajectory.vault.data.db.TimetableEntity
 import com.trajectory.vault.logging.DebugLogger
 import kotlinx.coroutines.CancellationException
@@ -38,8 +39,11 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
     fun setAttendance(subjectId: Long, date: LocalDate, status: AttendanceStatus) =
         perform("log attendance") { repository.setAttendance(subjectId, date, status) }
 
-    fun addHoliday(date: LocalDate, title: String, autoSkip: Boolean) =
-        perform("add the holiday") { repository.addHoliday(date, title, autoSkip) }
+    fun markDay(subjectIds: Collection<Long>, date: LocalDate, status: AttendanceStatus) =
+        perform("log attendance") { repository.markDay(subjectIds, date, status) }
+
+    fun addHoliday(date: LocalDate, title: String, autoSkip: Boolean, priority: Priority) =
+        perform("add the holiday") { repository.addHoliday(date, title, autoSkip, priority) }
 
     fun deleteHoliday(holiday: HolidayEntity) = perform("delete the holiday") { repository.deleteHoliday(holiday) }
 
@@ -50,7 +54,10 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
         weightage: Double?,
         room: String?,
         syllabusNotes: String?,
-    ) = perform("add the exam") { repository.addExam(subjectId, date, title, weightage, room, syllabusNotes) }
+        priority: Priority,
+    ) = perform("add the exam") {
+        repository.addExam(subjectId, date, title, weightage, room, syllabusNotes, priority)
+    }
 
     fun deleteExam(exam: ExamEntity) = perform("delete the exam") { repository.deleteExam(exam) }
 

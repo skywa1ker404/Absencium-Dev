@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
@@ -90,19 +91,19 @@ fun TrajectoryTheme(
     val systemDark = isSystemInDarkTheme()
     val isDark = when (settings.themeMode) {
         ThemeMode.LIGHT -> false
-        ThemeMode.DARK_OLED -> true
+        ThemeMode.DARK, ThemeMode.DARK_OLED -> true
         ThemeMode.SYSTEM_AUTO -> systemDark
     }
     val engine = effectiveColorEngine(settings.colorEngine)
     val seed = Color(settings.accentColor)
 
     val generated: ColorScheme = when (engine) {
-        ColorEngine.MONET_WALLPAPER ->
-            if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-
-        ColorEngine.SOLID_ACCENT,
+        // Liquid Glass follows the wallpaper colors like Monet; only Solid Accent uses the chosen accent.
+        ColorEngine.MONET_WALLPAPER,
         ColorEngine.LIQUID_GLASS,
-        -> rememberDynamicColorScheme(
+        -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+
+        ColorEngine.SOLID_ACCENT -> rememberDynamicColorScheme(
             seedColor = seed,
             isDark = isDark,
             specVersion = ColorSpec.SpecVersion.SPEC_2025,
@@ -129,10 +130,20 @@ fun TrajectoryTheme(
         CompositionLocalProvider(
             LocalGlassEnabled provides (engine == ColorEngine.LIQUID_GLASS),
             LocalGlassBlur provides settings.glassBlurDp.dp,
+            // Text outside a Surface would otherwise fall back to black, which is unreadable on dark themes.
+            LocalContentColor provides colorScheme.onBackground,
         ) {
             Box(modifier = Modifier.fillMaxSize().background(colorScheme.background)) {
                 content()
             }
         }
     }
+}
+
+/** Whether the theme in [settings] is dark, resolving System Auto against the phone's setting. */
+@Composable
+fun isDarkTheme(settings: AppSettings): Boolean = when (settings.themeMode) {
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK, ThemeMode.DARK_OLED -> true
+    ThemeMode.SYSTEM_AUTO -> isSystemInDarkTheme()
 }
