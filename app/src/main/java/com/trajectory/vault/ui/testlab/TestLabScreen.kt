@@ -35,7 +35,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.logging.DebugLogger
 import com.trajectory.vault.ui.TestLabViewModel
-import com.trajectory.vault.ui.components.GlassCard
+import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.MessageCard
 import com.trajectory.vault.ui.components.PillButton
@@ -62,7 +62,7 @@ fun TestLabScreen(navigator: DestinationsNavigator) {
         HintText("Each check below runs for real on this device and writes to debug.log.")
 
         SectionTitle("This device")
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Text("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})", style = MaterialTheme.typography.titleMedium)
             Text(
                 text = if (isMonetAndBlurSupported) {
@@ -79,7 +79,7 @@ fun TestLabScreen(navigator: DestinationsNavigator) {
         }
 
         SectionTitle("Database: Trajectory.db")
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             if (state.tableCounts.isEmpty()) {
                 Text("Reading tables...", style = MaterialTheme.typography.bodyMedium)
             }
@@ -101,7 +101,7 @@ fun TestLabScreen(navigator: DestinationsNavigator) {
         if (databaseMessage != null) MessageCard(databaseMessage)
 
         SectionTitle("Notes storage")
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = "Writes a small file into your notes folder, reads it back and lists the folder.",
                 style = MaterialTheme.typography.bodySmall,
@@ -117,7 +117,7 @@ fun TestLabScreen(navigator: DestinationsNavigator) {
         if (storageMessage != null) MessageCard(storageMessage)
 
         SectionTitle("Debug log")
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = DebugLogger.logFilePath ?: "Logger not started",
                 style = MaterialTheme.typography.bodySmall,
@@ -165,7 +165,7 @@ fun TestLabScreen(navigator: DestinationsNavigator) {
         }
 
         SectionTitle("Crash logging")
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = "Closes the app on purpose with a test crash. After reopening, the Test Lab log should show the stack trace.",
                 style = MaterialTheme.typography.bodySmall,

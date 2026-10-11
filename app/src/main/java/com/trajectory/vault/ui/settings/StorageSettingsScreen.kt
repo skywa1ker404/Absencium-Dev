@@ -24,7 +24,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.logging.DebugLogger
 import com.trajectory.vault.ui.StorageViewModel
-import com.trajectory.vault.ui.components.GlassCard
+import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.MessageCard
 import com.trajectory.vault.ui.components.PillButton
@@ -58,7 +58,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
         StorageLocationSection(storageViewModel)
 
         SectionTitle("Backup and restore")
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Text("Database backup", style = MaterialTheme.typography.titleMedium)
             Text(
                 text = "Saves everything in the Trajectory database (subjects, attendance, exams, notes index and more) " +
@@ -86,7 +86,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
         val message = storage.message
         if (message != null) MessageCard(message)
         if (storage.restoreStaged) {
-            GlassCard(modifier = Modifier.fillMaxWidth(), highlighted = true) {
+            AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true) {
                 Text("Restore ready", style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = "The backup is applied the next time Trajectory starts. Close the app now, then open it again. " +

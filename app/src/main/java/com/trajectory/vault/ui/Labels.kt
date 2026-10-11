@@ -24,7 +24,7 @@ fun ColorEngine.label(): String = when (this) {
 fun ColorEngine.description(): String = when (this) {
     ColorEngine.SOLID_ACCENT -> "A full palette built from one accent color you choose"
     ColorEngine.MONET_WALLPAPER -> "Colors taken from your wallpaper (Material You)"
-    ColorEngine.LIQUID_GLASS -> "Frosted translucent surfaces over a soft color backdrop"
+    ColorEngine.LIQUID_GLASS -> "Frosted glass bars and buttons that blur the content scrolling behind them"
 }
 
 const val REQUIRES_ANDROID_12 = "Needs Android 12 or newer"

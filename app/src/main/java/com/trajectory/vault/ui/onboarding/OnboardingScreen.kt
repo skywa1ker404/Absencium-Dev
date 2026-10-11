@@ -7,7 +7,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -36,20 +40,26 @@ import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.ui.AiKeyViewModel
 import com.trajectory.vault.ui.StorageViewModel
 import com.trajectory.vault.ui.components.AccentColorPicker
-import com.trajectory.vault.ui.components.GlassCard
+import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
+import com.trajectory.vault.ui.components.floatingGlass
 import com.trajectory.vault.ui.components.PillButton
 import com.trajectory.vault.ui.components.SectionTitle
 import com.trajectory.vault.ui.components.StepIndicator
 import com.trajectory.vault.ui.containerViewModel
+import com.trajectory.vault.ui.settings.AiConnectionSection
 import com.trajectory.vault.ui.settings.AiKeySection
 import com.trajectory.vault.ui.settings.AskAiToggle
+import com.trajectory.vault.ui.settings.aiReady
 import com.trajectory.vault.ui.settings.ColorEngineChoices
 import com.trajectory.vault.ui.settings.MomentumToggle
 import com.trajectory.vault.ui.settings.StorageLocationSection
 import com.trajectory.vault.ui.settings.StorageModuleToggles
 import com.trajectory.vault.ui.settings.ThemeModeChoices
 import com.trajectory.vault.ui.settings.rememberSettingsViewModel
+import com.trajectory.vault.ui.theme.LocalGlassEnabled
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 
 private const val STEP_COUNT = 3
 private const val LAST_STEP = STEP_COUNT - 1
@@ -69,13 +79,24 @@ fun OnboardingScreen() {
     val aiKeyViewModel = containerViewModel { AiKeyViewModel(it) }
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
     val storage by storageViewModel.state.collectAsStateWithLifecycle()
+    val keyState by aiKeyViewModel.state.collectAsStateWithLifecycle()
 
     var step by rememberSaveable { mutableStateOf(0) }
     var finishing by remember { mutableStateOf(false) }
 
     BackHandler(enabled = step > 0) { step -= 1 }
 
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+    val hazeState = if (LocalGlassEnabled.current) rememberHazeState() else null
+    val background = MaterialTheme.colorScheme.background
+
+    Box(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
+            .background(background)
+            .statusBarsPadding(),
+    ) {
         Column(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -126,7 +147,7 @@ fun OnboardingScreen() {
                         )
                         if (settings.colorEngine != ColorEngine.MONET_WALLPAPER) {
                             SectionTitle("Accent color")
-                            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                            AppCard(modifier = Modifier.fillMaxWidth()) {
                                 AccentColorPicker(
                                     selected = Color(settings.accentColor),
                                     onSelected = { settingsViewModel.setAccentColor(it.toArgb()) },
@@ -140,7 +161,9 @@ fun OnboardingScreen() {
 
                         SectionTitle("Optional: Ask AI")
                         HintText("You can skip this and add a key later in Settings.")
-                        AskAiToggle(settings, settingsViewModel)
+                        AskAiToggle(settings, settingsViewModel, ready = aiReady(settings, keyState.hasKey))
+                        AiConnectionSection(settings, settingsViewModel)
+                        SectionTitle("API key")
                         AiKeySection(aiKeyViewModel)
 
                         SectionTitle("Optional modules")
@@ -149,39 +172,41 @@ fun OnboardingScreen() {
                         StorageModuleToggles(settings, settingsViewModel)
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                // Room so the last card can scroll clear of the floating buttons.
+                Spacer(modifier = Modifier.height(120.dp))
             }
         }
+    }
 
-        GlassCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                if (step > 0) {
-                    PillButton(text = "Back", onClick = { step -= 1 }, tonal = true)
-                } else {
-                    Spacer(modifier = Modifier)
-                }
-                if (step < LAST_STEP) {
-                    PillButton(text = "Next", onClick = { step += 1 })
-                } else {
-                    PillButton(
-                        text = "Finish",
-                        onClick = {
-                            finishing = true
-                            settingsViewModel.completeOnboarding()
-                        },
-                        enabled = storage.mode != null,
-                        loading = finishing,
-                    )
-                }
-            }
+    Row(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .floatingGlass(hazeState, RoundedCornerShape(36.dp))
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (step > 0) {
+            PillButton(text = "Back", onClick = { step -= 1 }, tonal = true)
+        } else {
+            Spacer(modifier = Modifier)
         }
+        if (step < LAST_STEP) {
+            PillButton(text = "Next", onClick = { step += 1 })
+        } else {
+            PillButton(
+                text = "Finish",
+                onClick = {
+                    finishing = true
+                    settingsViewModel.completeOnboarding()
+                },
+                enabled = storage.mode != null,
+                loading = finishing,
+            )
+        }
+    }
     }
 }

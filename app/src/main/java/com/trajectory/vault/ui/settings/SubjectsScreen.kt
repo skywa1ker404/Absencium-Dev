@@ -27,7 +27,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.data.db.SubjectEntity
 import com.trajectory.vault.ui.SubjectsViewModel
-import com.trajectory.vault.ui.components.GlassCard
+import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.MessageCard
 import com.trajectory.vault.ui.components.PillButton
@@ -45,7 +45,7 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
     var newName by remember { mutableStateOf("") }
 
     ScreenScaffold(title = "Subjects", onBack = { navigator.navigateUp() }) {
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Text("Add a subject", style = MaterialTheme.typography.titleMedium)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -86,7 +86,7 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
 
 @Composable
 private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
-    GlassCard(
+    AppCard(
         modifier = Modifier
             .fillMaxWidth()
             .alpha(if (subject.isActive) 1f else 0.6f),

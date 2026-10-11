@@ -16,7 +16,7 @@ import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.ThemeMode
 import com.trajectory.vault.ui.REQUIRES_ANDROID_12
 import com.trajectory.vault.ui.components.AccentColorPicker
-import com.trajectory.vault.ui.components.GlassCard
+import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.OptionCard
 import com.trajectory.vault.ui.components.ScreenScaffold
 import com.trajectory.vault.ui.components.SectionTitle
@@ -36,7 +36,7 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
 
         if (settings.colorEngine != ColorEngine.MONET_WALLPAPER) {
             SectionTitle("Accent color")
-            GlassCard(modifier = Modifier.fillMaxWidth()) {
+            AppCard(modifier = Modifier.fillMaxWidth()) {
                 AccentColorPicker(
                     selected = Color(settings.accentColor),
                     onSelected = { viewModel.setAccentColor(it.toArgb()) },

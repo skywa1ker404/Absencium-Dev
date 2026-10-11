@@ -18,10 +18,13 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
     val settingsViewModel = rememberSettingsViewModel()
     val aiKeyViewModel = containerViewModel { AiKeyViewModel(it) }
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+    val keyState by aiKeyViewModel.state.collectAsStateWithLifecycle()
 
     ScreenScaffold(title = "AI & Integrations", onBack = { navigator.navigateUp() }) {
         SectionTitle("Ask AI")
-        AskAiToggle(settings, settingsViewModel)
+        AskAiToggle(settings, settingsViewModel, ready = aiReady(settings, keyState.hasKey))
+        AiConnectionSection(settings, settingsViewModel)
+        SectionTitle("API key")
         AiKeySection(aiKeyViewModel)
         HintText("Trajectory works fully offline. AI is only used when you turn it on and ask.")
 

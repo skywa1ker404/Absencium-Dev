@@ -8,6 +8,8 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.trajectory.vault.data.ai.AiProvider
+import com.trajectory.vault.data.ai.ApiStyle
 import com.trajectory.vault.logging.DebugLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -54,6 +56,16 @@ class SettingsRepository(context: Context) {
 
     suspend fun setAskAiEnabled(value: Boolean) = write(Keys.ASK_AI_ENABLED, value)
 
+    /** Saves the whole AI connection in one write so the settings never hold half of it. */
+    suspend fun setAiConnection(provider: AiProvider, baseUrl: String, model: String, style: ApiStyle) {
+        dataStore.edit {
+            it[Keys.AI_PROVIDER] = provider.name
+            it[Keys.AI_BASE_URL] = baseUrl
+            it[Keys.AI_MODEL] = model
+            it[Keys.AI_API_STYLE] = style.name
+        }
+    }
+
     suspend fun setMomentumTrackerEnabled(value: Boolean) = write(Keys.MOMENTUM_ENABLED, value)
 
     suspend fun setSemesterManagerEnabled(value: Boolean) = write(Keys.SEMESTER_MANAGER_ENABLED, value)
@@ -73,6 +85,10 @@ class SettingsRepository(context: Context) {
         val FOCUS_GRACE_MINUTES = intPreferencesKey("focus_grace_minutes")
         val EXAM_MODE_AUTO_SILENCE = booleanPreferencesKey("exam_mode_auto_silence")
         val ASK_AI_ENABLED = booleanPreferencesKey("ask_ai_enabled")
+        val AI_PROVIDER = stringPreferencesKey("ai_provider")
+        val AI_BASE_URL = stringPreferencesKey("ai_base_url")
+        val AI_MODEL = stringPreferencesKey("ai_model")
+        val AI_API_STYLE = stringPreferencesKey("ai_api_style")
         val MOMENTUM_ENABLED = booleanPreferencesKey("momentum_tracker_enabled")
         val SEMESTER_MANAGER_ENABLED = booleanPreferencesKey("semester_manager_enabled")
         val LOW_STORAGE_COMPRESSOR_ENABLED = booleanPreferencesKey("low_storage_compressor_enabled")
@@ -89,6 +105,10 @@ class SettingsRepository(context: Context) {
             focusGraceMinutes = this[Keys.FOCUS_GRACE_MINUTES] ?: defaults.focusGraceMinutes,
             examModeAutoSilence = this[Keys.EXAM_MODE_AUTO_SILENCE] ?: defaults.examModeAutoSilence,
             askAiEnabled = this[Keys.ASK_AI_ENABLED] ?: defaults.askAiEnabled,
+            aiProvider = enumOrDefault(this[Keys.AI_PROVIDER], defaults.aiProvider),
+            aiBaseUrl = this[Keys.AI_BASE_URL] ?: defaults.aiBaseUrl,
+            aiModel = this[Keys.AI_MODEL] ?: defaults.aiModel,
+            aiApiStyle = enumOrDefault(this[Keys.AI_API_STYLE], defaults.aiApiStyle),
             momentumTrackerEnabled = this[Keys.MOMENTUM_ENABLED] ?: defaults.momentumTrackerEnabled,
             semesterManagerEnabled = this[Keys.SEMESTER_MANAGER_ENABLED] ?: defaults.semesterManagerEnabled,
             lowStorageCompressorEnabled =

@@ -23,7 +23,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.TestLabScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.trajectory.vault.ui.components.GlassCard
+import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.NavCard
 import com.trajectory.vault.ui.components.ScreenScaffold
 import com.trajectory.vault.ui.description
@@ -39,7 +39,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     val engine = effectiveColorEngine(settings.colorEngine)
 
     ScreenScaffold(title = "Trajectory", onBack = null) {
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Text("Welcome", style = MaterialTheme.typography.headlineSmall)
             Text(
                 text = "This is an early test build. Open Settings to change the theme live, or the Test Lab to check the database, storage and log.",
@@ -49,7 +49,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             )
         }
 
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
             Text("Your look", style = MaterialTheme.typography.titleMedium)
             Row(
                 verticalAlignment = Alignment.CenterVertically,

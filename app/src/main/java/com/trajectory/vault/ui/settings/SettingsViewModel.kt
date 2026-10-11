@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.trajectory.vault.AppContainer
 import com.trajectory.vault.appContainer
+import com.trajectory.vault.data.ai.AiProvider
+import com.trajectory.vault.data.ai.ApiStyle
 import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.SettingsRepository
@@ -36,6 +38,11 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setExamModeAutoSilence(value: Boolean) = launch { repository.setExamModeAutoSilence(value) }
 
     fun setAskAiEnabled(value: Boolean) = launch { repository.setAskAiEnabled(value) }
+
+    fun setAiConnection(provider: AiProvider, baseUrl: String, model: String, style: ApiStyle) = launch {
+        repository.setAiConnection(provider, baseUrl, model, style)
+        DebugLogger.i("AI", "AI connection saved: provider=${provider.name} url=$baseUrl model=$model style=${style.name}")
+    }
 
     fun setMomentumTrackerEnabled(value: Boolean) = launch { repository.setMomentumTrackerEnabled(value) }
 

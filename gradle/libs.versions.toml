@@ -13,7 +13,6 @@ datastore = "1.2.1"
 lifecycle = "2.11.0"
 haze = "2.0.0"
 materialKolor = "5.0.1"
-colorPicker = "0.7.0"
 composeDestinations = "2.3.0"
 filekit = "0.16.0"
 
@@ -33,7 +32,6 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
 haze-blur = { group = "dev.chrisbanes.haze", name = "haze-blur", version.ref = "haze" }
 material-kolor = { group = "com.materialkolor", name = "material-kolor", version.ref = "materialKolor" }
-color-picker = { group = "com.godaddy.android.colorpicker", name = "compose-color-picker", version.ref = "colorPicker" }
 compose-destinations-core = { group = "io.github.raamcosta.compose-destinations", name = "core", version.ref = "composeDestinations" }
 compose-destinations-ksp = { group = "io.github.raamcosta.compose-destinations", name = "ksp", version.ref = "composeDestinations" }
 filekit-dialogs-compose = { group = "io.github.vinceglb", name = "filekit-dialogs-compose", version.ref = "filekit" }

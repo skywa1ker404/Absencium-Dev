@@ -16,9 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +26,7 @@ import com.materialkolor.rememberDynamicColorScheme
 import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.ThemeMode
-import dev.chrisbanes.haze.*
+import dev.chrisbanes.haze.HazeState
 
 /** Monet (wallpaper colors) and the real blur behind Liquid Glass both need Android 12. */
 val isMonetAndBlurSupported: Boolean
@@ -43,9 +40,12 @@ fun effectiveColorEngine(requested: ColorEngine): ColorEngine =
         requested
     }
 
+/** True while the Liquid Glass engine is active: floating bars become frosted glass. */
+val LocalGlassEnabled = staticCompositionLocalOf { false }
+
 /**
- * Non-null while the Liquid Glass engine is active. Glass surfaces blur whatever is drawn
- * inside the matching `hazeSource`, which is the themed backdrop drawn by [TrajectoryTheme].
+ * The haze state of the screen currently being drawn, or null when glass is off. A screen's
+ * scrolling content is the blur source; its floating bars blur what scrolls behind them.
  */
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
@@ -116,54 +116,11 @@ fun TrajectoryTheme(
         generated
     }
 
-    val hazeState = rememberHazeState()
-    val glassState = if (engine == ColorEngine.LIQUID_GLASS) hazeState else null
-
     MaterialTheme(colorScheme = colorScheme, shapes = TrajectoryShapes, typography = TrajectoryTypography) {
-        CompositionLocalProvider(LocalHazeState provides glassState) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Backdrop(glassState)
+        CompositionLocalProvider(LocalGlassEnabled provides (engine == ColorEngine.LIQUID_GLASS)) {
+            Box(modifier = Modifier.fillMaxSize().background(colorScheme.background)) {
                 content()
             }
         }
     }
-}
-
-/** Plain background normally; a soft color field for glass surfaces to blur in Liquid Glass. */
-@Composable
-private fun Backdrop(hazeState: HazeState?) {
-    val colors = MaterialTheme.colorScheme
-    if (hazeState == null) {
-        Box(modifier = Modifier.fillMaxSize().background(colors.background))
-        return
-    }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .hazeSource(hazeState)
-            .drawBehind {
-                drawRect(
-                    Brush.linearGradient(
-                        listOf(colors.primaryContainer, colors.surface, colors.tertiaryContainer),
-                    ),
-                )
-                val radius = size.minDimension * 0.75f
-                val spots = listOf(
-                    Triple(Offset(size.width * 0.12f, size.height * 0.18f), colors.primary, 0.55f),
-                    Triple(Offset(size.width * 0.9f, size.height * 0.5f), colors.tertiary, 0.45f),
-                    Triple(Offset(size.width * 0.3f, size.height * 0.92f), colors.secondary, 0.5f),
-                )
-                spots.forEach { (center, color, alpha) ->
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(color.copy(alpha = alpha), Color.Transparent),
-                            center = center,
-                            radius = radius,
-                        ),
-                        radius = radius,
-                        center = center,
-                    )
-                }
-            },
-    )
 }

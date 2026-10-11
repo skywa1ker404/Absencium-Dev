@@ -43,14 +43,12 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,34 +56,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.godaddy.android.colorpicker.ClassicColorPicker
-import com.godaddy.android.colorpicker.HsvColor
+import com.trajectory.vault.ui.theme.LocalGlassEnabled
 import com.trajectory.vault.ui.theme.LocalHazeState
-import dev.chrisbanes.haze.*
-import dev.chrisbanes.haze.blur.*
-import kotlinx.coroutines.delay
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlin.math.roundToInt
 
 /**
- * A card that is frosted glass when the Liquid Glass engine is active (it blurs the themed
- * backdrop behind it) and a layered tonal surface otherwise. It squashes slightly while pressed,
- * springs when its content changes size, and shifts to a higher tonal layer (and an outline)
- * when [highlighted] or pressed.
+ * The standard content card: a rounded tonal surface (low layer, higher layer when [highlighted]
+ * or pressed). It squashes slightly while pressed and springs when its content changes size.
+ * Glass is used only on floating elements (top bar, floating bars), never on content,
+ * so text on cards always has solid contrast.
  */
 @Composable
-fun GlassCard(
+fun AppCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     highlighted: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val hazeState = LocalHazeState.current
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.large
     val interaction = remember { MutableInteractionSource() }
@@ -105,90 +100,84 @@ fun GlassCard(
     } else {
         Modifier
     }
-    val springSize = Modifier.animateContentSize(
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy),
-    )
-    val pressScale = Modifier.graphicsLayer {
-        scaleX = scale
-        scaleY = scale
-    }
-
-    if (hazeState != null) {
-        val isDark = colors.surface.luminance() < 0.5f
-        val tint = when {
-            highlighted -> colors.primary.copy(alpha = 0.22f)
-            isDark -> Color.White.copy(alpha = 0.08f)
-            else -> Color.White.copy(alpha = 0.35f)
-        }
-        val fallback = container.copy(alpha = 0.85f)
-        val style = remember(tint, fallback) {
-            HazeBlurStyle {
-                blurRadius(24.dp)
-                noiseFactor(0.1f)
-                colorEffects(listOf(HazeColorEffect.tint(tint)))
-                fallbackColorEffect(HazeColorEffect.tint(fallback))
+    Surface(
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
             }
-        }
-        val borderColor = if (highlighted) colors.primary else Color.White.copy(alpha = if (isDark) 0.18f else 0.45f)
-        Column(
-            modifier = modifier
-                .then(pressScale)
-                .clip(shape)
-                .hazeBlur(input = HazeInput.Backdrop(hazeState), style = style)
-                .border(if (highlighted) 2.dp else 1.dp, borderColor, shape)
-                .then(clickModifier)
-                .then(springSize),
-        ) {
-            Column(modifier = Modifier.padding(20.dp), content = content)
-        }
-    } else {
-        Surface(
-            modifier = modifier.then(pressScale).then(springSize),
-            shape = shape,
-            color = container,
-            border = if (highlighted) BorderStroke(2.dp, colors.primary) else null,
-        ) {
-            Column(modifier = Modifier.then(clickModifier).padding(20.dp), content = content)
-        }
+            .animateContentSize(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+        shape = shape,
+        color = container,
+        border = if (highlighted) BorderStroke(2.dp, colors.primary) else null,
+    ) {
+        Column(modifier = Modifier.then(clickModifier).padding(20.dp), content = content)
     }
 }
 
-/** A themed screen with a transparent top bar and a scrolling column of content. */
+/**
+ * A themed screen: a top bar, a scrolling column of content and an optional floating [bottomBar].
+ * The content scrolls underneath the bars. With the Liquid Glass engine the bars are frosted
+ * glass that blur the content passing behind them.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenScaffold(
     title: String,
     onBack: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    bottomBar: @Composable () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Scaffold(
-        containerColor = Color.Transparent,
-        topBar = {
-            TopAppBar(
-                title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
-                navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(
-                            onClick = onBack,
-                            modifier = Modifier.semantics { contentDescription = "Back" },
-                        ) {
-                            Text("←", style = MaterialTheme.typography.titleLarge)
+    val glass = LocalGlassEnabled.current
+    val hazeState = if (glass) rememberHazeState() else null
+    val colors = MaterialTheme.colorScheme
+
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
+        Scaffold(
+            modifier = modifier,
+            containerColor = colors.background,
+            topBar = {
+                TopAppBar(
+                    title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
+                    navigationIcon = {
+                        if (onBack != null) {
+                            IconButton(
+                                onClick = onBack,
+                                modifier = Modifier.semantics { contentDescription = "Back" },
+                            ) {
+                                Text("←", style = MaterialTheme.typography.titleLarge)
+                            }
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-            )
-        },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            content = content,
-        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    modifier = Modifier.floatingGlass(
+                        hazeState = hazeState,
+                        shape = RectangleShape,
+                        tint = colors.background,
+                        bordered = false,
+                    ),
+                )
+            },
+            bottomBar = bottomBar,
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
+                    .background(colors.background),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(padding)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    content = content,
+                )
+            }
+        }
     }
 }
 
@@ -212,7 +201,7 @@ fun OptionCard(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    GlassCard(
+    AppCard(
         modifier = modifier
             .fillMaxWidth()
             .alpha(if (enabled) 1f else 0.5f),
@@ -240,6 +229,7 @@ fun OptionCard(
 
 private val AccentPresets = listOf(
     Color(0xFF6750A4),
+    Color(0xFF3F51B5),
     Color(0xFF1E6FD9),
     Color(0xFF00897B),
     Color(0xFF43A047),
@@ -248,58 +238,47 @@ private val AccentPresets = listOf(
     Color(0xFFD81B60),
 )
 
-/**
- * Preset swatches plus an optional free-form color picker. Dragging in the picker is
- * debounced so the setting is written once the finger settles, not on every frame.
- */
+/** Preset accent swatches. The chosen one gets a ring and a check mark, and springs when tapped. */
 @Composable
 fun AccentColorPicker(
     selected: Color,
     onSelected: (Color) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var showPicker by remember { mutableStateOf(false) }
-    var draft by remember { mutableStateOf<Color?>(null) }
-    // Fixed starting color for the picker. Passing it explicitly also selects the `Color`
-    // overload of ClassicColorPicker (the call is ambiguous without a `color` argument).
-    val pickerStartColor = remember { selected }
-
-    LaunchedEffect(draft) {
-        val pending = draft ?: return@LaunchedEffect
-        delay(250)
-        onSelected(pending)
-    }
-
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            AccentPresets.forEach { preset ->
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(preset)
-                        .border(
-                            width = if (preset == selected) 3.dp else 0.dp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            shape = CircleShape,
-                        )
-                        .clickable { onSelected(preset) }
-                        .semantics { contentDescription = "Accent color" },
-                )
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AccentPresets.chunked(4).forEach { rowColors ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                rowColors.forEach { preset ->
+                    val isSelected = preset == selected
+                    val scale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.08f else 1f,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                        label = "swatchScale",
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                            }
+                            .clip(CircleShape)
+                            .background(preset)
+                            .border(
+                                width = if (isSelected) 3.dp else 0.dp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                shape = CircleShape,
+                            )
+                            .clickable { onSelected(preset) }
+                            .semantics { contentDescription = "Accent color" },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (isSelected) {
+                            Text("\u2713", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                        }
+                    }
+                }
             }
-        }
-        TextButton(onClick = { showPicker = !showPicker }) {
-            Text(if (showPicker) "Hide custom picker" else "Custom color…")
-        }
-        if (showPicker) {
-            ClassicColorPicker(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp),
-                color = pickerStartColor,
-                showAlphaBar = false,
-                onColorChanged = { color: HsvColor -> draft = color.toColor() },
-            )
         }
     }
 }
@@ -314,7 +293,7 @@ fun SwitchCard(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    GlassCard(
+    AppCard(
         modifier = modifier
             .fillMaxWidth()
             .alpha(if (enabled) 1f else 0.5f),
@@ -353,7 +332,7 @@ fun NavCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    GlassCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
+    AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -396,7 +375,7 @@ fun SliderCard(
     modifier: Modifier = Modifier,
 ) {
     var draft by remember(value) { mutableFloatStateOf(value.toFloat()) }
-    GlassCard(modifier = modifier.fillMaxWidth()) {
+    AppCard(modifier = modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -519,7 +498,7 @@ fun StepIndicator(current: Int, total: Int, modifier: Modifier = Modifier) {
 /** A highlighted card for the result of an action ("Backup saved", "Could not use that folder"). */
 @Composable
 fun MessageCard(text: String, modifier: Modifier = Modifier) {
-    GlassCard(modifier = modifier.fillMaxWidth(), highlighted = true) {
+    AppCard(modifier = modifier.fillMaxWidth(), highlighted = true) {
         Text(text = text, style = MaterialTheme.typography.bodyMedium)
     }
 }

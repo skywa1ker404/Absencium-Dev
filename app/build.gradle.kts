@@ -53,7 +53,6 @@ dependencies {
     implementation(libs.haze)
     implementation(libs.haze.blur)
     implementation(libs.material.kolor)
-    implementation(libs.color.picker)
     implementation(libs.compose.destinations.core)
     ksp(libs.compose.destinations.ksp)
     implementation(libs.filekit.dialogs.compose)
