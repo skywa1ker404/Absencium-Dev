@@ -228,8 +228,8 @@ fun OptionCard(
 }
 
 private val AccentPresets = listOf(
+    Color(0xFF7C3AED),
     Color(0xFF6750A4),
-    Color(0xFF3F51B5),
     Color(0xFF1E6FD9),
     Color(0xFF00897B),
     Color(0xFF43A047),

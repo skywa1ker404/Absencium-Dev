@@ -25,6 +25,8 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM_AUTO,
     val colorEngine: ColorEngine = ColorEngine.SOLID_ACCENT,
     val accentColor: Int = DEFAULT_ACCENT,
+    /** Blur radius of the Liquid Glass bars, in dp. */
+    val glassBlurDp: Int = DEFAULT_GLASS_BLUR,
     val attendanceThresholdPercent: Int = 75,
     val focusGraceMinutes: Int = 5,
     val examModeAutoSilence: Boolean = false,
@@ -48,7 +50,10 @@ data class AppSettings(
         get() = aiBaseUrl.isNotBlank() && aiModel.isNotBlank()
 
     companion object {
-        val DEFAULT_ACCENT: Int = 0xFF6750A4.toInt()
+        val DEFAULT_ACCENT: Int = 0xFF7C3AED.toInt()
+        const val DEFAULT_GLASS_BLUR = 20
+        const val MIN_GLASS_BLUR = 5
+        const val MAX_GLASS_BLUR = 40
         const val MIN_ATTENDANCE_THRESHOLD = 60
         const val MAX_ATTENDANCE_THRESHOLD = 85
     }

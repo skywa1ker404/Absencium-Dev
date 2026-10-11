@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.trajectory.vault.ui.theme.LocalGlassBlur
 import com.trajectory.vault.ui.theme.LocalHazeState
 import dev.chrisbanes.haze.*
 import dev.chrisbanes.haze.blur.*
@@ -59,9 +60,10 @@ fun Modifier.floatingGlass(
     if (hazeState == null) {
         return this.clip(shape).background(tint).then(borderModifier)
     }
-    val style = remember(tint) {
+    val blur = LocalGlassBlur.current
+    val style = remember(tint, blur) {
         HazeBlurStyle {
-            blurRadius(28.dp)
+            blurRadius(blur)
             noiseFactor(0.06f)
             colorEffects(listOf(HazeColorEffect.tint(tint.copy(alpha = 0.55f))))
             fallbackColorEffect(HazeColorEffect.tint(tint.copy(alpha = 0.92f)))

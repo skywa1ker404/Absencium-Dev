@@ -12,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.ThemeMode
 import com.trajectory.vault.ui.REQUIRES_ANDROID_12
@@ -20,6 +21,7 @@ import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.OptionCard
 import com.trajectory.vault.ui.components.ScreenScaffold
 import com.trajectory.vault.ui.components.SectionTitle
+import com.trajectory.vault.ui.components.SliderCard
 import com.trajectory.vault.ui.description
 import com.trajectory.vault.ui.label
 import com.trajectory.vault.ui.theme.isMonetAndBlurSupported
@@ -33,6 +35,11 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
     ScreenScaffold(title = "Appearance", onBack = { navigator.navigateUp() }) {
         ThemeModeChoices(selected = settings.themeMode, onSelect = viewModel::setThemeMode)
         ColorEngineChoices(selected = settings.colorEngine, onSelect = viewModel::setColorEngine)
+
+        if (settings.colorEngine == ColorEngine.LIQUID_GLASS && isMonetAndBlurSupported) {
+            SectionTitle("Frosted glass intensity")
+            GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
+        }
 
         if (settings.colorEngine != ColorEngine.MONET_WALLPAPER) {
             SectionTitle("Accent color")
@@ -74,4 +81,17 @@ fun ColorEngineChoices(selected: ColorEngine, onSelect: (ColorEngine) -> Unit) {
             onClick = { onSelect(engine) },
         )
     }
+}
+
+/** Live frosted glass intensity (5 to 40). The bars on this screen change as the value is saved. */
+@Composable
+fun GlassBlurSlider(value: Int, onChange: (Int) -> Unit) {
+    SliderCard(
+        title = "Frosted glass blur",
+        subtitle = "How strongly the floating bars blur the content behind them.",
+        value = value,
+        range = AppSettings.MIN_GLASS_BLUR..AppSettings.MAX_GLASS_BLUR,
+        valueLabel = { "$it px" },
+        onValueChangeFinished = onChange,
+    )
 }

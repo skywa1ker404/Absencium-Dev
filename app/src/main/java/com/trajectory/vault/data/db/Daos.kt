@@ -51,6 +51,12 @@ interface AttendanceDao {
 
     @Query("SELECT COUNT(*) FROM Attendance_Table WHERE subject_id = :subjectId AND status = :status")
     fun observeCount(subjectId: Long, status: AttendanceStatus): Flow<Int>
+
+    @Query("SELECT * FROM Attendance_Table ORDER BY date, id")
+    fun observeAll(): Flow<List<AttendanceEntity>>
+
+    @Query("SELECT * FROM Attendance_Table WHERE subject_id = :subjectId AND date = :date LIMIT 1")
+    suspend fun getFor(subjectId: Long, date: LocalDate): AttendanceEntity?
 }
 
 @Dao
@@ -81,6 +87,9 @@ interface ExamDao {
 
     @Delete
     suspend fun delete(exam: ExamEntity)
+
+    @Query("SELECT * FROM Exams_Table ORDER BY date, id")
+    fun observeAll(): Flow<List<ExamEntity>>
 
     @Query("SELECT * FROM Exams_Table WHERE date >= :from ORDER BY date, id")
     fun observeUpcoming(from: LocalDate): Flow<List<ExamEntity>>

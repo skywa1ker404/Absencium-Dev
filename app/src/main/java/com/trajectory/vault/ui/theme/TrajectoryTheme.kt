@@ -40,6 +40,11 @@ fun effectiveColorEngine(requested: ColorEngine): ColorEngine =
         requested
     }
 
+private val OledBackground = Color(0xFF0D0D0D)
+
+/** Blur radius of the frosted glass bars, from the glass intensity setting. */
+val LocalGlassBlur = staticCompositionLocalOf { 20.dp }
+
 /** True while the Liquid Glass engine is active: floating bars become frosted glass. */
 val LocalGlassEnabled = staticCompositionLocalOf { false }
 
@@ -107,17 +112,24 @@ fun TrajectoryTheme(
 
     val colorScheme = if (settings.themeMode == ThemeMode.DARK_OLED) {
         generated.copy(
-            background = Color.Black,
-            surface = Color.Black,
-            surfaceDim = Color.Black,
-            surfaceContainerLowest = Color.Black,
+            background = OledBackground,
+            surface = OledBackground,
+            surfaceDim = OledBackground,
+            surfaceContainerLowest = OledBackground,
+            surfaceContainerLow = Color(0xFF141414),
+            surfaceContainer = Color(0xFF191919),
+            surfaceContainerHigh = Color(0xFF1E1E1E),
+            surfaceContainerHighest = Color(0xFF262626),
         )
     } else {
         generated
     }
 
     MaterialTheme(colorScheme = colorScheme, shapes = TrajectoryShapes, typography = TrajectoryTypography) {
-        CompositionLocalProvider(LocalGlassEnabled provides (engine == ColorEngine.LIQUID_GLASS)) {
+        CompositionLocalProvider(
+            LocalGlassEnabled provides (engine == ColorEngine.LIQUID_GLASS),
+            LocalGlassBlur provides settings.glassBlurDp.dp,
+        ) {
             Box(modifier = Modifier.fillMaxSize().background(colorScheme.background)) {
                 content()
             }

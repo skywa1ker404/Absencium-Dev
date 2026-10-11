@@ -31,6 +31,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setAccentColor(argb: Int) = launch { repository.setAccentColor(argb) }
 
+    fun setGlassBlur(dp: Int) = launch { repository.setGlassBlur(dp) }
+
     fun setAttendanceThreshold(percent: Int) = launch { repository.setAttendanceThreshold(percent) }
 
     fun setFocusGraceMinutes(minutes: Int) = launch { repository.setFocusGraceMinutes(minutes) }

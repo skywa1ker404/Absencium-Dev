@@ -45,6 +45,11 @@ class SettingsRepository(context: Context) {
 
     suspend fun setAccentColor(argb: Int) = write(Keys.ACCENT_COLOR, argb)
 
+    suspend fun setGlassBlur(dp: Int) = write(
+        Keys.GLASS_BLUR,
+        dp.coerceIn(AppSettings.MIN_GLASS_BLUR, AppSettings.MAX_GLASS_BLUR),
+    )
+
     suspend fun setAttendanceThreshold(percent: Int) = write(
         Keys.ATTENDANCE_THRESHOLD,
         percent.coerceIn(AppSettings.MIN_ATTENDANCE_THRESHOLD, AppSettings.MAX_ATTENDANCE_THRESHOLD),
@@ -81,6 +86,7 @@ class SettingsRepository(context: Context) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_ENGINE = stringPreferencesKey("color_engine")
         val ACCENT_COLOR = intPreferencesKey("accent_color")
+        val GLASS_BLUR = intPreferencesKey("glass_blur_dp")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
         val FOCUS_GRACE_MINUTES = intPreferencesKey("focus_grace_minutes")
         val EXAM_MODE_AUTO_SILENCE = booleanPreferencesKey("exam_mode_auto_silence")
@@ -101,6 +107,7 @@ class SettingsRepository(context: Context) {
             themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode),
             colorEngine = enumOrDefault(this[Keys.COLOR_ENGINE], defaults.colorEngine),
             accentColor = this[Keys.ACCENT_COLOR] ?: defaults.accentColor,
+            glassBlurDp = this[Keys.GLASS_BLUR] ?: defaults.glassBlurDp,
             attendanceThresholdPercent = this[Keys.ATTENDANCE_THRESHOLD] ?: defaults.attendanceThresholdPercent,
             focusGraceMinutes = this[Keys.FOCUS_GRACE_MINUTES] ?: defaults.focusGraceMinutes,
             examModeAutoSilence = this[Keys.EXAM_MODE_AUTO_SILENCE] ?: defaults.examModeAutoSilence,

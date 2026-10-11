@@ -2,6 +2,7 @@ package com.trajectory.vault
 
 import android.content.Context
 import com.trajectory.vault.data.backup.DatabaseBackup
+import com.trajectory.vault.data.calendar.CalendarRepository
 import com.trajectory.vault.data.db.TrajectoryDatabase
 import com.trajectory.vault.data.security.ApiKeyVault
 import com.trajectory.vault.data.settings.SettingsRepository
@@ -24,6 +25,7 @@ class AppContainer(context: Context) {
     val notesStorage = NotesStorage(appContext, notesStorageSettings)
     val apiKeyVault = ApiKeyVault(appContext)
     val databaseBackup = DatabaseBackup(appContext)
+    val calendarRepository: CalendarRepository by lazy { CalendarRepository(database) }
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.subjectDao()) }
 }
 
