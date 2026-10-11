@@ -49,6 +49,18 @@ object DebugLogger {
     val logFilePath: String?
         get() = logFile?.absolutePath
 
+    /** The last [maxLines] lines of the log file, for the Test Lab. */
+    fun readTail(maxLines: Int = 120): String {
+        val file = logFile ?: return "(logger not initialised)"
+        return synchronized(lock) {
+            try {
+                file.readLines().takeLast(maxLines).joinToString("\n")
+            } catch (e: Exception) {
+                "Could not read the log: ${e.message ?: e.javaClass.simpleName}"
+            }
+        }
+    }
+
     fun init(application: Application) {
         synchronized(lock) {
             if (initialized) return

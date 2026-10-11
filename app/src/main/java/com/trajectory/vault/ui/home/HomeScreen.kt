@@ -21,8 +21,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.TestLabScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.ui.components.GlassCard
+import com.trajectory.vault.ui.components.NavCard
 import com.trajectory.vault.ui.components.ScreenScaffold
 import com.trajectory.vault.ui.description
 import com.trajectory.vault.ui.label
@@ -40,7 +42,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             Text("Welcome", style = MaterialTheme.typography.headlineSmall)
             Text(
-                text = "This is an early test build. Open Settings to change the theme and see it apply live.",
+                text = "This is an early test build. Open Settings to change the theme live, or the Test Lab to check the database, storage and log.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
@@ -83,16 +85,17 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        GlassCard(
-            modifier = Modifier.fillMaxWidth(),
+        NavCard(
+            emoji = "⚙️",
+            title = "Settings",
+            subtitle = "General, appearance, storage and data, AI",
             onClick = { navigator.navigate(SettingsHubScreenDestination) },
-        ) {
-            Text("⚙️  Settings", style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = "Appearance and more",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        )
+        NavCard(
+            emoji = "🧪",
+            title = "Test Lab",
+            subtitle = "Check the database, storage and debug log",
+            onClick = { navigator.navigate(TestLabScreenDestination) },
+        )
     }
 }

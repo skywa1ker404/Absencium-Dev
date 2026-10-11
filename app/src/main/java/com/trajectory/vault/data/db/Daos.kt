@@ -26,6 +26,10 @@ interface SubjectDao {
 
     @Query("SELECT * FROM Subjects_Table WHERE id = :id")
     suspend fun getById(id: Long): SubjectEntity?
+
+    /** Removes the rows the Test Lab adds (names that start with "Sample: "). Returns how many were removed. */
+    @Query("DELETE FROM Subjects_Table WHERE name LIKE 'Sample: %'")
+    suspend fun deleteSamples(): Int
 }
 
 @Dao

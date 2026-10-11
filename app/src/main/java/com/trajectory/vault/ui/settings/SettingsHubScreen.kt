@@ -1,43 +1,53 @@
 package com.trajectory.vault.ui.settings
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AppearanceSettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.GeneralSettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.StorageSettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.TestLabScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.trajectory.vault.ui.components.GlassCard
+import com.trajectory.vault.ui.components.NavCard
 import com.trajectory.vault.ui.components.ScreenScaffold
+import com.trajectory.vault.ui.components.SectionTitle
 
 @Destination<RootGraph>
 @Composable
 fun SettingsHubScreen(navigator: DestinationsNavigator) {
     ScreenScaffold(title = "Settings", onBack = { navigator.navigateUp() }) {
-        SettingsEntry(
+        NavCard(
+            emoji = "🎓",
+            title = "General",
+            subtitle = "Attendance threshold, Focus Guard, Exam Mode, subjects",
+            onClick = { navigator.navigate(GeneralSettingsScreenDestination) },
+        )
+        NavCard(
             emoji = "🎨",
             title = "Appearance",
             subtitle = "Theme mode, color engine, accent color",
             onClick = { navigator.navigate(AppearanceSettingsScreenDestination) },
         )
-    }
-}
+        NavCard(
+            emoji = "🗄️",
+            title = "Storage & Data",
+            subtitle = "Notes folder, backup and restore, archive tools",
+            onClick = { navigator.navigate(StorageSettingsScreenDestination) },
+        )
+        NavCard(
+            emoji = "✨",
+            title = "AI & Integrations",
+            subtitle = "Ask AI, API key vault, Momentum tracker",
+            onClick = { navigator.navigate(AiSettingsScreenDestination) },
+        )
 
-@Composable
-private fun SettingsEntry(
-    emoji: String,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-) {
-    GlassCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
-        Text("$emoji  $title", style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        SectionTitle("Developer")
+        NavCard(
+            emoji = "🧪",
+            title = "Test Lab",
+            subtitle = "Check the database, storage and debug log on this device",
+            onClick = { navigator.navigate(TestLabScreenDestination) },
         )
     }
 }

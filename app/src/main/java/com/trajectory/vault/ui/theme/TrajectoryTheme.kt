@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
@@ -53,6 +55,26 @@ private val TrajectoryShapes = Shapes(
     large = RoundedCornerShape(28.dp),
     extraLarge = RoundedCornerShape(36.dp),
 )
+
+/**
+ * Expressive type scale: heavier weights on headings, card titles and labels so the hierarchy
+ * reads at a glance, with body text left light for long study notes.
+ */
+private val TrajectoryTypography: Typography = Typography().let { base ->
+    base.copy(
+        displayLarge = base.displayLarge.copy(fontWeight = FontWeight.ExtraBold),
+        displayMedium = base.displayMedium.copy(fontWeight = FontWeight.ExtraBold),
+        displaySmall = base.displaySmall.copy(fontWeight = FontWeight.Bold),
+        headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.Bold),
+        headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Bold),
+        headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.Bold),
+        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold),
+        titleMedium = base.titleMedium.copy(fontWeight = FontWeight.Bold),
+        titleSmall = base.titleSmall.copy(fontWeight = FontWeight.Bold),
+        labelLarge = base.labelLarge.copy(fontWeight = FontWeight.Bold),
+        labelMedium = base.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+    )
+}
 
 @Composable
 fun TrajectoryTheme(
@@ -97,7 +119,7 @@ fun TrajectoryTheme(
     val hazeState = rememberHazeState()
     val glassState = if (engine == ColorEngine.LIQUID_GLASS) hazeState else null
 
-    MaterialTheme(colorScheme = colorScheme, shapes = TrajectoryShapes) {
+    MaterialTheme(colorScheme = colorScheme, shapes = TrajectoryShapes, typography = TrajectoryTypography) {
         CompositionLocalProvider(LocalHazeState provides glassState) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Backdrop(glassState)

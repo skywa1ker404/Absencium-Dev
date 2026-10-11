@@ -1,6 +1,7 @@
 package com.trajectory.vault
 
 import android.app.Application
+import com.trajectory.vault.data.backup.DatabaseBackup
 import com.trajectory.vault.data.db.TrajectoryDatabase
 import com.trajectory.vault.logging.DebugLogger
 import kotlin.concurrent.thread
@@ -15,6 +16,8 @@ class TrajectoryApp : Application() {
         // The logger comes first so everything after it, including crashes, is captured.
         DebugLogger.init(this)
         DebugLogger.lifecycle("Application created")
+        // A restore chosen in Settings is applied here, before anything opens the database.
+        DatabaseBackup.applyStagedRestore(this)
         container = AppContainer(this)
 
         // Opening the database and touching storage are file operations, so keep them

@@ -12,6 +12,7 @@ import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.SettingsRepository
 import com.trajectory.vault.data.settings.ThemeMode
+import com.trajectory.vault.logging.DebugLogger
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -42,6 +43,11 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setLowStorageCompressorEnabled(value: Boolean) =
         launch { repository.setLowStorageCompressorEnabled(value) }
+
+    fun completeOnboarding() = launch {
+        repository.setOnboardingComplete(true)
+        DebugLogger.i("Onboarding", "Onboarding finished")
+    }
 
     private fun launch(block: suspend () -> Unit) {
         viewModelScope.launch { block() }
