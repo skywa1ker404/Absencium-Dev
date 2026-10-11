@@ -207,6 +207,9 @@ fun AccentColorPicker(
 ) {
     var showPicker by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf<Color?>(null) }
+    // Fixed starting color for the picker. Passing it explicitly also selects the `Color`
+    // overload of ClassicColorPicker (the call is ambiguous without a `color` argument).
+    val pickerStartColor = remember { selected }
 
     LaunchedEffect(draft) {
         val pending = draft ?: return@LaunchedEffect
@@ -240,6 +243,7 @@ fun AccentColorPicker(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp),
+                color = pickerStartColor,
                 showAlphaBar = false,
                 onColorChanged = { color: HsvColor -> draft = color.toColor() },
             )
