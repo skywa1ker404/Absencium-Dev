@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,12 +45,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trajectory.vault.ui.components.floatingGlass
+import com.trajectory.vault.ui.icons.AppIcons
 import dev.chrisbanes.haze.HazeState
 
-class MainTab(val label: String, val emoji: String)
+class MainTab(val label: String, val icon: ImageVector)
 
 private val PillHeight = 64.dp
 private val ItemHeight = 48.dp
@@ -156,7 +159,12 @@ private fun PillTab(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = tab.emoji, fontSize = 18.sp)
+        Icon(
+            imageVector = tab.icon,
+            contentDescription = null,
+            tint = labelColor,
+            modifier = Modifier.size(22.dp),
+        )
         AnimatedVisibility(
             visible = !compact,
             enter = fadeIn() + expandHorizontally(),
@@ -175,7 +183,7 @@ private fun PillTab(
 
 /** The contextual action button above the bar (Add Exam on Attends, New Note in the Vault). */
 @Composable
-fun ShellFab(emoji: String, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ShellFab(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -198,7 +206,39 @@ fun ShellFab(emoji: String, label: String, onClick: () -> Unit, modifier: Modifi
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
         interactionSource = interaction,
     ) {
-        Text(text = "$emoji  $label", style = MaterialTheme.typography.labelLarge)
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
+        Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 8.dp))
+    }
+}
+
+/** The round floating search button that sits above the navigation pill. */
+@Composable
+fun ShellSearchButton(hazeState: HazeState?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.9f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "searchPress",
+    )
+    Box(
+        modifier = modifier
+            .size(52.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .floatingGlass(hazeState, CircleShape)
+            .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
+            .semantics { contentDescription = "Search" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = AppIcons.Search,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(24.dp),
+        )
     }
 }
 
@@ -240,20 +280,25 @@ fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier =
                 .semantics { contentDescription = "Profile" },
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = initialsOf(displayName),
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.onPrimaryContainer,
-            )
+            val initials = initialsOf(displayName)
+            if (initials == null) {
+                Icon(AppIcons.Person, contentDescription = null, tint = colors.onPrimaryContainer)
+            } else {
+                Text(
+                    text = initials,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.onPrimaryContainer,
+                )
+            }
         }
     }
 }
 
-/** Up to two initials from a name, or a graduation cap when no name is set. */
-fun initialsOf(name: String): String {
+/** Up to two initials from a name, or null when no name is set. */
+fun initialsOf(name: String): String? {
     val parts = name.trim().split(" ").filter { it.isNotEmpty() }
     return when {
-        parts.isEmpty() -> "🎓"
+        parts.isEmpty() -> null
         parts.size == 1 -> parts[0].take(1).uppercase()
         else -> (parts[0].take(1) + parts[1].take(1)).uppercase()
     }

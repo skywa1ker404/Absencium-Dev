@@ -19,11 +19,16 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
+import com.trajectory.vault.R
 import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.ThemeMode
@@ -62,23 +67,39 @@ private val TrajectoryShapes = Shapes(
     extraLarge = RoundedCornerShape(36.dp),
 )
 
+/** Inter, bundled with the app so the type looks the same offline on every phone. */
+val InterFamily = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+    Font(R.font.inter_bold, FontWeight.Bold),
+    Font(R.font.inter_extrabold, FontWeight.ExtraBold),
+)
+
+private fun TextStyle.inter(weight: FontWeight, tracking: Double = 0.0): TextStyle =
+    copy(fontFamily = InterFamily, fontWeight = weight, letterSpacing = tracking.sp)
+
 /**
- * Expressive type scale: heavier weights on headings, card titles and labels so the hierarchy
- * reads at a glance, with body text left light for long study notes.
+ * Expressive type scale in Inter: heavy, tightly tracked headings, medium-weight card titles and
+ * regular body text so lists stay calm and the hierarchy still reads at a glance.
  */
 private val TrajectoryTypography: Typography = Typography().let { base ->
     base.copy(
-        displayLarge = base.displayLarge.copy(fontWeight = FontWeight.ExtraBold),
-        displayMedium = base.displayMedium.copy(fontWeight = FontWeight.ExtraBold),
-        displaySmall = base.displaySmall.copy(fontWeight = FontWeight.Bold),
-        headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.Bold),
-        headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Bold),
-        headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.Bold),
-        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold),
-        titleMedium = base.titleMedium.copy(fontWeight = FontWeight.Bold),
-        titleSmall = base.titleSmall.copy(fontWeight = FontWeight.Bold),
-        labelLarge = base.labelLarge.copy(fontWeight = FontWeight.Bold),
-        labelMedium = base.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+        displayLarge = base.displayLarge.inter(FontWeight.ExtraBold, -1.0),
+        displayMedium = base.displayMedium.inter(FontWeight.ExtraBold, -0.75),
+        displaySmall = base.displaySmall.inter(FontWeight.Bold, -0.5),
+        headlineLarge = base.headlineLarge.inter(FontWeight.ExtraBold, -0.5),
+        headlineMedium = base.headlineMedium.inter(FontWeight.Bold, -0.5),
+        headlineSmall = base.headlineSmall.inter(FontWeight.Bold, -0.25),
+        titleLarge = base.titleLarge.inter(FontWeight.SemiBold),
+        titleMedium = base.titleMedium.inter(FontWeight.Medium),
+        titleSmall = base.titleSmall.inter(FontWeight.Medium),
+        bodyLarge = base.bodyLarge.inter(FontWeight.Normal),
+        bodyMedium = base.bodyMedium.inter(FontWeight.Normal),
+        bodySmall = base.bodySmall.inter(FontWeight.Normal),
+        labelLarge = base.labelLarge.inter(FontWeight.SemiBold),
+        labelMedium = base.labelMedium.inter(FontWeight.SemiBold),
+        labelSmall = base.labelSmall.inter(FontWeight.Medium),
     )
 }
 

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -40,6 +42,7 @@ import com.trajectory.vault.data.db.Priority
 import com.trajectory.vault.data.db.SubjectEntity
 import com.trajectory.vault.domain.pretty
 import com.trajectory.vault.ui.components.HintText
+import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.components.PillButton
 import java.time.Instant
 import java.time.LocalDate
@@ -146,7 +149,8 @@ fun AddEntrySheet(
 
             Text("Date", style = MaterialTheme.typography.labelLarge)
             OutlinedButton(onClick = { showPicker = true }, shape = CircleShape) {
-                Text("📅  ${date.pretty()} ${date.year}")
+                Icon(AppIcons.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text("${date.pretty()} ${date.year}", modifier = Modifier.padding(start = 8.dp))
             }
 
             Text("Priority", style = MaterialTheme.typography.labelLarge)
@@ -281,7 +285,7 @@ fun ExamDetailSheet(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("🚨 ${exam.title}", style = MaterialTheme.typography.headlineSmall)
+            Text(exam.title, style = MaterialTheme.typography.headlineSmall)
             DetailLine("Subject", subjectName)
             DetailLine("Date", "${exam.date.pretty()} ${exam.date.year} (${daysLabel(today, exam.date)})")
             DetailLine("Priority", exam.priority.label())

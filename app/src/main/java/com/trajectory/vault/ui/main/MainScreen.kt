@@ -58,7 +58,9 @@ import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.floatingGlass
 import com.trajectory.vault.ui.containerViewModel
 import com.trajectory.vault.ui.home.HomeTab
+import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.profile.ProfileSheet
+import com.trajectory.vault.ui.search.SearchSheet
 import com.trajectory.vault.ui.settings.rememberSettingsViewModel
 import com.trajectory.vault.ui.theme.LocalGlassEnabled
 import com.trajectory.vault.ui.theme.LocalHazeState
@@ -69,9 +71,9 @@ import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 
 private val Tabs = listOf(
-    MainTab("Home", "🏠"),
-    MainTab("Attends", "📅"),
-    MainTab("Vault", "🗂️"),
+    MainTab("Home", AppIcons.Home),
+    MainTab("Attends", AppIcons.CalendarMonth),
+    MainTab("Vault", AppIcons.Folder),
 )
 
 private const val TAB_HOME = 0
@@ -110,6 +112,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var compact by remember { mutableStateOf(false) }
     var showAddEntry by rememberSaveable { mutableStateOf(false) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
+    var showSearch by rememberSaveable { mutableStateOf(false) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
 
     BackHandler(enabled = tab != TAB_HOME) { tab = TAB_HOME }
@@ -225,15 +228,24 @@ fun MainScreen(navigator: DestinationsNavigator) {
 
             if (tab == TAB_ATTENDS) {
                 ShellFab(
-                    emoji = "＋",
+                    icon = AppIcons.Add,
                     label = "Add Entry",
                     onClick = { showAddEntry = true },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp)
+                        .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp + 52.dp + 12.dp)
                         .slideAwayWhen(compact),
                 )
             }
+
+            ShellSearchButton(
+                hazeState = hazeState,
+                onClick = { showSearch = true },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp)
+                    .slideAwayWhen(compact),
+            )
 
             BottomPill(
                 tabs = Tabs,
@@ -276,6 +288,15 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 calendarViewModel.deleteExam(exam)
                 openExam = null
             },
+        )
+    }
+
+    if (showSearch) {
+        SearchSheet(
+            calendar = loaded,
+            onDismiss = { showSearch = false },
+            onOpenVault = { tab = TAB_VAULT },
+            onOpenExam = { openExam = it },
         )
     }
 

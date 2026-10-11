@@ -108,7 +108,7 @@ fun HomeTab(
         cram.forEach { exam ->
             val hours = Duration.between(now, exam.date.atStartOfDay()).toHours()
             AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true, onClick = { onOpenExam(exam) }) {
-                Text("🚨 Exam coming up", style = MaterialTheme.typography.titleMedium, color = colors.error)
+                Text("Exam coming up", style = MaterialTheme.typography.titleMedium, color = colors.error)
                 Text(
                     text = "${exam.title} (${subjectNames[exam.subjectId] ?: "Unknown subject"}) " +
                         if (hours <= 0) "is today." else "starts in about $hours hours.",

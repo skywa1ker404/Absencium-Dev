@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -36,6 +37,7 @@ import com.trajectory.vault.ui.calendar.subjectColor
 import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.NavCard
+import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.components.PillButton
 import com.trajectory.vault.ui.components.SectionTitle
 import com.trajectory.vault.ui.main.initialsOf
@@ -72,11 +74,21 @@ fun ProfileSheet(
                     modifier = Modifier.size(72.dp).clip(CircleShape).background(colors.primaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = initialsOf(name),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = colors.onPrimaryContainer,
-                    )
+                    val initials = initialsOf(name)
+                    if (initials == null) {
+                        Icon(
+                            AppIcons.Person,
+                            contentDescription = null,
+                            tint = colors.onPrimaryContainer,
+                            modifier = Modifier.size(36.dp),
+                        )
+                    } else {
+                        Text(
+                            text = initials,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = colors.onPrimaryContainer,
+                        )
+                    }
                 }
                 OutlinedTextField(
                     value = name,
@@ -92,7 +104,7 @@ fun ProfileSheet(
             }
 
             NavCard(
-                emoji = "⚙️",
+                icon = AppIcons.Tune,
                 title = "Settings",
                 subtitle = "General, appearance, storage and AI",
                 onClick = onOpenSettings,

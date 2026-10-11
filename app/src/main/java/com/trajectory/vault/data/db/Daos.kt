@@ -133,6 +133,9 @@ interface NoteDao {
     @Query("SELECT * FROM Notes_Table WHERE subject_id = :subjectId AND status = :status ORDER BY created_date DESC")
     fun observeBySubject(subjectId: Long, status: NoteStatus): Flow<List<NoteEntity>>
 
+    @Query("SELECT * FROM Notes_Table ORDER BY created_date DESC")
+    fun observeAll(): Flow<List<NoteEntity>>
+
     @Query("SELECT * FROM Notes_Table WHERE id = :id")
     suspend fun getById(id: Long): NoteEntity?
 }
@@ -147,6 +150,9 @@ interface GuideDao {
 
     @Query("SELECT * FROM Guides_Table WHERE subject_id = :subjectId ORDER BY file_name COLLATE NOCASE")
     fun observeBySubject(subjectId: Long): Flow<List<GuideEntity>>
+
+    @Query("SELECT * FROM Guides_Table ORDER BY file_name COLLATE NOCASE")
+    fun observeAll(): Flow<List<GuideEntity>>
 }
 
 @Dao

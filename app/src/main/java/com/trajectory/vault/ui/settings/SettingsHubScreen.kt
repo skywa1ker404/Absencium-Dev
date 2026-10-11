@@ -10,6 +10,7 @@ import com.ramcosta.composedestinations.generated.destinations.StorageSettingsSc
 import com.ramcosta.composedestinations.generated.destinations.TestLabScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.ui.components.NavCard
+import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.components.ScreenScaffold
 import com.trajectory.vault.ui.components.SectionTitle
 
@@ -18,25 +19,25 @@ import com.trajectory.vault.ui.components.SectionTitle
 fun SettingsHubScreen(navigator: DestinationsNavigator) {
     ScreenScaffold(title = "Settings", onBack = { navigator.navigateUp() }) {
         NavCard(
-            emoji = "🎓",
+            icon = AppIcons.School,
             title = "General",
             subtitle = "Attendance threshold, Focus Guard, Exam Mode, subjects",
             onClick = { navigator.navigate(GeneralSettingsScreenDestination) },
         )
         NavCard(
-            emoji = "🎨",
+            icon = AppIcons.Palette,
             title = "Appearance",
             subtitle = "Theme mode, color engine, accent color",
             onClick = { navigator.navigate(AppearanceSettingsScreenDestination) },
         )
         NavCard(
-            emoji = "🗄️",
+            icon = AppIcons.Storage,
             title = "Storage & Data",
             subtitle = "Notes folder, backup and restore, archive tools",
             onClick = { navigator.navigate(StorageSettingsScreenDestination) },
         )
         NavCard(
-            emoji = "✨",
+            icon = AppIcons.AutoAwesome,
             title = "AI & Integrations",
             subtitle = "Ask AI, API key vault, Momentum tracker",
             onClick = { navigator.navigate(AiSettingsScreenDestination) },
@@ -44,7 +45,7 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
 
         SectionTitle("Developer")
         NavCard(
-            emoji = "🧪",
+            icon = AppIcons.Science,
             title = "Test Lab",
             subtitle = "Check the database, storage and debug log on this device",
             onClick = { navigator.navigate(TestLabScreenDestination) },

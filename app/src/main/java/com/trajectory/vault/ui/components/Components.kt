@@ -35,6 +35,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -61,7 +62,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.sp
+import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.theme.LocalGlassEnabled
 import com.trajectory.vault.ui.theme.LocalHazeState
 import dev.chrisbanes.haze.hazeSource
@@ -146,7 +149,7 @@ fun ScreenScaffold(
                                 onClick = onBack,
                                 modifier = Modifier.semantics { contentDescription = "Back" },
                             ) {
-                                Text("←", style = MaterialTheme.typography.titleLarge)
+                                Icon(AppIcons.ArrowBack, contentDescription = null)
                             }
                         }
                     },
@@ -184,9 +187,10 @@ fun ScreenScaffold(
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
     Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        letterSpacing = 1.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier.padding(top = 12.dp, start = 4.dp),
     )
 }
@@ -326,7 +330,7 @@ fun SwitchCard(
 /** A settings row that opens another screen: an emoji tile, a bold title and a short description. */
 @Composable
 fun NavCard(
-    emoji: String,
+    icon: ImageVector,
     title: String,
     subtitle: String,
     onClick: () -> Unit,
@@ -341,10 +345,15 @@ fun NavCard(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = emoji, fontSize = 24.sp)
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(26.dp),
+                )
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = title, style = MaterialTheme.typography.titleMedium)
@@ -354,10 +363,10 @@ fun NavCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = "›",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icon(
+                imageVector = AppIcons.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

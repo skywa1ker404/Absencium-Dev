@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,6 +46,7 @@ import com.trajectory.vault.domain.overall
 import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.NavCard
+import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.components.PillButton
 import com.trajectory.vault.ui.components.SectionTitle
 import com.trajectory.vault.ui.main.TabColumn
@@ -135,7 +137,7 @@ fun CalendarTab(
 
         SectionTitle("Schedule")
         NavCard(
-            emoji = "🗓️",
+            icon = AppIcons.Schedule,
             title = "Timetable",
             subtitle = "Weekly lectures with times and rooms",
             onClick = onOpenTimetable,
@@ -185,7 +187,7 @@ private fun MonthCard(
             TextButton(
                 onClick = onPrevious,
                 modifier = Modifier.semantics { contentDescription = "Previous month" },
-            ) { Text("‹", style = MaterialTheme.typography.headlineSmall) }
+            ) { Icon(AppIcons.ChevronLeft, contentDescription = null) }
             Text(
                 text = "${month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.year}",
                 style = MaterialTheme.typography.titleMedium,
@@ -193,7 +195,7 @@ private fun MonthCard(
             TextButton(
                 onClick = onNext,
                 modifier = Modifier.semantics { contentDescription = "Next month" },
-            ) { Text("›", style = MaterialTheme.typography.headlineSmall) }
+            ) { Icon(AppIcons.ChevronRight, contentDescription = null) }
         }
         Row(modifier = Modifier.fillMaxWidth()) {
             weekdays.forEach { day ->
@@ -300,7 +302,7 @@ private fun DayPanel(
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("🏖️ ${holiday.title}", style = MaterialTheme.typography.titleMedium)
+                    Text(holiday.title, style = MaterialTheme.typography.titleMedium)
                     Text(
                         text = if (holiday.autoSkip) "Lectures are skipped this day." else "Lectures still count this day.",
                         style = MaterialTheme.typography.bodySmall,
@@ -316,14 +318,14 @@ private fun DayPanel(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(subjectColor(exam.subjectId)))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("🚨 ${exam.title}", style = MaterialTheme.typography.titleMedium)
+                    Text(exam.title, style = MaterialTheme.typography.titleMedium)
                     Text(
                         text = subjectNames[exam.subjectId] ?: "Unknown subject",
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
                 }
-                Text("›", style = MaterialTheme.typography.headlineSmall, color = colors.onSurfaceVariant)
+                Icon(AppIcons.ChevronRight, contentDescription = null, tint = colors.onSurfaceVariant)
             }
         }
     }

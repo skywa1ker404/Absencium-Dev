@@ -9,6 +9,7 @@ import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDes
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.ui.components.NavCard
+import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.components.ScreenScaffold
 import com.trajectory.vault.ui.components.SectionTitle
 import com.trajectory.vault.ui.components.SliderCard
@@ -50,7 +51,7 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
 
         SectionTitle("Subjects")
         NavCard(
-            emoji = "📚",
+            icon = AppIcons.Book,
             title = "Subjects",
             subtitle = "Add subjects, mute them, or mark them active or inactive",
             onClick = { navigator.navigate(SubjectsScreenDestination) },
