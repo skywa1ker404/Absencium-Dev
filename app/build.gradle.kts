@@ -14,8 +14,22 @@ android {
         // need Android 12 (API 31) and are disabled below that at runtime.
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
+        // Every CI build gets a higher number than the one before, so a new APK can always be
+        // installed over an old one. Local builds use 1.
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
         versionName = "0.1.0"
+    }
+
+    // A fixed signing key. Without it every CI run signs with a fresh random debug key, and Android
+    // refuses to install a build over one signed with a different key ("package conflicts").
+    // This is a debug-grade key kept in the private repo; do not reuse it for a store release.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("signing/trajectory-debug.jks")
+            storePassword = "trajectory-debug"
+            keyAlias = "trajectory"
+            keyPassword = "trajectory-debug"
+        }
     }
 
     buildTypes {

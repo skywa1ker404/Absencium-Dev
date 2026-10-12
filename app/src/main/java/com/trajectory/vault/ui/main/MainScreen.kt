@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.DraftsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
@@ -207,6 +208,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                                     contentPadding = contentPadding,
                                     onOpenFolder = { navigator.navigate(SubjectFolderScreenDestination(subjectId = it)) },
                                     onManageSubjects = { navigator.navigate(SubjectsScreenDestination) },
+                                    onOpenDrafts = { navigator.navigate(DraftsScreenDestination) },
                                 )
                             }
                         }
