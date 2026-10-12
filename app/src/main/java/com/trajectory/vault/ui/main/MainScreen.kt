@@ -45,7 +45,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SubjectFolderScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.TimetableScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -61,6 +64,12 @@ import com.trajectory.vault.ui.home.HomeTab
 import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.profile.ProfileSheet
 import com.trajectory.vault.ui.search.SearchSheet
+import com.trajectory.vault.ui.vault.VaultTab
+import com.trajectory.vault.ui.vault.VaultViewModel
+import com.trajectory.vault.ui.vault.openGuide
+import com.trajectory.vault.data.db.NoteStatus
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.trajectory.vault.ui.settings.rememberSettingsViewModel
 import com.trajectory.vault.ui.theme.LocalGlassEnabled
 import com.trajectory.vault.ui.theme.LocalHazeState
@@ -107,6 +116,9 @@ fun MainScreen(navigator: DestinationsNavigator) {
     val data by calendarViewModel.data.collectAsStateWithLifecycle()
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
     val message by calendarViewModel.message.collectAsStateWithLifecycle()
+    val vaultViewModel = containerViewModel { VaultViewModel(it) }
+    val vaultData by vaultViewModel.data.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     var tab by rememberSaveable { mutableIntStateOf(TAB_HOME) }
     var compact by remember { mutableStateOf(false) }
@@ -185,13 +197,16 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onOpenTimetable = { navigator.navigate(TimetableScreenDestination) },
                         )
 
-                        else -> TabColumn(contentPadding) {
-                            AppCard(modifier = Modifier.fillMaxWidth()) {
-                                Text("Vault", style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    "Notes and guides are built in the next update.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = colors.onSurfaceVariant,
+                        else -> {
+                            val vault = vaultData
+                            if (vault == null) {
+                                TabColumn(contentPadding) {}
+                            } else {
+                                VaultTab(
+                                    data = vault,
+                                    contentPadding = contentPadding,
+                                    onOpenFolder = { navigator.navigate(SubjectFolderScreenDestination(subjectId = it)) },
+                                    onManageSubjects = { navigator.navigate(SubjectsScreenDestination) },
                                 )
                             }
                         }
@@ -226,11 +241,17 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 }
             }
 
-            if (tab == TAB_ATTENDS) {
+            if (tab == TAB_ATTENDS || tab == TAB_VAULT) {
                 ShellFab(
                     icon = AppIcons.Add,
-                    label = "Add Entry",
-                    onClick = { showAddEntry = true },
+                    label = if (tab == TAB_ATTENDS) "Add Entry" else "New Entry",
+                    onClick = {
+                        if (tab == TAB_ATTENDS) {
+                            showAddEntry = true
+                        } else {
+                            navigator.navigate(NewEntryScreenDestination(subjectId = 0L, draftId = 0L))
+                        }
+                    },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp + 52.dp + 12.dp)
@@ -295,7 +316,16 @@ fun MainScreen(navigator: DestinationsNavigator) {
         SearchSheet(
             calendar = loaded,
             onDismiss = { showSearch = false },
-            onOpenVault = { tab = TAB_VAULT },
+            onOpenNote = { note ->
+                if (note.status == NoteStatus.DRAFT) {
+                    navigator.navigate(NewEntryScreenDestination(subjectId = note.subjectId, draftId = note.id))
+                } else {
+                    navigator.navigate(NoteEditorScreenDestination(noteId = note.id))
+                }
+            },
+            onOpenGuide = { guide ->
+                openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+            },
             onOpenExam = { openExam = it },
         )
     }

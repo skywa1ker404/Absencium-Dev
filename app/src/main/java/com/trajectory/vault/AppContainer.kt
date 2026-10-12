@@ -9,6 +9,7 @@ import com.trajectory.vault.data.settings.SettingsRepository
 import com.trajectory.vault.data.storage.NotesStorage
 import com.trajectory.vault.data.storage.NotesStorageSettings
 import com.trajectory.vault.data.subjects.SubjectRepository
+import com.trajectory.vault.data.vault.VaultRepository
 
 /**
  * Hand-built dependency container, following the repository pattern from Now in Android
@@ -26,6 +27,7 @@ class AppContainer(context: Context) {
     val apiKeyVault = ApiKeyVault(appContext)
     val databaseBackup = DatabaseBackup(appContext)
     val calendarRepository: CalendarRepository by lazy { CalendarRepository(database) }
+    val vaultRepository: VaultRepository by lazy { VaultRepository(database) }
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.subjectDao()) }
 }
 

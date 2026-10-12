@@ -30,6 +30,15 @@ interface StorageFolder {
 
     /** Opens [fileName] for writing, creating it or replacing its contents. */
     fun openOutput(fileName: String, mimeType: String): OutputStream?
+
+    /**
+     * Where [fileName] can be found again: an absolute path for a plain folder, a document URI
+     * for a folder the user picked. Null if the file does not exist.
+     */
+    fun locationOf(fileName: String): String?
+
+    /** Deletes [fileName]. Returns true if it is gone afterwards. */
+    fun delete(fileName: String): Boolean
 }
 
 private const val TAG = "Storage"
@@ -88,6 +97,19 @@ class FileStorageFolder(private val directory: File) : StorageFolder {
         } catch (e: Exception) {
             DebugLogger.e(TAG, "Could not write ${file.absolutePath}", e)
             null
+        }
+    }
+
+    override fun locationOf(fileName: String): String? =
+        File(directory, sanitizeFileName(fileName)).takeIf { it.isFile }?.absolutePath
+
+    override fun delete(fileName: String): Boolean {
+        val file = File(directory, sanitizeFileName(fileName))
+        return try {
+            !file.exists() || file.delete()
+        } catch (e: Exception) {
+            DebugLogger.e(TAG, "Could not delete ${file.absolutePath}", e)
+            false
         }
     }
 }
@@ -162,4 +184,21 @@ class SafStorageFolder(
             null
         }
     }
+
+    override fun locationOf(fileName: String): String? =
+        try {
+            folder.findFile(sanitizeFileName(fileName))?.takeIf { it.isFile }?.uri?.toString()
+        } catch (e: Exception) {
+            DebugLogger.e(TAG, "Could not locate \"$fileName\" in $displayPath", e)
+            null
+        }
+
+    override fun delete(fileName: String): Boolean =
+        try {
+            val file = folder.findFile(sanitizeFileName(fileName))
+            file == null || file.delete()
+        } catch (e: Exception) {
+            DebugLogger.e(TAG, "Could not delete \"$fileName\" in $displayPath", e)
+            false
+        }
 }

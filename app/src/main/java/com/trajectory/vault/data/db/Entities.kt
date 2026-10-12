@@ -14,7 +14,8 @@ import java.time.LocalTime
 
 enum class AttendanceStatus { PRESENT, ABSENT, CANCELLED }
 
-enum class NoteStatus { ACTIVE, FINISHED }
+/** DRAFT is a note that was saved from the Create New Entry screen but is not filed in its folder yet. */
+enum class NoteStatus { ACTIVE, FINISHED, DRAFT }
 
 /** How loudly an exam or holiday is surfaced. High is the exam alert, Low is a plain holiday. */
 enum class Priority { HIGH, NORMAL, LOW }

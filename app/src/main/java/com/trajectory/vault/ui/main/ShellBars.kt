@@ -2,6 +2,7 @@ package com.trajectory.vault.ui.main
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -14,6 +15,10 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +40,19 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -80,29 +98,56 @@ fun BottomPill(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
+    val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
     val width by animateDpAsState(
         targetValue = pillWidth(tabs.size, compact),
         animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "pillWidth",
     )
-    val position by animateFloatAsState(
-        targetValue = selectedIndex.toFloat(),
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
-        label = "pillIndicator",
-    )
     val itemWidth = (width - PillPadding * 2) / tabs.size
+    val itemWidthPx = with(density) { itemWidth.toPx() }
+    val paddingPx = with(density) { PillPadding.toPx() }
+    val lastIndex = tabs.lastIndex
 
-    Box(
-        modifier = modifier
-            .width(width)
-            .height(PillHeight)
-            .floatingGlass(hazeState, CircleShape),
-    ) {
+    // The highlight's position in tab units (1.5 is halfway between tab 1 and tab 2). It springs to
+    // the selected tab, and follows the finger while it is being dragged.
+    val indicator = remember { Animatable(selectedIndex.toFloat()) }
+    var dragPosition by remember { mutableStateOf<Float?>(null) }
+    LaunchedEffect(selectedIndex) {
+        if (dragPosition == null) {
+            indicator.animateTo(
+                selectedIndex.toFloat(),
+                spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+            )
+        }
+    }
+    val position = dragPosition ?: indicator.value
+    // The highlight swells a little while it is held and dragged.
+    val zoom by animateFloatAsState(
+        targetValue = if (dragPosition != null) 1.22f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "pillZoom",
+    )
+    val highlighted = position.roundToInt().coerceIn(0, lastIndex)
+
+    val currentItemWidthPx by rememberUpdatedState(itemWidthPx)
+    val currentOnSelect by rememberUpdatedState(onSelect)
+    val currentSelected by rememberUpdatedState(selectedIndex)
+
+    // Not clipped, so the swollen highlight can reach past the edge of the glass.
+    Box(modifier = modifier.width(width).height(PillHeight)) {
+        Box(modifier = Modifier.matchParentSize().floatingGlass(hazeState, CircleShape))
         Box(
             modifier = Modifier
-                .offset(x = PillPadding + itemWidth * position, y = (PillHeight - ItemHeight) / 2)
+                .offset { IntOffset((paddingPx + itemWidthPx * position).roundToInt(), ((PillHeight - ItemHeight) / 2).roundToPx()) }
                 .width(itemWidth)
                 .height(ItemHeight)
+                .graphicsLayer {
+                    scaleX = zoom
+                    scaleY = zoom
+                }
                 .clip(CircleShape)
                 .background(colors.primaryContainer)
                 .border(1.dp, colors.primary.copy(alpha = 0.4f), CircleShape),
@@ -110,13 +155,50 @@ fun BottomPill(
         Row(
             modifier = Modifier
                 .fillMaxHeight()
+                .pointerInput(tabs.size, paddingPx) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val itemPx = currentItemWidthPx
+                        val start = dragPosition ?: indicator.value
+                        val center = paddingPx + itemPx * (start + 0.5f)
+                        // Only a touch that starts on the highlight drags it; other touches are plain taps.
+                        if (abs(down.position.x - center) > itemPx / 2f) return@awaitEachGesture
+                        val grab = down.position.x - center
+                        fun positionAt(x: Float): Float =
+                            ((x - grab - paddingPx) / itemPx - 0.5f).coerceIn(0f, lastIndex.toFloat())
+
+                        val slop = awaitHorizontalTouchSlopOrCancellation(down.id) { change, _ ->
+                            change.consume()
+                        } ?: return@awaitEachGesture
+                        dragPosition = positionAt(slop.position.x)
+                        horizontalDrag(slop.id) { change ->
+                            change.consume()
+                            dragPosition = positionAt(change.position.x)
+                        }
+                        val releasedAt = dragPosition ?: start
+                        val target = releasedAt.roundToInt().coerceIn(0, lastIndex)
+                        scope.launch {
+                            // Hand the finger's position to the spring so the highlight settles smoothly.
+                            indicator.snapTo(releasedAt)
+                            dragPosition = null
+                            indicator.animateTo(
+                                target.toFloat(),
+                                spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+                            )
+                        }
+                        if (target != currentSelected) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                        currentOnSelect(target)
+                    }
+                }
                 .padding(horizontal = PillPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEachIndexed { index, tab ->
                 PillTab(
                     tab = tab,
-                    selected = index == selectedIndex,
+                    selected = index == highlighted,
                     compact = compact,
                     onClick = { onSelect(index) },
                     modifier = Modifier.width(itemWidth).height(ItemHeight),

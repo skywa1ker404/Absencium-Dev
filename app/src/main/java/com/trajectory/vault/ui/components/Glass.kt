@@ -9,9 +9,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.trajectory.vault.ui.theme.LocalGlassBlur
+import com.trajectory.vault.ui.theme.LocalGlassEnabled
 import dev.chrisbanes.haze.*
 import dev.chrisbanes.haze.blur.*
 
@@ -50,3 +52,23 @@ fun Modifier.floatingGlass(
         .hazeBlur(input = HazeInput.Backdrop(hazeState), style = style)
         .then(borderModifier)
 }
+
+/**
+ * Background of bottom sheets (search, profile, entry forms). With the Liquid Glass engine the
+ * sheet is translucent and tinted by the wallpaper (Monet) colours, so the app shows through it;
+ * otherwise it is the plain themed surface.
+ */
+@Composable
+fun sheetContainerColor(): Color {
+    val colors = MaterialTheme.colorScheme
+    return if (LocalGlassEnabled.current) {
+        lerp(colors.surfaceContainerHigh, colors.primaryContainer, 0.22f).copy(alpha = 0.80f)
+    } else {
+        colors.surfaceContainerLow
+    }
+}
+
+/** A lighter scrim for glass sheets so the content behind them stays visible. */
+@Composable
+fun sheetScrimColor(): Color =
+    Color.Black.copy(alpha = if (LocalGlassEnabled.current) 0.2f else 0.32f)

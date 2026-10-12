@@ -23,6 +23,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import com.trajectory.vault.ui.components.sheetContainerColor
+import com.trajectory.vault.ui.components.sheetScrimColor
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,14 +69,15 @@ private fun <T> List<T>.ranked(score: (T) -> Int): List<T> =
 
 /**
  * Global search over typed note text and titles, guide and PDF titles, and exams. Matching is
- * forgiving of typos. Opening a note or guide takes you to the Vault; opening an exam shows it.
+ * forgiving of typos. Opening a note edits it, a guide opens in a PDF viewer, and an exam shows its details.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchSheet(
     calendar: CalendarData?,
     onDismiss: () -> Unit,
-    onOpenVault: () -> Unit,
+    onOpenNote: (NoteEntity) -> Unit,
+    onOpenGuide: (GuideEntity) -> Unit,
     onOpenExam: (ExamEntity) -> Unit,
 ) {
     val viewModel = containerViewModel { SearchViewModel(it) }
@@ -116,6 +119,9 @@ fun SearchSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = sheetContainerColor(),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        scrimColor = sheetScrimColor(),
     ) {
         Column(
             modifier = Modifier
@@ -155,11 +161,12 @@ fun SearchSheet(
                     results.notes.forEach { note ->
                         ResultCard(
                             title = note.title,
-                            subtitle = subjectNames[note.subjectId] ?: "Unknown subject",
+                            subtitle = (subjectNames[note.subjectId] ?: "Unknown subject") +
+                                if (note.status == com.trajectory.vault.data.db.NoteStatus.DRAFT) " · Draft" else "",
                             dotColor = subjectColor(note.subjectId),
                             onClick = {
                                 onDismiss()
-                                onOpenVault()
+                                onOpenNote(note)
                             },
                         )
                     }
@@ -173,7 +180,7 @@ fun SearchSheet(
                             dotColor = subjectColor(guide.subjectId),
                             onClick = {
                                 onDismiss()
-                                onOpenVault()
+                                onOpenGuide(guide)
                             },
                         )
                     }
