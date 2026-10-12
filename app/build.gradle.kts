@@ -16,7 +16,7 @@ android {
         targetSdk = 36
         // Every CI build gets a higher number than the one before, so a new APK can always be
         // installed over an old one. Local builds use 1.
-        versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt() + 1000
         versionName = "0.1.0"
     }
 

@@ -152,6 +152,8 @@ fun AiConnectionSection(settings: AppSettings, viewModel: SettingsViewModel) {
     var style by remember(settings.aiApiStyle) { mutableStateOf(settings.aiApiStyle) }
     var error by remember { mutableStateOf<String?>(null) }
     var saved by remember { mutableStateOf(false) }
+    val modelsViewModel = containerViewModel { AiModelsViewModel(it) }
+    val modelsState by modelsViewModel.state.collectAsStateWithLifecycle()
 
     SectionTitle("AI provider")
     AiProvider.entries.forEach { option ->
@@ -164,6 +166,7 @@ fun AiConnectionSection(settings: AppSettings, viewModel: SettingsViewModel) {
                 baseUrl = option.defaultBaseUrl
                 error = null
                 saved = false
+                modelsViewModel.reset()
             },
         )
     }
@@ -199,6 +202,19 @@ fun AiConnectionSection(settings: AppSettings, viewModel: SettingsViewModel) {
             singleLine = true,
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        )
+        ModelPickerCard(
+            provider = provider,
+            state = modelsState,
+            selectedId = model.trim(),
+            onFetch = {
+                val chosenStyle = if (provider == AiProvider.CUSTOM) style else provider.style
+                modelsViewModel.load(AiConnection(provider, chosenStyle, baseUrl.trim().trimEnd('/'), model.trim()))
+            },
+            onPick = {
+                model = it
+                saved = false
+            },
         )
         if (provider == AiProvider.CUSTOM) {
             Text(
