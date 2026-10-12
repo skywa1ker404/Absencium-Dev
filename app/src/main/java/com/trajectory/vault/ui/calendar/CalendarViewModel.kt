@@ -45,6 +45,26 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
     fun addHoliday(date: LocalDate, title: String, autoSkip: Boolean, priority: Priority) =
         perform("add the holiday") { repository.addHoliday(date, title, autoSkip, priority) }
 
+    fun addHolidayRange(start: LocalDate, end: LocalDate, title: String, autoSkip: Boolean, priority: Priority) {
+        viewModelScope.launch {
+            try {
+                val (added, skipped) = repository.addHolidayRange(start, end, title, autoSkip, priority)
+                if (skipped > 0) {
+                    _message.value = "Added $added ${if (added == 1) "day" else "days"}. " +
+                        "$skipped ${if (skipped == 1) "day" else "days"} already had a holiday and were left as they are."
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLogger.e("Calendar", "Could not add the holiday", e)
+                _message.value = "Could not add the holiday. See debug.log for details."
+            }
+        }
+    }
+
+    fun setNotesCollected(subjectIds: Collection<Long>, date: LocalDate, collected: Boolean) =
+        perform("update the notes status") { repository.setNotesCollected(subjectIds, date, collected) }
+
     fun deleteHoliday(holiday: HolidayEntity) = perform("delete the holiday") { repository.deleteHoliday(holiday) }
 
     fun addExam(
@@ -63,6 +83,9 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
 
     fun addSlot(day: DayOfWeek, subjectId: Long, start: LocalTime, end: LocalTime, room: String?) =
         perform("add the lecture") { repository.addSlot(day, subjectId, start, end, room) }
+
+    fun addSlots(days: Collection<DayOfWeek>, subjectId: Long, start: LocalTime, end: LocalTime, room: String?) =
+        perform("add the lectures") { repository.addSlots(days, subjectId, start, end, room) }
 
     fun deleteSlot(slot: TimetableEntity) = perform("delete the lecture") { repository.deleteSlot(slot) }
 

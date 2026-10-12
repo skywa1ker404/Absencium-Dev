@@ -28,7 +28,7 @@ class AppContainer(context: Context) {
     val databaseBackup = DatabaseBackup(appContext)
     val calendarRepository: CalendarRepository by lazy { CalendarRepository(database) }
     val vaultRepository: VaultRepository by lazy { VaultRepository(database) }
-    val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.subjectDao()) }
+    val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.subjectDao(), database.subjectCascadeDao()) }
 }
 
 val Context.appContainer: AppContainer

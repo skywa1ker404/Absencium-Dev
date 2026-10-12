@@ -29,8 +29,9 @@ import com.trajectory.vault.logging.DebugLogger
         AiHistoryEntity::class,
         UserStatsEntity::class,
         MomentumLogEntity::class,
+        RecallAttemptEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -48,6 +49,8 @@ abstract class TrajectoryDatabase : RoomDatabase() {
     abstract fun aiHistoryDao(): AiHistoryDao
     abstract fun userStatsDao(): UserStatsDao
     abstract fun momentumLogDao(): MomentumLogDao
+    abstract fun recallAttemptDao(): RecallAttemptDao
+    abstract fun subjectCascadeDao(): SubjectCascadeDao
 
     companion object {
         const val DATABASE_NAME = "Trajectory.db"
@@ -63,6 +66,27 @@ abstract class TrajectoryDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Version 3 adds Attendance_Table.notes_collected (the "did you collect the notes" tracker for
+         * absent days) and the Recall_Attempts_Table history of answered recall questions.
+         */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                DebugLogger.i(TAG, "Migrating $DATABASE_NAME from version 2 to 3")
+                db.execSQL("ALTER TABLE `Attendance_Table` ADD COLUMN `notes_collected` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `Recall_Attempts_Table` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`question_id` INTEGER NOT NULL, `note_id` INTEGER, `prompt_text` TEXT NOT NULL, " +
+                        "`correct` INTEGER NOT NULL, `answered_at` INTEGER NOT NULL)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_Recall_Attempts_Table_answered_at` " +
+                        "ON `Recall_Attempts_Table` (`answered_at`)",
+                )
+                DebugLogger.i(TAG, "Migration 2 to 3 finished")
+            }
+        }
+
         @Volatile
         private var instance: TrajectoryDatabase? = null
 
@@ -72,7 +96,7 @@ abstract class TrajectoryDatabase : RoomDatabase() {
                     context.applicationContext,
                     TrajectoryDatabase::class.java,
                     DATABASE_NAME,
-                ).addMigrations(MIGRATION_1_2).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
             }
 
         /**

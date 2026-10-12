@@ -4,6 +4,7 @@ import com.trajectory.vault.data.calendar.CalendarData
 import com.trajectory.vault.data.db.HolidayEntity
 import com.trajectory.vault.data.db.SubjectEntity
 import com.trajectory.vault.data.db.TimetableEntity
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -15,12 +16,15 @@ data class Lecture(val slot: TimetableEntity, val subject: SubjectEntity)
 
 fun CalendarData.holidayOn(date: LocalDate): HolidayEntity? = holidays.firstOrNull { it.date == date }
 
+/** Saturdays and Sundays are always holidays. */
+fun LocalDate.isWeekend(): Boolean = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY
+
 /**
- * The lectures expected on [date]. Days with an auto-skip holiday have none. Weekends have
- * none unless the timetable has slots on that weekday, so the weekend skip follows the schedule.
+ * The lectures expected on [date]. Weekends and days with an auto-skip holiday have none.
  * Slots of inactive subjects are left out.
  */
 fun CalendarData.lecturesOn(date: LocalDate): List<Lecture> {
+    if (date.isWeekend()) return emptyList()
     val holiday = holidayOn(date)
     if (holiday != null && holiday.autoSkip) return emptyList()
     val activeSubjects = subjects.filter { it.isActive }.associateBy { it.id }

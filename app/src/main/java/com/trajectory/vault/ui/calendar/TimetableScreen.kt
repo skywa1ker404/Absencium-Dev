@@ -11,9 +11,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
+import com.trajectory.vault.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +43,9 @@ import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
 
+/** Monday to Friday. */
+private val WeekDays = DayOfWeek.entries.filter { it.value <= DayOfWeek.FRIDAY.value }
+
 private fun DayOfWeek.full(): String = getDisplayName(TextStyle.FULL, Locale.getDefault())
 
 /** The weekly timetable: add and remove lecture slots per weekday. */
@@ -58,6 +62,7 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
     var start by remember { mutableStateOf("") }
     var end by remember { mutableStateOf("") }
     var room by remember { mutableStateOf("") }
+    var sameEveryDay by remember { mutableStateOf(false) }
 
     ScreenScaffold(title = "Timetable", onBack = { navigator.navigateUp() }) {
         val loaded = data
@@ -73,8 +78,9 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
         }
 
         Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DayOfWeek.entries.forEach { option ->
-                FilterChip(
+            // Saturday and Sunday are always holidays, so lectures can only be on weekdays.
+            WeekDays.forEach { option ->
+                ExpressiveChip(
                     selected = day == option,
                     onClick = { day = option },
                     label = { Text(option.getDisplayName(TextStyle.SHORT, Locale.getDefault())) },
@@ -109,7 +115,7 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        SectionTitle("Add a lecture on ${day.full()}")
+        SectionTitle(if (sameEveryDay) "Add a lecture every weekday" else "Add a lecture on ${day.full()}")
         if (subjects.isEmpty()) {
             AppCard(modifier = Modifier.fillMaxWidth()) {
                 Text("Add a subject first", style = MaterialTheme.typography.titleMedium)
@@ -126,13 +132,28 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 subjects.forEach { subject ->
-                    FilterChip(
+                    ExpressiveChip(
                         selected = subjectId == subject.id,
                         onClick = { subjectId = subject.id },
                         label = { Text(subject.name) },
                         shape = CircleShape,
                     )
                 }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                    Text("Same time every day", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Adds this lecture to Monday through Friday at the same time.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = sameEveryDay, onCheckedChange = { sameEveryDay = it })
             }
             val startTime = parseTimeInput(start)
             val endTime = parseTimeInput(end)
@@ -181,7 +202,12 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                 enabled = chosen != null && startTime != null && endTime != null && !order,
                 onClick = {
                     if (chosen != null && startTime != null && endTime != null) {
-                        viewModel.addSlot(day, chosen, startTime, endTime, room.trim().ifEmpty { null })
+                        val roomText = room.trim().ifEmpty { null }
+                        if (sameEveryDay) {
+                            viewModel.addSlots(WeekDays, chosen, startTime, endTime, roomText)
+                        } else {
+                            viewModel.addSlot(day, chosen, startTime, endTime, roomText)
+                        }
                         start = ""
                         end = ""
                         room = ""

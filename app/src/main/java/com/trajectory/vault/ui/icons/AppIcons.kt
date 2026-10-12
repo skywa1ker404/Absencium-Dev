@@ -156,4 +156,8 @@ object AppIcons {
             "M14,2H6C4.9,2 4,2.9 4,4v16c0,1.1 0.9,2 2,2h12c1.1,0 2,-0.9 2,-2V8L14,2zM13,9V3.5L18.5,9H13zM6,20V4h5v7h7v9H6z",
         )
     }
+
+    val Check: ImageVector by lazy { glyph("Check", "M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z") }
+
+    val ExpandMore: ImageVector by lazy { glyph("ExpandMore", "M16.59,8.59L12,13.17 7.41,8.59 6,10l6,6 6,-6z") }
 }

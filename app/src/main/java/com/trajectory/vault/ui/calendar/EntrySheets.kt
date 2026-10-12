@@ -1,5 +1,12 @@
 package com.trajectory.vault.ui.calendar
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,7 +24,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import com.trajectory.vault.ui.components.ExpressiveChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -65,7 +72,7 @@ fun AddEntrySheet(
     initialDate: LocalDate,
     onDismiss: () -> Unit,
     onSaveExam: (subjectId: Long, date: LocalDate, title: String, weightage: Double?, room: String?, notes: String?, priority: Priority) -> Unit,
-    onSaveHoliday: (date: LocalDate, title: String, autoSkip: Boolean, priority: Priority) -> Unit,
+    onSaveHoliday: (start: LocalDate, end: LocalDate, title: String, autoSkip: Boolean, priority: Priority) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     var type by remember { mutableStateOf(EntryType.EXAM) }
@@ -73,6 +80,10 @@ fun AddEntrySheet(
     var subjectId by remember { mutableStateOf<Long?>(subjects.firstOrNull()?.id) }
     var date by remember { mutableStateOf(initialDate) }
     var showPicker by remember { mutableStateOf(false) }
+    // Which date the picker is editing: the start (or only) day, or the last day of a holiday range.
+    var pickingEnd by remember { mutableStateOf(false) }
+    var multiDay by remember { mutableStateOf(false) }
+    var endDate by remember { mutableStateOf(initialDate) }
     var priority by remember { mutableStateOf(Priority.HIGH) }
     var autoSkip by remember { mutableStateOf(true) }
     var weightage by remember { mutableStateOf("") }
@@ -81,7 +92,8 @@ fun AddEntrySheet(
 
     val weightageValue = weightage.trim().toDoubleOrNull()
     val weightageInvalid = weightage.isNotBlank() && weightageValue == null
-    val canSave = title.isNotBlank() && !weightageInvalid &&
+    val rangeInvalid = type == EntryType.HOLIDAY && multiDay && endDate.isBefore(date)
+    val canSave = title.isNotBlank() && !weightageInvalid && !rangeInvalid &&
         (type == EntryType.HOLIDAY || subjectId != null)
 
     ModalBottomSheet(
@@ -102,7 +114,7 @@ fun AddEntrySheet(
             Text("Add Calendar Entry", style = MaterialTheme.typography.headlineSmall)
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
+                ExpressiveChip(
                     selected = type == EntryType.EXAM,
                     onClick = {
                         type = EntryType.EXAM
@@ -111,7 +123,7 @@ fun AddEntrySheet(
                     label = { Text("🚨 Scheduled Exam") },
                     shape = CircleShape,
                 )
-                FilterChip(
+                ExpressiveChip(
                     selected = type == EntryType.HOLIDAY,
                     onClick = {
                         type = EntryType.HOLIDAY
@@ -141,7 +153,7 @@ fun AddEntrySheet(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         subjects.forEach { subject ->
-                            FilterChip(
+                            ExpressiveChip(
                                 selected = subjectId == subject.id,
                                 onClick = { subjectId = subject.id },
                                 label = { Text(subject.name) },
@@ -152,16 +164,53 @@ fun AddEntrySheet(
                 }
             }
 
-            Text("Date", style = MaterialTheme.typography.labelLarge)
-            OutlinedButton(onClick = { showPicker = true }, shape = CircleShape) {
+            Text(if (type == EntryType.HOLIDAY && multiDay) "From" else "Date", style = MaterialTheme.typography.labelLarge)
+            OutlinedButton(onClick = { pickingEnd = false; showPicker = true }, shape = CircleShape) {
                 Icon(AppIcons.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text("${date.pretty()} ${date.year}", modifier = Modifier.padding(start = 8.dp))
+            }
+            if (type == EntryType.HOLIDAY) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Several days in a row", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "One festival or break across a range of days, for example Diwali break.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = multiDay,
+                        onCheckedChange = {
+                            multiDay = it
+                            if (it && endDate.isBefore(date)) endDate = date
+                        },
+                    )
+                }
+                AnimatedVisibility(
+                    visible = multiDay,
+                    enter = fadeIn() + expandVertically(spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("To", style = MaterialTheme.typography.labelLarge)
+                        OutlinedButton(onClick = { pickingEnd = true; showPicker = true }, shape = CircleShape) {
+                            Icon(AppIcons.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text("${endDate.pretty()} ${endDate.year}", modifier = Modifier.padding(start = 8.dp))
+                        }
+                        if (rangeInvalid) HintText("The last day must not be before the first day.")
+                    }
+                }
             }
 
             Text("Priority", style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Priority.entries.forEach { option ->
-                    FilterChip(
+                    ExpressiveChip(
                         selected = priority == option,
                         onClick = { priority = option },
                         label = { Text(option.label()) },
@@ -240,7 +289,7 @@ fun AddEntrySheet(
                             priority,
                         )
                     } else {
-                        onSaveHoliday(date, cleanTitle, autoSkip, priority)
+                        onSaveHoliday(date, if (multiDay) endDate else date, cleanTitle, autoSkip, priority)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -249,12 +298,21 @@ fun AddEntrySheet(
     }
 
     if (showPicker) {
-        val pickerState = rememberDatePickerState(initialSelectedDateMillis = date.toPickerMillis())
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = (if (pickingEnd) endDate else date).toPickerMillis(),
+        )
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let { date = it.fromPickerMillis() }
+                    pickerState.selectedDateMillis?.let {
+                        if (pickingEnd) {
+                            endDate = it.fromPickerMillis()
+                        } else {
+                            date = it.fromPickerMillis()
+                            if (endDate.isBefore(date)) endDate = date
+                        }
+                    }
                     showPicker = false
                 }) { Text("OK") }
             },

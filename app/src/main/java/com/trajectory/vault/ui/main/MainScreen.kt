@@ -86,6 +86,10 @@ private val Tabs = listOf(
     MainTab("Vault", AppIcons.Folder),
 )
 
+/** Scroll distance before the pill collapses, and before it expands again. */
+private const val CompactTravelPx = 72f
+private const val ExpandTravelPx = 36f
+
 private const val TAB_HOME = 0
 private const val TAB_ATTENDS = 1
 private const val TAB_VAULT = 2
@@ -122,14 +126,16 @@ fun MainScreen(navigator: DestinationsNavigator) {
     val context = LocalContext.current
 
     var tab by rememberSaveable { mutableIntStateOf(TAB_HOME) }
-    var compact by remember { mutableStateOf(false) }
+    // Held as a State object and read only inside the pill and the floating buttons, so scrolling
+    // never recomposes the whole screen.
+    val compactState = remember { mutableStateOf(false) }
     var showAddEntry by rememberSaveable { mutableStateOf(false) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
 
     BackHandler(enabled = tab != TAB_HOME) { tab = TAB_HOME }
-    LaunchedEffect(tab) { compact = false }
+    LaunchedEffect(tab) { compactState.value = false }
 
     val now by produceState(initialValue = LocalDateTime.now()) {
         while (true) {
@@ -140,9 +146,21 @@ fun MainScreen(navigator: DestinationsNavigator) {
 
     val scrollConnection = remember {
         object : NestedScrollConnection {
+            // Scroll distance in one direction; it restarts when the direction changes, so small
+            // wobbles while scrolling never flip the pill back and forth.
+            private var travelled = 0f
+
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val dy = available.y
+                if (dy == 0f) return Offset.Zero
+                if (travelled * dy < 0f) travelled = 0f
+                travelled += dy
                 // Dragging up (negative y) scrolls the content down.
-                if (available.y < -8f) compact = true else if (available.y > 8f) compact = false
+                if (travelled < -CompactTravelPx && !compactState.value) {
+                    compactState.value = true
+                } else if (travelled > ExpandTravelPx && compactState.value) {
+                    compactState.value = false
+                }
                 return Offset.Zero
             }
         }
@@ -196,6 +214,15 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             viewModel = calendarViewModel,
                             onOpenExam = { openExam = it },
                             onOpenTimetable = { navigator.navigate(TimetableScreenDestination) },
+                            onAddNotes = { subjectId, date ->
+                                navigator.navigate(
+                                    NewEntryScreenDestination(
+                                        subjectId = subjectId,
+                                        draftId = 0L,
+                                        collectDate = date.toString(),
+                                    ),
+                                )
+                            },
                         )
 
                         else -> {
@@ -244,36 +271,39 @@ fun MainScreen(navigator: DestinationsNavigator) {
             }
 
             if (tab == TAB_ATTENDS || tab == TAB_VAULT) {
-                ShellFab(
-                    icon = AppIcons.Add,
-                    label = if (tab == TAB_ATTENDS) "Add Entry" else "New Entry",
-                    onClick = {
-                        if (tab == TAB_ATTENDS) {
-                            showAddEntry = true
-                        } else {
-                            navigator.navigate(NewEntryScreenDestination(subjectId = 0L, draftId = 0L))
-                        }
-                    },
+                SlideAway(
+                    hidden = { compactState.value },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp + 52.dp + 12.dp)
-                        .slideAwayWhen(compact),
-                )
+                        .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp + 52.dp + 12.dp),
+                ) {
+                    ShellFab(
+                        icon = AppIcons.Add,
+                        label = if (tab == TAB_ATTENDS) "Add Entry" else "New Entry",
+                        onClick = {
+                            if (tab == TAB_ATTENDS) {
+                                showAddEntry = true
+                            } else {
+                                navigator.navigate(NewEntryScreenDestination(subjectId = 0L, draftId = 0L))
+                            }
+                        },
+                    )
+                }
             }
 
-            ShellSearchButton(
-                hazeState = hazeState,
-                onClick = { showSearch = true },
+            SlideAway(
+                hidden = { compactState.value },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp)
-                    .slideAwayWhen(compact),
-            )
+                    .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp),
+            ) {
+                ShellSearchButton(hazeState = hazeState, onClick = { showSearch = true })
+            }
 
             BottomPill(
                 tabs = Tabs,
                 selectedIndex = tab,
-                compact = compact,
+                compact = { compactState.value },
                 hazeState = hazeState,
                 onSelect = { tab = it },
                 modifier = Modifier
@@ -293,8 +323,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 calendarViewModel.addExam(subjectId, date, title, weightage, room, notes, priority)
                 showAddEntry = false
             },
-            onSaveHoliday = { date, title, autoSkip, priority ->
-                calendarViewModel.addHoliday(date, title, autoSkip, priority)
+            onSaveHoliday = { start, end, title, autoSkip, priority ->
+                calendarViewModel.addHolidayRange(start, end, title, autoSkip, priority)
                 showAddEntry = false
             },
         )

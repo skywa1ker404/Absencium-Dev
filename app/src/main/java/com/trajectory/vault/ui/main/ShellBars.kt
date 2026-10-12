@@ -97,12 +97,14 @@ private fun openWeight(index: Int, position: Float): Float = (1f - abs(position 
 fun BottomPill(
     tabs: List<MainTab>,
     selectedIndex: Int,
-    compact: Boolean,
+    compact: () -> Boolean,
     hazeState: HazeState?,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
+    // Read here, not in the caller, so collapsing the pill only redraws the pill and not the whole screen.
+    val isCompact = compact()
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
@@ -119,7 +121,7 @@ fun BottomPill(
         tabs.map { textMeasurer.measure(it.label, labelStyle).size.width + labelExtraPx }
     }
     val openFactor by animateFloatAsState(
-        targetValue = if (compact) 0f else 1f,
+        targetValue = if (isCompact) 0f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "pillOpen",
     )
@@ -476,20 +478,28 @@ fun initialsOf(name: String): String? {
     }
 }
 
-/** Fades a floating control out and slides it off the right edge while the content scrolls down. */
+/**
+ * Fades a floating control out and slides it off the right edge while the content scrolls down.
+ * [hidden] is read inside this composable, so a change redraws only this control.
+ */
 @Composable
-fun Modifier.slideAwayWhen(hidden: Boolean): Modifier {
+fun SlideAway(hidden: () -> Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val isHidden = hidden()
     val offsetX by animateDpAsState(
-        targetValue = if (hidden) 120.dp else 0.dp,
+        targetValue = if (isHidden) 120.dp else 0.dp,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "slideAway",
     )
     val alpha by animateFloatAsState(
-        targetValue = if (hidden) 0f else 1f,
+        targetValue = if (isHidden) 0f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "slideAwayAlpha",
     )
-    return this.offset(x = offsetX).alpha(alpha)
+    Box(
+        modifier = modifier
+            .graphicsLayer { translationX = offsetX.toPx() }
+            .alpha(alpha),
+    ) { content() }
 }
 
 val ScrimColor = Color(0x99000000)

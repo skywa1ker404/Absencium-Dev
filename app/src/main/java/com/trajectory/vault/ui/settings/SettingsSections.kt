@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.FilterChip
+import com.trajectory.vault.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -211,7 +211,7 @@ fun AiConnectionSection(settings: AppSettings, viewModel: SettingsViewModel) {
                 modifier = Modifier.padding(top = 4.dp),
             ) {
                 ApiStyle.entries.forEach { option ->
-                    FilterChip(
+                    ExpressiveChip(
                         selected = style == option,
                         onClick = {
                             style = option

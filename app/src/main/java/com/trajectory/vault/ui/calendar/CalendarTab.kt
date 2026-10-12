@@ -1,5 +1,15 @@
 package com.trajectory.vault.ui.calendar
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import com.trajectory.vault.ui.components.AttendanceToggle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,7 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
+import com.trajectory.vault.ui.components.ExpressiveChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -39,11 +50,13 @@ import com.trajectory.vault.data.db.ExamEntity
 import com.trajectory.vault.data.db.HolidayEntity
 import com.trajectory.vault.domain.hm
 import com.trajectory.vault.domain.holidayOn
+import com.trajectory.vault.domain.isWeekend
 import com.trajectory.vault.domain.lecturesOn
 import com.trajectory.vault.domain.pretty
 import com.trajectory.vault.domain.subjectAttendance
 import com.trajectory.vault.domain.overall
 import com.trajectory.vault.ui.components.AppCard
+import com.trajectory.vault.ui.components.ExpressiveChip
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.NavCard
 import com.trajectory.vault.ui.icons.AppIcons
@@ -66,6 +79,7 @@ fun CalendarTab(
     viewModel: CalendarViewModel,
     onOpenExam: (ExamEntity) -> Unit,
     onOpenTimetable: () -> Unit,
+    onAddNotes: (subjectId: Long, date: LocalDate) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val today = now.toLocalDate()
@@ -76,45 +90,14 @@ fun CalendarTab(
     val month = YearMonth.from(today).plusMonths(monthOffset.toLong())
     val overall = data.subjectAttendance().overall()
 
-    val todaysLectures = data.lecturesOn(today)
-
     TabColumn(contentPadding) {
-        // Overview card with the one-tap bulk buttons for today.
-        AppCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Attendance", style = MaterialTheme.typography.titleMedium)
-            val overallPercent = overall.percent
-            Text(
-                text = if (overallPercent == null) {
-                    "No lectures logged yet"
-                } else {
-                    "${"%.1f".format(overallPercent)}% · ${overall.present} present, " +
-                        "${overall.held - overall.present} absent"
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
-            )
-            val todaysSubjects = todaysLectures.map { it.subject.id }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PillButton(
-                    text = "Present today",
-                    enabled = todaysSubjects.isNotEmpty(),
-                    onClick = { viewModel.markDay(todaysSubjects, today, AttendanceStatus.PRESENT) },
-                )
-                PillButton(
-                    text = "Absent today",
-                    tonal = true,
-                    enabled = todaysSubjects.isNotEmpty(),
-                    onClick = { viewModel.markDay(todaysSubjects, today, AttendanceStatus.ABSENT) },
-                )
-            }
-            if (todaysSubjects.isEmpty()) {
-                HintText(
-                    text = if (data.holidayOn(today)?.autoSkip == true) "Today is a holiday." else "No lectures today.",
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
-        }
+        TodayCard(
+            data = data,
+            today = today,
+            overall = overall,
+            viewModel = viewModel,
+            onAddNotes = onAddNotes,
+        )
 
         MonthCard(
             month = month,
@@ -131,6 +114,7 @@ fun CalendarTab(
             today = today,
             data = data,
             onSetStatus = { subjectId, status -> viewModel.setAttendance(subjectId, selected, status) },
+            onSetNotes = { subjectId, collected -> viewModel.setNotesCollected(listOf(subjectId), selected, collected) },
             onOpenExam = onOpenExam,
             onDeleteHoliday = { holidayToDelete = it },
         )
@@ -177,6 +161,9 @@ private fun MonthCard(
     // Number of empty cells before the 1st so it lands under the right weekday.
     val leading = (month.atDay(1).dayOfWeek.value - firstDay.value + 7) % 7
     val totalCells = ((leading + month.lengthOfMonth() + 6) / 7) * 7
+    // Looked up once per change instead of once per day cell on every frame.
+    val holidaysByDate = remember(data.holidays) { data.holidays.associateBy { it.date } }
+    val examsByDate = remember(data.exams) { data.exams.groupBy { it.date } }
 
     AppCard(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -221,8 +208,8 @@ private fun MonthCard(
                                 date = date,
                                 isToday = date == today,
                                 isSelected = date == selected,
-                                holiday = data.holidayOn(date),
-                                exams = data.exams.filter { it.date == date },
+                                isOff = holidaysByDate.containsKey(date) || date.isWeekend(),
+                                exams = examsByDate[date].orEmpty(),
                                 onClick = { onSelect(date) },
                                 modifier = Modifier.weight(1f),
                             )
@@ -239,7 +226,7 @@ private fun DayCell(
     date: LocalDate,
     isToday: Boolean,
     isSelected: Boolean,
-    holiday: HolidayEntity?,
+    isOff: Boolean,
     exams: List<ExamEntity>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -247,12 +234,13 @@ private fun DayCell(
     val colors = MaterialTheme.colorScheme
     val background = when {
         isSelected -> colors.primaryContainer
-        holiday != null -> colors.tertiaryContainer.copy(alpha = 0.6f)
+        // Holidays and weekends use a solid blend, never a see-through colour.
+        isOff -> lerp(colors.surfaceContainerHigh, colors.tertiaryContainer, 0.6f)
         else -> colors.surfaceContainerHigh
     }
     val textColor = when {
         isSelected -> colors.onPrimaryContainer
-        holiday != null -> colors.onTertiaryContainer
+        isOff -> colors.onTertiaryContainer
         else -> colors.onSurface
     }
     Box(
@@ -287,6 +275,7 @@ private fun DayPanel(
     today: LocalDate,
     data: CalendarData,
     onSetStatus: (Long, AttendanceStatus) -> Unit,
+    onSetNotes: (Long, Boolean) -> Unit,
     onOpenExam: (ExamEntity) -> Unit,
     onDeleteHoliday: (HolidayEntity) -> Unit,
 ) {
@@ -313,6 +302,16 @@ private fun DayPanel(
             }
         }
     }
+    if (holiday == null && date.isWeekend()) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
+            Text("Weekend", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "Saturdays and Sundays are always holidays.",
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+            )
+        }
+    }
     exams.forEach { exam ->
         AppCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpenExam(exam) }) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -329,7 +328,7 @@ private fun DayPanel(
             }
         }
     }
-    if (lectures.isEmpty() && holiday == null && exams.isEmpty()) {
+    if (lectures.isEmpty() && holiday == null && exams.isEmpty() && !date.isWeekend()) {
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Text("Nothing scheduled", style = MaterialTheme.typography.titleMedium)
             Text(
@@ -340,7 +339,8 @@ private fun DayPanel(
         }
     }
     lectures.forEach { lecture ->
-        val logged = data.attendance.firstOrNull { it.subjectId == lecture.subject.id && it.date == date }?.status
+        val record = data.attendance.firstOrNull { it.subjectId == lecture.subject.id && it.date == date }
+        val logged = record?.status
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(subjectColor(lecture.subject.id)))
@@ -360,7 +360,7 @@ private fun DayPanel(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 AttendanceStatus.entries.forEach { status ->
-                    FilterChip(
+                    ExpressiveChip(
                         selected = logged == status,
                         enabled = !isFuture,
                         onClick = { onSetStatus(lecture.subject.id, status) },
@@ -368,6 +368,14 @@ private fun DayPanel(
                         shape = CircleShape,
                     )
                 }
+            }
+            if (record != null && record.status == AttendanceStatus.ABSENT) {
+                ExpressiveChip(
+                    selected = record.notesCollected,
+                    onClick = { onSetNotes(lecture.subject.id, !record.notesCollected) },
+                    label = { Text("Notes collected") },
+                    modifier = Modifier.padding(top = 8.dp),
+                )
             }
             if (isFuture) {
                 HintText("Attendance can be logged once the day has come.", modifier = Modifier.padding(top = 8.dp))
@@ -383,4 +391,158 @@ private fun AttendanceStatus.chipLabel(): String = when (this) {
     AttendanceStatus.PRESENT -> "Present"
     AttendanceStatus.ABSENT -> "Absent"
     AttendanceStatus.CANCELLED -> "Cancelled"
+}
+
+/**
+ * The attendance overview with the animated Present / Absent switch for today. When today is marked
+ * absent, a "did you collect today's notes?" section appears that can be expanded to pick the
+ * subject whose notes to add. Once every absent subject has its notes the list folds away, and a
+ * small arrow stays so it can be reopened.
+ */
+@Composable
+private fun TodayCard(
+    data: CalendarData,
+    today: LocalDate,
+    overall: com.trajectory.vault.domain.OverallAttendance,
+    viewModel: CalendarViewModel,
+    onAddNotes: (subjectId: Long, date: LocalDate) -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val lectures = remember(data) { data.lecturesOn(today) }
+    val subjectIds = remember(lectures) { lectures.map { it.subject.id }.distinct() }
+    val records = data.attendance.filter { it.date == today && it.subjectId in subjectIds }
+    val status: AttendanceStatus? = when {
+        subjectIds.isEmpty() -> null
+        subjectIds.all { id -> records.any { it.subjectId == id && it.status == AttendanceStatus.PRESENT } } ->
+            AttendanceStatus.PRESENT
+        subjectIds.all { id -> records.any { it.subjectId == id && it.status == AttendanceStatus.ABSENT } } ->
+            AttendanceStatus.ABSENT
+        else -> null
+    }
+    val absent = records.filter { it.status == AttendanceStatus.ABSENT }
+    val uncollected = absent.filter { !it.notesCollected }
+    val subjectNames = remember(data.subjects) { data.subjects.associate { it.id to it.name } }
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    // When the last missing note is added, the list collapses by itself.
+    LaunchedEffect(uncollected.isEmpty()) { if (uncollected.isEmpty()) expanded = false }
+    val arrowRotation by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+        ),
+        label = "notesArrow",
+    )
+
+    AppCard(modifier = Modifier.fillMaxWidth()) {
+        Text("Attendance", style = MaterialTheme.typography.titleMedium)
+        val overallPercent = overall.percent
+        Text(
+            text = if (overallPercent == null) {
+                "No lectures logged yet"
+            } else {
+                "${"%.1f".format(overallPercent)}% · ${overall.present} present, ${overall.held - overall.present} absent"
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+        )
+        AttendanceToggle(
+            selected = status,
+            enabled = subjectIds.isNotEmpty(),
+            onPresent = { viewModel.markDay(subjectIds, today, AttendanceStatus.PRESENT) },
+            onAbsent = { viewModel.markDay(subjectIds, today, AttendanceStatus.ABSENT) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (subjectIds.isEmpty()) {
+            HintText(
+                text = when {
+                    today.isWeekend() -> "Today is a weekend."
+                    data.holidayOn(today)?.autoSkip == true -> "Today is a holiday."
+                    else -> "No lectures today."
+                },
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+
+        AnimatedVisibility(
+            visible = absent.isNotEmpty(),
+            enter = fadeIn() + expandVertically(spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
+            Column(modifier = Modifier.padding(top = 12.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.medium)
+                        .clickable { expanded = !expanded },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (uncollected.isEmpty()) "Today's notes collected" else "Did you collect today's notes?",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = "${absent.size - uncollected.size} of ${absent.size} " +
+                                if (absent.size == 1) "subject" else "subjects",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    Icon(
+                        imageVector = AppIcons.ExpandMore,
+                        contentDescription = if (expanded) "Hide notes list" else "Show notes list",
+                        tint = colors.onSurfaceVariant,
+                        modifier = Modifier.graphicsLayer { rotationZ = arrowRotation },
+                    )
+                }
+                if (uncollected.isNotEmpty() && !expanded) {
+                    Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PillButton(
+                            text = "Yes, I have them",
+                            tonal = true,
+                            onClick = { viewModel.setNotesCollected(uncollected.map { it.subjectId }, today, true) },
+                        )
+                        PillButton(text = "Add today's notes", onClick = { expanded = true })
+                    }
+                }
+                AnimatedVisibility(
+                    visible = expanded,
+                    enter = fadeIn() + expandVertically(spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        absent.forEach { record ->
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(subjectColor(record.subjectId)))
+                                    Text(
+                                        text = subjectNames[record.subjectId] ?: "Unknown subject",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    if (record.notesCollected) {
+                                        Icon(AppIcons.Check, contentDescription = "Collected", tint = colors.primary, modifier = Modifier.size(18.dp))
+                                        TextButton(onClick = { viewModel.setNotesCollected(listOf(record.subjectId), today, false) }) {
+                                            Text("Undo")
+                                        }
+                                    }
+                                }
+                                if (!record.notesCollected) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        PillButton(text = "Add notes", onClick = { onAddNotes(record.subjectId, today) })
+                                        PillButton(
+                                            text = "I have them",
+                                            tonal = true,
+                                            onClick = { viewModel.setNotesCollected(listOf(record.subjectId), today, true) },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

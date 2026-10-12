@@ -37,6 +37,18 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
+    /** Marks the notes of an absent day (ISO date text) as collected for a subject. Does nothing for a blank date. */
+    suspend fun markNotesCollected(subjectId: Long, isoDate: String) {
+        if (isoDate.isBlank()) return
+        try {
+            container.calendarRepository.setNotesCollected(listOf(subjectId), java.time.LocalDate.parse(isoDate), true)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            DebugLogger.e("Vault", "Could not mark the notes as collected", e)
+        }
+    }
+
     fun clearMessage() {
         _message.value = null
     }

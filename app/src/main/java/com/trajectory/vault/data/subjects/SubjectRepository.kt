@@ -1,5 +1,6 @@
 package com.trajectory.vault.data.subjects
 
+import com.trajectory.vault.data.db.SubjectCascadeDao
 import com.trajectory.vault.data.db.SubjectDao
 import com.trajectory.vault.data.db.SubjectEntity
 import com.trajectory.vault.logging.DebugLogger
@@ -7,7 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 
 /** Offline-first source of truth for subjects: Room is read through a Flow, writes go straight to Room. */
-class SubjectRepository(private val dao: SubjectDao) {
+class SubjectRepository(private val dao: SubjectDao, private val cascade: SubjectCascadeDao) {
 
     val subjects: Flow<List<SubjectEntity>> = dao.observeAll()
 
@@ -30,6 +31,15 @@ class SubjectRepository(private val dao: SubjectDao) {
             "\"${subject.name}\" still has attendance, exams, notes or other records, so it cannot be deleted. " +
                 "Mark it inactive instead.",
         ) { dao.delete(subject) }
+
+    /** How many attendance records, exams, lectures, notes and guides are filed under [subject]. */
+    suspend fun entryCount(subject: SubjectEntity): Int = cascade.entryCount(subject.id)
+
+    /** Deletes the subject and everything under it in one transaction. Returns null on success or a message. */
+    suspend fun deleteWithEntries(subject: SubjectEntity): String? =
+        attempt("delete ${subject.name} with its entries", "Could not delete \"${subject.name}\". See debug.log for details.") {
+            cascade.deleteWithEntries(subject.id)
+        }
 
     private suspend fun attempt(action: String, failureMessage: String, block: suspend () -> Unit): String? =
         try {

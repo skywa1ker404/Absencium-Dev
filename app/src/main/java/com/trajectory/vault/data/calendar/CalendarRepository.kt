@@ -14,6 +14,9 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
+/** The longest holiday range that can be added in one go. */
+private const val MAX_HOLIDAY_DAYS = 366
+
 /** Everything the Calendar and Home screens need, read from Room in one snapshot. */
 data class CalendarData(
     val subjects: List<SubjectEntity> = emptyList(),
@@ -46,7 +49,7 @@ class CalendarRepository(private val database: TrajectoryDatabase) {
         when {
             existing == null -> dao.insert(AttendanceEntity(subjectId = subjectId, date = date, status = status))
             existing.status == status -> dao.delete(existing)
-            else -> dao.update(existing.copy(status = status))
+            else -> dao.update(existing.copy(status = status, notesCollected = false))
         }
     }
 
@@ -57,13 +60,46 @@ class CalendarRepository(private val database: TrajectoryDatabase) {
             val existing = dao.getFor(id, date)
             when {
                 existing == null -> dao.insert(AttendanceEntity(subjectId = id, date = date, status = status))
-                existing.status != status -> dao.update(existing.copy(status = status))
+                existing.status != status -> dao.update(existing.copy(status = status, notesCollected = false))
             }
         }
     }
 
+    /** Marks whether the notes for an absent day have been collected, for each of [subjectIds]. */
+    suspend fun setNotesCollected(subjectIds: Collection<Long>, date: LocalDate, collected: Boolean) {
+        val dao = database.attendanceDao()
+        for (id in subjectIds.distinct()) dao.setNotesCollected(id, date, collected)
+    }
+
     suspend fun addHoliday(date: LocalDate, title: String, autoSkip: Boolean, priority: Priority) {
         database.holidayDao().insert(HolidayEntity(date = date, title = title, autoSkip = autoSkip, priority = priority))
+    }
+
+    /**
+     * Adds one holiday row per day from [start] to [end] (inclusive). A day that already has a holiday
+     * is left as it is. Returns how many days were added and how many already had a holiday.
+     */
+    suspend fun addHolidayRange(
+        start: LocalDate,
+        end: LocalDate,
+        title: String,
+        autoSkip: Boolean,
+        priority: Priority,
+    ): Pair<Int, Int> {
+        val dao = database.holidayDao()
+        var added = 0
+        var skipped = 0
+        var day = start
+        while (!day.isAfter(end) && added + skipped < MAX_HOLIDAY_DAYS) {
+            if (dao.getForDate(day) == null) {
+                dao.insert(HolidayEntity(date = day, title = title, autoSkip = autoSkip, priority = priority))
+                added++
+            } else {
+                skipped++
+            }
+            day = day.plusDays(1)
+        }
+        return added to skipped
     }
 
     suspend fun deleteHoliday(holiday: HolidayEntity) = database.holidayDao().delete(holiday)
@@ -91,6 +127,11 @@ class CalendarRepository(private val database: TrajectoryDatabase) {
     }
 
     suspend fun deleteExam(exam: ExamEntity) = database.examDao().delete(exam)
+
+    /** Adds the same lecture to every weekday in [days] (the "same time every day" option). */
+    suspend fun addSlots(days: Collection<DayOfWeek>, subjectId: Long, start: LocalTime, end: LocalTime, room: String?) {
+        for (day in days) addSlot(day, subjectId, start, end, room)
+    }
 
     suspend fun addSlot(
         day: DayOfWeek,

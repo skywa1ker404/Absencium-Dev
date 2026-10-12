@@ -180,6 +180,10 @@ class SubjectsViewModel(container: AppContainer) : ViewModel() {
 
     fun delete(subject: SubjectEntity) = perform { repository.delete(subject) }
 
+    suspend fun entryCount(subject: SubjectEntity): Int = repository.entryCount(subject)
+
+    fun deleteWithEntries(subject: SubjectEntity) = perform { repository.deleteWithEntries(subject) }
+
     private fun perform(block: suspend () -> String?) {
         viewModelScope.launch { _message.value = block() }
     }

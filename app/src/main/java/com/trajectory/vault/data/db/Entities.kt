@@ -55,6 +55,8 @@ data class AttendanceEntity(
     val date: LocalDate,
     val status: AttendanceStatus,
     val notes: String? = null,
+    /** For an absent day: whether the notes that were taught that day have been collected. */
+    @ColumnInfo(name = "notes_collected", defaultValue = "0") val notesCollected: Boolean = false,
 )
 
 @Entity(
@@ -243,4 +245,20 @@ data class MomentumLogEntity(
     @PrimaryKey val date: LocalDate,
     @ColumnInfo(name = "focus_quality_score") val focusQualityScore: Double,
     @ColumnInfo(name = "rolling_7day_consistency") val rolling7DayConsistency: Double,
+)
+
+/** One answered Daily Recall question, kept so the history log can show right and wrong answers per topic. */
+@Entity(
+    tableName = "Recall_Attempts_Table",
+    indices = [Index("answered_at")],
+)
+data class RecallAttemptEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "question_id") val questionId: Long,
+    /** The note the question came from. Not a foreign key, so the history survives the note being deleted. */
+    @ColumnInfo(name = "note_id") val noteId: Long? = null,
+    @ColumnInfo(name = "prompt_text") val promptText: String,
+    val correct: Boolean,
+    /** Epoch milliseconds. */
+    @ColumnInfo(name = "answered_at") val answeredAt: Long = System.currentTimeMillis(),
 )

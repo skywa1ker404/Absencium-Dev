@@ -14,7 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
+import com.trajectory.vault.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -61,6 +61,8 @@ fun NewEntryScreen(
     navigator: DestinationsNavigator,
     subjectId: Long = 0L,
     draftId: Long = 0L,
+    /** ISO date of an absent day whose notes this entry is for; saving the entry marks them collected. Empty otherwise. */
+    collectDate: String = "",
 ) {
     val viewModel = containerViewModel { VaultViewModel(it) }
     val data by viewModel.data.collectAsStateWithLifecycle()
@@ -156,7 +158,10 @@ fun NewEntryScreen(
             if (format == EntryFormat.NOTE) {
                 val id = viewModel.saveNote(currentDraftId, target.id, title.trim(), body, NoteStatus.ACTIVE)
                 busy = false
-                if (id != null) leave()
+                if (id != null) {
+                    viewModel.markNotesCollected(target.id, collectDate)
+                    leave()
+                }
             } else {
                 val pdf = pickedPdf
                 if (pdf == null) {
@@ -170,6 +175,7 @@ fun NewEntryScreen(
                 } else {
                     // The draft that held this title is no longer needed.
                     if (currentDraftId != 0L) viewModel.discardDraft(currentDraftId)
+                    viewModel.markNotesCollected(target.id, collectDate)
                     leave()
                 }
             }
@@ -190,13 +196,13 @@ fun NewEntryScreen(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
+            ExpressiveChip(
                 selected = format == EntryFormat.NOTE,
                 onClick = { format = EntryFormat.NOTE },
                 label = { Text("Lecture Note") },
                 shape = CircleShape,
             )
-            FilterChip(
+            ExpressiveChip(
                 selected = format == EntryFormat.GUIDE,
                 onClick = { format = EntryFormat.GUIDE },
                 label = { Text("Guide / Answer PDF") },
@@ -231,7 +237,7 @@ fun NewEntryScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 subjects.forEach { option ->
-                    FilterChip(
+                    ExpressiveChip(
                         selected = subject?.id == option.id,
                         onClick = { selectedSubject = option.id },
                         label = { Text(option.name) },
@@ -262,7 +268,7 @@ fun NewEntryScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 GuideType.entries.forEach { option ->
-                    FilterChip(
+                    ExpressiveChip(
                         selected = guideType == option,
                         onClick = { guideType = option },
                         label = { Text(option.label()) },

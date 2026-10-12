@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import java.time.DayOfWeek
@@ -57,6 +58,9 @@ interface AttendanceDao {
 
     @Query("SELECT * FROM Attendance_Table WHERE subject_id = :subjectId AND date = :date LIMIT 1")
     suspend fun getFor(subjectId: Long, date: LocalDate): AttendanceEntity?
+
+    @Query("UPDATE Attendance_Table SET notes_collected = :collected WHERE subject_id = :subjectId AND date = :date")
+    suspend fun setNotesCollected(subjectId: Long, date: LocalDate, collected: Boolean)
 }
 
 @Dao
@@ -222,4 +226,58 @@ interface MomentumLogDao {
 
     @Query("SELECT * FROM Momentum_Log_Table ORDER BY date DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<MomentumLogEntity>>
+}
+
+@Dao
+interface RecallAttemptDao {
+    @Insert
+    suspend fun insert(attempt: RecallAttemptEntity): Long
+
+    @Query("SELECT * FROM Recall_Attempts_Table ORDER BY answered_at DESC")
+    fun observeAll(): Flow<List<RecallAttemptEntity>>
+}
+
+/**
+ * Deleting a subject together with everything filed under it. The subject's tables use RESTRICT, so
+ * the rows that point at it have to go first, all in one transaction. Deleting the notes also
+ * removes their audio memos and recall questions (those cascade); AI history only loses its link.
+ */
+@Dao
+abstract class SubjectCascadeDao {
+    @Query(
+        "SELECT (SELECT COUNT(*) FROM Attendance_Table WHERE subject_id = :id) + " +
+            "(SELECT COUNT(*) FROM Exams_Table WHERE subject_id = :id) + " +
+            "(SELECT COUNT(*) FROM Timetable_Table WHERE subject_id = :id) + " +
+            "(SELECT COUNT(*) FROM Notes_Table WHERE subject_id = :id) + " +
+            "(SELECT COUNT(*) FROM Guides_Table WHERE subject_id = :id)",
+    )
+    abstract suspend fun entryCount(id: Long): Int
+
+    @Query("DELETE FROM Attendance_Table WHERE subject_id = :id")
+    abstract suspend fun deleteAttendance(id: Long)
+
+    @Query("DELETE FROM Exams_Table WHERE subject_id = :id")
+    abstract suspend fun deleteExams(id: Long)
+
+    @Query("DELETE FROM Timetable_Table WHERE subject_id = :id")
+    abstract suspend fun deleteTimetable(id: Long)
+
+    @Query("DELETE FROM Notes_Table WHERE subject_id = :id")
+    abstract suspend fun deleteNotes(id: Long)
+
+    @Query("DELETE FROM Guides_Table WHERE subject_id = :id")
+    abstract suspend fun deleteGuides(id: Long)
+
+    @Query("DELETE FROM Subjects_Table WHERE id = :id")
+    abstract suspend fun deleteSubject(id: Long)
+
+    @Transaction
+    open suspend fun deleteWithEntries(id: Long) {
+        deleteAttendance(id)
+        deleteExams(id)
+        deleteTimetable(id)
+        deleteNotes(id)
+        deleteGuides(id)
+        deleteSubject(id)
+    }
 }

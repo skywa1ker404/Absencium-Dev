@@ -1,12 +1,16 @@
 package com.trajectory.vault.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
+import com.trajectory.vault.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -86,6 +90,12 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
 
 @Composable
 private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
+    val scope = rememberCoroutineScope()
+    // null: no dialog. stage 1: "are you sure". stage 2: type Yes.
+    var entryCount by remember { mutableStateOf<Int?>(null) }
+    var stage by remember { mutableStateOf(0) }
+    var typed by remember { mutableStateOf("") }
+
     AppCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -98,19 +108,88 @@ private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 8.dp),
         ) {
-            FilterChip(
+            ExpressiveChip(
                 selected = subject.isActive,
                 onClick = { viewModel.setActive(subject, !subject.isActive) },
                 label = { Text(if (subject.isActive) "Active" else "Inactive") },
                 shape = CircleShape,
             )
-            FilterChip(
+            ExpressiveChip(
                 selected = subject.isMuted,
                 onClick = { viewModel.setMuted(subject, !subject.isMuted) },
                 label = { Text(if (subject.isMuted) "Muted" else "Mute") },
                 shape = CircleShape,
             )
-            TextButton(onClick = { viewModel.delete(subject) }) { Text("Delete") }
+            TextButton(onClick = {
+                scope.launch {
+                    entryCount = viewModel.entryCount(subject)
+                    typed = ""
+                    stage = 1
+                }
+            }) { Text("Delete") }
+        }
+    }
+
+    val count = entryCount
+    if (stage > 0 && count != null) {
+        fun close() {
+            stage = 0
+            entryCount = null
+            typed = ""
+        }
+        when {
+            count == 0 -> AlertDialog(
+                onDismissRequest = { close() },
+                title = { Text("Delete ${subject.name}?") },
+                text = { Text("It has no entries. It will be deleted for good.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteWithEntries(subject)
+                        close()
+                    }) { Text("Delete") }
+                },
+                dismissButton = { TextButton(onClick = { close() }) { Text("Keep") } },
+            )
+
+            stage == 1 -> AlertDialog(
+                onDismissRequest = { close() },
+                title = { Text("Are you sure?") },
+                text = {
+                    Text(
+                        "${subject.name} has $count ${if (count == 1) "entry" else "entries"} under it " +
+                            "(attendance, exams, lectures, notes and guides). Deleting the subject deletes all of them.",
+                    )
+                },
+                confirmButton = { TextButton(onClick = { stage = 2 }) { Text("Yes, continue") } },
+                dismissButton = { TextButton(onClick = { close() }) { Text("Cancel") } },
+            )
+
+            else -> AlertDialog(
+                onDismissRequest = { close() },
+                title = { Text("Type Yes to confirm") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("This permanently deletes ${subject.name} and its $count entries.")
+                        OutlinedTextField(
+                            value = typed,
+                            onValueChange = { typed = it },
+                            label = { Text("Yes") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(20.dp),
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = typed.trim().equals("yes", ignoreCase = true),
+                        onClick = {
+                            viewModel.deleteWithEntries(subject)
+                            close()
+                        },
+                    ) { Text("Confirm") }
+                },
+                dismissButton = { TextButton(onClick = { close() }) { Text("Cancel") } },
+            )
         }
     }
 }
