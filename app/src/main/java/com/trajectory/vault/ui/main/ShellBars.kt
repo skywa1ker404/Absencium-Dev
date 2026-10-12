@@ -59,6 +59,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
@@ -76,17 +79,19 @@ private val PillHeight = 64.dp
 private val ItemHeight = 48.dp
 private val PillPadding = 8.dp
 
-/** Width of one tab in the expanded (icon and label) and compact (icon only) pill. */
-private val ExpandedItemWidth = 84.dp
-private val CompactItemWidth = 48.dp
+/** Width of every tab slot. The selected tab gets extra room for its label on top of this. */
+private val ItemBase = 52.dp
+private val LabelGap = 6.dp
+private val LabelPadding = 16.dp
 
-/** Width of the whole pill for [count] tabs. */
-fun pillWidth(count: Int, compact: Boolean) =
-    (if (compact) CompactItemWidth else ExpandedItemWidth) * count + PillPadding * 2
+/** How much of tab [index] is "open" (shows its label) when the highlight is at [position]. */
+private fun openWeight(index: Int, position: Float): Float = (1f - abs(position - index)).coerceAtLeast(0f)
 
 /**
- * The floating navigation pill. A sliding indicator springs to the selected tab, and while
- * [compact] the pill narrows to icons only.
+ * The floating navigation pill. Only the highlighted tab shows its label; the highlight springs to
+ * the selected tab and can be dragged across the tabs. While dragging, the page switches as soon
+ * as the highlight is over another tab, before the finger lifts. While [compact] the pill shrinks
+ * to icons only.
  */
 @Composable
 fun BottomPill(
@@ -101,15 +106,24 @@ fun BottomPill(
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    val width by animateDpAsState(
-        targetValue = pillWidth(tabs.size, compact),
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
-        label = "pillWidth",
-    )
-    val itemWidth = (width - PillPadding * 2) / tabs.size
-    val itemWidthPx = with(density) { itemWidth.toPx() }
-    val paddingPx = with(density) { PillPadding.toPx() }
+    val glass = hazeState != null
+    val textMeasurer = rememberTextMeasurer()
+    val labelStyle = MaterialTheme.typography.labelLarge
     val lastIndex = tabs.lastIndex
+
+    val basePx = with(density) { ItemBase.toPx() }
+    val paddingPx = with(density) { PillPadding.toPx() }
+    val labelExtraPx = with(density) { (LabelGap + LabelPadding).toPx() }
+    // How much wider each tab gets when it is the selected one (room for its label).
+    val extraPx = remember(tabs, labelStyle, density) {
+        tabs.map { textMeasurer.measure(it.label, labelStyle).size.width + labelExtraPx }
+    }
+    val openFactor by animateFloatAsState(
+        targetValue = if (compact) 0f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "pillOpen",
+    )
+    val open = openFactor.coerceIn(0f, 1f)
 
     // The highlight's position in tab units (1.5 is halfway between tab 1 and tab 2). It springs to
     // the selected tab, and follows the finger while it is being dragged.
@@ -123,57 +137,129 @@ fun BottomPill(
             )
         }
     }
-    val position = dragPosition ?: indicator.value
+    val position = (dragPosition ?: indicator.value).coerceIn(0f, lastIndex.toFloat())
     // The highlight swells a little while it is held and dragged.
     val zoom by animateFloatAsState(
         targetValue = if (dragPosition != null) 1.22f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "pillZoom",
     )
-    val highlighted = position.roundToInt().coerceIn(0, lastIndex)
 
-    val currentItemWidthPx by rememberUpdatedState(itemWidthPx)
+    // Geometry of the pill for a highlight position, in pixels. Slot widths follow the position, so
+    // the label room travels with the highlight.
+    fun slotWidth(index: Int, p: Float) = basePx + extraPx[index] * openWeight(index, p) * open
+    fun slotLeft(index: Int, p: Float): Float {
+        var left = paddingPx
+        for (i in 0 until index) left += slotWidth(i, p)
+        return left
+    }
+    fun indicatorLeft(p: Float): Float {
+        val k = p.toInt().coerceIn(0, lastIndex)
+        val k2 = (k + 1).coerceAtMost(lastIndex)
+        val f = if (k == k2) 0f else (p - k).coerceIn(0f, 1f)
+        return slotLeft(k, p) + (slotLeft(k2, p) - slotLeft(k, p)) * f
+    }
+    fun indicatorWidth(p: Float): Float {
+        val k = p.toInt().coerceIn(0, lastIndex)
+        val k2 = (k + 1).coerceAtMost(lastIndex)
+        val f = if (k == k2) 0f else (p - k).coerceIn(0f, 1f)
+        return basePx + (extraPx[k] * (1f - f) + extraPx[k2] * f) * open
+    }
+    fun indicatorCenter(p: Float) = indicatorLeft(p) + indicatorWidth(p) / 2f
+    val totalWidthPx = paddingPx * 2 + (0 until tabs.size).sumOf { slotWidth(it, position).toDouble() }.toFloat()
+
+    val currentGeometryOpen by rememberUpdatedState(open)
     val currentOnSelect by rememberUpdatedState(onSelect)
     val currentSelected by rememberUpdatedState(selectedIndex)
+    val currentExtras by rememberUpdatedState(extraPx)
 
-    // Not clipped, so the swollen highlight can reach past the edge of the glass.
-    Box(modifier = modifier.width(width).height(PillHeight)) {
+    // Not clipped, so the swollen highlight can reach past the edge of the pill.
+    Box(modifier = modifier.width(with(density) { totalWidthPx.toDp() }).height(PillHeight)) {
         Box(modifier = Modifier.matchParentSize().floatingGlass(hazeState, CircleShape))
         Box(
             modifier = Modifier
-                .offset { IntOffset((paddingPx + itemWidthPx * position).roundToInt(), ((PillHeight - ItemHeight) / 2).roundToPx()) }
-                .width(itemWidth)
+                .offset { IntOffset(indicatorLeft(position).roundToInt(), ((PillHeight - ItemHeight) / 2).roundToPx()) }
+                .width(with(density) { indicatorWidth(position).toDp() })
                 .height(ItemHeight)
                 .graphicsLayer {
                     scaleX = zoom
                     scaleY = zoom
                 }
                 .clip(CircleShape)
-                .background(colors.primaryContainer)
-                .border(1.dp, colors.primary.copy(alpha = 0.4f), CircleShape),
+                .background(if (glass) colors.primaryContainer else colors.secondaryContainer)
+                .border(
+                    1.dp,
+                    if (glass) colors.primary.copy(alpha = 0.4f) else colors.secondary.copy(alpha = 0.55f),
+                    CircleShape,
+                ),
         )
         Row(
             modifier = Modifier
                 .fillMaxHeight()
-                .pointerInput(tabs.size, paddingPx) {
+                .pointerInput(tabs.size, basePx, paddingPx) {
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
-                        val itemPx = currentItemWidthPx
+                        val extras = currentExtras
+                        val openNow = currentGeometryOpen
+                        fun weight(i: Int, p: Float) = (1f - abs(p - i)).coerceAtLeast(0f)
+                        fun leftAt(p: Float): Float {
+                            val k = p.toInt().coerceIn(0, lastIndex)
+                            val k2 = (k + 1).coerceAtMost(lastIndex)
+                            val f = if (k == k2) 0f else (p - k).coerceIn(0f, 1f)
+                            fun slotLeftAt(index: Int): Float {
+                                var l = paddingPx
+                                for (i in 0 until index) l += basePx + extras[i] * weight(i, p) * openNow
+                                return l
+                            }
+                            return slotLeftAt(k) + (slotLeftAt(k2) - slotLeftAt(k)) * f
+                        }
+                        fun widthAt(p: Float): Float {
+                            val k = p.toInt().coerceIn(0, lastIndex)
+                            val k2 = (k + 1).coerceAtMost(lastIndex)
+                            val f = if (k == k2) 0f else (p - k).coerceIn(0f, 1f)
+                            return basePx + (extras[k] * (1f - f) + extras[k2] * f) * openNow
+                        }
+                        fun centerAt(p: Float) = leftAt(p) + widthAt(p) / 2f
+
                         val start = dragPosition ?: indicator.value
-                        val center = paddingPx + itemPx * (start + 0.5f)
+                        val center = centerAt(start)
                         // Only a touch that starts on the highlight drags it; other touches are plain taps.
-                        if (abs(down.position.x - center) > itemPx / 2f) return@awaitEachGesture
+                        if (abs(down.position.x - center) > widthAt(start) / 2f) return@awaitEachGesture
                         val grab = down.position.x - center
-                        fun positionAt(x: Float): Float =
-                            ((x - grab - paddingPx) / itemPx - 0.5f).coerceIn(0f, lastIndex.toFloat())
+
+                        // The highlight's position whose centre is under the finger (the centre
+                        // grows steadily with the position, so a bisection finds it).
+                        fun positionAt(x: Float): Float {
+                            val wanted = x - grab
+                            var lo = 0f
+                            var hi = lastIndex.toFloat()
+                            repeat(18) {
+                                val mid = (lo + hi) / 2f
+                                if (centerAt(mid) < wanted) lo = mid else hi = mid
+                            }
+                            return ((lo + hi) / 2f).coerceIn(0f, lastIndex.toFloat())
+                        }
+
+                        var lastCommitted = currentSelected
+                        fun update(x: Float) {
+                            val p = positionAt(x)
+                            dragPosition = p
+                            // The page follows the highlight right away, before the finger lifts.
+                            val over = p.roundToInt().coerceIn(0, lastIndex)
+                            if (over != lastCommitted) {
+                                lastCommitted = over
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                currentOnSelect(over)
+                            }
+                        }
 
                         val slop = awaitHorizontalTouchSlopOrCancellation(down.id) { change, _ ->
                             change.consume()
                         } ?: return@awaitEachGesture
-                        dragPosition = positionAt(slop.position.x)
+                        update(slop.position.x)
                         horizontalDrag(slop.id) { change ->
                             change.consume()
-                            dragPosition = positionAt(change.position.x)
+                            update(change.position.x)
                         }
                         val releasedAt = dragPosition ?: start
                         val target = releasedAt.roundToInt().coerceIn(0, lastIndex)
@@ -186,33 +272,36 @@ fun BottomPill(
                                 spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
                             )
                         }
-                        if (target != currentSelected) {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        }
-                        currentOnSelect(target)
+                        if (target != lastCommitted) currentOnSelect(target)
                     }
                 }
-                .padding(horizontal = PillPadding),
+                .padding(start = PillPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEachIndexed { index, tab ->
+                val weight = openWeight(index, position) * open
                 PillTab(
                     tab = tab,
-                    selected = index == highlighted,
-                    compact = compact,
+                    weight = weight,
+                    labelWidth = with(density) { (extraPx[index] - labelExtraPx).toDp() },
+                    glass = glass,
                     onClick = { onSelect(index) },
-                    modifier = Modifier.width(itemWidth).height(ItemHeight),
+                    modifier = Modifier
+                        .width(with(density) { slotWidth(index, position).toDp() })
+                        .height(ItemHeight),
                 )
             }
         }
     }
 }
 
+/** One tab: its icon always, and its label growing in as the highlight arrives ([weight] 0 to 1). */
 @Composable
 private fun PillTab(
     tab: MainTab,
-    selected: Boolean,
-    compact: Boolean,
+    weight: Float,
+    labelWidth: androidx.compose.ui.unit.Dp,
+    glass: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -224,11 +313,8 @@ private fun PillTab(
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "tabPress",
     )
-    val labelColor by animateColorAsState(
-        targetValue = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant,
-        animationSpec = spring(),
-        label = "tabLabel",
-    )
+    val selectedColor = if (glass) colors.onPrimaryContainer else colors.onSecondaryContainer
+    val tint = androidx.compose.ui.graphics.lerp(colors.onSurfaceVariant, selectedColor, weight.coerceIn(0f, 1f))
     Row(
         modifier = modifier
             .graphicsLayer {
@@ -244,26 +330,30 @@ private fun PillTab(
         Icon(
             imageVector = tab.icon,
             contentDescription = null,
-            tint = labelColor,
+            tint = tint,
             modifier = Modifier.size(22.dp),
         )
-        AnimatedVisibility(
-            visible = !compact,
-            enter = fadeIn() + expandHorizontally(),
-            exit = fadeOut() + shrinkHorizontally(),
+        Box(
+            modifier = Modifier
+                .width(((labelWidth + LabelGap) * weight.coerceIn(0f, 1f)).coerceAtLeast(0.dp))
+                .clipToBounds(),
         ) {
             Text(
                 text = tab.label,
                 style = MaterialTheme.typography.labelLarge,
-                color = labelColor,
+                color = tint,
                 maxLines = 1,
-                modifier = Modifier.padding(start = 6.dp),
+                softWrap = false,
+                modifier = Modifier
+                    .padding(start = LabelGap)
+                    .wrapContentWidth(align = Alignment.Start, unbounded = true)
+                    .alpha(weight.coerceIn(0f, 1f)),
             )
         }
     }
 }
 
-/** The contextual action button above the bar (Add Exam on Attends, New Note in the Vault). */
+/** The contextual action button above the bar (Add Entry on Attendance, New Entry in the Vault). */
 @Composable
 fun ShellFab(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interaction = remember { MutableInteractionSource() }
@@ -281,8 +371,8 @@ fun ShellFab(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Mo
         },
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.tertiary,
-            contentColor = MaterialTheme.colorScheme.onTertiary,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),

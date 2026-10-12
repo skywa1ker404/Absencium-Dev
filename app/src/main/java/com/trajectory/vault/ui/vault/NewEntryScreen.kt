@@ -1,11 +1,7 @@
 package com.trajectory.vault.ui.vault
 
 import android.net.Uri
-import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.core.animate
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.ui.graphics.graphicsLayer
-import kotlinx.coroutines.CancellationException
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
@@ -112,19 +108,7 @@ fun NewEntryScreen(
         if (meaningful) showExitDialog = true else navigator.navigateUp()
     }
 
-    // Predictive back: while the edge swipe is held the screen shrinks as a preview. Finishing the
-    // gesture asks what to do with the unsaved entry; cancelling springs the screen back.
-    var backProgress by remember { mutableFloatStateOf(0f) }
-    PredictiveBackHandler(enabled = meaningful) { progress ->
-        try {
-            progress.collect { event -> backProgress = event.progress }
-            showExitDialog = true
-            scope.launch { animate(backProgress, 0f) { value, _ -> backProgress = value } }
-        } catch (e: CancellationException) {
-            scope.launch { animate(backProgress, 0f) { value, _ -> backProgress = value } }
-            throw e
-        }
-    }
+    BackHandler(enabled = meaningful) { showExitDialog = true }
 
     val textPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -192,15 +176,7 @@ fun NewEntryScreen(
         }
     }
 
-    ScreenScaffold(
-        title = "New Entry",
-        onBack = { requestExit() },
-        modifier = Modifier.graphicsLayer {
-            val scale = 1f - 0.08f * backProgress
-            scaleX = scale
-            scaleY = scale
-        },
-    ) {
+    ScreenScaffold(title = "New Entry", onBack = { requestExit() }) {
         val shownProblem = problem ?: message
         if (shownProblem != null) {
             AppCard(

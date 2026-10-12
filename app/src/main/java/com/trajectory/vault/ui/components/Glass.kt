@@ -30,10 +30,14 @@ fun Modifier.floatingGlass(
     bordered: Boolean = true,
 ): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val borderModifier = if (bordered) {
-        Modifier.border(1.dp, Color.White.copy(alpha = if (isDark) 0.16f else 0.55f), shape)
-    } else {
+    // Glass gets a light rim; the solid (Monet and accent) look gets an opaque outline, so it never reads as glass.
+    val solidBorder = MaterialTheme.colorScheme.outlineVariant
+    val borderModifier = if (!bordered) {
         Modifier
+    } else if (hazeState == null) {
+        Modifier.border(1.dp, solidBorder, shape)
+    } else {
+        Modifier.border(1.dp, Color.White.copy(alpha = if (isDark) 0.16f else 0.55f), shape)
     }
     if (hazeState == null) {
         return this.clip(shape).background(tint).then(borderModifier)

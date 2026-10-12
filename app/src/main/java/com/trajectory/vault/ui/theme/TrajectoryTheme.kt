@@ -46,7 +46,11 @@ fun effectiveColorEngine(requested: ColorEngine): ColorEngine =
         requested
     }
 
-private val OledBackground = Color(0xFF0D0D0D)
+/** Dark: near-black neutral surfaces. */
+private val DarkBackground = Color(0xFF0D0D0D)
+
+/** OLED Dark: a true black (#000000) background so OLED pixels switch off. */
+private val OledBackground = Color(0xFF000000)
 
 /** Blur radius of the frosted glass bars, from the glass intensity setting. */
 val LocalGlassBlur = staticCompositionLocalOf { 20.dp }
@@ -132,19 +136,31 @@ fun TrajectoryTheme(
         )
     }
 
-    val colorScheme = if (settings.themeMode == ThemeMode.DARK_OLED) {
-        generated.copy(
+    val colorScheme = when (settings.themeMode) {
+        ThemeMode.DARK_OLED -> generated.copy(
             background = OledBackground,
             surface = OledBackground,
             surfaceDim = OledBackground,
             surfaceContainerLowest = OledBackground,
+            surfaceContainerLow = Color(0xFF0A0A0A),
+            surfaceContainer = Color(0xFF101010),
+            surfaceContainerHigh = Color(0xFF161616),
+            surfaceContainerHighest = Color(0xFF1D1D1D),
+        )
+
+        ThemeMode.DARK, ThemeMode.SYSTEM_AUTO -> if (!isDark) generated else generated.copy(
+            background = DarkBackground,
+            surface = DarkBackground,
+            surfaceDim = DarkBackground,
+            surfaceContainerLowest = DarkBackground,
             surfaceContainerLow = Color(0xFF141414),
             surfaceContainer = Color(0xFF191919),
             surfaceContainerHigh = Color(0xFF1E1E1E),
             surfaceContainerHighest = Color(0xFF262626),
         )
-    } else {
-        generated
+
+        // Light uses the generated scheme as it is.
+        ThemeMode.LIGHT -> generated
     }
 
     MaterialTheme(colorScheme = colorScheme, shapes = TrajectoryShapes, typography = TrajectoryTypography) {

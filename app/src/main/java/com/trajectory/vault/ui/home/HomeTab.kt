@@ -152,7 +152,7 @@ fun HomeTab(
             if (next == null) {
                 Text("No upcoming lectures", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Add lectures to your timetable from the Attends tab.",
+                    "Add lectures to your timetable from the Attendance tab.",
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -233,7 +233,7 @@ private fun AttendanceCard(overallPercent: Double?, present: Int, held: Int, thr
                 Text("Bunk buffer", style = MaterialTheme.typography.titleMedium)
                 if (overallPercent == null) {
                     Text(
-                        "Log a lecture on the Attends tab to see how many you can safely miss.",
+                        "Log a lecture on the Attendance tab to see how many you can safely miss.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )

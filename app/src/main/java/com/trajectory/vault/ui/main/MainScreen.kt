@@ -82,7 +82,7 @@ import java.time.LocalDateTime
 
 private val Tabs = listOf(
     MainTab("Home", AppIcons.Home),
-    MainTab("Attends", AppIcons.CalendarMonth),
+    MainTab("Attendance", AppIcons.CalendarMonth),
     MainTab("Vault", AppIcons.Folder),
 )
 
