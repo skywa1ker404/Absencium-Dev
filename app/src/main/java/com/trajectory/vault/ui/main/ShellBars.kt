@@ -429,7 +429,7 @@ fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier =
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Trajectory",
+            text = "Absencium",
             style = MaterialTheme.typography.titleLarge,
             color = colors.primary,
         )

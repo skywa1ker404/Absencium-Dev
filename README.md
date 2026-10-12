@@ -1,6 +1,6 @@
-# Trajectory
+# Absencium
 
-An offline-first Android companion for students. Trajectory keeps attendance, timetable, exams, notes, and spaced-repetition recall in a single local app, with no account, no cloud service, and no telemetry.
+An offline-first Android companion for students. Absencium keeps attendance, timetable, exams, notes, and spaced-repetition recall in a single local app, with no account, no cloud service, and no telemetry.
 
 **Status:** early development. The foundation (logging, local database, notes storage) is built. The user-facing screens are not built yet. See [Project status](#project-status).
 
@@ -46,7 +46,7 @@ The complete product specification is in [docs/SPECIFICATION.md](docs/SPECIFICAT
 | --- | --- |
 | Project setup and continuous integration | Done |
 | Debug file logger | Done |
-| Local database (`Trajectory.db`) | Done |
+| Local database (`Absencium.db`) | Done |
 | Notes storage layer (app files or a chosen folder) | Done |
 | Onboarding wizard and Settings hub | Not started |
 | Home dashboard | Not started |
@@ -103,7 +103,7 @@ docs/
 
 ### Database
 
-A single Room database named `Trajectory.db` holds all structured data:
+A single Room database named `Absencium.db` holds all structured data:
 
 `Subjects_Table`, `Attendance_Table`, `Holidays_Table`, `Exams_Table`, `Timetable_Table`, `Notes_Table`, `Guides_Table`, `Audio_Memos_Table`, `Recall_Quiz_Table`, `AI_History_Table`, `User_Stats_Table`, `Momentum_Log_Table`
 

@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Trajectory"
+rootProject.name = "Absencium"
 include(":app")

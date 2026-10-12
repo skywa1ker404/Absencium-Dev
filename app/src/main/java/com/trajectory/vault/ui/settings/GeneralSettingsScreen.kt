@@ -25,7 +25,7 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
         SectionTitle("Attendance")
         SliderCard(
             title = "Attendance threshold",
-            subtitle = "Trajectory warns you when a subject falls below this percentage.",
+            subtitle = "Absencium warns you when a subject falls below this percentage.",
             value = settings.attendanceThresholdPercent,
             range = AppSettings.MIN_ATTENDANCE_THRESHOLD..AppSettings.MAX_ATTENDANCE_THRESHOLD,
             valueLabel = { "$it%" },

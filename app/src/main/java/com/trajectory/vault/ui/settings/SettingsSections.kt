@@ -24,11 +24,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.trajectory.vault.data.ai.AiConnection
 import com.trajectory.vault.data.ai.AiProvider
 import com.trajectory.vault.data.ai.ApiStyle
 import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.storage.NotesStorageMode
 import com.trajectory.vault.ui.AiKeyViewModel
+import com.trajectory.vault.ui.containerViewModel
 import com.trajectory.vault.ui.StorageViewModel
 import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
@@ -52,7 +54,7 @@ fun StorageLocationSection(viewModel: StorageViewModel) {
     SectionTitle("Notes location")
     OptionCard(
         title = "App folder",
-        subtitle = "Private to Trajectory, no permission needed. It is removed if you uninstall the app.",
+        subtitle = "Private to Absencium, no permission needed. It is removed if you uninstall the app.",
         selected = state.mode == NotesStorageMode.APP_FILES,
         onClick = { viewModel.useAppFiles() },
     )

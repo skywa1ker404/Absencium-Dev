@@ -26,7 +26,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
         AiConnectionSection(settings, settingsViewModel)
         SectionTitle("API key")
         AiKeySection(aiKeyViewModel)
-        HintText("Trajectory works fully offline. AI is only used when you turn it on and ask.")
+        HintText("Absencium works fully offline. AI is only used when you turn it on and ask.")
 
         SectionTitle("Integrations")
         MomentumToggle(settings, settingsViewModel)

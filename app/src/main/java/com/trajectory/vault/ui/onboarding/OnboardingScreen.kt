@@ -246,7 +246,7 @@ private fun StorageStep(
     SectionTitle("Target attendance threshold")
     SliderCard(
         title = "Minimum safe attendance",
-        subtitle = "Trajectory warns you when a subject approaches this limit. You can change it later.",
+        subtitle = "Absencium warns you when a subject approaches this limit. You can change it later.",
         value = settings.attendanceThresholdPercent,
         range = AppSettings.MIN_ATTENDANCE_THRESHOLD..AppSettings.MAX_ATTENDANCE_THRESHOLD,
         valueLabel = { "$it%" },

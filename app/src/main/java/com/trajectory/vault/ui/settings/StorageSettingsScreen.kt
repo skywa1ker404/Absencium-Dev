@@ -61,7 +61,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Text("Database backup", style = MaterialTheme.typography.titleMedium)
             Text(
-                text = "Saves everything in the Trajectory database (subjects, attendance, exams, notes index and more) " +
+                text = "Saves everything in the Absencium database (subjects, attendance, exams, notes index and more) " +
                     "as one .zip file you can keep anywhere. Note files and appearance settings are not inside it.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -72,7 +72,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
             ) {
                 PillButton(
                     text = "Back up",
-                    onClick = { backupLauncher.launch("Trajectory-backup-${LocalDate.now()}.zip") },
+                    onClick = { backupLauncher.launch("Absencium-backup-${LocalDate.now()}.zip") },
                     loading = storage.busy,
                 )
                 PillButton(
@@ -89,7 +89,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
             AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true) {
                 Text("Restore ready", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "The backup is applied the next time Trajectory starts. Close the app now, then open it again. " +
+                    text = "The backup is applied the next time Absencium starts. Close the app now, then open it again. " +
                         "Your current data is kept as a safety copy.",
                     style = MaterialTheme.typography.bodySmall,
                 )

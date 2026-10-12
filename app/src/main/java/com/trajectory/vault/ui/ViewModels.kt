@@ -104,7 +104,7 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
             }
             if (error == null) {
                 _state.update { it.copy(restoreStaged = true) }
-                "Backup checked and ready. Close and reopen Trajectory to finish restoring."
+                "Backup checked and ready. Close and reopen Absencium to finish restoring."
             } else {
                 error
             }
@@ -304,7 +304,7 @@ class TestLabViewModel(private val container: AppContainer) : ViewModel() {
         val folder = root.childFolder("_testlab") ?: return "Could not create the test folder in ${root.displayPath}."
         val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())
         val written = folder.openOutput("hello.txt", "text/plain")?.use { out ->
-            out.write("Trajectory storage test at $stamp".toByteArray(Charsets.UTF_8))
+            out.write("Absencium storage test at $stamp".toByteArray(Charsets.UTF_8))
             true
         } ?: false
         if (!written) return "Could not write a test file in ${folder.displayPath}."
