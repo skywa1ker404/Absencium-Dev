@@ -79,6 +79,7 @@ fun CalendarTab(
     contentPadding: PaddingValues,
     viewModel: CalendarViewModel,
     onOpenExam: (ExamEntity) -> Unit,
+    onEditHoliday: (HolidayEntity) -> Unit,
     onOpenTimetable: () -> Unit,
     onAddNotes: (subjectId: Long, date: LocalDate) -> Unit,
 ) {
@@ -117,6 +118,7 @@ fun CalendarTab(
             onSetStatus = { subjectId, status -> viewModel.setAttendance(subjectId, selected, status) },
             onSetNotes = { subjectId, collected -> viewModel.setNotesCollected(listOf(subjectId), selected, collected) },
             onOpenExam = onOpenExam,
+            onEditHoliday = onEditHoliday,
             onDeleteHoliday = { holidayToDelete = it },
         )
 
@@ -278,6 +280,7 @@ private fun DayPanel(
     onSetStatus: (Long, AttendanceStatus) -> Unit,
     onSetNotes: (Long, Boolean) -> Unit,
     onOpenExam: (ExamEntity) -> Unit,
+    onEditHoliday: (HolidayEntity) -> Unit,
     onDeleteHoliday: (HolidayEntity) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -299,6 +302,7 @@ private fun DayPanel(
                         color = colors.onSurfaceVariant,
                     )
                 }
+                TextButton(onClick = { onEditHoliday(holiday) }) { Text("Edit") }
                 TextButton(onClick = { onDeleteHoliday(holiday) }) { Text("Remove") }
             }
         }

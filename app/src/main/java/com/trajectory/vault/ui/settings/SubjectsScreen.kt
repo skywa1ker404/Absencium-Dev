@@ -95,6 +95,8 @@ private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
     var entryCount by remember { mutableStateOf<Int?>(null) }
     var stage by remember { mutableStateOf(0) }
     var typed by remember { mutableStateOf("") }
+    var renaming by remember { mutableStateOf(false) }
+    var newName by remember(subject.name) { mutableStateOf(subject.name) }
 
     AppCard(
         modifier = Modifier
@@ -120,6 +122,7 @@ private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
                 label = { Text(if (subject.isMuted) "Muted" else "Mute") },
                 shape = CircleShape,
             )
+            TextButton(onClick = { renaming = true }) { Text("Rename") }
             TextButton(onClick = {
                 scope.launch {
                     entryCount = viewModel.entryCount(subject)
@@ -128,6 +131,32 @@ private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
                 }
             }) { Text("Delete") }
         }
+    }
+
+    if (renaming) {
+        AlertDialog(
+            onDismissRequest = { renaming = false; newName = subject.name },
+            title = { Text("Rename subject") },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text("Subject name") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(20.dp),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = newName.isNotBlank(),
+                    onClick = {
+                        viewModel.rename(subject, newName)
+                        renaming = false
+                    },
+                ) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { renaming = false; newName = subject.name }) { Text("Cancel") } },
+        )
     }
 
     val count = entryCount

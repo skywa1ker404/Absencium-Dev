@@ -128,6 +128,22 @@ class CalendarRepository(private val database: TrajectoryDatabase) {
 
     suspend fun deleteExam(exam: ExamEntity) = database.examDao().delete(exam)
 
+    suspend fun updateExam(exam: ExamEntity) = database.examDao().update(exam)
+
+    /**
+     * Saves changes to a holiday. Returns false, and changes nothing, when the new date already has a
+     * different holiday, because a day can only have one.
+     */
+    suspend fun updateHoliday(holiday: HolidayEntity): Boolean {
+        val dao = database.holidayDao()
+        val other = dao.getForDate(holiday.date)
+        if (other != null && other.id != holiday.id) return false
+        dao.update(holiday)
+        return true
+    }
+
+    suspend fun updateSlot(slot: TimetableEntity) = database.timetableDao().update(slot)
+
     /** Adds the same lecture to every weekday in [days] (the "same time every day" option). */
     suspend fun addSlots(days: Collection<DayOfWeek>, subjectId: Long, start: LocalTime, end: LocalTime, room: String?) {
         for (day in days) addSlot(day, subjectId, start, end, room)

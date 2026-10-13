@@ -81,6 +81,16 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
 
     fun deleteExam(exam: ExamEntity) = perform("delete the exam") { repository.deleteExam(exam) }
 
+    fun updateExam(exam: ExamEntity) = perform("save the exam") { repository.updateExam(exam) }
+
+    fun updateHoliday(holiday: HolidayEntity) = perform("save the holiday") {
+        if (!repository.updateHoliday(holiday)) {
+            _message.value = "That day already has a holiday, so the change was not saved."
+        }
+    }
+
+    fun updateSlot(slot: TimetableEntity) = perform("save the lecture") { repository.updateSlot(slot) }
+
     fun addSlot(day: DayOfWeek, subjectId: Long, start: LocalTime, end: LocalTime, room: String?) =
         perform("add the lecture") { repository.addSlot(day, subjectId, start, end, room) }
 

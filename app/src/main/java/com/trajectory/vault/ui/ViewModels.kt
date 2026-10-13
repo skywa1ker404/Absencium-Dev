@@ -174,6 +174,8 @@ class SubjectsViewModel(container: AppContainer) : ViewModel() {
 
     fun add(name: String) = perform { repository.add(name) }
 
+    fun rename(subject: SubjectEntity, name: String) = perform { repository.rename(subject, name) }
+
     fun setActive(subject: SubjectEntity, active: Boolean) = perform { repository.setActive(subject, active) }
 
     fun setMuted(subject: SubjectEntity, muted: Boolean) = perform { repository.setMuted(subject, muted) }

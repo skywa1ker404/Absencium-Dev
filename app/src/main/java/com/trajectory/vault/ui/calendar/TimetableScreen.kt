@@ -31,6 +31,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.trajectory.vault.data.db.TimetableEntity
 import com.trajectory.vault.domain.hm
 import com.trajectory.vault.domain.parseTimeInput
 import com.trajectory.vault.ui.components.AppCard
@@ -63,6 +64,8 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
     var end by remember { mutableStateOf("") }
     var room by remember { mutableStateOf("") }
     var sameEveryDay by remember { mutableStateOf(false) }
+    // The saved lecture being changed, or null while adding a new one.
+    var editing by remember { mutableStateOf<TimetableEntity?>(null) }
 
     ScreenScaffold(title = "Timetable", onBack = { navigator.navigateUp() }) {
         val loaded = data
@@ -110,12 +113,33 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                             color = colors.onSurfaceVariant,
                         )
                     }
-                    TextButton(onClick = { viewModel.deleteSlot(slot) }) { Text("Remove") }
+                    TextButton(
+                        onClick = {
+                            editing = slot
+                            sameEveryDay = false
+                            subjectId = slot.subjectId
+                            start = slot.startTime.hm()
+                            end = slot.endTime.hm()
+                            room = slot.roomNumber.orEmpty()
+                        },
+                    ) { Text("Edit") }
+                    TextButton(
+                        onClick = {
+                            if (editing?.id == slot.id) editing = null
+                            viewModel.deleteSlot(slot)
+                        },
+                    ) { Text("Remove") }
                 }
             }
         }
 
-        SectionTitle(if (sameEveryDay) "Add a lecture every weekday" else "Add a lecture on ${day.full()}")
+        SectionTitle(
+            when {
+                editing != null -> "Edit lecture"
+                sameEveryDay -> "Add a lecture every weekday"
+                else -> "Add a lecture on ${day.full()}"
+            },
+        )
         if (subjects.isEmpty()) {
             AppCard(modifier = Modifier.fillMaxWidth()) {
                 Text("Add a subject first", style = MaterialTheme.typography.titleMedium)
@@ -140,7 +164,7 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                     )
                 }
             }
-            Row(
+            if (editing == null) Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -197,13 +221,25 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                 HintText("The end time must be after the start time.", modifier = Modifier.padding(top = 8.dp))
             }
             val chosen = subjectId
+            val slotBeingEdited = editing
             PillButton(
-                text = "Add lecture",
+                text = if (slotBeingEdited != null) "Save changes" else "Add lecture",
                 enabled = chosen != null && startTime != null && endTime != null && !order,
                 onClick = {
                     if (chosen != null && startTime != null && endTime != null) {
                         val roomText = room.trim().ifEmpty { null }
-                        if (sameEveryDay) {
+                        if (slotBeingEdited != null) {
+                            viewModel.updateSlot(
+                                slotBeingEdited.copy(
+                                    dayOfWeek = day,
+                                    subjectId = chosen,
+                                    startTime = startTime,
+                                    endTime = endTime,
+                                    roomNumber = roomText,
+                                ),
+                            )
+                            editing = null
+                        } else if (sameEveryDay) {
                             viewModel.addSlots(WeekDays, chosen, startTime, endTime, roomText)
                         } else {
                             viewModel.addSlot(day, chosen, startTime, endTime, roomText)
@@ -215,6 +251,16 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                 },
                 modifier = Modifier.padding(top = 12.dp),
             )
+            if (slotBeingEdited != null) {
+                TextButton(
+                    onClick = {
+                        editing = null
+                        start = ""
+                        end = ""
+                        room = ""
+                    },
+                ) { Text("Cancel editing") }
+            }
         }
     }
 }

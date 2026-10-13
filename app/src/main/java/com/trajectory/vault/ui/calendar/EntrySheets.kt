@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.trajectory.vault.data.db.ExamEntity
+import com.trajectory.vault.data.db.HolidayEntity
 import com.trajectory.vault.data.db.Priority
 import com.trajectory.vault.data.db.SubjectEntity
 import com.trajectory.vault.domain.pretty
@@ -74,23 +75,32 @@ fun AddEntrySheet(
     onDismiss: () -> Unit,
     onSaveExam: (subjectId: Long, date: LocalDate, title: String, weightage: Double?, room: String?, notes: String?, priority: Priority) -> Unit,
     onSaveHoliday: (start: LocalDate, end: LocalDate, title: String, autoSkip: Boolean, priority: Priority) -> Unit,
+    /** Set to edit a saved exam instead of adding one; the form opens filled in. */
+    editExam: ExamEntity? = null,
+    /** Set to edit a saved holiday instead of adding one. A single day can be edited. */
+    editHoliday: HolidayEntity? = null,
+    onUpdateExam: (ExamEntity) -> Unit = {},
+    onUpdateHoliday: (HolidayEntity) -> Unit = {},
 ) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
-    var type by remember { mutableStateOf(EntryType.EXAM) }
-    var title by remember { mutableStateOf("") }
-    var subjectId by remember { mutableStateOf<Long?>(subjects.firstOrNull()?.id) }
-    var date by remember { mutableStateOf(initialDate) }
+    val editing = editExam != null || editHoliday != null
+    var type by remember {
+        mutableStateOf(if (editHoliday != null) EntryType.HOLIDAY else EntryType.EXAM)
+    }
+    var title by remember { mutableStateOf(editExam?.title ?: editHoliday?.title ?: "") }
+    var subjectId by remember { mutableStateOf<Long?>(editExam?.subjectId ?: subjects.firstOrNull()?.id) }
+    var date by remember { mutableStateOf(editExam?.date ?: editHoliday?.date ?: initialDate) }
     var showPicker by remember { mutableStateOf(false) }
     // Which date the picker is editing: the start (or only) day, or the last day of a holiday range.
     var pickingEnd by remember { mutableStateOf(false) }
     var multiDay by remember { mutableStateOf(false) }
     var endDate by remember { mutableStateOf(initialDate) }
-    var priority by remember { mutableStateOf(Priority.HIGH) }
-    var autoSkip by remember { mutableStateOf(true) }
-    var weightage by remember { mutableStateOf("") }
-    var room by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
+    var priority by remember { mutableStateOf(editExam?.priority ?: editHoliday?.priority ?: Priority.HIGH) }
+    var autoSkip by remember { mutableStateOf(editHoliday?.autoSkip ?: true) }
+    var weightage by remember { mutableStateOf(editExam?.weightage?.let { trimNumber(it) } ?: "") }
+    var room by remember { mutableStateOf(editExam?.room ?: "") }
+    var notes by remember { mutableStateOf(editExam?.syllabusNotes ?: "") }
 
     val weightageValue = weightage.trim().toDoubleOrNull()
     val weightageInvalid = weightage.isNotBlank() && weightageValue == null
@@ -113,9 +123,16 @@ fun AddEntrySheet(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Add Calendar Entry", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                text = when {
+                    editExam != null -> "Edit exam"
+                    editHoliday != null -> "Edit holiday"
+                    else -> "Add Calendar Entry"
+                },
+                style = MaterialTheme.typography.headlineSmall,
+            )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!editing) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ExpressiveChip(
                     selected = type == EntryType.EXAM,
                     onClick = {
@@ -171,7 +188,7 @@ fun AddEntrySheet(
                 Icon(AppIcons.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text("${date.pretty()} ${date.year}", modifier = Modifier.padding(start = 8.dp))
             }
-            if (type == EntryType.HOLIDAY) {
+            if (type == EntryType.HOLIDAY && !editing) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -276,11 +293,27 @@ fun AddEntrySheet(
             }
 
             PillButton(
-                text = "Save",
+                text = if (editing) "Save changes" else "Save",
                 enabled = canSave,
                 onClick = {
                     val cleanTitle = title.trim()
-                    if (type == EntryType.EXAM) {
+                    if (editExam != null) {
+                        onUpdateExam(
+                            editExam.copy(
+                                subjectId = subjectId ?: return@PillButton,
+                                date = date,
+                                title = cleanTitle,
+                                weightage = weightageValue,
+                                room = room.trim().ifEmpty { null },
+                                syllabusNotes = notes.trim().ifEmpty { null },
+                                priority = priority,
+                            ),
+                        )
+                    } else if (editHoliday != null) {
+                        onUpdateHoliday(
+                            editHoliday.copy(date = date, title = cleanTitle, autoSkip = autoSkip, priority = priority),
+                        )
+                    } else if (type == EntryType.EXAM) {
                         onSaveExam(
                             subjectId ?: return@PillButton,
                             date,
@@ -333,6 +366,7 @@ fun ExamDetailSheet(
     subjectName: String,
     today: LocalDate,
     onDismiss: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -363,6 +397,11 @@ fun ExamDetailSheet(
             Text(
                 text = exam.syllabusNotes ?: "No notes added.",
                 style = MaterialTheme.typography.bodyMedium,
+            )
+            PillButton(
+                text = "Edit exam",
+                onClick = onEdit,
+                modifier = Modifier.fillMaxWidth(),
             )
             PillButton(
                 text = "Delete exam",

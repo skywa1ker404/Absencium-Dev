@@ -19,6 +19,16 @@ class SubjectRepository(private val dao: SubjectDao, private val cascade: Subjec
         return attempt("add \"$trimmed\"", "That subject already exists.") { dao.insert(SubjectEntity(name = trimmed)) }
     }
 
+    /** Renames a subject. Returns null on success or a message for the user. */
+    suspend fun rename(subject: SubjectEntity, name: String): String? {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return "Enter a subject name."
+        if (trimmed == subject.name) return null
+        return attempt("rename ${subject.name}", "Another subject already has that name.") {
+            dao.update(subject.copy(name = trimmed))
+        }
+    }
+
     suspend fun setActive(subject: SubjectEntity, active: Boolean): String? =
         attempt("update ${subject.name}", "Could not update the subject.") { dao.update(subject.copy(isActive = active)) }
 

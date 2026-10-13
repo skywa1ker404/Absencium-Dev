@@ -55,6 +55,7 @@ import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDes
 import com.ramcosta.composedestinations.generated.destinations.TimetableScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.data.db.ExamEntity
+import com.trajectory.vault.data.db.HolidayEntity
 import com.trajectory.vault.ui.calendar.AddEntrySheet
 import com.trajectory.vault.ui.calendar.CalendarTab
 import com.trajectory.vault.ui.calendar.CalendarViewModel
@@ -136,6 +137,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
+    var editExam by remember { mutableStateOf<ExamEntity?>(null) }
+    var editHoliday by remember { mutableStateOf<HolidayEntity?>(null) }
 
     BackHandler(enabled = tab != TAB_HOME) { tab = TAB_HOME }
     LaunchedEffect(tab) { compactState.value = false }
@@ -224,6 +227,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             contentPadding = contentPadding,
                             viewModel = calendarViewModel,
                             onOpenExam = { openExam = it },
+                            onEditHoliday = { editHoliday = it },
                             onOpenTimetable = { navigator.navigate(TimetableScreenDestination) },
                             onAddNotes = { subjectId, date ->
                                 navigator.navigate(
@@ -341,6 +345,32 @@ fun MainScreen(navigator: DestinationsNavigator) {
         )
     }
 
+    val examBeingEdited = editExam
+    val holidayBeingEdited = editHoliday
+    if ((examBeingEdited != null || holidayBeingEdited != null) && loaded != null) {
+        AddEntrySheet(
+            // The exam's own subject stays selectable even if it has since been made inactive.
+            subjects = loaded.subjects.filter { it.isActive || it.id == examBeingEdited?.subjectId },
+            initialDate = now.toLocalDate(),
+            onDismiss = {
+                editExam = null
+                editHoliday = null
+            },
+            onSaveExam = { _, _, _, _, _, _, _ -> },
+            onSaveHoliday = { _, _, _, _, _ -> },
+            editExam = examBeingEdited,
+            editHoliday = holidayBeingEdited,
+            onUpdateExam = {
+                calendarViewModel.updateExam(it)
+                editExam = null
+            },
+            onUpdateHoliday = {
+                calendarViewModel.updateHoliday(it)
+                editHoliday = null
+            },
+        )
+    }
+
     val exam = openExam
     if (exam != null && loaded != null) {
         ExamDetailSheet(
@@ -348,6 +378,10 @@ fun MainScreen(navigator: DestinationsNavigator) {
             subjectName = loaded.subjects.firstOrNull { it.id == exam.subjectId }?.name ?: "Unknown subject",
             today = now.toLocalDate(),
             onDismiss = { openExam = null },
+            onEdit = {
+                editExam = exam
+                openExam = null
+            },
             onDelete = {
                 calendarViewModel.deleteExam(exam)
                 openExam = null
