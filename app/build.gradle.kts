@@ -33,8 +33,13 @@ android {
     }
 
     buildTypes {
+        // The optimised build: shrunk and optimised with R8, not debuggable, signed with the same key as the
+        // debug build so it installs over it. Debug builds are much slower than this, mostly in the first seconds.
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
@@ -50,6 +55,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.foundation)

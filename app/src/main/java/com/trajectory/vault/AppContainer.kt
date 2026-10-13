@@ -1,6 +1,13 @@
 package com.trajectory.vault
 
 import android.content.Context
+import com.trajectory.vault.data.settings.AppSettings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import com.trajectory.vault.data.ai.AiClient
 import com.trajectory.vault.data.backup.DatabaseBackup
 import com.trajectory.vault.data.calendar.CalendarRepository
@@ -23,6 +30,15 @@ class AppContainer(context: Context) {
 
     val database: TrajectoryDatabase by lazy { TrajectoryDatabase.get(appContext) }
     val settingsRepository = SettingsRepository(appContext)
+
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * The saved settings, read as soon as the app process starts so they are ready before the first screen.
+     * Null only until that first read finishes; the splash screen stays up until then.
+     */
+    val settingsState: StateFlow<AppSettings?> = settingsRepository.settings
+        .stateIn(appScope, SharingStarted.Eagerly, null)
     val notesStorageSettings = NotesStorageSettings(appContext)
     val notesStorage = NotesStorage(appContext, notesStorageSettings)
     val apiKeyVault = ApiKeyVault(appContext)

@@ -33,15 +33,13 @@ fun ColorEngine.description(): String = when (this) {
 const val REQUIRES_ANDROID_12 = "Needs Android 12 or newer"
 
 fun VisualQuality.label(): String = when (this) {
-    VisualQuality.LOW -> "Low"
-    VisualQuality.MID -> "Mid"
-    VisualQuality.HIGH -> "High"
-    VisualQuality.ULTRA -> "Ultra"
+    VisualQuality.PERFORMANCE -> "Performance mode"
+    VisualQuality.QUALITY -> "Quality mode"
 }
 
 fun VisualQuality.description(): String = when (this) {
-    VisualQuality.LOW -> "Fastest. Solid bars instead of blur, no tab slide and calmer motion. Best for phones with 4 GB of RAM or less."
-    VisualQuality.MID -> "Lighter frosted blur, no lens bending, gentler motion. A balance for mid-range phones."
-    VisualQuality.HIGH -> "The full look: liquid glass that blurs and bends the content behind it (lens bending needs Android 13), and springy animations."
-    VisualQuality.ULTRA -> "High plus color fringing, depth and soft shadows on the glass. Uses the most graphics power."
+    VisualQuality.PERFORMANCE ->
+        "Smoothest. Solid bars instead of glass, calmer animations. Every feature stays. Best for phones with 6 GB of RAM or less."
+    VisualQuality.QUALITY ->
+        "The full look: real liquid glass that blurs and bends what is behind it (lens bending needs Android 13), and springy animations."
 }

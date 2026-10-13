@@ -8,6 +8,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
@@ -19,7 +20,12 @@ import com.trajectory.vault.ui.theme.isDarkTheme
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // The splash screen stays up until the saved settings are read, so the first frame is already in the
+        // right theme instead of an empty window.
+        val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
+        val container = applicationContext.appContainer
+        splash.setKeepOnScreenCondition { container.settingsState.value == null }
         enableEdgeToEdge()
         setContent {
             val viewModel = rememberMainViewModel()

@@ -7,6 +7,8 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import java.io.File
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -39,6 +41,14 @@ object DebugLogger {
     private val lock = Any()
     private val timestampFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
 
+    /**
+     * File writes happen on this one background thread, in the order they were logged, so logging
+     * never blocks the UI thread. A crash entry is the exception: it waits until it is on disk.
+     */
+    private val writer = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "debug-log-writer").apply { isDaemon = true }
+    }
+
     @Volatile
     private var logFile: File? = null
 
@@ -52,6 +62,7 @@ object DebugLogger {
     /** The last [maxLines] lines of the log file, for the Test Lab. */
     fun readTail(maxLines: Int = 120): String {
         val file = logFile ?: return "(logger not initialised)"
+        flush()
         return synchronized(lock) {
             try {
                 file.readLines().takeLast(maxLines).joinToString("\n")
@@ -73,6 +84,8 @@ object DebugLogger {
             initialized = true
             if (externalDir == null) {
                 writeLine(
+                    timestampFormat.synchronizedFormat(Date()),
+                    Thread.currentThread().name,
                     "WARN",
                     TAG,
                     "External files directory unavailable, logging to internal storage instead: ${file.absolutePath}",
@@ -102,19 +115,49 @@ object DebugLogger {
             "WARN" -> Log.w(tag, message, throwable)
             else -> Log.e(tag, message, throwable)
         }
-        synchronized(lock) { writeLine(level, tag, message, throwable) }
+        // The time and thread are taken here, on the caller, so the entry shows where it came from.
+        val timestamp = timestampFormat.synchronizedFormat(Date())
+        val threadName = Thread.currentThread().name
+        val task = Runnable { synchronized(lock) { writeLine(timestamp, threadName, level, tag, message, throwable) } }
+        try {
+            if (level == "FATAL") {
+                writer.submit(task).get(2, TimeUnit.SECONDS)
+            } else {
+                writer.execute(task)
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "Could not queue a log entry", t)
+        }
     }
 
+    /** Waits (briefly) until everything logged so far is on disk. */
+    private fun flush() {
+        try {
+            writer.submit {}.get(500, TimeUnit.MILLISECONDS)
+        } catch (ignored: Throwable) {
+            // A slow disk must not stall the caller.
+        }
+    }
+
+    private fun SimpleDateFormat.synchronizedFormat(date: Date): String = synchronized(this) { format(date) }
+
     /** Must be called while holding [lock], or during init before the logger is shared. */
-    private fun writeLine(level: String, tag: String, message: String, throwable: Throwable?) {
+    private fun writeLine(
+        timestamp: String,
+        threadName: String,
+        level: String,
+        tag: String,
+        message: String,
+        throwable: Throwable?,
+    ) {
         val file = logFile ?: return
         try {
             val text = buildString {
-                append(timestampFormat.format(Date()))
+                append(timestamp)
                 append(' ')
                 append(level)
                 append(" [")
-                append(Thread.currentThread().name)
+                append(threadName)
                 append("] ")
                 append(tag)
                 append(": ")

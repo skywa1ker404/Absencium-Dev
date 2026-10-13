@@ -35,7 +35,7 @@ data class AppSettings(
     /** Blur radius of the Liquid Glass bars, in dp. */
     val glassBlurDp: Int = DEFAULT_GLASS_BLUR,
     /** Starts at the level recommended for the phone; the user can change it at any time. */
-    val visualQuality: VisualQuality = VisualQuality.HIGH,
+    val visualQuality: VisualQuality = VisualQuality.PERFORMANCE,
     val attendanceThresholdPercent: Int = 75,
     val focusGraceMinutes: Int = 5,
     val examModeAutoSilence: Boolean = false,
@@ -60,9 +60,9 @@ data class AppSettings(
 
     companion object {
         val DEFAULT_ACCENT: Int = 0xFF7C3AED.toInt()
-        const val DEFAULT_GLASS_BLUR = 20
-        const val MIN_GLASS_BLUR = 5
-        const val MAX_GLASS_BLUR = 40
+        const val DEFAULT_GLASS_BLUR = 4
+        const val MIN_GLASS_BLUR = 0
+        const val MAX_GLASS_BLUR = 30
         const val MIN_ATTENDANCE_THRESHOLD = 60
         const val MAX_ATTENDANCE_THRESHOLD = 85
     }

@@ -40,6 +40,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -246,29 +250,36 @@ private fun DayCell(
         isOff -> colors.onTertiaryContainer
         else -> colors.onSurface
     }
+    val primary = colors.primary
+    val dotColors = exams.take(3).map { subjectColor(it.subjectId) }
+    // One text node; the round background, today ring and exam dots are drawn directly so a month of
+    // cells stays cheap to compose, measure and draw.
     Box(
         modifier = modifier
             .aspectRatio(1f)
+            .drawBehind {
+                drawCircle(background)
+                if (isToday) drawCircle(primary, radius = size.minDimension / 2f - 1.dp.toPx(), style = Stroke(width = 2.dp.toPx()))
+                val dot = 2.5.dp.toPx()
+                val gap = 2.dp.toPx()
+                val total = dotColors.size * dot * 2f + (dotColors.size - 1).coerceAtLeast(0) * gap
+                var x = (size.width - total) / 2f + dot
+                val y = size.height * 0.78f
+                dotColors.forEach { color ->
+                    drawCircle(color, radius = dot, center = Offset(x, y))
+                    x += dot * 2f + gap
+                }
+            }
             .clip(CircleShape)
-            .background(background)
-            .then(if (isToday) Modifier.border(2.dp, colors.primary, CircleShape) else Modifier)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = date.dayOfMonth.toString(),
-                style = MaterialTheme.typography.labelLarge,
-                color = textColor,
-            )
-            // One coloured dot per exam, up to three, in the subject's colour.
-            Row(horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(top = 1.dp)) {
-                exams.take(3).forEach { exam ->
-                    Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(subjectColor(exam.subjectId)))
-                }
-                if (exams.isEmpty()) Box(modifier = Modifier.size(5.dp))
-            }
-        }
+        Text(
+            text = date.dayOfMonth.toString(),
+            style = MaterialTheme.typography.labelLarge,
+            color = textColor,
+            modifier = Modifier.offset(y = if (dotColors.isEmpty()) 0.dp else (-2).dp),
+        )
     }
 }
 

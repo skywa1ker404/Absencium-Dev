@@ -26,9 +26,9 @@ import com.trajectory.vault.ui.theme.LocalQuality
 
 /**
  * The look of a floating element (top bar, floating navigation bar). With a [backdrop] (Liquid Glass
- * on Android 12+) it is real glass built on the Backdrop library: it blurs what scrolls behind it
- * and, from High quality on Android 13+, bends that content like a lens. Without one it is a solid
- * [tint] surface.
+ * in Quality mode on Android 12+) it is plain, colourless glass built on the Backdrop library: it
+ * blurs what scrolls behind it and, on Android 13+, bends that content like a lens. Without one it is
+ * a solid [tint] surface.
  */
 @Composable
 fun Modifier.floatingGlass(
@@ -44,6 +44,7 @@ fun Modifier.floatingGlass(
         return this.clip(shape).background(tint).then(border)
     }
     val quality = LocalQuality.current
+    val veil = if (isDark) Color(0xFF121212).copy(alpha = 0.32f) else Color(0xFFFAFAFA).copy(alpha = 0.38f)
     val blurDp = LocalGlassBlur.current
     // Lens refraction needs rounded corners and Android 13 (a runtime shader); a plain rectangle only blurs.
     val lens = quality.glassLens && shape is CornerBasedShape && isRuntimeShaderSupported()
@@ -60,17 +61,13 @@ fun Modifier.floatingGlass(
                 vibrancy()
                 blur(blurDp.toPx())
                 if (lens) {
-                    lens(
-                        refractionHeight = 12.dp.toPx(),
-                        refractionAmount = 24.dp.toPx(),
-                        depthEffect = quality.glassPremium,
-                        chromaticAberration = quality.glassPremium,
-                    )
+                    lens(refractionHeight = 12.dp.toPx(), refractionAmount = 24.dp.toPx())
                 }
             },
             highlight = if (bordered && quality.glassHighlight) ({ Highlight.Default }) else null,
-            shadow = if (quality.glassPremium) ({ Shadow.Default }) else null,
-            onDrawSurface = { drawRect(tint.copy(alpha = 0.5f)) },
+            shadow = if (bordered && quality.glassHighlight) ({ Shadow.Default }) else null,
+            // Plain glass: no colour of its own, only a faint light or dark veil so it reads on any content.
+            onDrawSurface = { drawRect(veil) },
         )
         .then(rim)
 }

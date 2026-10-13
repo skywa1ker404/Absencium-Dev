@@ -2,13 +2,9 @@ package com.trajectory.vault.ui.main
 
 import com.trajectory.vault.ui.theme.LocalQuality
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +77,8 @@ import com.trajectory.vault.ui.theme.LocalBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -196,20 +195,20 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     // Inside the recorded layer, so the glass bars blur a solid page colour, not empty space.
                     .background(colors.background),
             ) {
-                AnimatedContent(
-                    targetState = tab,
-                    transitionSpec = {
-                        // Low and Mid fade only; the slide moves a whole tab of content every frame.
-                        val enter = if (q.decorativeMotion) {
-                            fadeIn(q.spring(stiffness = Spring.StiffnessMedium)) +
-                                slideInVertically(q.spring(stiffness = Spring.StiffnessMediumLow)) { it / 24 }
-                        } else {
-                            fadeIn(q.spring(stiffness = Spring.StiffnessMedium))
-                        }
-                        enter.togetherWith(fadeOut(q.spring(stiffness = Spring.StiffnessMedium)))
-                    },
-                    label = "tab",
-                ) { current ->
+                // Every tab stays composed once it has been opened, so switching is just a fade, not a rebuild
+                // of the whole tab (the Calendar month grid is the heavy one). Calendar and Vault are prepared
+                // a few seconds after start while Home is idle.
+                var visited by remember { mutableStateOf(setOf(tab)) }
+                LaunchedEffect(tab) { if (tab !in visited) visited = visited + tab }
+                LaunchedEffect(Unit) {
+                    delay(3_000)
+                    visited = visited + TAB_ATTENDS
+                    delay(1_500)
+                    visited = visited + TAB_VAULT
+                }
+                listOf(TAB_HOME, TAB_ATTENDS, TAB_VAULT).forEach { current ->
+                    if (current in visited) key(current) {
+                        TabSlot(visible = current == tab, fade = q.decorativeMotion) {
                     val loaded = data
                     when {
                         loaded == null -> TabColumn(contentPadding) {}
@@ -254,6 +253,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
                                     onOpenDrafts = { navigator.navigate(DraftsScreenDestination) },
                                 )
                             }
+                        }
+                    }
                         }
                     }
                 }
@@ -303,6 +304,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
                                 navigator.navigate(NewEntryScreenDestination(subjectId = 0L, draftId = 0L))
                             }
                         },
+                        },
+                        backdrop = backdrop,
                     )
                 }
             }
@@ -424,4 +427,30 @@ fun MainScreen(navigator: DestinationsNavigator) {
             },
         )
     }
+}
+
+
+/**
+ * One tab of the shell. A tab that is not showing keeps its state and its composition but is not drawn,
+ * not touched and takes no space, so the visible tab is the only one doing work each frame.
+ */
+@Composable
+private fun TabSlot(visible: Boolean, fade: Boolean, content: @Composable () -> Unit) {
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = if (fade) tween(durationMillis = 180) else snap(),
+        label = "tabAlpha",
+    )
+    Box(
+        modifier = Modifier
+            .graphicsLayer { this.alpha = alpha }
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                if (!visible && alpha == 0f) {
+                    layout(0, 0) {}
+                } else {
+                    layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+                }
+            },
+    ) { content() }
 }

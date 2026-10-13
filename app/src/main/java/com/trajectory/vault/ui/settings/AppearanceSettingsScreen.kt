@@ -68,7 +68,7 @@ fun VisualQualityChoices(
     onSelect: (VisualQuality) -> Unit,
 ) {
     SectionTitle("Visual quality")
-    HintText("Lower levels turn down blur and animation to keep the app smooth. Every feature stays.")
+    HintText("Performance mode turns off blur and decorative animation to keep the app smooth. Quality mode adds glass blur, refraction and richer motion. Every feature stays in both.")
     VisualQuality.entries.forEach { level ->
         OptionCard(
             title = if (level == recommended) "${level.label()} (recommended for this phone)" else level.label(),

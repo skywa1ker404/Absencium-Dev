@@ -5,14 +5,12 @@ import android.content.Context
 import android.os.Build
 
 /**
- * How much the app spends on visual effects. Lower levels keep every feature and control and only
- * reduce what is drawn and animated.
+ * How much the app spends on visual effects. Performance mode keeps every feature and control and
+ * only turns down blur and animation; Quality mode is the full look.
  */
 enum class VisualQuality {
-    LOW,
-    MID,
-    HIGH,
-    ULTRA,
+    PERFORMANCE,
+    QUALITY,
 }
 
 /** What the phone's own numbers say about it, used only to pick a starting [VisualQuality]. */
@@ -23,20 +21,15 @@ data class DeviceProfile(
     val lowRamFlag: Boolean,
 ) {
     /**
-     * A starting point, not a benchmark: RAM is the main signal because it tracks the phone's class.
-     * Ultra is never chosen automatically. A phone with 4 GB reports a little under 4 GiB, a 6 GB phone
-     * about 5.5 GiB and an 8 GB phone about 7.3 GiB, so the cut-offs sit between those figures.
+     * A starting point, not a benchmark: RAM is the main signal because it tracks the phone's class. A
+     * phone with 8 GB reports about 7.3 GiB, so only phones from there up start in Quality mode, and only
+     * with a recent Android version and more than four CPU cores. Anything else starts in Performance mode.
      */
     val recommended: VisualQuality
-        get() {
-            val byRam = when {
-                lowRamFlag || totalRamGiB < 4.6 -> VisualQuality.LOW
-                totalRamGiB < 7.0 -> VisualQuality.MID
-                else -> VisualQuality.HIGH
-            }
-            // Older Android versions and few CPU cores point to older hardware, so never start above Mid.
-            val ceiling = if (sdk < Build.VERSION_CODES.Q || cpuCores <= 4) VisualQuality.MID else VisualQuality.HIGH
-            return if (byRam.ordinal > ceiling.ordinal) ceiling else byRam
+        get() = if (!lowRamFlag && totalRamGiB >= 7.0 && cpuCores > 4 && sdk >= Build.VERSION_CODES.Q) {
+            VisualQuality.QUALITY
+        } else {
+            VisualQuality.PERFORMANCE
         }
 
     companion object {

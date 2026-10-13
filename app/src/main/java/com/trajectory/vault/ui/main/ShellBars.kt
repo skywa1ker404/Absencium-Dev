@@ -65,6 +65,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -105,6 +106,7 @@ fun BottomPill(
 ) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
+    val isDarkSurface = colors.surface.luminance() < 0.5f
     // Read here, not in the caller, so collapsing the pill only redraws the pill and not the whole screen.
     val isCompact = compact()
     val density = LocalDensity.current
@@ -190,10 +192,21 @@ fun BottomPill(
                     scaleY = zoom
                 }
                 .clip(CircleShape)
-                .background(if (glass) colors.primaryContainer else colors.secondaryContainer)
+                .background(
+                    if (glass) {
+                        // Plain glass: the selected tab is a faint lighter or darker puck, never a colour.
+                        if (isDarkSurface) Color.White.copy(alpha = 0.16f) else Color.Black.copy(alpha = 0.08f)
+                    } else {
+                        colors.secondaryContainer
+                    },
+                )
                 .border(
                     1.dp,
-                    if (glass) colors.primary.copy(alpha = 0.4f) else colors.secondary.copy(alpha = 0.55f),
+                    if (glass) {
+                        Color.White.copy(alpha = if (isDarkSurface) 0.28f else 0.7f)
+                    } else {
+                        colors.secondary.copy(alpha = 0.55f)
+                    },
                     CircleShape,
                 ),
         )
@@ -318,7 +331,7 @@ private fun PillTab(
         animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "tabPress",
     )
-    val selectedColor = if (glass) colors.onPrimaryContainer else colors.onSecondaryContainer
+    val selectedColor = if (glass) colors.onSurface else colors.onSecondaryContainer
     val tint = androidx.compose.ui.graphics.lerp(colors.onSurfaceVariant, selectedColor, weight.coerceIn(0f, 1f))
     Row(
         modifier = modifier
@@ -360,7 +373,13 @@ private fun PillTab(
 
 /** The contextual action button above the bar (Add Entry on Attendance, New Entry in the Vault). */
 @Composable
-fun ShellFab(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ShellFab(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    backdrop: LayerBackdrop? = null,
+) {
     val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -369,6 +388,29 @@ fun ShellFab(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Mo
         animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
         label = "fabPress",
     )
+    if (backdrop != null) {
+        // Glass mode: a plain glass pill with no colour of its own.
+        Row(
+            modifier = modifier
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .floatingGlass(backdrop, CircleShape)
+                .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        return
+    }
     Button(
         onClick = onClick,
         modifier = modifier.graphicsLayer {

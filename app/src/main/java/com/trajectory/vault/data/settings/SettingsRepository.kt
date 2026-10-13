@@ -118,7 +118,7 @@ class SettingsRepository(context: Context) {
             colorEngine = enumOrDefault(this[Keys.COLOR_ENGINE], defaults.colorEngine),
             accentColor = this[Keys.ACCENT_COLOR] ?: defaults.accentColor,
             glassBlurDp = this[Keys.GLASS_BLUR] ?: defaults.glassBlurDp,
-            visualQuality = enumOrDefault(this[Keys.VISUAL_QUALITY], deviceProfile.recommended),
+            visualQuality = visualQualityFrom(this[Keys.VISUAL_QUALITY]),
             attendanceThresholdPercent = this[Keys.ATTENDANCE_THRESHOLD] ?: defaults.attendanceThresholdPercent,
             focusGraceMinutes = this[Keys.FOCUS_GRACE_MINUTES] ?: defaults.focusGraceMinutes,
             examModeAutoSilence = this[Keys.EXAM_MODE_AUTO_SILENCE] ?: defaults.examModeAutoSilence,
@@ -132,6 +132,13 @@ class SettingsRepository(context: Context) {
             lowStorageCompressorEnabled =
                 this[Keys.LOW_STORAGE_COMPRESSOR_ENABLED] ?: defaults.lowStorageCompressorEnabled,
         )
+    }
+
+    /** Reads the saved mode. Builds before the two-mode setting stored LOW, MID, HIGH or ULTRA. */
+    private fun visualQualityFrom(saved: String?): VisualQuality = when (saved) {
+        "PERFORMANCE", "LOW", "MID" -> VisualQuality.PERFORMANCE
+        "QUALITY", "HIGH", "ULTRA" -> VisualQuality.QUALITY
+        else -> deviceProfile.recommended
     }
 
     private inline fun <reified E : Enum<E>> enumOrDefault(name: String?, default: E): E =

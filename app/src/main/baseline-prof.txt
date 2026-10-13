@@ -1,0 +1,4 @@
+# Baseline profile: tells Android to compile the app's own code ahead of time, so the first seconds after
+# install are not spent interpreting it. Compose and AndroidX ship their own profiles.
+HSPLcom/trajectory/vault/**;->**(**)**
+Lcom/trajectory/vault/**;

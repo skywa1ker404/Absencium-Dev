@@ -171,7 +171,7 @@ fun TrajectoryTheme(
         CompositionLocalProvider(
             LocalQuality provides quality,
             LocalGlassEnabled provides glassActive,
-            LocalGlassBlur provides (settings.glassBlurDp * quality.blurScale).dp,
+            LocalGlassBlur provides settings.glassBlurDp.dp,
             // Text outside a Surface would otherwise fall back to black, which is unreadable on dark themes.
             LocalContentColor provides colorScheme.onBackground,
         ) {
