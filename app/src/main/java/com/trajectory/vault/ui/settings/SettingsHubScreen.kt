@@ -3,7 +3,10 @@ package com.trajectory.vault.ui.settings
 import androidx.compose.runtime.Composable
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AboutScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ChangelogScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.IntroTourScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AppearanceSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.GeneralSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.StorageSettingsScreenDestination
@@ -27,7 +30,7 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
         NavCard(
             icon = AppIcons.Palette,
             title = "Appearance",
-            subtitle = "Theme mode, color engine, accent color",
+            subtitle = "Visual quality, theme mode, color engine, accent color",
             onClick = { navigator.navigate(AppearanceSettingsScreenDestination) },
         )
         NavCard(
@@ -41,6 +44,26 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
             title = "AI & Integrations",
             subtitle = "Ask AI, API key vault, Momentum tracker",
             onClick = { navigator.navigate(AiSettingsScreenDestination) },
+        )
+
+        SectionTitle("App")
+        NavCard(
+            icon = AppIcons.PlayCircle,
+            title = "Replay intro",
+            subtitle = "A short tour of what Absencium is for",
+            onClick = { navigator.navigate(IntroTourScreenDestination) },
+        )
+        NavCard(
+            icon = AppIcons.History,
+            title = "Changelog",
+            subtitle = "What changed in each version",
+            onClick = { navigator.navigate(ChangelogScreenDestination) },
+        )
+        NavCard(
+            icon = AppIcons.Info,
+            title = "About",
+            subtitle = "Version, developer and source code",
+            onClick = { navigator.navigate(AboutScreenDestination) },
         )
 
         SectionTitle("Developer")
