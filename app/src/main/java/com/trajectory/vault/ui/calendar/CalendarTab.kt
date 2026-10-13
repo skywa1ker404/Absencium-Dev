@@ -42,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
@@ -240,17 +239,18 @@ private fun DayCell(
 ) {
     val colors = MaterialTheme.colorScheme
     val background = when {
+        isToday -> colors.primary
         isSelected -> colors.primaryContainer
         // Holidays and weekends use a solid blend, never a see-through colour.
         isOff -> lerp(colors.surfaceContainerHigh, colors.tertiaryContainer, 0.6f)
         else -> colors.surfaceContainerHigh
     }
     val textColor = when {
+        isToday -> colors.onPrimary
         isSelected -> colors.onPrimaryContainer
         isOff -> colors.onTertiaryContainer
         else -> colors.onSurface
     }
-    val primary = colors.primary
     val dotColors = exams.take(3).map { subjectColor(it.subjectId) }
     // One text node; the round background, today ring and exam dots are drawn directly so a month of
     // cells stays cheap to compose, measure and draw.
@@ -259,7 +259,6 @@ private fun DayCell(
             .aspectRatio(1f)
             .drawBehind {
                 drawCircle(background)
-                if (isToday) drawCircle(primary, radius = size.minDimension / 2f - 1.dp.toPx(), style = Stroke(width = 2.dp.toPx()))
                 val dot = 2.5.dp.toPx()
                 val gap = 2.dp.toPx()
                 val total = dotColors.size * dot * 2f + (dotColors.size - 1).coerceAtLeast(0) * gap

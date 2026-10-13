@@ -15,9 +15,11 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -25,9 +27,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.materialkolor.PaletteStyle
-import com.materialkolor.dynamiccolor.ColorSpec
-import com.materialkolor.rememberDynamicColorScheme
 import com.trajectory.vault.R
 import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
@@ -38,19 +37,27 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 val isMonetAndBlurSupported: Boolean
     get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
-/** The engine actually used: Monet and Liquid Glass fall back to Solid Accent below Android 12. */
+/** The engine actually used: Monet and Liquid Glass need Android 12, so older phones use the Default Theme. */
 fun effectiveColorEngine(requested: ColorEngine): ColorEngine =
-    if (requested != ColorEngine.SOLID_ACCENT && !isMonetAndBlurSupported) {
-        ColorEngine.SOLID_ACCENT
+    if ((requested == ColorEngine.MONET_WALLPAPER || requested == ColorEngine.LIQUID_GLASS) && !isMonetAndBlurSupported) {
+        ColorEngine.DEFAULT_PALETTE
     } else {
         requested
     }
 
-/** Dark: near-black neutral surfaces. */
-private val DarkBackground = Color(0xFF0D0D0D)
-
-/** OLED Dark: a true black (#000000) background so OLED pixels switch off. */
-private val OledBackground = Color(0xFF000000)
+/**
+ * Whether the app is drawn dark. A scheme with no light variant (Dracula, Poimandres) is always dark,
+ * whatever the phone or the theme mode says.
+ */
+fun resolveDark(settings: AppSettings, systemDark: Boolean): Boolean {
+    val wantsDark = when (settings.themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK, ThemeMode.DARK_OLED -> true
+        ThemeMode.SYSTEM_AUTO -> systemDark
+    }
+    val darkOnly = effectiveColorEngine(settings.colorEngine) == ColorEngine.PRESET && !settings.themePreset.palette().hasLight
+    return wantsDark || darkOnly
+}
 
 /** Blur radius of the frosted glass bars, from the glass intensity setting. */
 val LocalGlassBlur = staticCompositionLocalOf { 20.dp }
@@ -114,53 +121,21 @@ fun TrajectoryTheme(
 ) {
     val context = LocalContext.current
     val systemDark = isSystemInDarkTheme()
-    val isDark = when (settings.themeMode) {
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK, ThemeMode.DARK_OLED -> true
-        ThemeMode.SYSTEM_AUTO -> systemDark
-    }
+    val isDark = resolveDark(settings, systemDark)
     val engine = effectiveColorEngine(settings.colorEngine)
-    val seed = Color(settings.accentColor)
 
-    val generated: ColorScheme = when (engine) {
-        // Only Monet follows the wallpaper; Liquid Glass and Solid Accent use the chosen accent colour.
-        ColorEngine.MONET_WALLPAPER -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-
-        ColorEngine.LIQUID_GLASS,
-        ColorEngine.SOLID_ACCENT,
-        -> rememberDynamicColorScheme(
-            seedColor = seed,
-            isDark = isDark,
-            specVersion = ColorSpec.SpecVersion.SPEC_2025,
-            style = PaletteStyle.Expressive,
-        )
-    }
-
-    val colorScheme = when (settings.themeMode) {
-        ThemeMode.DARK_OLED -> generated.copy(
-            background = OledBackground,
-            surface = OledBackground,
-            surfaceDim = OledBackground,
-            surfaceContainerLowest = OledBackground,
-            surfaceContainerLow = Color(0xFF0A0A0A),
-            surfaceContainer = Color(0xFF101010),
-            surfaceContainerHigh = Color(0xFF161616),
-            surfaceContainerHighest = Color(0xFF1D1D1D),
-        )
-
-        ThemeMode.DARK, ThemeMode.SYSTEM_AUTO -> if (!isDark) generated else generated.copy(
-            background = DarkBackground,
-            surface = DarkBackground,
-            surfaceDim = DarkBackground,
-            surfaceContainerLowest = DarkBackground,
-            surfaceContainerLow = Color(0xFF141414),
-            surfaceContainer = Color(0xFF191919),
-            surfaceContainerHigh = Color(0xFF1E1E1E),
-            surfaceContainerHighest = Color(0xFF262626),
-        )
-
-        // Light uses the generated scheme as it is.
-        ThemeMode.LIGHT -> generated
+    val colorScheme: ColorScheme = remember(engine, isDark, settings.themePreset, settings.themeMode, context, LocalConfiguration.current) {
+        val generated = when (engine) {
+            // The system's own scheme: the wallpaper colour picked in Wallpaper & style, light or dark.
+            ColorEngine.MONET_WALLPAPER -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            ColorEngine.DEFAULT_PALETTE -> (if (isDark) DefaultPalette.dark else DefaultPalette.light).toColorScheme(isDark)
+            ColorEngine.LIQUID_GLASS -> (if (isDark) GlassPalette.dark else GlassPalette.light).toColorScheme(isDark)
+            ColorEngine.PRESET -> {
+                val (variantIsDark, variant) = settings.themePreset.palette().variantFor(isDark)
+                variant.toColorScheme(variantIsDark)
+            }
+        }
+        if (settings.themeMode == ThemeMode.DARK_OLED && isDark) generated.oledBlack() else generated
     }
 
     val quality = QualityProfile.of(settings.visualQuality)
@@ -184,8 +159,4 @@ fun TrajectoryTheme(
 
 /** Whether the theme in [settings] is dark, resolving System Auto against the phone's setting. */
 @Composable
-fun isDarkTheme(settings: AppSettings): Boolean = when (settings.themeMode) {
-    ThemeMode.LIGHT -> false
-    ThemeMode.DARK, ThemeMode.DARK_OLED -> true
-    ThemeMode.SYSTEM_AUTO -> isSystemInDarkTheme()
-}
+fun isDarkTheme(settings: AppSettings): Boolean = resolveDark(settings, isSystemInDarkTheme())

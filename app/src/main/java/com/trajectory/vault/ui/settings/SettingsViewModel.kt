@@ -14,6 +14,7 @@ import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.SettingsRepository
 import com.trajectory.vault.data.settings.ThemeMode
+import com.trajectory.vault.data.settings.ThemePreset
 import com.trajectory.vault.data.settings.VisualQuality
 import com.trajectory.vault.logging.DebugLogger
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,7 +33,12 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setColorEngine(engine: ColorEngine) = launch { repository.setColorEngine(engine) }
 
-    fun setAccentColor(argb: Int) = launch { repository.setAccentColor(argb) }
+    fun setThemePreset(preset: ThemePreset) = launch {
+        repository.setThemePreset(preset)
+        DebugLogger.i("Theme", "Theme preset set to ${preset.name}")
+    }
+
+    fun setIntroSeen() = launch { repository.setIntroSeen(true) }
 
     fun setGlassBlur(dp: Int) = launch { repository.setGlassBlur(dp) }
 

@@ -96,7 +96,12 @@ fun AppCard(
         label = "cardPress",
     )
     val container by animateColorAsState(
-        targetValue = if (highlighted || pressed) colors.surfaceContainerHigh else colors.surfaceContainerLow,
+        targetValue = when {
+            // A chosen card is tinted toward the theme's accent container instead of being outlined.
+            highlighted -> androidx.compose.ui.graphics.lerp(colors.surfaceContainerHigh, colors.primaryContainer, 0.55f)
+            pressed -> colors.surfaceContainerHigh
+            else -> colors.surfaceContainerLow
+        },
         animationSpec = q.spring(),
         label = "cardColor",
     )
@@ -114,7 +119,6 @@ fun AppCard(
             .animateContentSize(animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy)),
         shape = shape,
         color = container,
-        border = if (highlighted) BorderStroke(2.dp, colors.primary) else null,
     ) {
         Column(modifier = Modifier.then(clickModifier).padding(20.dp), content = content)
     }
@@ -227,63 +231,6 @@ fun OptionCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                }
-            }
-        }
-    }
-}
-
-private val AccentPresets = listOf(
-    Color(0xFF7C3AED),
-    Color(0xFF6750A4),
-    Color(0xFF1E6FD9),
-    Color(0xFF00897B),
-    Color(0xFF43A047),
-    Color(0xFFF57C00),
-    Color(0xFFD32F2F),
-    Color(0xFFD81B60),
-)
-
-/** Preset accent swatches. The chosen one gets a ring and a check mark, and springs when tapped. */
-@Composable
-fun AccentColorPicker(
-    selected: Color,
-    onSelected: (Color) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val q = LocalQuality.current
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        AccentPresets.chunked(4).forEach { rowColors ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                rowColors.forEach { preset ->
-                    val isSelected = preset == selected
-                    val scale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.08f else 1f,
-                        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                        label = "swatchScale",
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                            }
-                            .clip(CircleShape)
-                            .background(preset)
-                            .border(
-                                width = if (isSelected) 3.dp else 0.dp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                shape = CircleShape,
-                            )
-                            .clickable { onSelected(preset) }
-                            .semantics { contentDescription = "Accent color" },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (isSelected) {
-                            Text("\u2713", color = Color.White, style = MaterialTheme.typography.titleMedium)
-                        }
-                    }
                 }
             }
         }

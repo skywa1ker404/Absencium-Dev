@@ -5,9 +5,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -15,9 +16,9 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.ThemeMode
+import com.trajectory.vault.data.settings.ThemePreset
 import com.trajectory.vault.data.settings.VisualQuality
 import com.trajectory.vault.ui.REQUIRES_ANDROID_12
-import com.trajectory.vault.ui.components.AccentColorPicker
 import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.OptionCard
@@ -26,7 +27,9 @@ import com.trajectory.vault.ui.components.SectionTitle
 import com.trajectory.vault.ui.components.SliderCard
 import com.trajectory.vault.ui.description
 import com.trajectory.vault.ui.label
+import com.trajectory.vault.ui.theme.isDarkTheme
 import com.trajectory.vault.ui.theme.isMonetAndBlurSupported
+import com.trajectory.vault.ui.theme.palette
 
 @Destination<RootGraph>
 @Composable
@@ -41,21 +44,15 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
             onSelect = viewModel::setVisualQuality,
         )
         ThemeModeChoices(selected = settings.themeMode, onSelect = viewModel::setThemeMode)
-        ColorEngineChoices(selected = settings.colorEngine, onSelect = viewModel::setColorEngine)
+        ColorEngineChoices(
+            settings = settings,
+            onSelect = viewModel::setColorEngine,
+            onPresetSelected = viewModel::setThemePreset,
+        )
 
         if (settings.colorEngine == ColorEngine.LIQUID_GLASS && isMonetAndBlurSupported) {
             SectionTitle("Frosted glass intensity")
             GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
-        }
-
-        if (settings.colorEngine != ColorEngine.MONET_WALLPAPER) {
-            SectionTitle("Accent color")
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                AccentColorPicker(
-                    selected = Color(settings.accentColor),
-                    onSelected = { viewModel.setAccentColor(it.toArgb()) },
-                )
-            }
         }
     }
 }
@@ -93,18 +90,44 @@ fun ThemeModeChoices(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     }
 }
 
-/** Color engine choices. Monet and Liquid Glass are greyed out below Android 12. */
+/**
+ * Theme choices: Default Theme, Monet, Liquid Glass and Presets. Presets opens its own page of colour schemes;
+ * picking one there applies and saves it at once.
+ */
 @Composable
-fun ColorEngineChoices(selected: ColorEngine, onSelect: (ColorEngine) -> Unit) {
-    SectionTitle("Color engine")
-    ColorEngine.entries.forEach { engine ->
-        val available = engine == ColorEngine.SOLID_ACCENT || isMonetAndBlurSupported
+fun ColorEngineChoices(
+    settings: AppSettings,
+    onSelect: (ColorEngine) -> Unit,
+    onPresetSelected: (ThemePreset) -> Unit,
+) {
+    var showPresets by remember { mutableStateOf(false) }
+    SectionTitle("Theme")
+    listOf(ColorEngine.DEFAULT_PALETTE, ColorEngine.MONET_WALLPAPER, ColorEngine.LIQUID_GLASS).forEach { engine ->
+        val available = engine == ColorEngine.DEFAULT_PALETTE || isMonetAndBlurSupported
         OptionCard(
             title = engine.label(),
             subtitle = if (available) engine.description() else "${engine.description()}\n$REQUIRES_ANDROID_12",
-            selected = selected == engine,
+            selected = settings.colorEngine == engine,
             enabled = available,
             onClick = { onSelect(engine) },
+        )
+    }
+    OptionCard(
+        title = ColorEngine.PRESET.label(),
+        subtitle = if (settings.colorEngine == ColorEngine.PRESET) {
+            "${settings.themePreset.palette().name} \u2022 tap to change"
+        } else {
+            ColorEngine.PRESET.description()
+        },
+        selected = settings.colorEngine == ColorEngine.PRESET,
+        onClick = { showPresets = true },
+    )
+    if (showPresets) {
+        PresetsPage(
+            selected = settings.themePreset.takeIf { settings.colorEngine == ColorEngine.PRESET },
+            isDark = isDarkTheme(settings),
+            onSelect = onPresetSelected,
+            onDismiss = { showPresets = false },
         )
     }
 }

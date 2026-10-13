@@ -39,9 +39,8 @@ fun Modifier.floatingGlass(
 ): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     if (backdrop == null) {
-        // Solid look (Solid Accent, Monet, or glass switched off): an opaque outline, so it never reads as glass.
-        val border = if (bordered) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape) else Modifier
-        return this.clip(shape).background(tint).then(border)
+        // Solid look (Monet, Default, a preset, or glass switched off): a plain tonal surface, no outline.
+        return this.clip(shape).background(tint)
     }
     val quality = LocalQuality.current
     val veil = if (isDark) Color(0xFF121212).copy(alpha = 0.32f) else Color(0xFFFAFAFA).copy(alpha = 0.38f)

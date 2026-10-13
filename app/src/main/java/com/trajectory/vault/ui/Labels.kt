@@ -19,15 +19,17 @@ fun ThemeMode.description(): String = when (this) {
 }
 
 fun ColorEngine.label(): String = when (this) {
-    ColorEngine.SOLID_ACCENT -> "Solid Accent"
-    ColorEngine.MONET_WALLPAPER -> "Monet Wallpaper"
+    ColorEngine.DEFAULT_PALETTE -> "Default Theme"
+    ColorEngine.MONET_WALLPAPER -> "Monet"
     ColorEngine.LIQUID_GLASS -> "Liquid Glass"
+    ColorEngine.PRESET -> "Presets"
 }
 
 fun ColorEngine.description(): String = when (this) {
-    ColorEngine.SOLID_ACCENT -> "A full palette built from one accent color you choose"
-    ColorEngine.MONET_WALLPAPER -> "Colors taken from your wallpaper (Material You)"
-    ColorEngine.LIQUID_GLASS -> "Real glass bars that blur and bend what scrolls behind them, in your accent color"
+    ColorEngine.DEFAULT_PALETTE -> "Soft olive and grey tones, in light and dark"
+    ColorEngine.MONET_WALLPAPER -> "The colours of the wallpaper you picked in your phone's settings (Material You)"
+    ColorEngine.LIQUID_GLASS -> "Plain, colourless glass bars that blur and bend what scrolls behind them"
+    ColorEngine.PRESET -> "Catppuccin, Dracula, Nord, Gruvbox and more"
 }
 
 const val REQUIRES_ANDROID_12 = "Needs Android 12 or newer"

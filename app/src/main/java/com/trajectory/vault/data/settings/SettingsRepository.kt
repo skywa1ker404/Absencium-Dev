@@ -48,7 +48,15 @@ class SettingsRepository(context: Context) {
 
     suspend fun setColorEngine(value: ColorEngine) = write(Keys.COLOR_ENGINE, value.name)
 
-    suspend fun setAccentColor(argb: Int) = write(Keys.ACCENT_COLOR, argb)
+    /** Picking a preset also switches the engine to Presets, in one write, so the theme changes at once. */
+    suspend fun setThemePreset(value: ThemePreset) {
+        dataStore.edit {
+            it[Keys.THEME_PRESET] = value.name
+            it[Keys.COLOR_ENGINE] = ColorEngine.PRESET.name
+        }
+    }
+
+    suspend fun setIntroSeen(value: Boolean) = write(Keys.INTRO_SEEN, value)
 
     suspend fun setGlassBlur(dp: Int) = write(
         Keys.GLASS_BLUR,
@@ -93,7 +101,8 @@ class SettingsRepository(context: Context) {
         val DISPLAY_NAME = stringPreferencesKey("display_name")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_ENGINE = stringPreferencesKey("color_engine")
-        val ACCENT_COLOR = intPreferencesKey("accent_color")
+        val THEME_PRESET = stringPreferencesKey("theme_preset")
+        val INTRO_SEEN = booleanPreferencesKey("intro_seen")
         val GLASS_BLUR = intPreferencesKey("glass_blur_dp")
         val VISUAL_QUALITY = stringPreferencesKey("visual_quality")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
@@ -112,11 +121,12 @@ class SettingsRepository(context: Context) {
     private fun Preferences.toAppSettings(): AppSettings {
         val defaults = AppSettings()
         return AppSettings(
+            introSeen = this[Keys.INTRO_SEEN] ?: defaults.introSeen,
             onboardingComplete = this[Keys.ONBOARDING_COMPLETE] ?: defaults.onboardingComplete,
             displayName = this[Keys.DISPLAY_NAME] ?: defaults.displayName,
             themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode),
             colorEngine = enumOrDefault(this[Keys.COLOR_ENGINE], defaults.colorEngine),
-            accentColor = this[Keys.ACCENT_COLOR] ?: defaults.accentColor,
+            themePreset = enumOrDefault(this[Keys.THEME_PRESET], defaults.themePreset),
             glassBlurDp = this[Keys.GLASS_BLUR] ?: defaults.glassBlurDp,
             visualQuality = visualQualityFrom(this[Keys.VISUAL_QUALITY]),
             attendanceThresholdPercent = this[Keys.ATTENDANCE_THRESHOLD] ?: defaults.attendanceThresholdPercent,

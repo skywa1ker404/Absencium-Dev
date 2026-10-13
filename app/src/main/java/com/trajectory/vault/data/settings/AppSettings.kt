@@ -15,23 +15,30 @@ enum class ThemeMode {
 }
 
 enum class ColorEngine {
-    SOLID_ACCENT,
+    /** The built-in olive and grey palette, in light and dark. Works on every Android version. */
+    DEFAULT_PALETTE,
 
-    /** Needs Android 12 (API 31) or newer. */
+    /** The colours of the wallpaper chosen in the system settings. Needs Android 12 (API 31) or newer. */
     MONET_WALLPAPER,
 
-    /** Needs Android 12 (API 31) or newer. */
+    /** Colourless glass bars. Needs Android 12 (API 31) or newer. */
     LIQUID_GLASS,
+
+    /** One of the schemes on the Presets page, see [AppSettings.themePreset]. */
+    PRESET,
 }
 
-/** Every user setting that is not stored in the database. [accentColor] is an ARGB int. */
+/** Every user setting that is not stored in the database. */
 data class AppSettings(
+    /** The first-launch intro has been shown (or skipped). It plays once, before the setup wizard. */
+    val introSeen: Boolean = false,
     val onboardingComplete: Boolean = false,
     /** Shown on the profile avatar and greeting. Empty until the user sets one. */
     val displayName: String = "",
     val themeMode: ThemeMode = ThemeMode.SYSTEM_AUTO,
-    val colorEngine: ColorEngine = ColorEngine.SOLID_ACCENT,
-    val accentColor: Int = DEFAULT_ACCENT,
+    val colorEngine: ColorEngine = ColorEngine.MONET_WALLPAPER,
+    /** Used while [colorEngine] is [ColorEngine.PRESET]; remembered otherwise. */
+    val themePreset: ThemePreset = ThemePreset.CATPPUCCIN,
     /** Blur radius of the Liquid Glass bars, in dp. */
     val glassBlurDp: Int = DEFAULT_GLASS_BLUR,
     /** Starts at the level recommended for the phone; the user can change it at any time. */
@@ -59,7 +66,6 @@ data class AppSettings(
         get() = aiBaseUrl.isNotBlank() && aiModel.isNotBlank()
 
     companion object {
-        val DEFAULT_ACCENT: Int = 0xFF7C3AED.toInt()
         const val DEFAULT_GLASS_BLUR = 4
         const val MIN_GLASS_BLUR = 0
         const val MAX_GLASS_BLUR = 30

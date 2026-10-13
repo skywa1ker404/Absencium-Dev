@@ -200,14 +200,13 @@ fun BottomPill(
                         colors.secondaryContainer
                     },
                 )
-                .border(
-                    1.dp,
+                // Only the glass puck has a light rim, like a lens edge; every other theme has no outline.
+                .then(
                     if (glass) {
-                        Color.White.copy(alpha = if (isDarkSurface) 0.28f else 0.7f)
+                        Modifier.border(1.dp, Color.White.copy(alpha = if (isDarkSurface) 0.28f else 0.7f), CircleShape)
                     } else {
-                        colors.secondary.copy(alpha = 0.55f)
+                        Modifier
                     },
-                    CircleShape,
                 ),
         )
         Row(
@@ -497,7 +496,6 @@ fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier =
                 }
                 .clip(CircleShape)
                 .background(colors.primaryContainer)
-                .border(1.dp, colors.outlineVariant, CircleShape)
                 .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onProfile)
                 .semantics { contentDescription = "Profile" },
             contentAlignment = Alignment.Center,

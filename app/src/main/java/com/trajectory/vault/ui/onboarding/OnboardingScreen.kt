@@ -36,7 +36,6 @@ import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.ui.AiKeyViewModel
 import com.trajectory.vault.ui.StorageViewModel
-import com.trajectory.vault.ui.components.AccentColorPicker
 import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.PillButton
@@ -68,7 +67,7 @@ private const val LAST_STEP = STEP_COUNT - 1
 
 private val StepTitles = listOf("Theme & Appearance Setup", "Notes Storage Directory", "AI Engine & Optional Modules")
 private val StepSubtitles = listOf(
-    "Pick a visual quality for your phone, then your theme, color engine and glass blur. Changes apply instantly.",
+    "Pick a visual quality for your phone, then your theme: Monet, Liquid Glass, the Default Theme or a preset. Changes apply instantly.",
     "Choose where your notes, PDFs and recordings live, and your minimum safe attendance.",
     "Set up an optional AI connection and the background modules you want. All can be changed later in Settings.",
 )
@@ -226,19 +225,14 @@ private fun ThemeStep(settings: AppSettings, viewModel: com.trajectory.vault.ui.
         onSelect = { viewModel.setVisualQuality(it) },
     )
     ThemeModeChoices(selected = settings.themeMode, onSelect = { viewModel.setThemeMode(it) })
-    ColorEngineChoices(selected = settings.colorEngine, onSelect = { viewModel.setColorEngine(it) })
+    ColorEngineChoices(
+        settings = settings,
+        onSelect = { viewModel.setColorEngine(it) },
+        onPresetSelected = { viewModel.setThemePreset(it) },
+    )
     if (settings.colorEngine == ColorEngine.LIQUID_GLASS && isMonetAndBlurSupported) {
         SectionTitle("Frosted glass intensity")
         GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
-    }
-    if (settings.colorEngine != ColorEngine.MONET_WALLPAPER) {
-        SectionTitle("Accent color")
-        AppCard(modifier = Modifier.fillMaxWidth()) {
-            AccentColorPicker(
-                selected = Color(settings.accentColor),
-                onSelected = { viewModel.setAccentColor(it.toArgb()) },
-            )
-        }
     }
 }
 

@@ -12,7 +12,9 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
+import com.trajectory.vault.ui.about.IntroTourContent
 import com.trajectory.vault.ui.onboarding.OnboardingScreen
+import com.trajectory.vault.ui.settings.rememberSettingsViewModel
 import com.trajectory.vault.ui.rememberMainViewModel
 import com.trajectory.vault.ui.theme.TrajectoryTheme
 import com.trajectory.vault.ui.theme.isDarkTheme
@@ -46,6 +48,10 @@ class MainActivity : ComponentActivity() {
                     // First run: the wizard is shown until its last step is finished.
                     if (loaded.onboardingComplete) {
                         DestinationsNavHost(navGraph = NavGraphs.root)
+                    } else if (!loaded.introSeen) {
+                        // The very first launch: the intro plays, then the setup wizard.
+                        val settingsViewModel = rememberSettingsViewModel()
+                        IntroTourContent(onFinish = settingsViewModel::setIntroSeen)
                     } else {
                         OnboardingScreen()
                     }

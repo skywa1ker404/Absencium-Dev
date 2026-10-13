@@ -64,7 +64,7 @@ private val Pages = listOf(
     TourPage(
         AppIcons.Palette,
         "Make it yours, make it smooth",
-        "Pick a theme and a Visual Quality level that suits your phone. Lower levels turn down blur and animation; nothing is taken away.",
+        "Pick Monet, Liquid Glass, the Default Theme or a preset, and Performance or Quality mode to suit your phone. Performance mode turns down blur and animation; nothing is taken away.",
     ),
 )
 
@@ -72,6 +72,15 @@ private val Pages = listOf(
 @Destination<RootGraph>
 @Composable
 fun IntroTourScreen(navigator: DestinationsNavigator) {
+    IntroTourContent(onFinish = { navigator.navigateUp() })
+}
+
+/**
+ * The tour itself. On the first launch it plays before the setup wizard and [onFinish] moves on to it;
+ * from Settings, [onFinish] just goes back.
+ */
+@Composable
+fun IntroTourContent(onFinish: () -> Unit) {
     val q = LocalQuality.current
     val pagerState = rememberPagerState(pageCount = { Pages.size })
     val scope = rememberCoroutineScope()
@@ -82,7 +91,7 @@ fun IntroTourScreen(navigator: DestinationsNavigator) {
 
     Column(modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = { navigator.navigateUp() }) { Text(if (last) "Close" else "Skip") }
+            TextButton(onClick = onFinish) { Text(if (last) "Close" else "Skip") }
         }
 
         HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { index ->
@@ -124,7 +133,7 @@ fun IntroTourScreen(navigator: DestinationsNavigator) {
             PillButton(
                 text = if (last) "Done" else "Next",
                 onClick = {
-                    if (last) navigator.navigateUp() else scope.launch { pagerState.animateScrollToPage(page + 1) }
+                    if (last) onFinish() else scope.launch { pagerState.animateScrollToPage(page + 1) }
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
