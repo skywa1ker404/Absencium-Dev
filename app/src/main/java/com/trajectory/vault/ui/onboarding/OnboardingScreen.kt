@@ -59,8 +59,8 @@ import com.trajectory.vault.ui.settings.aiReady
 import com.trajectory.vault.ui.settings.rememberSettingsViewModel
 import com.trajectory.vault.ui.theme.LocalGlassEnabled
 import com.trajectory.vault.ui.theme.isMonetAndBlurSupported
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 
 private const val STEP_COUNT = 3
@@ -94,14 +94,14 @@ fun OnboardingScreen() {
 
     BackHandler(enabled = step > 0) { goTo(step - 1) }
 
-    val hazeState = if (LocalGlassEnabled.current) rememberHazeState() else null
+    val backdrop = if (LocalGlassEnabled.current) rememberLayerBackdrop() else null
     val background = MaterialTheme.colorScheme.background
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
+                .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier)
                 .background(background)
                 .statusBarsPadding(),
         ) {
@@ -186,7 +186,7 @@ fun OnboardingScreen() {
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
-                .floatingGlass(hazeState, RoundedCornerShape(36.dp))
+                .floatingGlass(backdrop, RoundedCornerShape(36.dp))
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
@@ -231,7 +231,7 @@ private fun ThemeStep(settings: AppSettings, viewModel: com.trajectory.vault.ui.
         SectionTitle("Frosted glass intensity")
         GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
     }
-    if (settings.colorEngine == ColorEngine.SOLID_ACCENT) {
+    if (settings.colorEngine != ColorEngine.MONET_WALLPAPER) {
         SectionTitle("Accent color")
         AppCard(modifier = Modifier.fillMaxWidth()) {
             AccentColorPicker(

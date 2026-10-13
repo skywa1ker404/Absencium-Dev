@@ -67,9 +67,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.sp
 import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.theme.LocalGlassEnabled
-import com.trajectory.vault.ui.theme.LocalHazeState
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
+import com.trajectory.vault.ui.theme.LocalBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlin.math.roundToInt
 
 /**
@@ -135,10 +135,10 @@ fun ScreenScaffold(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val glass = LocalGlassEnabled.current
-    val hazeState = if (glass) rememberHazeState() else null
+    val backdrop = if (glass) rememberLayerBackdrop() else null
     val colors = MaterialTheme.colorScheme
 
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    CompositionLocalProvider(LocalBackdrop provides backdrop) {
         Scaffold(
             modifier = modifier,
             containerColor = colors.background,
@@ -157,7 +157,7 @@ fun ScreenScaffold(
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                     modifier = Modifier.floatingGlass(
-                        hazeState = hazeState,
+                        backdrop = backdrop,
                         shape = RectangleShape,
                         tint = colors.background,
                         bordered = false,
@@ -169,7 +169,7 @@ fun ScreenScaffold(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
+                    .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier)
                     .background(colors.background),
             ) {
                 Column(

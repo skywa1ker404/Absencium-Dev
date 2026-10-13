@@ -17,10 +17,12 @@ class QualityProfile private constructor(
     val blurEnabled: Boolean,
     /** Multiplier on the user's blur intensity. */
     val blurScale: Float,
-    /** Film grain drawn over the blur. */
-    val glassNoise: Float,
-    /** A lit top edge on the glass, drawn as a gradient border. */
-    val litGlassEdge: Boolean,
+    /** Bends the content behind the glass like a lens (Android 13+). */
+    val glassLens: Boolean,
+    /** A lit specular edge around the glass. */
+    val glassHighlight: Boolean,
+    /** Colour fringing, depth and a soft drop shadow on the glass. The most expensive look. */
+    val glassPremium: Boolean,
     /** Animations that exist only for delight, such as the slide when switching tabs. */
     val decorativeMotion: Boolean,
     private val minDamping: Float,
@@ -40,19 +42,19 @@ class QualityProfile private constructor(
 
     companion object {
         private val Low = QualityProfile(
-            VisualQuality.LOW, blurEnabled = false, blurScale = 0f, glassNoise = 0f, litGlassEdge = false,
+            VisualQuality.LOW, blurEnabled = false, blurScale = 0f, glassLens = false, glassHighlight = false, glassPremium = false,
             decorativeMotion = false, minDamping = 1f, stiffnessScale = 1.6f,
         )
         private val Mid = QualityProfile(
-            VisualQuality.MID, blurEnabled = true, blurScale = 0.6f, glassNoise = 0f, litGlassEdge = false,
+            VisualQuality.MID, blurEnabled = true, blurScale = 0.6f, glassLens = false, glassHighlight = false, glassPremium = false,
             decorativeMotion = false, minDamping = 0.75f, stiffnessScale = 1.2f,
         )
         private val High = QualityProfile(
-            VisualQuality.HIGH, blurEnabled = true, blurScale = 1f, glassNoise = 0.06f, litGlassEdge = false,
+            VisualQuality.HIGH, blurEnabled = true, blurScale = 1f, glassLens = true, glassHighlight = true, glassPremium = false,
             decorativeMotion = true, minDamping = 0f, stiffnessScale = 1f,
         )
         private val Ultra = QualityProfile(
-            VisualQuality.ULTRA, blurEnabled = true, blurScale = 1f, glassNoise = 0.09f, litGlassEdge = true,
+            VisualQuality.ULTRA, blurEnabled = true, blurScale = 1f, glassLens = true, glassHighlight = true, glassPremium = true,
             decorativeMotion = true, minDamping = 0f, stiffnessScale = 1f,
         )
 

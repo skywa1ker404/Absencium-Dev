@@ -72,7 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trajectory.vault.ui.components.floatingGlass
 import com.trajectory.vault.ui.icons.AppIcons
-import dev.chrisbanes.haze.HazeState
+import com.kyant.backdrop.backdrops.LayerBackdrop
 
 class MainTab(val label: String, val icon: ImageVector)
 
@@ -99,7 +99,7 @@ fun BottomPill(
     tabs: List<MainTab>,
     selectedIndex: Int,
     compact: () -> Boolean,
-    hazeState: HazeState?,
+    backdrop: LayerBackdrop?,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -110,7 +110,7 @@ fun BottomPill(
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    val glass = hazeState != null
+    val glass = backdrop != null
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelLarge
     val lastIndex = tabs.lastIndex
@@ -179,7 +179,7 @@ fun BottomPill(
 
     // Not clipped, so the swollen highlight can reach past the edge of the pill.
     Box(modifier = modifier.width(with(density) { totalWidthPx.toDp() }).height(PillHeight)) {
-        Box(modifier = Modifier.matchParentSize().floatingGlass(hazeState, CircleShape))
+        Box(modifier = Modifier.matchParentSize().floatingGlass(backdrop, CircleShape))
         Box(
             modifier = Modifier
                 .offset { IntOffset(indicatorLeft(position).roundToInt(), ((PillHeight - ItemHeight) / 2).roundToPx()) }
@@ -391,7 +391,7 @@ fun ShellFab(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Mo
 
 /** The round floating search button that sits above the navigation pill. */
 @Composable
-fun ShellSearchButton(hazeState: HazeState?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ShellSearchButton(backdrop: LayerBackdrop?, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -407,7 +407,7 @@ fun ShellSearchButton(hazeState: HazeState?, onClick: () -> Unit, modifier: Modi
                 scaleX = scale
                 scaleY = scale
             }
-            .floatingGlass(hazeState, CircleShape)
+            .floatingGlass(backdrop, CircleShape)
             .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
             .semantics { contentDescription = "Search" },
         contentAlignment = Alignment.Center,

@@ -64,8 +64,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
-    implementation(libs.haze)
-    implementation(libs.haze.blur)
+    implementation(libs.kyant.backdrop)
     implementation(libs.material.kolor)
     implementation(libs.compose.destinations.core)
     ksp(libs.compose.destinations.ksp)

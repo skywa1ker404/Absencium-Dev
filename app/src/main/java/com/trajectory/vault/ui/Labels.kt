@@ -27,7 +27,7 @@ fun ColorEngine.label(): String = when (this) {
 fun ColorEngine.description(): String = when (this) {
     ColorEngine.SOLID_ACCENT -> "A full palette built from one accent color you choose"
     ColorEngine.MONET_WALLPAPER -> "Colors taken from your wallpaper (Material You)"
-    ColorEngine.LIQUID_GLASS -> "Frosted glass bars with colors taken from your wallpaper (Material You)"
+    ColorEngine.LIQUID_GLASS -> "Real glass bars that blur and bend what scrolls behind them, in your accent color"
 }
 
 const val REQUIRES_ANDROID_12 = "Needs Android 12 or newer"
@@ -41,7 +41,7 @@ fun VisualQuality.label(): String = when (this) {
 
 fun VisualQuality.description(): String = when (this) {
     VisualQuality.LOW -> "Fastest. Solid bars instead of blur, no tab slide and calmer motion. Best for phones with 4 GB of RAM or less."
-    VisualQuality.MID -> "Lighter blur without grain, gentler motion. A balance for mid-range phones."
-    VisualQuality.HIGH -> "The full look: frosted glass blur and springy animations."
-    VisualQuality.ULTRA -> "High plus a lit glass edge and extra grain. Uses the most graphics power."
+    VisualQuality.MID -> "Lighter frosted blur, no lens bending, gentler motion. A balance for mid-range phones."
+    VisualQuality.HIGH -> "The full look: liquid glass that blurs and bends the content behind it (lens bending needs Android 13), and springy animations."
+    VisualQuality.ULTRA -> "High plus color fringing, depth and soft shadows on the glass. Uses the most graphics power."
 }

@@ -74,9 +74,9 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import com.trajectory.vault.ui.settings.rememberSettingsViewModel
 import com.trajectory.vault.ui.theme.LocalGlassEnabled
-import com.trajectory.vault.ui.theme.LocalHazeState
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
+import com.trajectory.vault.ui.theme.LocalBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
@@ -171,13 +171,13 @@ fun MainScreen(navigator: DestinationsNavigator) {
     }
 
     val glass = LocalGlassEnabled.current
-    val hazeState = if (glass) rememberHazeState() else null
+    val backdrop = if (glass) rememberLayerBackdrop() else null
     val colors = MaterialTheme.colorScheme
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val contentPadding = PaddingValues(top = topInset + 72.dp, bottom = bottomInset + 168.dp)
 
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    CompositionLocalProvider(LocalBackdrop provides backdrop) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -188,7 +188,9 @@ fun MainScreen(navigator: DestinationsNavigator) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier),
+                    .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier)
+                    // Inside the recorded layer, so the glass bars blur a solid page colour, not empty space.
+                    .background(colors.background),
             ) {
                 AnimatedContent(
                     targetState = tab,
@@ -256,7 +258,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .floatingGlass(hazeState, RectangleShape, tint = colors.background, bordered = false),
+                    .floatingGlass(backdrop, RectangleShape, tint = colors.background, bordered = false),
             ) {
                 ShellTopBar(displayName = settings.displayName, onProfile = { showProfile = true })
             }
@@ -306,14 +308,14 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     .align(Alignment.BottomEnd)
                     .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp),
             ) {
-                ShellSearchButton(hazeState = hazeState, onClick = { showSearch = true })
+                ShellSearchButton(backdrop = backdrop, onClick = { showSearch = true })
             }
 
             BottomPill(
                 tabs = Tabs,
                 selectedIndex = tab,
                 compact = { compactState.value },
-                hazeState = hazeState,
+                backdrop = backdrop,
                 onSelect = { tab = it },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)

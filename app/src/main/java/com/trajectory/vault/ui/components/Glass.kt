@@ -4,69 +4,75 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.isRuntimeShaderSupported
+import com.kyant.backdrop.shadow.Shadow
 import com.trajectory.vault.ui.theme.LocalGlassBlur
 import com.trajectory.vault.ui.theme.LocalGlassEnabled
 import com.trajectory.vault.ui.theme.LocalQuality
-import dev.chrisbanes.haze.*
-import dev.chrisbanes.haze.blur.*
 
 /**
- * The look of a floating element (top bar, floating navigation bar). With a [hazeState] (Liquid Glass
- * on Android 12+) it is frosted glass that blurs whatever scrolls behind it; otherwise it is a
- * solid [tint] surface.
+ * The look of a floating element (top bar, floating navigation bar). With a [backdrop] (Liquid Glass
+ * on Android 12+) it is real glass built on the Backdrop library: it blurs what scrolls behind it
+ * and, from High quality on Android 13+, bends that content like a lens. Without one it is a solid
+ * [tint] surface.
  */
 @Composable
 fun Modifier.floatingGlass(
-    hazeState: HazeState?,
+    backdrop: LayerBackdrop?,
     shape: Shape,
     tint: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
     bordered: Boolean = true,
 ): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    // Glass gets a light rim; the solid (Monet and accent) look gets an opaque outline, so it never reads as glass.
-    val solidBorder = MaterialTheme.colorScheme.outlineVariant
+    if (backdrop == null) {
+        // Solid look (Solid Accent, Monet, or glass switched off): an opaque outline, so it never reads as glass.
+        val border = if (bordered) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape) else Modifier
+        return this.clip(shape).background(tint).then(border)
+    }
     val quality = LocalQuality.current
-    val rimAlpha = if (isDark) 0.16f else 0.55f
-    val borderModifier = if (!bordered) {
-        Modifier
-    } else if (hazeState == null) {
-        Modifier.border(1.dp, solidBorder, shape)
-    } else if (quality.litGlassEdge) {
-        // Ultra: light catches the top edge of the glass and fades toward the bottom.
-        Modifier.border(
-            1.dp,
-            Brush.verticalGradient(listOf(Color.White.copy(alpha = rimAlpha * 3f), Color.White.copy(alpha = rimAlpha * 0.4f))),
-            shape,
-        )
+    val blurDp = LocalGlassBlur.current
+    // Lens refraction needs rounded corners and Android 13 (a runtime shader); a plain rectangle only blurs.
+    val lens = quality.glassLens && shape is CornerBasedShape && isRuntimeShaderSupported()
+    val rim = if (bordered && !quality.glassHighlight) {
+        Modifier.border(1.dp, Color.White.copy(alpha = if (isDark) 0.16f else 0.55f), shape)
     } else {
-        Modifier.border(1.dp, Color.White.copy(alpha = rimAlpha), shape)
-    }
-    if (hazeState == null) {
-        return this.clip(shape).background(tint).then(borderModifier)
-    }
-    val blur = LocalGlassBlur.current
-    val noise = quality.glassNoise
-    val style = remember(tint, blur, noise) {
-        HazeBlurStyle {
-            blurRadius(blur)
-            noiseFactor(noise)
-            colorEffects(listOf(HazeColorEffect.tint(tint.copy(alpha = 0.55f))))
-            fallbackColorEffect(HazeColorEffect.tint(tint.copy(alpha = 0.92f)))
-        }
+        Modifier
     }
     return this
-        .clip(shape)
-        .hazeBlur(input = HazeInput.Backdrop(hazeState), style = style)
-        .then(borderModifier)
+        .drawBackdrop(
+            backdrop = backdrop,
+            shape = { shape },
+            effects = {
+                vibrancy()
+                blur(blurDp.toPx())
+                if (lens) {
+                    lens(
+                        refractionHeight = 12.dp.toPx(),
+                        refractionAmount = 24.dp.toPx(),
+                        depthEffect = quality.glassPremium,
+                        chromaticAberration = quality.glassPremium,
+                    )
+                }
+            },
+            highlight = if (bordered && quality.glassHighlight) ({ Highlight.Default }) else null,
+            shadow = if (quality.glassPremium) ({ Shadow.Default }) else null,
+            onDrawSurface = { drawRect(tint.copy(alpha = 0.5f)) },
+        )
+        .then(rim)
 }
 
 /**

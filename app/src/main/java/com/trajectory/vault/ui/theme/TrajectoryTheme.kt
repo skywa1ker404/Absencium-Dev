@@ -32,7 +32,7 @@ import com.trajectory.vault.R
 import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.ThemeMode
-import dev.chrisbanes.haze.HazeState
+import com.kyant.backdrop.backdrops.LayerBackdrop
 
 /** Monet (wallpaper colors) and the real blur behind Liquid Glass both need Android 12. */
 val isMonetAndBlurSupported: Boolean
@@ -59,10 +59,10 @@ val LocalGlassBlur = staticCompositionLocalOf { 20.dp }
 val LocalGlassEnabled = staticCompositionLocalOf { false }
 
 /**
- * The haze state of the screen currently being drawn, or null when glass is off. A screen's
- * scrolling content is the blur source; its floating bars blur what scrolls behind them.
+ * The backdrop of the screen currently being drawn, or null when glass is off. A screen's
+ * scrolling content is recorded into it; its floating bars blur and refract what scrolls behind them.
  */
-val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
+val LocalBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
 private val TrajectoryShapes = Shapes(
     small = RoundedCornerShape(12.dp),
@@ -123,12 +123,12 @@ fun TrajectoryTheme(
     val seed = Color(settings.accentColor)
 
     val generated: ColorScheme = when (engine) {
-        // Liquid Glass follows the wallpaper colors like Monet; only Solid Accent uses the chosen accent.
-        ColorEngine.MONET_WALLPAPER,
-        ColorEngine.LIQUID_GLASS,
-        -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        // Only Monet follows the wallpaper; Liquid Glass and Solid Accent use the chosen accent colour.
+        ColorEngine.MONET_WALLPAPER -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
 
-        ColorEngine.SOLID_ACCENT -> rememberDynamicColorScheme(
+        ColorEngine.LIQUID_GLASS,
+        ColorEngine.SOLID_ACCENT,
+        -> rememberDynamicColorScheme(
             seedColor = seed,
             isDark = isDark,
             specVersion = ColorSpec.SpecVersion.SPEC_2025,
