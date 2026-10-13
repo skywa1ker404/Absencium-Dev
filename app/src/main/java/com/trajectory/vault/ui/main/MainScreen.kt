@@ -304,7 +304,6 @@ fun MainScreen(navigator: DestinationsNavigator) {
                                 navigator.navigate(NewEntryScreenDestination(subjectId = 0L, draftId = 0L))
                             }
                         },
-                        },
                         backdrop = backdrop,
                     )
                 }
