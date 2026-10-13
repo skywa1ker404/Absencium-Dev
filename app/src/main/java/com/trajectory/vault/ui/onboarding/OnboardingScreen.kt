@@ -54,6 +54,7 @@ import com.trajectory.vault.ui.settings.MomentumToggle
 import com.trajectory.vault.ui.settings.StorageLocationSection
 import com.trajectory.vault.ui.settings.StorageModuleToggles
 import com.trajectory.vault.ui.settings.ThemeModeChoices
+import com.trajectory.vault.ui.settings.VisualQualityChoices
 import com.trajectory.vault.ui.settings.aiReady
 import com.trajectory.vault.ui.settings.rememberSettingsViewModel
 import com.trajectory.vault.ui.theme.LocalGlassEnabled
@@ -67,7 +68,7 @@ private const val LAST_STEP = STEP_COUNT - 1
 
 private val StepTitles = listOf("Theme & Appearance Setup", "Notes Storage Directory", "AI Engine & Optional Modules")
 private val StepSubtitles = listOf(
-    "Customize your OLED contrast, color engine scheme and glass blur. Changes apply instantly.",
+    "Pick a visual quality for your phone, then your theme, color engine and glass blur. Changes apply instantly.",
     "Choose where your notes, PDFs and recordings live, and your minimum safe attendance.",
     "Set up an optional AI connection and the background modules you want. All can be changed later in Settings.",
 )
@@ -219,6 +220,11 @@ fun OnboardingScreen() {
 
 @Composable
 private fun ThemeStep(settings: AppSettings, viewModel: com.trajectory.vault.ui.settings.SettingsViewModel) {
+    VisualQualityChoices(
+        selected = settings.visualQuality,
+        recommended = viewModel.recommendedQuality,
+        onSelect = { viewModel.setVisualQuality(it) },
+    )
     ThemeModeChoices(selected = settings.themeMode, onSelect = { viewModel.setThemeMode(it) })
     ColorEngineChoices(selected = settings.colorEngine, onSelect = { viewModel.setColorEngine(it) })
     if (settings.colorEngine == ColorEngine.LIQUID_GLASS && isMonetAndBlurSupported) {

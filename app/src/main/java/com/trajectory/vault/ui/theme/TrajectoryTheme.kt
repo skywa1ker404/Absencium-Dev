@@ -163,10 +163,15 @@ fun TrajectoryTheme(
         ThemeMode.LIGHT -> generated
     }
 
+    val quality = QualityProfile.of(settings.visualQuality)
+    // The Liquid Glass colours stay; only the blur itself is switched off when the quality level asks for it.
+    val glassActive = engine == ColorEngine.LIQUID_GLASS && quality.blurEnabled
+
     MaterialTheme(colorScheme = colorScheme, shapes = TrajectoryShapes, typography = TrajectoryTypography) {
         CompositionLocalProvider(
-            LocalGlassEnabled provides (engine == ColorEngine.LIQUID_GLASS),
-            LocalGlassBlur provides settings.glassBlurDp.dp,
+            LocalQuality provides quality,
+            LocalGlassEnabled provides glassActive,
+            LocalGlassBlur provides (settings.glassBlurDp * quality.blurScale).dp,
             // Text outside a Surface would otherwise fall back to black, which is unreadable on dark themes.
             LocalContentColor provides colorScheme.onBackground,
         ) {

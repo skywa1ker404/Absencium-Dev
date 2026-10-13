@@ -14,6 +14,7 @@ import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.SettingsRepository
 import com.trajectory.vault.data.settings.ThemeMode
+import com.trajectory.vault.data.settings.VisualQuality
 import com.trajectory.vault.logging.DebugLogger
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +35,14 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setAccentColor(argb: Int) = launch { repository.setAccentColor(argb) }
 
     fun setGlassBlur(dp: Int) = launch { repository.setGlassBlur(dp) }
+
+    fun setVisualQuality(value: VisualQuality) = launch {
+        repository.setVisualQuality(value)
+        DebugLogger.i("Quality", "Visual quality set to ${value.name}")
+    }
+
+    /** The level this phone starts with, shown as "Recommended" in the picker. */
+    val recommendedQuality: VisualQuality get() = repository.deviceProfile.recommended
 
     fun setAttendanceThreshold(percent: Int) = launch { repository.setAttendanceThreshold(percent) }
 

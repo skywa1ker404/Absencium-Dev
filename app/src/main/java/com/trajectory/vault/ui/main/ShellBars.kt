@@ -1,5 +1,6 @@
 package com.trajectory.vault.ui.main
 
+import com.trajectory.vault.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -102,6 +103,7 @@ fun BottomPill(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     // Read here, not in the caller, so collapsing the pill only redraws the pill and not the whole screen.
     val isCompact = compact()
@@ -122,7 +124,7 @@ fun BottomPill(
     }
     val openFactor by animateFloatAsState(
         targetValue = if (isCompact) 0f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "pillOpen",
     )
     val open = openFactor.coerceIn(0f, 1f)
@@ -135,7 +137,7 @@ fun BottomPill(
         if (dragPosition == null) {
             indicator.animateTo(
                 selectedIndex.toFloat(),
-                spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+                q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
             )
         }
     }
@@ -143,7 +145,7 @@ fun BottomPill(
     // The highlight swells a little while it is held and dragged.
     val zoom by animateFloatAsState(
         targetValue = if (dragPosition != null) 1.22f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "pillZoom",
     )
 
@@ -271,7 +273,7 @@ fun BottomPill(
                             dragPosition = null
                             indicator.animateTo(
                                 target.toFloat(),
-                                spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+                                q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
                             )
                         }
                         if (target != lastCommitted) currentOnSelect(target)
@@ -307,12 +309,13 @@ private fun PillTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.9f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "tabPress",
     )
     val selectedColor = if (glass) colors.onPrimaryContainer else colors.onSecondaryContainer
@@ -358,11 +361,12 @@ private fun PillTab(
 /** The contextual action button above the bar (Add Entry on Attendance, New Entry in the Vault). */
 @Composable
 fun ShellFab(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.93f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
         label = "fabPress",
     )
     Button(
@@ -388,11 +392,12 @@ fun ShellFab(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Mo
 /** The round floating search button that sits above the navigation pill. */
 @Composable
 fun ShellSearchButton(hazeState: HazeState?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.9f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "searchPress",
     )
     Box(
@@ -419,6 +424,7 @@ fun ShellSearchButton(hazeState: HazeState?, onClick: () -> Unit, modifier: Modi
 /** The top bar: the app name on the left and the profile avatar (initials) on the right. */
 @Composable
 fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier = Modifier) {
+    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = modifier
@@ -437,7 +443,7 @@ fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier =
         val pressed by interaction.collectIsPressedAsState()
         val scale by animateFloatAsState(
             targetValue = if (pressed) 0.9f else 1f,
-            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+            animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy),
             label = "avatarPress",
         )
         Box(
@@ -484,15 +490,16 @@ fun initialsOf(name: String): String? {
  */
 @Composable
 fun SlideAway(hidden: () -> Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val q = LocalQuality.current
     val isHidden = hidden()
     val offsetX by animateDpAsState(
         targetValue = if (isHidden) 120.dp else 0.dp,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "slideAway",
     )
     val alpha by animateFloatAsState(
         targetValue = if (isHidden) 0f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = q.spring(stiffness = Spring.StiffnessMediumLow),
         label = "slideAwayAlpha",
     )
     Box(

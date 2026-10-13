@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.trajectory.vault.ui.theme.LocalGlassBlur
 import com.trajectory.vault.ui.theme.LocalGlassEnabled
+import com.trajectory.vault.ui.theme.LocalQuality
 import dev.chrisbanes.haze.*
 import dev.chrisbanes.haze.blur.*
 
@@ -32,21 +34,31 @@ fun Modifier.floatingGlass(
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     // Glass gets a light rim; the solid (Monet and accent) look gets an opaque outline, so it never reads as glass.
     val solidBorder = MaterialTheme.colorScheme.outlineVariant
+    val quality = LocalQuality.current
+    val rimAlpha = if (isDark) 0.16f else 0.55f
     val borderModifier = if (!bordered) {
         Modifier
     } else if (hazeState == null) {
         Modifier.border(1.dp, solidBorder, shape)
+    } else if (quality.litGlassEdge) {
+        // Ultra: light catches the top edge of the glass and fades toward the bottom.
+        Modifier.border(
+            1.dp,
+            Brush.verticalGradient(listOf(Color.White.copy(alpha = rimAlpha * 3f), Color.White.copy(alpha = rimAlpha * 0.4f))),
+            shape,
+        )
     } else {
-        Modifier.border(1.dp, Color.White.copy(alpha = if (isDark) 0.16f else 0.55f), shape)
+        Modifier.border(1.dp, Color.White.copy(alpha = rimAlpha), shape)
     }
     if (hazeState == null) {
         return this.clip(shape).background(tint).then(borderModifier)
     }
     val blur = LocalGlassBlur.current
-    val style = remember(tint, blur) {
+    val noise = quality.glassNoise
+    val style = remember(tint, blur, noise) {
         HazeBlurStyle {
             blurRadius(blur)
-            noiseFactor(0.06f)
+            noiseFactor(noise)
             colorEffects(listOf(HazeColorEffect.tint(tint.copy(alpha = 0.55f))))
             fallbackColorEffect(HazeColorEffect.tint(tint.copy(alpha = 0.92f)))
         }

@@ -15,9 +15,11 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.data.settings.AppSettings
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.ThemeMode
+import com.trajectory.vault.data.settings.VisualQuality
 import com.trajectory.vault.ui.REQUIRES_ANDROID_12
 import com.trajectory.vault.ui.components.AccentColorPicker
 import com.trajectory.vault.ui.components.AppCard
+import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.OptionCard
 import com.trajectory.vault.ui.components.ScreenScaffold
 import com.trajectory.vault.ui.components.SectionTitle
@@ -33,6 +35,11 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
 
     ScreenScaffold(title = "Appearance", onBack = { navigator.navigateUp() }) {
+        VisualQualityChoices(
+            selected = settings.visualQuality,
+            recommended = viewModel.recommendedQuality,
+            onSelect = viewModel::setVisualQuality,
+        )
         ThemeModeChoices(selected = settings.themeMode, onSelect = viewModel::setThemeMode)
         ColorEngineChoices(selected = settings.colorEngine, onSelect = viewModel::setColorEngine)
 
@@ -50,6 +57,25 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
                 )
             }
         }
+    }
+}
+
+/** Visual quality choices, shared by Settings and the onboarding wizard. Applies the moment one is tapped. */
+@Composable
+fun VisualQualityChoices(
+    selected: VisualQuality,
+    recommended: VisualQuality,
+    onSelect: (VisualQuality) -> Unit,
+) {
+    SectionTitle("Visual quality")
+    HintText("Lower levels turn down blur and animation to keep the app smooth. Every feature stays.")
+    VisualQuality.entries.forEach { level ->
+        OptionCard(
+            title = if (level == recommended) "${level.label()} (recommended for this phone)" else level.label(),
+            subtitle = level.description(),
+            selected = selected == level,
+            onClick = { onSelect(level) },
+        )
     }
 }
 

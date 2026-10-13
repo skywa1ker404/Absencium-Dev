@@ -1,5 +1,6 @@
 package com.trajectory.vault.ui.vault
 
+import com.trajectory.vault.ui.theme.LocalQuality
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
@@ -68,6 +69,7 @@ fun VaultTab(
     onManageSubjects: () -> Unit,
     onOpenDrafts: () -> Unit,
 ) {
+    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     val subjects = data.subjects.filter { it.isActive }
     val gridState = rememberLazyGridState()
@@ -105,7 +107,7 @@ fun VaultTab(
                 if (pull <= 0f) return Velocity.Zero
                 val open = pull >= thresholdPx
                 scope.launch {
-                    animate(pull, 0f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)) { value, _ ->
+                    animate(pull, 0f, animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy)) { value, _ ->
                         pull = value
                     }
                 }

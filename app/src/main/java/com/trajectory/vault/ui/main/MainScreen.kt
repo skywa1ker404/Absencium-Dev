@@ -1,5 +1,6 @@
 package com.trajectory.vault.ui.main
 
+import com.trajectory.vault.ui.theme.LocalQuality
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
@@ -79,6 +80,7 @@ import dev.chrisbanes.haze.rememberHazeState
 import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 private val Tabs = listOf(
     MainTab("Home", AppIcons.Home),
@@ -116,6 +118,7 @@ fun TabColumn(padding: PaddingValues, content: @Composable ColumnScope.() -> Uni
 @Destination<RootGraph>(start = true)
 @Composable
 fun MainScreen(navigator: DestinationsNavigator) {
+    val q = LocalQuality.current
     val calendarViewModel = containerViewModel { CalendarViewModel(it) }
     val settingsViewModel = rememberSettingsViewModel()
     val data by calendarViewModel.data.collectAsStateWithLifecycle()
@@ -137,10 +140,11 @@ fun MainScreen(navigator: DestinationsNavigator) {
     BackHandler(enabled = tab != TAB_HOME) { tab = TAB_HOME }
     LaunchedEffect(tab) { compactState.value = false }
 
-    val now by produceState(initialValue = LocalDateTime.now()) {
+    // Truncated to the minute, so the screen is only recomposed when the visible time can change.
+    val now by produceState(initialValue = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)) {
         while (true) {
             delay(30_000)
-            value = LocalDateTime.now()
+            value = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)
         }
     }
 
@@ -189,9 +193,14 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 AnimatedContent(
                     targetState = tab,
                     transitionSpec = {
-                        (fadeIn(spring(stiffness = Spring.StiffnessMedium)) +
-                            slideInVertically(spring(stiffness = Spring.StiffnessMediumLow)) { it / 24 })
-                            .togetherWith(fadeOut(spring(stiffness = Spring.StiffnessMedium)))
+                        // Low and Mid fade only; the slide moves a whole tab of content every frame.
+                        val enter = if (q.decorativeMotion) {
+                            fadeIn(q.spring(stiffness = Spring.StiffnessMedium)) +
+                                slideInVertically(q.spring(stiffness = Spring.StiffnessMediumLow)) { it / 24 }
+                        } else {
+                            fadeIn(q.spring(stiffness = Spring.StiffnessMedium))
+                        }
+                        enter.togetherWith(fadeOut(q.spring(stiffness = Spring.StiffnessMedium)))
                     },
                     label = "tab",
                 ) { current ->

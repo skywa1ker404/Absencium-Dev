@@ -1,5 +1,6 @@
 package com.trajectory.vault.ui.calendar
 
+import com.trajectory.vault.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -88,7 +89,7 @@ fun CalendarTab(
     var holidayToDelete by remember { mutableStateOf<HolidayEntity?>(null) }
     val selected = LocalDate.parse(selectedIso)
     val month = YearMonth.from(today).plusMonths(monthOffset.toLong())
-    val overall = data.subjectAttendance().overall()
+    val overall = remember(data) { data.subjectAttendance().overall() }
 
     TabColumn(contentPadding) {
         TodayCard(
@@ -407,6 +408,7 @@ private fun TodayCard(
     viewModel: CalendarViewModel,
     onAddNotes: (subjectId: Long, date: LocalDate) -> Unit,
 ) {
+    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     val lectures = remember(data) { data.lecturesOn(today) }
     val subjectIds = remember(lectures) { lectures.map { it.subject.id }.distinct() }
@@ -427,7 +429,7 @@ private fun TodayCard(
     LaunchedEffect(uncollected.isEmpty()) { if (uncollected.isEmpty()) expanded = false }
     val arrowRotation by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = androidx.compose.animation.core.spring(
+        animationSpec = q.spring(
             dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
         ),
         label = "notesArrow",
@@ -466,7 +468,7 @@ private fun TodayCard(
 
         AnimatedVisibility(
             visible = absent.isNotEmpty(),
-            enter = fadeIn() + expandVertically(spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+            enter = fadeIn() + expandVertically(q.spring(dampingRatio = Spring.DampingRatioLowBouncy)),
             exit = fadeOut() + shrinkVertically(),
         ) {
             Column(modifier = Modifier.padding(top = 12.dp)) {
@@ -508,7 +510,7 @@ private fun TodayCard(
                 }
                 AnimatedVisibility(
                     visible = expanded,
-                    enter = fadeIn() + expandVertically(spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+                    enter = fadeIn() + expandVertically(q.spring(dampingRatio = Spring.DampingRatioLowBouncy)),
                     exit = fadeOut() + shrinkVertically(),
                 ) {
                     Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

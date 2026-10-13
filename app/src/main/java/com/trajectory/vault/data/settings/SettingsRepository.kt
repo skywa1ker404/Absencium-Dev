@@ -26,6 +26,9 @@ class SettingsRepository(context: Context) {
 
     private val dataStore = context.applicationContext.settingsDataStore
 
+    /** What this phone starts with until the user picks a level. Read once, off the settings path. */
+    val deviceProfile: DeviceProfile by lazy { DeviceProfile.read(context.applicationContext) }
+
     val settings: Flow<AppSettings> = dataStore.data
         .catch { error ->
             if (error is IOException) {
@@ -51,6 +54,8 @@ class SettingsRepository(context: Context) {
         Keys.GLASS_BLUR,
         dp.coerceIn(AppSettings.MIN_GLASS_BLUR, AppSettings.MAX_GLASS_BLUR),
     )
+
+    suspend fun setVisualQuality(value: VisualQuality) = write(Keys.VISUAL_QUALITY, value.name)
 
     suspend fun setAttendanceThreshold(percent: Int) = write(
         Keys.ATTENDANCE_THRESHOLD,
@@ -90,6 +95,7 @@ class SettingsRepository(context: Context) {
         val COLOR_ENGINE = stringPreferencesKey("color_engine")
         val ACCENT_COLOR = intPreferencesKey("accent_color")
         val GLASS_BLUR = intPreferencesKey("glass_blur_dp")
+        val VISUAL_QUALITY = stringPreferencesKey("visual_quality")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
         val FOCUS_GRACE_MINUTES = intPreferencesKey("focus_grace_minutes")
         val EXAM_MODE_AUTO_SILENCE = booleanPreferencesKey("exam_mode_auto_silence")
@@ -112,6 +118,7 @@ class SettingsRepository(context: Context) {
             colorEngine = enumOrDefault(this[Keys.COLOR_ENGINE], defaults.colorEngine),
             accentColor = this[Keys.ACCENT_COLOR] ?: defaults.accentColor,
             glassBlurDp = this[Keys.GLASS_BLUR] ?: defaults.glassBlurDp,
+            visualQuality = enumOrDefault(this[Keys.VISUAL_QUALITY], deviceProfile.recommended),
             attendanceThresholdPercent = this[Keys.ATTENDANCE_THRESHOLD] ?: defaults.attendanceThresholdPercent,
             focusGraceMinutes = this[Keys.FOCUS_GRACE_MINUTES] ?: defaults.focusGraceMinutes,
             examModeAutoSilence = this[Keys.EXAM_MODE_AUTO_SILENCE] ?: defaults.examModeAutoSilence,

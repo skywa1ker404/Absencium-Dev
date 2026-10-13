@@ -1,5 +1,6 @@
 package com.trajectory.vault.ui.home
 
+import com.trajectory.vault.ui.theme.LocalQuality
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,12 +85,12 @@ fun HomeTab(
     val colors = MaterialTheme.colorScheme
     val today = now.toLocalDate()
     val threshold = settings.attendanceThresholdPercent
-    val perSubject = data.subjectAttendance()
-    val overall = perSubject.overall()
-    val subjectNames = data.subjects.associate { it.id to it.name }
-    val cram = crammable(data.exams, now)
-    val upcoming = data.exams.filter { !it.date.isBefore(today) }.sortedBy { it.date }.take(5)
-    val next = data.nextLecture(now)
+    val perSubject = remember(data) { data.subjectAttendance() }
+    val overall = remember(perSubject) { perSubject.overall() }
+    val subjectNames = remember(data.subjects) { data.subjects.associate { it.id to it.name } }
+    val cram = remember(data.exams, now) { crammable(data.exams, now) }
+    val upcoming = remember(data.exams, today) { data.exams.filter { !it.date.isBefore(today) }.sortedBy { it.date }.take(5) }
+    val next = remember(data, now) { data.nextLecture(now) }
 
     TabColumn(contentPadding) {
         Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
@@ -296,17 +298,18 @@ private fun WatchRow(item: SubjectAttendance, threshold: Int) {
 /** A 270 degree arc that springs to the attendance percentage, with a dot at the safe threshold. */
 @Composable
 private fun AttendanceGauge(percent: Double?, threshold: Int, modifier: Modifier = Modifier) {
+    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     val target = ((percent ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
     val progress by animateFloatAsState(
         targetValue = target,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
         label = "gauge",
     )
     val below = percent != null && percent < threshold
     val arcColor by animateColorAsState(
         targetValue = if (below) colors.error else colors.primary,
-        animationSpec = spring(),
+        animationSpec = q.spring(),
         label = "gaugeColor",
     )
     val trackColor = colors.surfaceContainerHighest

@@ -1,5 +1,6 @@
 package com.trajectory.vault.ui.calendar
 
+import com.trajectory.vault.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -74,6 +75,7 @@ fun AddEntrySheet(
     onSaveExam: (subjectId: Long, date: LocalDate, title: String, weightage: Double?, room: String?, notes: String?, priority: Priority) -> Unit,
     onSaveHoliday: (start: LocalDate, end: LocalDate, title: String, autoSkip: Boolean, priority: Priority) -> Unit,
 ) {
+    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     var type by remember { mutableStateOf(EntryType.EXAM) }
     var title by remember { mutableStateOf("") }
@@ -193,7 +195,7 @@ fun AddEntrySheet(
                 }
                 AnimatedVisibility(
                     visible = multiDay,
-                    enter = fadeIn() + expandVertically(spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+                    enter = fadeIn() + expandVertically(q.spring(dampingRatio = Spring.DampingRatioLowBouncy)),
                     exit = fadeOut() + shrinkVertically(),
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

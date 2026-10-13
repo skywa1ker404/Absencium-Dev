@@ -2,6 +2,7 @@ package com.trajectory.vault.ui
 
 import com.trajectory.vault.data.settings.ColorEngine
 import com.trajectory.vault.data.settings.ThemeMode
+import com.trajectory.vault.data.settings.VisualQuality
 
 fun ThemeMode.label(): String = when (this) {
     ThemeMode.LIGHT -> "Light"
@@ -30,3 +31,17 @@ fun ColorEngine.description(): String = when (this) {
 }
 
 const val REQUIRES_ANDROID_12 = "Needs Android 12 or newer"
+
+fun VisualQuality.label(): String = when (this) {
+    VisualQuality.LOW -> "Low"
+    VisualQuality.MID -> "Mid"
+    VisualQuality.HIGH -> "High"
+    VisualQuality.ULTRA -> "Ultra"
+}
+
+fun VisualQuality.description(): String = when (this) {
+    VisualQuality.LOW -> "Fastest. Solid bars instead of blur, no tab slide and calmer motion. Best for phones with 4 GB of RAM or less."
+    VisualQuality.MID -> "Lighter blur without grain, gentler motion. A balance for mid-range phones."
+    VisualQuality.HIGH -> "The full look: frosted glass blur and springy animations."
+    VisualQuality.ULTRA -> "High plus a lit glass edge and extra grain. Uses the most graphics power."
+}

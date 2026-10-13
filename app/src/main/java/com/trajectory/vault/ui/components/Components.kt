@@ -1,5 +1,6 @@
 package com.trajectory.vault.ui.components
 
+import com.trajectory.vault.ui.theme.LocalQuality
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -84,18 +85,19 @@ fun AppCard(
     highlighted: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.large
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "cardPress",
     )
     val container by animateColorAsState(
         targetValue = if (highlighted || pressed) colors.surfaceContainerHigh else colors.surfaceContainerLow,
-        animationSpec = spring(),
+        animationSpec = q.spring(),
         label = "cardColor",
     )
     val clickModifier = if (onClick != null) {
@@ -109,7 +111,7 @@ fun AppCard(
                 scaleX = scale
                 scaleY = scale
             }
-            .animateContentSize(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+            .animateContentSize(animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy)),
         shape = shape,
         color = container,
         border = if (highlighted) BorderStroke(2.dp, colors.primary) else null,
@@ -249,6 +251,7 @@ fun AccentColorPicker(
     onSelected: (Color) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val q = LocalQuality.current
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AccentPresets.chunked(4).forEach { rowColors ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -256,7 +259,7 @@ fun AccentColorPicker(
                     val isSelected = preset == selected
                     val scale by animateFloatAsState(
                         targetValue = if (isSelected) 1.08f else 1f,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy),
                         label = "swatchScale",
                     )
                     Box(
@@ -428,11 +431,12 @@ fun PillButton(
     loading: Boolean = false,
     tonal: Boolean = false,
 ) {
+    val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.94f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "pillPress",
     )
     val pillModifier = modifier.graphicsLayer {
@@ -473,6 +477,7 @@ fun PillButton(
 /** Progress dots for the wizard: the current step stretches into a pill. */
 @Composable
 fun StepIndicator(current: Int, total: Int, modifier: Modifier = Modifier) {
+    val q = LocalQuality.current
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -481,7 +486,7 @@ fun StepIndicator(current: Int, total: Int, modifier: Modifier = Modifier) {
         repeat(total) { index ->
             val barWidth by animateDpAsState(
                 targetValue = if (index == current) 40.dp else 12.dp,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy),
                 label = "stepWidth",
             )
             val barColor by animateColorAsState(
@@ -490,7 +495,7 @@ fun StepIndicator(current: Int, total: Int, modifier: Modifier = Modifier) {
                 } else {
                     MaterialTheme.colorScheme.outlineVariant
                 },
-                animationSpec = spring(),
+                animationSpec = q.spring(),
                 label = "stepColor",
             )
             Box(

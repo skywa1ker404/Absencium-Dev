@@ -38,9 +38,11 @@ fun attendanceMargin(present: Int, held: Int, thresholdPercent: Int): Margin {
 }
 
 /** Attendance per active subject, counted from the logged records. */
-fun CalendarData.subjectAttendance(): List<SubjectAttendance> =
-    subjects.filter { it.isActive }.map { subject ->
-        val entries = attendance.filter { it.subjectId == subject.id }
+fun CalendarData.subjectAttendance(): List<SubjectAttendance> {
+    // One pass over the records instead of three passes per subject.
+    val bySubject = attendance.groupBy { it.subjectId }
+    return subjects.filter { it.isActive }.map { subject ->
+        val entries = bySubject[subject.id].orEmpty()
         SubjectAttendance(
             subject = subject,
             present = entries.count { it.status == AttendanceStatus.PRESENT },
@@ -48,6 +50,7 @@ fun CalendarData.subjectAttendance(): List<SubjectAttendance> =
             cancelled = entries.count { it.status == AttendanceStatus.CANCELLED },
         )
     }
+}
 
 /** Present and held lectures added up over all the given subjects. */
 data class OverallAttendance(val present: Int, val held: Int) {

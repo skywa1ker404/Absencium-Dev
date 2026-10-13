@@ -1,5 +1,6 @@
 package com.trajectory.vault.ui.components
 
+import com.trajectory.vault.ui.theme.LocalQuality
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
@@ -55,11 +56,12 @@ fun ExpressiveChip(
     enabled: Boolean = true,
     shape: Shape = CircleShape,
 ) {
+    val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.92f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "chipPress",
     )
     FilterChip(
@@ -71,7 +73,7 @@ fun ExpressiveChip(
                 scaleX = scale
                 scaleY = scale
             }
-            .animateContentSize(spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)),
+            .animateContentSize(q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)),
         enabled = enabled,
         shape = shape,
         leadingIcon = if (selected) {
@@ -96,20 +98,21 @@ fun AttendanceToggle(
     onAbsent: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     val position by animateFloatAsState(
         targetValue = if (selected == AttendanceStatus.ABSENT) 1f else 0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "toggleSlide",
     )
     val highlightAlpha by animateFloatAsState(
         targetValue = if (selected == null) 0f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(stiffness = Spring.StiffnessMedium),
         label = "toggleAlpha",
     )
     val highlightColor by animateColorAsState(
         targetValue = if (selected == AttendanceStatus.ABSENT) colors.errorContainer else colors.primaryContainer,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(stiffness = Spring.StiffnessMedium),
         label = "toggleColor",
     )
     val presentTint by animateColorAsState(
@@ -124,7 +127,7 @@ fun AttendanceToggle(
     LaunchedEffect(selected) {
         if (selected != null) {
             pulse.snapTo(0.9f)
-            pulse.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+            pulse.animateTo(1f, q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
         }
     }
 
@@ -165,11 +168,12 @@ private fun ToggleHalf(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.94f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "halfPress",
     )
     Box(
