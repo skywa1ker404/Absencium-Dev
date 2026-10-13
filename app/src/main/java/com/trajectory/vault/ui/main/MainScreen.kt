@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.DraftsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.HolidayImportScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
@@ -341,6 +342,10 @@ fun MainScreen(navigator: DestinationsNavigator) {
             onSaveHoliday = { start, end, title, autoSkip, priority ->
                 calendarViewModel.addHolidayRange(start, end, title, autoSkip, priority)
                 showAddEntry = false
+            },
+            onImportWithAi = {
+                showAddEntry = false
+                navigator.navigate(HolidayImportScreenDestination)
             },
         )
     }

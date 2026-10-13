@@ -81,6 +81,8 @@ fun AddEntrySheet(
     editHoliday: HolidayEntity? = null,
     onUpdateExam: (ExamEntity) -> Unit = {},
     onUpdateHoliday: (HolidayEntity) -> Unit = {},
+    /** Opens the AI holiday import. Shown in the holiday form when set. */
+    onImportWithAi: (() -> Unit)? = null,
 ) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
@@ -151,6 +153,13 @@ fun AddEntrySheet(
                     label = { Text("🏖️ College Holiday") },
                     shape = CircleShape,
                 )
+            }
+
+            if (type == EntryType.HOLIDAY && !editing && onImportWithAi != null) {
+                OutlinedButton(onClick = onImportWithAi, shape = CircleShape, modifier = Modifier.fillMaxWidth()) {
+                    Icon(AppIcons.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text("Import from text, photo or PDF with AI", modifier = Modifier.padding(start = 8.dp))
+                }
             }
 
             OutlinedTextField(
