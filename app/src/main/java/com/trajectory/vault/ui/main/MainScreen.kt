@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,6 +78,7 @@ import com.trajectory.vault.ui.theme.LocalBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import kotlinx.coroutines.delay
@@ -134,14 +136,19 @@ fun MainScreen(navigator: DestinationsNavigator) {
     // never recomposes the whole screen.
     val compactState = remember { mutableStateOf(false) }
     var showAddEntry by rememberSaveable { mutableStateOf(false) }
+    var fabOpen by remember { mutableStateOf(false) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
     var editExam by remember { mutableStateOf<ExamEntity?>(null) }
     var editHoliday by remember { mutableStateOf<HolidayEntity?>(null) }
 
-    BackHandler(enabled = tab != TAB_HOME) { tab = TAB_HOME }
-    LaunchedEffect(tab) { compactState.value = false }
+    BackHandler(enabled = fabOpen) { fabOpen = false }
+    BackHandler(enabled = tab != TAB_HOME && !fabOpen) { tab = TAB_HOME }
+    LaunchedEffect(tab) {
+        compactState.value = false
+        fabOpen = false
+    }
 
     // Truncated to the minute, so the screen is only recomposed when the visible time can change.
     val now by produceState(initialValue = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)) {
@@ -229,6 +236,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onOpenExam = { openExam = it },
                             onEditHoliday = { editHoliday = it },
                             onOpenTimetable = { navigator.navigate(TimetableScreenDestination) },
+                            threshold = settings.attendanceThresholdPercent,
                             onAddNotes = { subjectId, date ->
                                 navigator.navigate(
                                     NewEntryScreenDestination(
@@ -288,22 +296,43 @@ fun MainScreen(navigator: DestinationsNavigator) {
             }
 
             if (tab == TAB_ATTENDS || tab == TAB_VAULT) {
+                // Tapping anywhere outside the menu closes it.
+                if (fabOpen) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(colors.scrim.copy(alpha = if (glass) 0.18f else 0.32f))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) { fabOpen = false },
+                    )
+                }
+                val actions = if (tab == TAB_ATTENDS) {
+                    listOf(
+                        FabAction("Add entry", AppIcons.Add) { fabOpen = false; showAddEntry = true },
+                        FabAction("Timetable", AppIcons.Schedule) { fabOpen = false; navigator.navigate(TimetableScreenDestination) },
+                        FabAction("Import holidays", AppIcons.AutoAwesome) { fabOpen = false; navigator.navigate(HolidayImportScreenDestination) },
+                    )
+                } else {
+                    listOf(
+                        FabAction("New entry", AppIcons.Add) {
+                            fabOpen = false
+                            navigator.navigate(NewEntryScreenDestination(subjectId = 0L, draftId = 0L))
+                        },
+                        FabAction("Drafts", AppIcons.Draft) { fabOpen = false; navigator.navigate(DraftsScreenDestination) },
+                    )
+                }
                 SlideAway(
-                    hidden = { compactState.value },
+                    hidden = { compactState.value && !fabOpen },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp + 52.dp + 12.dp),
                 ) {
-                    ShellFab(
-                        icon = AppIcons.Add,
-                        label = if (tab == TAB_ATTENDS) "Add Entry" else "New Entry",
-                        onClick = {
-                            if (tab == TAB_ATTENDS) {
-                                showAddEntry = true
-                            } else {
-                                navigator.navigate(NewEntryScreenDestination(subjectId = 0L, draftId = 0L))
-                            }
-                        },
+                    ShellFabMenu(
+                        expanded = fabOpen,
+                        onToggle = { fabOpen = !fabOpen },
+                        actions = actions,
                         backdrop = backdrop,
                     )
                 }

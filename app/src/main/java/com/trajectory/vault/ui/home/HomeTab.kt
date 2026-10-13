@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -47,6 +48,9 @@ import com.trajectory.vault.ui.calendar.label
 import com.trajectory.vault.ui.calendar.subjectColor
 import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.PillButton
+import com.trajectory.vault.ui.components.SemiGauge
+import com.trajectory.vault.ui.components.StatPill
+import com.trajectory.vault.ui.components.TileGrid
 import com.trajectory.vault.ui.components.SectionTitle
 import com.trajectory.vault.ui.main.TabColumn
 import java.time.Duration
@@ -97,7 +101,7 @@ fun HomeTab(
             val name = settings.displayName.trim()
             Text(
                 text = if (name.isEmpty()) greeting(now.hour) else "${greeting(now.hour)}, $name",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineLarge,
             )
             Text(
                 text = today.pretty(),
@@ -109,17 +113,22 @@ fun HomeTab(
         // Adaptive: the emergency banner only appears when a High priority exam is 48 hours away or less.
         cram.forEach { exam ->
             val hours = Duration.between(now, exam.date.atStartOfDay()).toHours()
-            AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true, onClick = { onOpenExam(exam) }) {
-                Text("Exam coming up", style = MaterialTheme.typography.titleMedium, color = colors.error)
+            AppCard(
+                modifier = Modifier.fillMaxWidth(),
+                container = colors.errorContainer,
+                onClick = { onOpenExam(exam) },
+            ) {
+                Text("Exam coming up", style = MaterialTheme.typography.titleMedium, color = colors.onErrorContainer)
                 Text(
                     text = "${exam.title} (${subjectNames[exam.subjectId] ?: "Unknown subject"}) " +
                         if (hours <= 0) "is today." else "starts in about $hours hours.",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onErrorContainer,
                 )
                 Text(
                     text = "Tap for the exam details.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
+                    color = colors.onErrorContainer.copy(alpha = 0.75f),
                 )
             }
         }
@@ -150,13 +159,13 @@ fun HomeTab(
         }
 
         SectionTitle("Next up")
-        AppCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth(), container = colors.secondaryContainer) {
             if (next == null) {
-                Text("No upcoming lectures", style = MaterialTheme.typography.titleMedium)
+                Text("No upcoming lectures", style = MaterialTheme.typography.titleMedium, color = colors.onSecondaryContainer)
                 Text(
                     "Add lectures to your timetable from the Attendance tab.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
+                    color = colors.onSecondaryContainer.copy(alpha = 0.75f),
                 )
             } else {
                 val (date, lecture) = next
@@ -168,13 +177,13 @@ fun HomeTab(
                             .background(subjectColor(lecture.subject.id)),
                     )
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(lecture.subject.name, style = MaterialTheme.typography.titleMedium)
+                        Text(lecture.subject.name, style = MaterialTheme.typography.titleLarge, color = colors.onSecondaryContainer)
                         val room = lecture.slot.roomNumber?.takeIf { it.isNotBlank() }
                         Text(
                             text = "${daysLabel(today, date)}, ${lecture.slot.startTime.hm()} to ${lecture.slot.endTime.hm()}" +
                                 (if (room != null) " · Room $room" else ""),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onSurfaceVariant,
+                            color = colors.onSecondaryContainer.copy(alpha = 0.8f),
                         )
                     }
                 }
@@ -183,39 +192,47 @@ fun HomeTab(
 
         if (upcoming.isNotEmpty()) {
             SectionTitle("Exam countdown")
-            upcoming.forEach { exam ->
-                AppCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpenExam(exam) }) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(subjectColor(exam.subjectId)),
+            TileGrid(upcoming) { index, exam ->
+                // Each tile takes a tonal colour from the theme; a High priority exam is always the warm one.
+                val (container, onContainer) = when {
+                    exam.priority == Priority.HIGH -> colors.errorContainer to colors.onErrorContainer
+                    index % 3 == 0 -> colors.primaryContainer to colors.onPrimaryContainer
+                    index % 3 == 1 -> colors.tertiaryContainer to colors.onTertiaryContainer
+                    else -> colors.secondaryContainer to colors.onSecondaryContainer
+                }
+                AppCard(
+                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+                    container = container,
+                    onClick = { onOpenExam(exam) },
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(subjectColor(exam.subjectId)))
+                        Text(
+                            text = subjectNames[exam.subjectId] ?: "Unknown subject",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = onContainer.copy(alpha = 0.8f),
+                            maxLines = 1,
                         )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(exam.title, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                text = "${subjectNames[exam.subjectId] ?: "Unknown subject"} · ${exam.date.pretty()}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = colors.onSurfaceVariant,
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = daysLabel(today, exam.date),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = if (exam.priority == Priority.HIGH) colors.error else colors.primary,
-                            )
-                            Text(
-                                text = "${exam.priority.label()} priority",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = colors.onSurfaceVariant,
-                            )
-                        }
                     }
+                    Text(
+                        text = exam.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = onContainer,
+                        maxLines = 2,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                    Text(
+                        text = daysLabel(today, exam.date),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                        color = onContainer,
+                        modifier = Modifier.padding(top = 14.dp),
+                    )
+                    Text(
+                        text = "${exam.date.pretty()} · ${exam.priority.label()} priority",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = onContainer.copy(alpha = 0.75f),
+                    )
                 }
             }
         }
@@ -225,38 +242,49 @@ fun HomeTab(
 @Composable
 private fun AttendanceCard(overallPercent: Double?, present: Int, held: Int, threshold: Int) {
     val colors = MaterialTheme.colorScheme
-    AppCard(modifier = Modifier.fillMaxWidth()) {
+    val below = overallPercent != null && overallPercent < threshold
+    val container = if (below) colors.errorContainer else colors.primaryContainer
+    val onContainer = if (below) colors.onErrorContainer else colors.onPrimaryContainer
+    AppCard(modifier = Modifier.fillMaxWidth(), container = container) {
+        SemiGauge(
+            percent = overallPercent,
+            threshold = threshold,
+            arcColor = if (below) colors.onErrorContainer else colors.primary,
+            trackColor = onContainer.copy(alpha = 0.14f),
+            belowColor = colors.onErrorContainer,
+            markerColor = onContainer,
+            numberColor = onContainer,
+            captionColor = onContainer.copy(alpha = 0.7f),
+        )
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
-            AttendanceGauge(percent = overallPercent, threshold = threshold)
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Bunk buffer", style = MaterialTheme.typography.titleMedium)
-                if (overallPercent == null) {
-                    Text(
-                        "Log a lecture on the Attendance tab to see how many you can safely miss.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurfaceVariant,
-                    )
-                } else {
-                    val margin = attendanceMargin(present, held, threshold)
-                    Text(
-                        text = marginHeadline(margin),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = if (margin.mustAttend > 0) colors.error else colors.primary,
-                    )
-                    Text(
-                        text = marginSentence(margin, threshold),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "$present present of $held held",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
+            StatPill("Present: $present", colors.primary, colors.onPrimary)
+            StatPill("Absent: ${(held - present).coerceAtLeast(0)}", colors.errorContainer.takeIf { !below } ?: colors.error, if (below) colors.onError else colors.onErrorContainer)
+            StatPill("Total: $held", colors.surface, colors.onSurface)
+        }
+        Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Bunk buffer", style = MaterialTheme.typography.titleMedium, color = onContainer)
+            if (overallPercent == null) {
+                Text(
+                    "Log a lecture on the Attendance tab to see how many you can safely miss.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = onContainer.copy(alpha = 0.8f),
+                )
+            } else {
+                val margin = attendanceMargin(present, held, threshold)
+                Text(
+                    text = marginHeadline(margin),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                    color = onContainer,
+                )
+                Text(
+                    text = marginSentence(margin, threshold),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onContainer.copy(alpha = 0.8f),
+                )
             }
         }
     }
@@ -292,75 +320,5 @@ private fun WatchRow(item: SubjectAttendance, threshold: Int) {
             style = MaterialTheme.typography.titleMedium,
             color = if (percent < threshold) colors.error else colors.tertiary,
         )
-    }
-}
-
-/** A 270 degree arc that springs to the attendance percentage, with a dot at the safe threshold. */
-@Composable
-private fun AttendanceGauge(percent: Double?, threshold: Int, modifier: Modifier = Modifier) {
-    val q = LocalQuality.current
-    val colors = MaterialTheme.colorScheme
-    val target = ((percent ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
-    val progress by animateFloatAsState(
-        targetValue = target,
-        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
-        label = "gauge",
-    )
-    val below = percent != null && percent < threshold
-    val arcColor by animateColorAsState(
-        targetValue = if (below) colors.error else colors.primary,
-        animationSpec = q.spring(),
-        label = "gaugeColor",
-    )
-    val trackColor = colors.surfaceContainerHighest
-    val markerColor = colors.onSurfaceVariant
-
-    Box(modifier = modifier.size(132.dp), contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokeWidth = 14.dp.toPx()
-            val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
-            val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
-            drawArc(
-                color = trackColor,
-                startAngle = 135f,
-                sweepAngle = 270f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-            )
-            if (progress > 0f) {
-                drawArc(
-                    color = arcColor,
-                    startAngle = 135f,
-                    sweepAngle = 270f * progress,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                )
-            }
-            val angle = Math.toRadians(135.0 + 270.0 * threshold / 100.0)
-            val radius = arcSize.width / 2
-            drawCircle(
-                color = markerColor,
-                radius = 4.dp.toPx(),
-                center = Offset(
-                    x = size.width / 2 + (radius * cos(angle)).toFloat(),
-                    y = size.height / 2 + (radius * sin(angle)).toFloat(),
-                ),
-            )
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = if (percent == null) "--" else "${percent.roundToInt()}%",
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Text(
-                text = "attendance",
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.onSurfaceVariant,
-            )
-        }
     }
 }

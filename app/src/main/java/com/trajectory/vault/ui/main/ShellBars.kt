@@ -24,6 +24,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -427,6 +428,102 @@ fun ShellFab(
     ) {
         Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
         Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 8.dp))
+    }
+}
+
+/** One shortcut in the "+" menu. */
+class FabAction(val label: String, val icon: ImageVector, val onClick: () -> Unit)
+
+/**
+ * The "+" button. Tapping it fans out a stack of pill shortcuts above it (the first one is the main action
+ * of the tab) and the plus turns into a cross. Tonal in the normal themes, plain glass in Liquid Glass.
+ */
+@Composable
+fun ShellFabMenu(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    actions: List<FabAction>,
+    modifier: Modifier = Modifier,
+    backdrop: LayerBackdrop? = null,
+) {
+    val q = LocalQuality.current
+    val colors = MaterialTheme.colorScheme
+    val progress by animateFloatAsState(
+        targetValue = if (expanded) 1f else 0f,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "fabMenu",
+    )
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val press by animateFloatAsState(
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "fabMenuPress",
+    )
+    Column(modifier = modifier, horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (progress > 0.01f || expanded) {
+            // The first action is nearest the button, so it fans out first.
+            actions.asReversed().forEachIndexed { reversedIndex, action ->
+                val index = actions.lastIndex - reversedIndex
+                val t = ((progress * (actions.size + 1) - index) / 1f).coerceIn(0f, 1f)
+                Row(
+                    modifier = Modifier
+                        .graphicsLayer {
+                            alpha = t
+                            translationY = (1f - t) * 28.dp.toPx()
+                            scaleX = 0.85f + 0.15f * t
+                            scaleY = 0.85f + 0.15f * t
+                            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, 1f)
+                        }
+                        .then(
+                            if (backdrop != null) {
+                                Modifier.floatingGlass(backdrop, CircleShape)
+                            } else {
+                                Modifier.clip(CircleShape).background(colors.primaryContainer)
+                            },
+                        )
+                        .clickable(enabled = expanded) { action.onClick() }
+                        .padding(horizontal = 18.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val tint = if (backdrop != null) colors.onSurface else colors.onPrimaryContainer
+                    Icon(action.icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+                    Text(
+                        text = action.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = tint,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
+        }
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .graphicsLayer {
+                    scaleX = press
+                    scaleY = press
+                }
+                .then(
+                    if (backdrop != null) {
+                        Modifier.floatingGlass(backdrop, CircleShape)
+                    } else {
+                        Modifier.clip(CircleShape).background(colors.primary)
+                    },
+                )
+                .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onToggle)
+                .semantics { contentDescription = if (expanded) "Close menu" else "Open quick actions" },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = AppIcons.Add,
+                contentDescription = null,
+                tint = if (backdrop != null) colors.onSurface else colors.onPrimary,
+                modifier = Modifier
+                    .size(28.dp)
+                    .graphicsLayer { rotationZ = 45f * progress },
+            )
+        }
     }
 }
 

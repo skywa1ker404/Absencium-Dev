@@ -42,6 +42,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
@@ -66,6 +68,8 @@ import com.trajectory.vault.ui.components.NavCard
 import com.trajectory.vault.ui.icons.AppIcons
 import com.trajectory.vault.ui.components.PillButton
 import com.trajectory.vault.ui.components.SectionTitle
+import com.trajectory.vault.ui.components.SemiGauge
+import com.trajectory.vault.ui.components.StatPill
 import com.trajectory.vault.ui.main.TabColumn
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -85,6 +89,7 @@ fun CalendarTab(
     onEditHoliday: (HolidayEntity) -> Unit,
     onOpenTimetable: () -> Unit,
     onAddNotes: (subjectId: Long, date: LocalDate) -> Unit,
+    threshold: Int = 75,
 ) {
     val colors = MaterialTheme.colorScheme
     val today = now.toLocalDate()
@@ -109,6 +114,7 @@ fun CalendarTab(
             today = today,
             selected = selected,
             data = data,
+            threshold = threshold,
             onPrevious = { monthOffset-- },
             onNext = { monthOffset++ },
             onSelect = { selectedIso = it.toString() },
@@ -157,6 +163,7 @@ private fun MonthCard(
     today: LocalDate,
     selected: LocalDate,
     data: CalendarData,
+    threshold: Int,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onSelect: (LocalDate) -> Unit,
@@ -170,6 +177,18 @@ private fun MonthCard(
     // Looked up once per change instead of once per day cell on every frame.
     val holidaysByDate = remember(data.holidays) { data.holidays.associateBy { it.date } }
     val examsByDate = remember(data.exams) { data.exams.groupBy { it.date } }
+    // One status per day for the grid: Absent if any lecture that day was missed, else Present if one was attended.
+    val statusByDate = remember(data.attendance) {
+        data.attendance.groupBy { it.date }.mapNotNull { (date, rows) ->
+            val status = when {
+                rows.any { it.status == AttendanceStatus.ABSENT } -> AttendanceStatus.ABSENT
+                rows.any { it.status == AttendanceStatus.PRESENT } -> AttendanceStatus.PRESENT
+                else -> null
+            }
+            status?.let { date to it }
+        }.toMap()
+    }
+    var showAllMonths by rememberSaveable { mutableStateOf(false) }
 
     AppCard(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -203,18 +222,23 @@ private fun MonthCard(
         }
         Column(modifier = Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             for (week in 0 until totalCells / 7) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(modifier = Modifier.fillMaxWidth()) {
                     for (column in 0..6) {
                         val dayNumber = week * 7 + column - leading + 1
                         if (dayNumber < 1 || dayNumber > month.lengthOfMonth()) {
                             Box(modifier = Modifier.weight(1f).aspectRatio(1f))
                         } else {
                             val date = month.atDay(dayNumber)
+                            val status = statusByDate[date]
                             DayCell(
                                 date = date,
                                 isToday = date == today,
                                 isSelected = date == selected,
                                 isOff = holidaysByDate.containsKey(date) || date.isWeekend(),
+                                status = status,
+                                // A run of days with the same status is joined by a soft bar, within a week row.
+                                joinLeft = status != null && column > 0 && statusByDate[date.minusDays(1)] == status && dayNumber > 1,
+                                joinRight = status != null && column < 6 && statusByDate[date.plusDays(1)] == status && dayNumber < month.lengthOfMonth(),
                                 exams = examsByDate[date].orEmpty(),
                                 onClick = { onSelect(date) },
                                 modifier = Modifier.weight(1f),
@@ -223,6 +247,76 @@ private fun MonthCard(
                     }
                 }
             }
+        }
+        MonthSummary(
+            month = month,
+            statusByDate = statusByDate,
+            showAll = showAllMonths,
+            onShowAll = { showAllMonths = it },
+            threshold = threshold,
+        )
+    }
+}
+
+/** This Month / All Months: the share of marked days that were Present, with the counts beneath. */
+@Composable
+private fun MonthSummary(
+    month: YearMonth,
+    statusByDate: Map<LocalDate, AttendanceStatus>,
+    showAll: Boolean,
+    onShowAll: (Boolean) -> Unit,
+    threshold: Int,
+) {
+    val colors = MaterialTheme.colorScheme
+    val counted = remember(statusByDate, month, showAll) {
+        statusByDate.filterKeys { showAll || YearMonth.from(it) == month }.values
+    }
+    val present = counted.count { it == AttendanceStatus.PRESENT }
+    val absent = counted.count { it == AttendanceStatus.ABSENT }
+    val total = present + absent
+    val percent = if (total == 0) null else present * 100.0 / total
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clip(CircleShape).background(colors.surfaceContainerHighest).padding(4.dp),
+        ) {
+            listOf("This month" to false, "All months" to true).forEach { (label, all) ->
+                val on = showAll == all
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (on) colors.onPrimary else colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(CircleShape)
+                        .background(if (on) colors.primary else androidx.compose.ui.graphics.Color.Transparent)
+                        .clickable { onShowAll(all) }
+                        .padding(vertical = 10.dp),
+                )
+            }
+        }
+        SemiGauge(
+            percent = percent,
+            threshold = threshold,
+            arcColor = colors.primary,
+            trackColor = colors.surfaceContainerHighest,
+            belowColor = colors.error,
+            markerColor = colors.onSurfaceVariant,
+            numberColor = colors.onSurface,
+            captionColor = colors.onSurfaceVariant,
+            caption = "of marked days present",
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        ) {
+            StatPill("Present: $present", colors.primaryContainer, colors.onPrimaryContainer)
+            StatPill("Absent: $absent", colors.errorContainer, colors.onErrorContainer)
+            StatPill("Total: $total", colors.surfaceContainerHighest, colors.onSurface)
         }
     }
 }
@@ -233,37 +327,58 @@ private fun DayCell(
     isToday: Boolean,
     isSelected: Boolean,
     isOff: Boolean,
+    status: AttendanceStatus?,
+    joinLeft: Boolean,
+    joinRight: Boolean,
     exams: List<ExamEntity>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
-    val background = when {
-        isToday -> colors.primary
-        isSelected -> colors.primaryContainer
-        // Holidays and weekends use a solid blend, never a see-through colour.
-        isOff -> lerp(colors.surfaceContainerHigh, colors.tertiaryContainer, 0.6f)
-        else -> colors.surfaceContainerHigh
+    // A marked day is a solid circle (Present in the theme's main colour, Absent in its error colour); the
+    // bar joining a run of days is the softer container tone. Unmarked days are plain.
+    val fill = when (status) {
+        AttendanceStatus.PRESENT -> colors.primary
+        AttendanceStatus.ABSENT -> colors.error
+        else -> when {
+            isSelected -> colors.primaryContainer
+            isOff -> lerp(colors.surfaceContainerHigh, colors.tertiaryContainer, 0.6f)
+            else -> Color.Transparent
+        }
     }
-    val textColor = when {
-        isToday -> colors.onPrimary
-        isSelected -> colors.onPrimaryContainer
-        isOff -> colors.onTertiaryContainer
-        else -> colors.onSurface
+    val bar = if (status == AttendanceStatus.ABSENT) colors.errorContainer else colors.primaryContainer
+    val textColor = when (status) {
+        AttendanceStatus.PRESENT -> colors.onPrimary
+        AttendanceStatus.ABSENT -> colors.onError
+        else -> when {
+            isSelected -> colors.onPrimaryContainer
+            isToday -> colors.primary
+            isOff -> colors.onTertiaryContainer
+            else -> colors.onSurface
+        }
     }
     val dotColors = exams.take(3).map { subjectColor(it.subjectId) }
-    // One text node; the round background, today ring and exam dots are drawn directly so a month of
-    // cells stays cheap to compose, measure and draw.
+    // One text node; the circle, the joining bar and the exam dots are drawn directly so a month of cells
+    // stays cheap to compose, measure and draw. The selected day is drawn full size, the rest slightly smaller.
     Box(
         modifier = modifier
             .aspectRatio(1f)
             .drawBehind {
-                drawCircle(background)
+                val half = size.minDimension / 2f
+                if (joinLeft || joinRight) {
+                    val barHeight = size.height * 0.62f
+                    val left = if (joinLeft) 0f else size.width / 2f
+                    val right = if (joinRight) size.width else size.width / 2f
+                    drawRect(bar, topLeft = Offset(left, (size.height - barHeight) / 2f), size = Size(right - left, barHeight))
+                }
+                if (fill != Color.Transparent) {
+                    drawCircle(fill, radius = if (isSelected || status == null) half else half * 0.86f)
+                }
                 val dot = 2.5.dp.toPx()
                 val gap = 2.dp.toPx()
                 val total = dotColors.size * dot * 2f + (dotColors.size - 1).coerceAtLeast(0) * gap
                 var x = (size.width - total) / 2f + dot
-                val y = size.height * 0.78f
+                val y = size.height * 0.8f
                 dotColors.forEach { color ->
                     drawCircle(color, radius = dot, center = Offset(x, y))
                     x += dot * 2f + gap
@@ -275,7 +390,7 @@ private fun DayCell(
     ) {
         Text(
             text = date.dayOfMonth.toString(),
-            style = MaterialTheme.typography.labelLarge,
+            style = if (isToday || isSelected) MaterialTheme.typography.labelLarge else MaterialTheme.typography.bodyMedium,
             color = textColor,
             modifier = Modifier.offset(y = if (dotColors.isEmpty()) 0.dp else (-2).dp),
         )

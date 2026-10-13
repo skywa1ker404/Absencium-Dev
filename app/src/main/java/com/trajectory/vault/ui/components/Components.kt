@@ -83,6 +83,8 @@ fun AppCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     highlighted: Boolean = false,
+    /** A tinted tile colour (for example a theme container). Defaults to the plain card surface. */
+    container: Color? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val q = LocalQuality.current
@@ -98,6 +100,7 @@ fun AppCard(
     val container by animateColorAsState(
         targetValue = when {
             // A chosen card is tinted toward the theme's accent container instead of being outlined.
+            container != null -> container
             highlighted -> androidx.compose.ui.graphics.lerp(colors.surfaceContainerHigh, colors.primaryContainer, 0.55f)
             pressed -> colors.surfaceContainerHigh
             else -> colors.surfaceContainerLow
@@ -193,11 +196,11 @@ fun ScreenScaffold(
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
     Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
-        letterSpacing = 1.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.padding(top = 12.dp, start = 4.dp),
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier.padding(top = 14.dp, start = 4.dp),
     )
 }
 
