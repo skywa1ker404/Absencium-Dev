@@ -73,6 +73,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trajectory.vault.ui.components.floatingGlass
+import com.trajectory.vault.ui.components.glassPuck
 import com.trajectory.vault.ui.icons.AppIcons
 import com.kyant.backdrop.backdrops.LayerBackdrop
 
@@ -192,21 +193,13 @@ fun BottomPill(
                     scaleX = zoom
                     scaleY = zoom
                 }
-                .clip(CircleShape)
-                .background(
-                    if (glass) {
-                        // Plain glass: the selected tab is a faint lighter or darker puck, never a colour.
-                        if (isDarkSurface) Color.White.copy(alpha = 0.16f) else Color.Black.copy(alpha = 0.08f)
-                    } else {
-                        colors.secondaryContainer
-                    },
-                )
-                // Only the glass puck has a light rim, like a lens edge; every other theme has no outline.
+                // Glass: a clear lens bead (Quality mode) or a faint puck (Performance mode), never a colour.
+                // Every other theme: a tonal puck with no outline.
                 .then(
                     if (glass) {
-                        Modifier.border(1.dp, Color.White.copy(alpha = if (isDarkSurface) 0.28f else 0.7f), CircleShape)
+                        Modifier.glassPuck(backdrop, CircleShape, isDarkSurface)
                     } else {
-                        Modifier
+                        Modifier.clip(CircleShape).background(colors.secondaryContainer)
                     },
                 ),
         )

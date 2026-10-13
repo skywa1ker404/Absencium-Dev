@@ -72,6 +72,30 @@ fun Modifier.floatingGlass(
 }
 
 /**
+ * The selected tab of the glass navigation pill. In Quality mode it is a clear lens: it does not blur, it bends
+ * what is behind it, so the pill looks like glass with a bead of clearer glass sliding along it. In Performance
+ * mode, or without runtime shaders (below Android 13), it is a plain faint puck. Never coloured.
+ */
+@Composable
+fun Modifier.glassPuck(backdrop: LayerBackdrop?, shape: Shape, isDark: Boolean): Modifier {
+    val quality = LocalQuality.current
+    val faint = if (isDark) Color.White.copy(alpha = 0.16f) else Color.Black.copy(alpha = 0.08f)
+    if (backdrop == null || !quality.glassLens || !isRuntimeShaderSupported() || shape !is CornerBasedShape) {
+        return this.clip(shape).background(faint)
+    }
+    val sheen = if (isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.22f)
+    return this.drawBackdrop(
+        backdrop = backdrop,
+        shape = { shape },
+        effects = {
+            lens(refractionHeight = 8.dp.toPx(), refractionAmount = 16.dp.toPx())
+        },
+        highlight = { Highlight.Default },
+        onDrawSurface = { drawRect(sheen) },
+    )
+}
+
+/**
  * Background of bottom sheets (search, profile, entry forms). With the Liquid Glass engine the
  * sheet is translucent and tinted by the wallpaper (Monet) colours, so the app shows through it;
  * otherwise it is the plain themed surface.

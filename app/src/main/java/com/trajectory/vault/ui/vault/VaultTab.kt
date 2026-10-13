@@ -33,7 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -144,7 +144,7 @@ fun VaultTab(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
-                        Text("Vault", style = MaterialTheme.typography.headlineMedium)
+                        Text("Vault", style = MaterialTheme.typography.headlineLarge)
                         Text(
                             text = "Notes and guides, one folder per subject",
                             style = MaterialTheme.typography.bodyMedium,
@@ -170,35 +170,55 @@ fun VaultTab(
                     }
                 }
             }
-            items(subjects, key = { it.id }) { subject ->
+            itemsIndexed(subjects, key = { _, subject -> subject.id }) { index, subject ->
                 val active = data.notesOf(subject.id, NoteStatus.ACTIVE).size
                 val finished = data.notesOf(subject.id, NoteStatus.FINISHED).size
                 val guides = data.guides.count { it.subjectId == subject.id }
-                AppCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpenFolder(subject.id) }) {
+                // Folders take turns in the theme's tonal colours, like a stack of coloured folders.
+                val (container, onContainer) = when (index % 3) {
+                    0 -> colors.primaryContainer to colors.onPrimaryContainer
+                    1 -> colors.tertiaryContainer to colors.onTertiaryContainer
+                    else -> colors.secondaryContainer to colors.onSecondaryContainer
+                }
+                AppCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    container = container,
+                    onClick = { onOpenFolder(subject.id) },
+                ) {
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(subjectColor(subject.id).copy(alpha = 0.28f)),
+                            .clip(CircleShape)
+                            .background(onContainer.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(AppIcons.Folder, contentDescription = null, tint = colors.onSurface)
+                        Icon(AppIcons.Folder, contentDescription = null, tint = onContainer)
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(subjectColor(subject.id)),
+                        )
                     }
                     Text(
                         text = subject.name,
                         style = MaterialTheme.typography.titleMedium,
+                        color = onContainer,
                         maxLines = 2,
-                        modifier = Modifier.padding(top = 12.dp),
+                        modifier = Modifier.padding(top = 14.dp),
                     )
                     Text(
                         text = "$active ${if (active == 1) "note" else "notes"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                        color = onContainer,
+                        modifier = Modifier.padding(top = 10.dp),
                     )
                     Text(
                         text = "$finished finished · $guides ${if (guides == 1) "guide" else "guides"}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = colors.onSurfaceVariant,
+                        color = onContainer.copy(alpha = 0.75f),
                     )
                 }
             }
