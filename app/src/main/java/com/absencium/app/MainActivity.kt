@@ -12,6 +12,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
+import com.absencium.app.display.RefreshRatePreference
 import com.absencium.app.ui.about.IntroTourContent
 import com.absencium.app.ui.onboarding.OnboardingScreen
 import com.absencium.app.ui.settings.rememberSettingsViewModel
@@ -20,6 +21,8 @@ import com.absencium.app.ui.theme.AbsenciumTheme
 import com.absencium.app.ui.theme.isDarkTheme
 
 class MainActivity : ComponentActivity() {
+
+    private val refreshRate by lazy { RefreshRatePreference(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // The splash screen stays up until the saved settings are read, so the first frame is already in the
@@ -58,5 +61,15 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        refreshRate.start()
+    }
+
+    override fun onStop() {
+        refreshRate.stop()
+        super.onStop()
     }
 }

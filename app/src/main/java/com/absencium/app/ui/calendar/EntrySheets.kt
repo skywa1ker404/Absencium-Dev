@@ -2,6 +2,7 @@ package com.absencium.app.ui.calendar
 
 import com.absencium.app.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
+import com.absencium.app.ui.components.Reveal
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
@@ -30,7 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.absencium.app.ui.components.AppTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -164,7 +165,7 @@ fun AddEntrySheet(
                 }
             }
 
-            OutlinedTextField(
+            AppTextField(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text(if (type == EntryType.EXAM) "Exam title" else "Holiday name") },
@@ -221,11 +222,7 @@ fun AddEntrySheet(
                         },
                     )
                 }
-                AnimatedVisibility(
-                    visible = multiDay,
-                    enter = fadeIn() + expandVertically(q.spring(dampingRatio = Spring.DampingRatioLowBouncy)),
-                    exit = fadeOut() + shrinkVertically(),
-                ) {
+                Reveal(visible = multiDay) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("To", style = MaterialTheme.typography.labelLarge)
                         OutlinedButton(onClick = { pickingEnd = true; showPicker = true }, shape = CircleShape) {
@@ -270,7 +267,7 @@ fun AddEntrySheet(
                     Switch(checked = autoSkip, onCheckedChange = { autoSkip = it })
                 }
             } else {
-                OutlinedTextField(
+                AppTextField(
                     value = weightage,
                     onValueChange = { weightage = it },
                     label = { Text("Weightage in marks or percent (optional)") },
@@ -285,7 +282,7 @@ fun AddEntrySheet(
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedTextField(
+                AppTextField(
                     value = room,
                     onValueChange = { room = it },
                     label = { Text("Room (optional)") },
@@ -293,7 +290,7 @@ fun AddEntrySheet(
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedTextField(
+                AppTextField(
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text("Syllabus notes (optional)") },

@@ -13,7 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.absencium.app.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.absencium.app.ui.components.AppTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -189,7 +189,7 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                 modifier = Modifier.padding(top = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                OutlinedTextField(
+                AppTextField(
                     value = start,
                     onValueChange = { start = it },
                     label = { Text("Start (9:30)") },
@@ -198,7 +198,7 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.weight(1f),
                 )
-                OutlinedTextField(
+                AppTextField(
                     value = end,
                     onValueChange = { end = it },
                     label = { Text("End (10:30)") },
@@ -208,7 +208,7 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                     modifier = Modifier.weight(1f),
                 )
             }
-            OutlinedTextField(
+            AppTextField(
                 value = room,
                 onValueChange = { room = it },
                 label = { Text("Room (optional)") },

@@ -2,6 +2,7 @@ package com.absencium.app.ui.calendar
 
 import com.absencium.app.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
+import com.absencium.app.ui.components.Reveal
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
@@ -619,11 +620,7 @@ private fun TodayCard(
             )
         }
 
-        AnimatedVisibility(
-            visible = absent.isNotEmpty(),
-            enter = fadeIn() + expandVertically(q.spring(dampingRatio = Spring.DampingRatioLowBouncy)),
-            exit = fadeOut() + shrinkVertically(),
-        ) {
+        Reveal(visible = absent.isNotEmpty()) {
             Column(modifier = Modifier.padding(top = 12.dp)) {
                 Row(
                     modifier = Modifier
@@ -669,11 +666,7 @@ private fun TodayCard(
                         )
                     }
                 }
-                AnimatedVisibility(
-                    visible = expanded,
-                    enter = fadeIn() + expandVertically(q.spring(dampingRatio = Spring.DampingRatioLowBouncy)),
-                    exit = fadeOut() + shrinkVertically(),
-                ) {
+                Reveal(visible = expanded) {
                     Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         absent.forEach { record ->
                             Column {

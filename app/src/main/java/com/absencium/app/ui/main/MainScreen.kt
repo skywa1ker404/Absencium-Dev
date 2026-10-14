@@ -49,7 +49,8 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.DraftsScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.HolidayImportScreenDestination
+import com.absencium.app.ui.capture.ImportKind
+import com.absencium.app.ui.capture.ImportPopup
 import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
@@ -142,6 +143,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var showAddEntry by rememberSaveable { mutableStateOf(false) }
     var fabOpen by remember { mutableStateOf(false) }
     var addEntry by remember { mutableStateOf<AddEntryRequest?>(null) }
+    var importKind by remember { mutableStateOf<ImportKind?>(null) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
@@ -318,7 +320,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     listOf(
                         FabAction("Add entry", AppIcons.Add) { fabOpen = false; showAddEntry = true },
                         FabAction("Timetable", AppIcons.Schedule) { fabOpen = false; navigator.navigate(TimetableScreenDestination) },
-                        FabAction("Import holidays", AppIcons.AutoAwesome) { fabOpen = false; navigator.navigate(HolidayImportScreenDestination) },
+                        FabAction("Import holidays", AppIcons.AutoAwesome) { fabOpen = false; importKind = ImportKind.HOLIDAYS },
+                        FabAction("Import exam timetable", AppIcons.AutoAwesome) { fabOpen = false; importKind = ImportKind.EXAMS },
                     )
                 } else {
                     listOf(
@@ -382,7 +385,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
             },
             onImportWithAi = {
                 showAddEntry = false
-                navigator.navigate(HolidayImportScreenDestination)
+                importKind = ImportKind.HOLIDAYS
             },
         )
     }
@@ -428,6 +431,14 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 calendarViewModel.deleteExam(exam)
                 openExam = null
             },
+        )
+    }
+
+    importKind?.let { kind ->
+        ImportPopup(
+            kind = kind,
+            onDismiss = { importKind = null },
+            onOpenAiSettings = { importKind = null; navigator.navigate(AiSettingsScreenDestination) },
         )
     }
 

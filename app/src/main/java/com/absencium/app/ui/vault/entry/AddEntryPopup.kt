@@ -46,7 +46,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.absencium.app.ui.components.AppTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,7 +70,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.absencium.app.data.db.AttendanceEntity
-import com.absencium.app.ui.components.LocalCardBackdrop
+import com.absencium.app.ui.components.DropdownOption
+import com.absencium.app.ui.components.InlineDropdown
+import com.absencium.app.ui.components.PopupShell
 import com.absencium.app.ui.components.PillButton
 import com.absencium.app.ui.containerViewModel
 import com.absencium.app.ui.icons.AppIcons
@@ -124,33 +126,9 @@ fun AddEntryPopup(
         }
     }
 
-    Dialog(
-        onDismissRequest = { back() },
-        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false, decorFitsSystemWindows = false),
-    ) {
-        // The window fills the screen and the card hangs from a fixed top edge, so when the card grows it only grows
-        // downwards. In a centred window every size change also moved the top edge, which read as a jump.
-        Box(
-            modifier = Modifier.fillMaxSize().systemBarsPadding().imePadding().padding(horizontal = 20.dp, vertical = 16.dp),
-            contentAlignment = Alignment.TopCenter,
-        ) {
-            Surface(
-                shape = RoundedCornerShape(34.dp),
-                color = colors.surfaceContainerHigh,
-                modifier = Modifier
-                    .padding(top = 56.dp)
-                    .widthIn(max = 460.dp)
-                    .fillMaxWidth()
-                    // The one size animation in the popup: a firm spring that settles without a visible bounce.
-                    // Everything inside only changes size instantly and lets this carry the motion.
-                    .animateContentSize(q.spring(dampingRatio = CardDamping, stiffness = Spring.StiffnessMediumLow))
-                    .heightIn(max = 680.dp),
-            ) {
-                // Frosted controls look different on every frame while the card resizes, so the popup uses plain fills.
-                CompositionLocalProvider(LocalCardBackdrop provides null) {
+    PopupShell(onDismissRequest = { back() }) {
                     AnimatedContent(
                         targetState = state.stage,
-                        modifier = Modifier.verticalScroll(rememberScrollState()),
                         transitionSpec = {
                             fadeIn(tween(170, delayMillis = 90)).togetherWith(fadeOut(tween(90))) using
                                 SizeTransform(clip = false) { _, _ -> snap() }
@@ -203,17 +181,12 @@ fun AddEntryPopup(
                             )
                         }
                     }
-                }
-            }
-        }
     }
 
     if (pickingDate) {
         CustomDateDialog(initial = state.date, onPicked = viewModel::chooseDate, onDismiss = { pickingDate = false })
     }
 }
-
-private const val CardDamping = 0.92f
 
 /** Lets the user choose any date, for notes that belong to a day that is not a logged absence. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -252,9 +225,6 @@ private fun SubjectStage(
 ) {
     val colors = MaterialTheme.colorScheme
     val chosen = subjects.firstOrNull { it.first == selectedId }
-    // The list opens inside the card. A drop-down would be a second window, with its own motion, over the card.
-    var listOpen by remember { mutableStateOf(false) }
-    val arrow by animateFloatAsState(if (listOpen) 180f else 0f, tween(220, easing = FastOutSlowInEasing), label = "subjectArrow")
     // 0 = only Cancel, 1 = Cancel and Next side by side. A plain eased tween, because a width that overshoots
     // full width would run outside the card.
     val split by animateFloatAsState(if (chosen != null) 1f else 0f, tween(300, easing = FastOutSlowInEasing), label = "buttonSplit")
@@ -263,51 +233,13 @@ private fun SubjectStage(
     Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("Select a Subject", style = MaterialTheme.typography.headlineSmall)
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(colors.surfaceContainerHighest),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = subjects.isNotEmpty()) { listOpen = !listOpen }
-                    .padding(horizontal = 18.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = chosen?.second ?: if (subjects.isEmpty()) "No subjects yet" else "Choose a subject",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (chosen == null) colors.onSurfaceVariant else colors.onSurface,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    AppIcons.ExpandMore,
-                    contentDescription = "Open subject list",
-                    tint = colors.onSurfaceVariant,
-                    modifier = Modifier.graphicsLayer { rotationZ = arrow },
-                )
-            }
-            if (listOpen) {
-                Column(modifier = Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState())) {
-                    subjects.forEach { (id, name) ->
-                        Text(
-                            text = name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (id == selectedId) colors.primary else colors.onSurface,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onSubject(id)
-                                    listOpen = false
-                                }
-                                .padding(horizontal = 18.dp, vertical = 14.dp),
-                        )
-                    }
-                }
-            }
-        }
+        InlineDropdown(
+            options = subjects.map { DropdownOption(it.first, it.second) },
+            selected = chosen?.first,
+            onSelect = onSubject,
+            placeholder = if (subjects.isEmpty()) "No subjects yet" else "Choose a subject",
+            enabled = subjects.isNotEmpty(),
+        )
         if (subjects.isEmpty()) {
             Text(
                 "Add a subject first (Settings, Subjects). Every entry lives in a subject folder.",
@@ -447,7 +379,7 @@ private fun ActionsStage(
 
 /** A tile with its own corner personality ([variant] picks which corners are round) that relaxes while pressed. */
 @Composable
-private fun ActionTile(
+internal fun ActionTile(
     title: String,
     icon: ImageVector,
     container: Color,
@@ -589,7 +521,7 @@ private fun PicturesStage(
             ExtractionPanel(state = state, viewModel = viewModel, onOpenAiSettings = onOpenAiSettings)
         }
 
-        OutlinedTextField(
+        AppTextField(
             value = state.title,
             onValueChange = viewModel::setTitle,
             label = { Text("Title (optional)") },
@@ -656,7 +588,7 @@ private fun ExtractionPanel(state: AddEntryState, viewModel: AddEntryViewModel, 
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text("Text found in your photos", style = MaterialTheme.typography.titleSmall)
-            OutlinedTextField(
+            AppTextField(
                 value = state.extractedText,
                 onValueChange = viewModel::setExtractedText,
                 shape = RoundedCornerShape(20.dp),
@@ -799,7 +731,7 @@ private fun YouTubeStage(
             SquareIconButton(AppIcons.ArrowBack, "Back", onBack)
             Text("Transcribe YouTube Video", style = MaterialTheme.typography.titleLarge)
         }
-        OutlinedTextField(
+        AppTextField(
             value = state.youtubeUrl,
             onValueChange = viewModel::setYouTubeUrl,
             label = { Text("Paste a YouTube link") },

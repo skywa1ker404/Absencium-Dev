@@ -59,8 +59,9 @@ object AttachmentReader {
 
     private fun readImage(resolver: ContentResolver, uri: Uri): AiImage {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-            ?: throw AiException("Could not open that photo.")
+        // decodeStream returns null when it only reads the size, so the stream itself is what is checked for a failure to open.
+        val opened = resolver.openInputStream(uri) ?: throw AiException("Could not open that photo.")
+        opened.use { BitmapFactory.decodeStream(it, null, bounds) }
         val longest = maxOf(bounds.outWidth, bounds.outHeight)
         if (longest <= 0) throw AiException("Could not read that photo.")
         var sample = 1
@@ -204,5 +205,71 @@ class HolidayImporter(private val client: AiClient) {
             } catch (e: Exception) {
                 null
             }
+    }
+}
+
+
+/** One exam the AI found. [subject] is the name as written in the document, matched to the user's subjects afterwards. */
+data class ExamCandidate(val subject: String, val title: String, val date: LocalDate, val room: String?)
+
+/** Asks the user's AI model to read an exam timetable and returns what it found, for the user to review. */
+class ExamImporter(private val client: AiClient) {
+
+    suspend fun extract(
+        connection: AiConnection,
+        text: String,
+        attachments: List<ImportAttachment>,
+        today: LocalDate,
+        subjectNames: List<String>,
+    ): List<ExamCandidate> {
+        val pastedText = buildString {
+            if (text.isNotBlank()) append(text.trim())
+            attachments.mapNotNull { it.text }.forEach { append("\n\n").append(it) }
+        }.trim()
+        val images = attachments.flatMap { it.images }
+        if (pastedText.isEmpty() && images.isEmpty()) throw AiException("Add some text, a photo or a PDF first.")
+
+        val prompt = buildString {
+            append("You read school and college exam timetables. Today is $today. ")
+            append("From the text and images provided, list every exam. ")
+            append("Reply with ONLY a JSON array and nothing else. Each item is ")
+            append("{\"subject\":\"subject name\",\"title\":\"short exam name such as Mid-term\",\"date\":\"YYYY-MM-DD\",\"room\":\"room or empty\"}. ")
+            if (subjectNames.isNotEmpty()) {
+                append("The student's subjects are: ${subjectNames.joinToString(", ")}. Use these exact names when an exam clearly is one of them. ")
+            }
+            append("If a date has no year, use the next occurrence on or after today. If there are none, reply [].")
+            if (pastedText.isNotEmpty()) append("\n\nText:\n").append(pastedText)
+        }
+        return parseExams(client.generate(connection, prompt, images))
+    }
+
+    companion object {
+        private const val MAX_ITEMS = 100
+
+        /** Reads the JSON array out of a model reply, tolerating code fences. Items without a valid date or subject are dropped. */
+        fun parseExams(reply: String): List<ExamCandidate> {
+            val from = reply.indexOf('[')
+            val to = reply.lastIndexOf(']')
+            if (from < 0 || to <= from) throw AiException("The AI did not return a list of exams. Try again.")
+            val array = try {
+                JSONArray(reply.substring(from, to + 1))
+            } catch (e: JSONException) {
+                throw AiException("The AI's reply could not be read as a list. Try again.")
+            }
+            val found = ArrayList<ExamCandidate>()
+            for (i in 0 until minOf(array.length(), MAX_ITEMS)) {
+                val item = array.optJSONObject(i) ?: continue
+                val subject = item.optString("subject").trim().take(80)
+                val date = try {
+                    LocalDate.parse(item.optString("date").trim())
+                } catch (e: java.time.format.DateTimeParseException) {
+                    null
+                } ?: continue
+                if (subject.isEmpty()) continue
+                val title = item.optString("title").trim().ifEmpty { "Exam" }.take(80)
+                found += ExamCandidate(subject, title, date, item.optString("room").trim().ifEmpty { null }?.take(40))
+            }
+            return found.distinct().sortedBy { it.date }
+        }
     }
 }

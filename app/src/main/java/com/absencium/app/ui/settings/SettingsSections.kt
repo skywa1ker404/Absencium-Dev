@@ -12,7 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import com.absencium.app.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.absencium.app.ui.components.AppTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -92,7 +92,7 @@ fun AiKeySection(viewModel: AiKeyViewModel) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        OutlinedTextField(
+        AppTextField(
             value = input,
             onValueChange = { input = it },
             label = { Text(if (state.hasKey) "Replace key" else "API key") },
@@ -181,7 +181,7 @@ fun AiConnectionSection(settings: AppSettings, viewModel: SettingsViewModel) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        OutlinedTextField(
+        AppTextField(
             value = baseUrl,
             onValueChange = {
                 baseUrl = it
@@ -193,7 +193,7 @@ fun AiConnectionSection(settings: AppSettings, viewModel: SettingsViewModel) {
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         )
-        OutlinedTextField(
+        AppTextField(
             value = model,
             onValueChange = {
                 model = it

@@ -127,7 +127,9 @@ fun AppCard(
         shape = shape,
         color = if (cardBackdrop != null) Color.Transparent else container,
     ) {
-        Column(modifier = Modifier.then(clickModifier).padding(20.dp), content = content)
+        HostAnimatesSize {
+            Column(modifier = Modifier.then(clickModifier).padding(20.dp), content = content)
+        }
     }
 }
 

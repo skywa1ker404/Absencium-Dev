@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.absencium.app.ui.components.AppTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -108,7 +108,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         }
     }
 
-    OutlinedTextField(
+    AppTextField(
         value = title,
         onValueChange = { title = it },
         label = { Text("Title") },
@@ -116,7 +116,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier.fillMaxWidth(),
     )
-    OutlinedTextField(
+    AppTextField(
         value = body,
         onValueChange = { body = it },
         label = { Text("Note") },

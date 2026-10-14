@@ -12,7 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.absencium.app.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.absencium.app.ui.components.AppTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,7 +56,7 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.padding(top = 8.dp),
             ) {
-                OutlinedTextField(
+                AppTextField(
                     value = newName,
                     onValueChange = { newName = it },
                     label = { Text("Subject name") },
@@ -138,7 +138,7 @@ private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
             onDismissRequest = { renaming = false; newName = subject.name },
             title = { Text("Rename subject") },
             text = {
-                OutlinedTextField(
+                AppTextField(
                     value = newName,
                     onValueChange = { newName = it },
                     label = { Text("Subject name") },
@@ -199,7 +199,7 @@ private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("This permanently deletes ${subject.name} and its $count entries.")
-                        OutlinedTextField(
+                        AppTextField(
                             value = typed,
                             onValueChange = { typed = it },
                             label = { Text("Yes") },
