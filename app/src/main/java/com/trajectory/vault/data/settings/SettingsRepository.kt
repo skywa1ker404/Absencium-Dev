@@ -94,6 +94,10 @@ class SettingsRepository(context: Context) {
 
     suspend fun setLowStorageCompressorEnabled(value: Boolean) = write(Keys.LOW_STORAGE_COMPRESSOR_ENABLED, value)
 
+    suspend fun setSaturdayHoliday(value: Boolean) = write(Keys.SATURDAY_HOLIDAY, value)
+
+    suspend fun setSundayHoliday(value: Boolean) = write(Keys.SUNDAY_HOLIDAY, value)
+
     private suspend fun <T> write(key: Preferences.Key<T>, value: T) {
         dataStore.edit { it[key] = value }
     }
@@ -119,6 +123,8 @@ class SettingsRepository(context: Context) {
         val MOMENTUM_ENABLED = booleanPreferencesKey("momentum_tracker_enabled")
         val SEMESTER_MANAGER_ENABLED = booleanPreferencesKey("semester_manager_enabled")
         val LOW_STORAGE_COMPRESSOR_ENABLED = booleanPreferencesKey("low_storage_compressor_enabled")
+        val SATURDAY_HOLIDAY = booleanPreferencesKey("saturday_holiday")
+        val SUNDAY_HOLIDAY = booleanPreferencesKey("sunday_holiday")
     }
 
     private fun Preferences.toAppSettings(): AppSettings {
@@ -147,6 +153,8 @@ class SettingsRepository(context: Context) {
             semesterManagerEnabled = this[Keys.SEMESTER_MANAGER_ENABLED] ?: defaults.semesterManagerEnabled,
             lowStorageCompressorEnabled =
                 this[Keys.LOW_STORAGE_COMPRESSOR_ENABLED] ?: defaults.lowStorageCompressorEnabled,
+            saturdayHoliday = this[Keys.SATURDAY_HOLIDAY] ?: defaults.saturdayHoliday,
+            sundayHoliday = this[Keys.SUNDAY_HOLIDAY] ?: defaults.sundayHoliday,
         )
     }
 

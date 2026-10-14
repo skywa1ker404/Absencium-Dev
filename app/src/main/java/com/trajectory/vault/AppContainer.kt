@@ -46,7 +46,7 @@ class AppContainer(context: Context) {
     val attachmentStore = AttachmentStore(appContext)
     val databaseBackup = DatabaseBackup(appContext)
     val aiClient = AiClient(apiKeyVault)
-    val calendarRepository: CalendarRepository by lazy { CalendarRepository(database) }
+    val calendarRepository: CalendarRepository by lazy { CalendarRepository(database, settingsRepository.settings) }
     val vaultRepository: VaultRepository by lazy { VaultRepository(database) }
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.subjectDao(), database.subjectCascadeDao()) }
 }

@@ -29,7 +29,7 @@ private val Releases = listOf(
                 "Liquid Glass built on the Backdrop library: bars that blur and bend what scrolls behind them.",
                 "Edit saved exams, holidays, lectures and subject names.",
                 "Holidays across several days in one go, and a same-time-every-day switch for the timetable.",
-                "Saturdays and Sundays are always holidays.",
+                "Saturday and Sunday holiday switches in Settings and setup, on by default.",
                 "Notes collected tracking for days you were absent, from the attendance card.",
                 "AI model picker that lists the models of the provider you chose and shows which are free where the provider says so.",
                 "About page, this changelog and a replayable intro.",

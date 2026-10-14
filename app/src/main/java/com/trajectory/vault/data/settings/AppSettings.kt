@@ -55,6 +55,10 @@ data class AppSettings(
     val momentumTrackerEnabled: Boolean = false,
     val semesterManagerEnabled: Boolean = false,
     val lowStorageCompressorEnabled: Boolean = false,
+    /** Saturdays count as holidays: no lectures are expected and the timetable hides the day. */
+    val saturdayHoliday: Boolean = true,
+    /** Sundays count as holidays: no lectures are expected and the timetable hides the day. */
+    val sundayHoliday: Boolean = true,
 ) {
     /** The API style actually used for requests. */
     val effectiveAiStyle: ApiStyle

@@ -33,6 +33,7 @@ import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDes
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.data.db.TimetableEntity
 import com.trajectory.vault.domain.hm
+import com.trajectory.vault.domain.timetableDays
 import com.trajectory.vault.domain.parseTimeInput
 import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
@@ -45,7 +46,6 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /** Monday to Friday. */
-private val WeekDays = DayOfWeek.entries.filter { it.value <= DayOfWeek.FRIDAY.value }
 
 private fun DayOfWeek.full(): String = getDisplayName(TextStyle.FULL, Locale.getDefault())
 
@@ -74,6 +74,7 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
             return@ScreenScaffold
         }
         val subjects = loaded.subjects.filter { it.isActive }
+        val weekDays = loaded.timetableDays()
         if (message != null) {
             AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true, onClick = { viewModel.clearMessage() }) {
                 Text(message.orEmpty(), style = MaterialTheme.typography.bodyMedium)
@@ -81,8 +82,8 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
         }
 
         Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Saturday and Sunday are always holidays, so lectures can only be on weekdays.
-            WeekDays.forEach { option ->
+            // Saturday and Sunday only appear when they are not set as holidays in Settings.
+            weekDays.forEach { option ->
                 ExpressiveChip(
                     selected = day == option,
                     onClick = { day = option },
@@ -240,7 +241,7 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                             )
                             editing = null
                         } else if (sameEveryDay) {
-                            viewModel.addSlots(WeekDays, chosen, startTime, endTime, roomText)
+                            viewModel.addSlots(weekDays, chosen, startTime, endTime, roomText)
                         } else {
                             viewModel.addSlot(day, chosen, startTime, endTime, roomText)
                         }

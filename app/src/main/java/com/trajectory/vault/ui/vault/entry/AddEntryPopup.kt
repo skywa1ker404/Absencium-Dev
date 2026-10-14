@@ -6,15 +6,14 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +21,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,7 +31,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
@@ -42,14 +44,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,7 +70,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trajectory.vault.data.db.AttendanceEntity
-import com.trajectory.vault.ui.components.GlassStage
+import com.trajectory.vault.ui.components.LocalCardBackdrop
 import com.trajectory.vault.ui.components.PillButton
 import com.trajectory.vault.ui.containerViewModel
 import com.trajectory.vault.ui.icons.AppIcons
@@ -124,71 +125,85 @@ fun AddEntryPopup(
 
     Dialog(
         onDismissRequest = { back() },
-        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false),
+        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false, decorFitsSystemWindows = false),
     ) {
-        Surface(
-            shape = RoundedCornerShape(34.dp),
-            color = colors.surfaceContainerHigh,
-            modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .widthIn(max = 460.dp)
-                .fillMaxWidth()
-                .animateContentSize(q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)),
+        // The window fills the screen and the card hangs from a fixed top edge, so when the card grows it only grows
+        // downwards. In a centred window every size change also moved the top edge, which read as a jump.
+        Box(
+            modifier = Modifier.fillMaxSize().systemBarsPadding().imePadding().padding(horizontal = 20.dp, vertical = 16.dp),
+            contentAlignment = Alignment.TopCenter,
         ) {
-            GlassStage {
-                AnimatedContent(
-                    targetState = state.stage,
-                    transitionSpec = {
-                        (fadeIn(tween(240, delayMillis = 100)) + scaleIn(initialScale = 0.94f, animationSpec = tween(240, delayMillis = 100)))
-                            .togetherWith(fadeOut(tween(110))) using SizeTransform(clip = false) { _, _ -> androidx.compose.animation.core.snap() }
-                    },
-                    label = "entryStage",
-                ) { stage ->
-                    when (stage) {
-                        EntryStage.SUBJECT -> SubjectStage(
-                            subjects = subjects.map { it.id to it.name },
-                            selectedId = state.subjectId,
-                            absences = absences.filter { it.subjectId == state.subjectId },
-                            selectedDate = state.date,
-                            onSubject = viewModel::chooseSubject,
-                            onDate = viewModel::chooseDate,
-                            onCancel = { close() },
-                            onNext = viewModel::next,
-                        )
+            Surface(
+                shape = RoundedCornerShape(34.dp),
+                color = colors.surfaceContainerHigh,
+                modifier = Modifier
+                    .padding(top = 56.dp)
+                    .widthIn(max = 460.dp)
+                    .fillMaxWidth()
+                    // The one size animation in the popup: a firm spring that settles without a visible bounce.
+                    // Everything inside only changes size instantly and lets this carry the motion.
+                    .animateContentSize(q.spring(dampingRatio = CardDamping, stiffness = Spring.StiffnessMediumLow))
+                    .heightIn(max = 680.dp),
+            ) {
+                // Frosted controls look different on every frame while the card resizes, so the popup uses plain fills.
+                CompositionLocalProvider(LocalCardBackdrop provides null) {
+                    AnimatedContent(
+                        targetState = state.stage,
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                        transitionSpec = {
+                            fadeIn(tween(170, delayMillis = 90)).togetherWith(fadeOut(tween(90))) using
+                                SizeTransform(clip = false) { _, _ -> snap() }
+                        },
+                        label = "entryStage",
+                    ) { stage ->
+                        when (stage) {
+                            EntryStage.SUBJECT -> SubjectStage(
+                                subjects = subjects.map { it.id to it.name },
+                                selectedId = state.subjectId,
+                                absences = absences.filter { it.subjectId == state.subjectId },
+                                selectedDate = state.date,
+                                onSubject = viewModel::chooseSubject,
+                                onDate = viewModel::chooseDate,
+                                onCancel = { close() },
+                                onNext = viewModel::next,
+                            )
 
-                        EntryStage.ACTIONS -> ActionsStage(
-                            subjectName = subject?.name.orEmpty(),
-                            date = state.date,
-                            onBack = { back() },
-                            onPictures = { viewModel.openPictures(camera = false) },
-                            onCamera = { viewModel.openPictures(camera = true) },
-                            onYouTube = viewModel::openYouTube,
-                            onComingSoon = { name -> viewModel.showMessage("$name arrives in the next update.") },
-                            message = state.message,
-                        )
+                            EntryStage.ACTIONS -> ActionsStage(
+                                subjectName = subject?.name.orEmpty(),
+                                date = state.date,
+                                onBack = { back() },
+                                onPictures = { viewModel.openPictures(camera = false) },
+                                onCamera = { viewModel.openPictures(camera = true) },
+                                onYouTube = viewModel::openYouTube,
+                                onComingSoon = { name -> viewModel.showMessage("$name arrives in the next update.") },
+                                message = state.message,
+                            )
 
-                        EntryStage.YOUTUBE -> YouTubeStage(
-                            viewModel = viewModel,
-                            onBack = { back() },
-                            onSaved = onSaved,
-                            onOpenAiSettings = {
-                                close()
-                                onOpenAiSettings()
-                            },
-                        )
+                            EntryStage.YOUTUBE -> YouTubeStage(
+                                viewModel = viewModel,
+                                onBack = { back() },
+                                onSaved = onSaved,
+                                onOpenAiSettings = {
+                                    close()
+                                    onOpenAiSettings()
+                                },
+                            )
 
-                        EntryStage.PICTURES -> PicturesStage(
-                            viewModel = viewModel,
-                            subjectName = subject?.name.orEmpty(),
-                            onBack = { back() },
-                            onSaved = onSaved,
-                        )
+                            EntryStage.PICTURES -> PicturesStage(
+                                viewModel = viewModel,
+                                subjectName = subject?.name.orEmpty(),
+                                onBack = { back() },
+                                onSaved = onSaved,
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
+
+private const val CardDamping = 0.92f
 
 @Composable
 private fun SubjectStage(
@@ -201,26 +216,29 @@ private fun SubjectStage(
     onCancel: () -> Unit,
     onNext: () -> Unit,
 ) {
-    val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     val chosen = subjects.firstOrNull { it.first == selectedId }
-    var menuOpen by remember { mutableStateOf(false) }
-    val nextFraction by animateFloatAsState(
-        targetValue = if (chosen != null) 1f else 0f,
-        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-        label = "nextFraction",
-    )
+    // The list opens inside the card. A drop-down would be a second window, with its own motion, over the card.
+    var listOpen by remember { mutableStateOf(false) }
+    val arrow by animateFloatAsState(if (listOpen) 180f else 0f, tween(220, easing = FastOutSlowInEasing), label = "subjectArrow")
+    // 0 = only Cancel, 1 = Cancel and Next side by side. A plain eased tween, because a width that overshoots
+    // full width would run outside the card.
+    val split by animateFloatAsState(if (chosen != null) 1f else 0f, tween(300, easing = FastOutSlowInEasing), label = "buttonSplit")
+    val reveal by animateFloatAsState(if (chosen != null) 1f else 0f, tween(260, delayMillis = 60), label = "dateReveal")
 
     Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("Select a Subject", style = MaterialTheme.typography.headlineSmall)
 
-        Box {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(colors.surfaceContainerHighest),
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(colors.surfaceContainerHighest)
-                    .clickable { menuOpen = true }
+                    .clickable(enabled = subjects.isNotEmpty()) { listOpen = !listOpen }
                     .padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -230,17 +248,29 @@ private fun SubjectStage(
                     color = if (chosen == null) colors.onSurfaceVariant else colors.onSurface,
                     modifier = Modifier.weight(1f),
                 )
-                Icon(AppIcons.ExpandMore, contentDescription = "Open subject list", tint = colors.onSurfaceVariant)
+                Icon(
+                    AppIcons.ExpandMore,
+                    contentDescription = "Open subject list",
+                    tint = colors.onSurfaceVariant,
+                    modifier = Modifier.graphicsLayer { rotationZ = arrow },
+                )
             }
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                subjects.forEach { (id, name) ->
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        onClick = {
-                            onSubject(id)
-                            menuOpen = false
-                        },
-                    )
+            if (listOpen) {
+                Column(modifier = Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState())) {
+                    subjects.forEach { (id, name) ->
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (id == selectedId) colors.primary else colors.onSurface,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSubject(id)
+                                    listOpen = false
+                                }
+                                .padding(horizontal = 18.dp, vertical = 14.dp),
+                        )
+                    }
                 }
             }
         }
@@ -252,12 +282,12 @@ private fun SubjectStage(
             )
         }
 
-        AnimatedVisibility(
-            visible = chosen != null,
-            enter = fadeIn() + expandVertically(q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)),
-            exit = fadeOut() + shrinkVertically(),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (chosen != null) {
+            // Present at full size from the first frame (the card's spring does the growing), fading in on top.
+            Column(
+                modifier = Modifier.graphicsLayer { alpha = reveal },
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 Text("Which absent date are these notes for?", style = MaterialTheme.typography.titleMedium)
                 Column(
                     modifier = Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()),
@@ -281,17 +311,27 @@ private fun SubjectStage(
             }
         }
 
-        // Cancel starts full width and shrinks to half as Next springs in beside it.
-        Row(modifier = Modifier.fillMaxWidth()) {
-            PillButton(text = "Cancel", tonal = true, onClick = onCancel, modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(10.dp * nextFraction))
-            PillButton(
-                text = "Next",
-                onClick = onNext,
-                enabled = chosen != null,
+        // Cancel starts full width and shrinks to half as Next slides in beside it. Widths are worked out from the
+        // row's real width, and Next keeps one fixed width so its label never re-wraps while the row animates.
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val gap = 10.dp
+            val half = (maxWidth - gap) / 2
+            Box(
                 modifier = Modifier
-                    .weight(nextFraction.coerceAtLeast(0.0001f))
-                    .graphicsLayer { alpha = nextFraction },
+                    .align(Alignment.CenterEnd)
+                    .width(half)
+                    .graphicsLayer {
+                        alpha = split
+                        translationX = (1f - split) * (half.toPx() * 0.35f)
+                    },
+            ) {
+                PillButton(text = "Next", onClick = onNext, enabled = chosen != null, modifier = Modifier.fillMaxWidth())
+            }
+            PillButton(
+                text = "Cancel",
+                tonal = true,
+                onClick = onCancel,
+                modifier = Modifier.width(maxWidth - (maxWidth - half) * split),
             )
         }
     }
@@ -491,7 +531,7 @@ private fun PicturesStage(
                 .padding(horizontal = 12.dp, vertical = 6.dp),
         )
 
-        AnimatedVisibility(visible = state.pictures.isNotEmpty()) {
+        AnimatedVisibility(visible = state.pictures.isNotEmpty(), enter = fadeIn(tween(200)), exit = fadeOut(tween(100))) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(state.pictures, key = { it.id }) { picture ->
                     PhotoThumb(
@@ -636,7 +676,7 @@ private fun YouTubeStage(
         if (state.videoLoading) LoadingDots("Fetching video details")
 
         val video = state.video
-        AnimatedVisibility(visible = video != null) {
+        AnimatedVisibility(visible = video != null, enter = fadeIn(tween(200)), exit = fadeOut(tween(100))) {
             if (video != null) {
                 Column(
                     modifier = Modifier
@@ -686,7 +726,7 @@ private fun YouTubeStage(
             }
         }
 
-        AnimatedVisibility(visible = state.aiSetupMissing) {
+        AnimatedVisibility(visible = state.aiSetupMissing, enter = fadeIn(tween(200)), exit = fadeOut(tween(100))) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -16,15 +16,26 @@ data class Lecture(val slot: TimetableEntity, val subject: SubjectEntity)
 
 fun CalendarData.holidayOn(date: LocalDate): HolidayEntity? = holidays.firstOrNull { it.date == date }
 
-/** Saturdays and Sundays are always holidays. */
-fun LocalDate.isWeekend(): Boolean = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY
+/** True when [date] is a Saturday or Sunday that the user has chosen to treat as a holiday. */
+fun CalendarData.isWeekendHoliday(date: LocalDate): Boolean = when (date.dayOfWeek) {
+    DayOfWeek.SATURDAY -> saturdayHoliday
+    DayOfWeek.SUNDAY -> sundayHoliday
+    else -> false
+}
+
+/** The weekdays the timetable offers: Monday to Friday, plus a weekend day when it is not a holiday. */
+fun CalendarData.timetableDays(): List<DayOfWeek> = DayOfWeek.entries.filter {
+    it.value <= DayOfWeek.FRIDAY.value ||
+        (it == DayOfWeek.SATURDAY && !saturdayHoliday) ||
+        (it == DayOfWeek.SUNDAY && !sundayHoliday)
+}
 
 /**
- * The lectures expected on [date]. Weekends and days with an auto-skip holiday have none.
+ * The lectures expected on [date]. Holiday weekends and days with an auto-skip holiday have none.
  * Slots of inactive subjects are left out.
  */
 fun CalendarData.lecturesOn(date: LocalDate): List<Lecture> {
-    if (date.isWeekend()) return emptyList()
+    if (isWeekendHoliday(date)) return emptyList()
     val holiday = holidayOn(date)
     if (holiday != null && holiday.autoSkip) return emptyList()
     val activeSubjects = subjects.filter { it.isActive }.associateBy { it.id }

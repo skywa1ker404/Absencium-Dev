@@ -365,7 +365,7 @@ fun AddEntrySheet(
             },
             dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancel") } },
         ) {
-            DatePicker(state = pickerState)
+            DatePicker(state = pickerState, showModeToggle = false)
         }
     }
 }

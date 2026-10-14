@@ -55,6 +55,10 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setExamModeAutoSilence(value: Boolean) = launch { repository.setExamModeAutoSilence(value) }
 
+    fun setSaturdayHoliday(value: Boolean) = launch { repository.setSaturdayHoliday(value) }
+
+    fun setSundayHoliday(value: Boolean) = launch { repository.setSundayHoliday(value) }
+
     fun setAskAiEnabled(value: Boolean) = launch { repository.setAskAiEnabled(value) }
 
     fun setAiConnection(provider: AiProvider, baseUrl: String, model: String, style: ApiStyle) = launch {

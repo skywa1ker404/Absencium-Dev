@@ -56,7 +56,7 @@ import com.trajectory.vault.data.db.ExamEntity
 import com.trajectory.vault.data.db.HolidayEntity
 import com.trajectory.vault.domain.hm
 import com.trajectory.vault.domain.holidayOn
-import com.trajectory.vault.domain.isWeekend
+import com.trajectory.vault.domain.isWeekendHoliday
 import com.trajectory.vault.domain.lecturesOn
 import com.trajectory.vault.domain.pretty
 import com.trajectory.vault.domain.subjectAttendance
@@ -238,7 +238,7 @@ private fun MonthCard(
                                 date = date,
                                 isToday = date == today,
                                 isSelected = date == selected,
-                                isOff = holidaysByDate.containsKey(date) || date.isWeekend(),
+                                isOff = holidaysByDate.containsKey(date) || data.isWeekendHoliday(date),
                                 status = status,
                                 // A run of days with the same status is joined by a soft bar, within a week row.
                                 joinLeft = status != null && column > 0 && statusByDate[date.minusDays(1)] == status && dayNumber > 1,
@@ -456,11 +456,11 @@ private fun DayPanel(
             }
         }
     }
-    if (holiday == null && date.isWeekend()) {
+    if (holiday == null && data.isWeekendHoliday(date)) {
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Text("Weekend", style = MaterialTheme.typography.titleMedium)
             Text(
-                text = "Saturdays and Sundays are always holidays.",
+                text = "${date.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())}s are set as holidays in Settings.",
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )
@@ -482,7 +482,7 @@ private fun DayPanel(
             }
         }
     }
-    if (lectures.isEmpty() && holiday == null && exams.isEmpty() && !date.isWeekend()) {
+    if (lectures.isEmpty() && holiday == null && exams.isEmpty() && !data.isWeekendHoliday(date)) {
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Text("Nothing scheduled", style = MaterialTheme.typography.titleMedium)
             Text(
@@ -611,7 +611,7 @@ private fun TodayCard(
         if (subjectIds.isEmpty()) {
             HintText(
                 text = when {
-                    today.isWeekend() -> "Today is a weekend."
+                    data.isWeekendHoliday(today) -> "Today is a weekend holiday."
                     data.holidayOn(today)?.autoSkip == true -> "Today is a holiday."
                     else -> "No lectures today."
                 },

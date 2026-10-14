@@ -10,6 +10,8 @@ import com.trajectory.vault.data.db.TimetableEntity
 import com.trajectory.vault.data.db.TrajectoryDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -24,10 +26,16 @@ data class CalendarData(
     val holidays: List<HolidayEntity> = emptyList(),
     val attendance: List<AttendanceEntity> = emptyList(),
     val exams: List<ExamEntity> = emptyList(),
+    /** From Settings: Saturdays and Sundays that are always holidays. */
+    val saturdayHoliday: Boolean = true,
+    val sundayHoliday: Boolean = true,
 )
 
 /** Offline-first source of truth for the timetable, attendance, holidays and exams. Room is read as a Flow. */
-class CalendarRepository(private val database: TrajectoryDatabase) {
+class CalendarRepository(
+    private val database: TrajectoryDatabase,
+    private val settings: kotlinx.coroutines.flow.Flow<com.trajectory.vault.data.settings.AppSettings>,
+) {
 
     val data: Flow<CalendarData> = combine(
         database.subjectDao().observeAll(),
@@ -35,8 +43,19 @@ class CalendarRepository(private val database: TrajectoryDatabase) {
         database.holidayDao().observeAll(),
         database.attendanceDao().observeAll(),
         database.examDao().observeAll(),
-    ) { subjects, timetable, holidays, attendance, exams ->
-        CalendarData(subjects, timetable, holidays, attendance, exams)
+        settings.map { it.saturdayHoliday to it.sundayHoliday }.distinctUntilChanged(),
+    ) { values ->
+        @Suppress("UNCHECKED_CAST")
+        val weekend = values[5] as Pair<Boolean, Boolean>
+        CalendarData(
+            subjects = values[0] as List<SubjectEntity>,
+            timetable = values[1] as List<TimetableEntity>,
+            holidays = values[2] as List<HolidayEntity>,
+            attendance = values[3] as List<AttendanceEntity>,
+            exams = values[4] as List<ExamEntity>,
+            saturdayHoliday = weekend.first,
+            sundayHoliday = weekend.second,
+        )
     }
 
     /**

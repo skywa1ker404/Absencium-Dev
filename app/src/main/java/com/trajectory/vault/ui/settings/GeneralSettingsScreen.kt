@@ -32,6 +32,20 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
             onValueChangeFinished = { viewModel.setAttendanceThreshold(it) },
         )
 
+        SectionTitle("Weekends")
+        SwitchCard(
+            title = "Sunday is always holiday",
+            subtitle = "No lectures are expected on Sundays. Turn off if you have classes on Sunday.",
+            checked = settings.sundayHoliday,
+            onCheckedChange = { viewModel.setSundayHoliday(it) },
+        )
+        SwitchCard(
+            title = "Saturday is always holiday",
+            subtitle = "No lectures are expected on Saturdays. Turn off if you have classes on Saturday.",
+            checked = settings.saturdayHoliday,
+            onCheckedChange = { viewModel.setSaturdayHoliday(it) },
+        )
+
         SectionTitle("Focus")
         SliderCard(
             title = "Focus Guard grace timer",

@@ -40,6 +40,7 @@ import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.PillButton
 import com.trajectory.vault.ui.components.SectionTitle
+import com.trajectory.vault.ui.components.SwitchCard
 import com.trajectory.vault.ui.components.SliderCard
 import com.trajectory.vault.ui.components.StepIndicator
 import com.trajectory.vault.ui.components.floatingGlass
@@ -251,5 +252,18 @@ private fun StorageStep(
         range = AppSettings.MIN_ATTENDANCE_THRESHOLD..AppSettings.MAX_ATTENDANCE_THRESHOLD,
         valueLabel = { "$it%" },
         onValueChangeFinished = { viewModel.setAttendanceThreshold(it) },
+    )
+    SectionTitle("Weekends")
+    SwitchCard(
+        title = "Sunday is always holiday",
+        subtitle = "Turn off if you have lectures on Sunday. You can change it later in Settings.",
+        checked = settings.sundayHoliday,
+        onCheckedChange = { viewModel.setSundayHoliday(it) },
+    )
+    SwitchCard(
+        title = "Saturday is always holiday",
+        subtitle = "Turn off if you have lectures on Saturday. You can change it later in Settings.",
+        checked = settings.saturdayHoliday,
+        onCheckedChange = { viewModel.setSaturdayHoliday(it) },
     )
 }

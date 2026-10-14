@@ -54,7 +54,7 @@ private val Pages = listOf(
     TourPage(
         AppIcons.Schedule,
         "Exams, holidays and timetable",
-        "Add exams and holidays, even a whole festival break in one go. Weekends are always holidays, and you can edit anything you saved.",
+        "Add exams and holidays, even a whole festival break in one go. Saturday and Sunday can be holidays (a setting), and you can edit anything you saved.",
     ),
     TourPage(
         AppIcons.Folder,
