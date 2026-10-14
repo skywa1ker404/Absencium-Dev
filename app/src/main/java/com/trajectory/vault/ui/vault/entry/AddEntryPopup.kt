@@ -109,6 +109,7 @@ fun AddEntryPopup(
     LaunchedEffect(initialSubjectId, initialDate) { viewModel.begin(initialSubjectId, initialDate) }
 
     val subject = subjects.firstOrNull { it.id == state.subjectId }
+    var pickingDate by remember { mutableStateOf(false) }
 
     fun close() {
         viewModel.cancel()
@@ -164,6 +165,7 @@ fun AddEntryPopup(
                                 selectedDate = state.date,
                                 onSubject = viewModel::chooseSubject,
                                 onDate = viewModel::chooseDate,
+                                onPickCustom = { pickingDate = true },
                                 onCancel = { close() },
                                 onNext = viewModel::next,
                             )
@@ -205,9 +207,36 @@ fun AddEntryPopup(
             }
         }
     }
+
+    if (pickingDate) {
+        CustomDateDialog(initial = state.date, onPicked = viewModel::chooseDate, onDismiss = { pickingDate = false })
+    }
 }
 
 private const val CardDamping = 0.92f
+
+/** Lets the user choose any date, for notes that belong to a day that is not a logged absence. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun CustomDateDialog(initial: LocalDate?, onPicked: (LocalDate) -> Unit, onDismiss: () -> Unit) {
+    val pickerState = androidx.compose.material3.rememberDatePickerState(
+        initialSelectedDateMillis = (initial ?: LocalDate.now()).atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
+    )
+    androidx.compose.material3.DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = {
+                pickerState.selectedDateMillis?.let {
+                    onPicked(java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate())
+                }
+                onDismiss()
+            }) { Text("OK") }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } },
+    ) {
+        androidx.compose.material3.DatePicker(state = pickerState, showModeToggle = false)
+    }
+}
 
 @Composable
 private fun SubjectStage(
@@ -217,6 +246,7 @@ private fun SubjectStage(
     selectedDate: LocalDate?,
     onSubject: (Long) -> Unit,
     onDate: (LocalDate?) -> Unit,
+    onPickCustom: () -> Unit,
     onCancel: () -> Unit,
     onNext: () -> Unit,
 ) {
@@ -298,6 +328,10 @@ private fun SubjectStage(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     DateRow("Not for a specific absent day", selectedDate == null) { onDate(null) }
+                    // A date typed in by hand (not one of the logged absences) gets its own row so it can be seen.
+                    if (selectedDate != null && absences.none { it.date == selectedDate }) {
+                        DateRow(selectedDate.format(DateLabel) + "  ·  custom date", true) { onPickCustom() }
+                    }
                     absences.sortedByDescending { it.date }.forEach { record ->
                         DateRow(
                             label = record.date.format(DateLabel) + if (record.notesCollected) "  ·  notes collected" else "",
@@ -305,9 +339,10 @@ private fun SubjectStage(
                         ) { onDate(record.date) }
                     }
                 }
+                DateRow("Pick a custom date…", false) { onPickCustom() }
                 if (absences.isEmpty()) {
                     Text(
-                        "No absent days are logged for this subject, so you can continue without a date.",
+                        "No absent days are logged for this subject. You can continue without a date or pick any date.",
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
