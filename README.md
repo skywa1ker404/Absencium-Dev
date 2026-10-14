@@ -68,6 +68,13 @@ Detailed status, decisions, and next steps are in [docs/PROGRESS.md](docs/PROGRE
 | Folder access | AndroidX DocumentFile 1.1.0 (Storage Access Framework) |
 | Build | Android Gradle Plugin 9.4.0, Gradle 9.8.1, JDK 17 |
 
+## Identity and upgrades
+
+Absencium is its own app: application ID `com.absencium.app`, database `Absencium.db`. Every APK is signed with the
+same key and the database only ever changes through versioned Room migrations, so an update keeps the user's data.
+See [docs/IDENTITY.md](docs/IDENTITY.md) and [docs/SIGNING.md](docs/SIGNING.md). CI refuses to build if the identity
+or the database schema changes without a version bump.
+
 ## Compatibility
 
 - Minimum supported version: Android 8.0 (API 26).
@@ -77,8 +84,8 @@ Detailed status, decisions, and next steps are in [docs/PROGRESS.md](docs/PROGRE
 ## Project structure
 
 ```
-app/src/main/java/com/trajectory/vault/
-  TrajectoryApp.kt          Application entry point; starts the logger and startup checks
+app/src/main/java/com/absencium/app/
+  AbsenciumApp.kt          Application entry point; starts the logger and startup checks
   MainActivity.kt           Single activity hosting the Compose UI
   logging/
     DebugLogger.kt          File logger, crash capture, lifecycle logging
@@ -87,7 +94,7 @@ app/src/main/java/com/trajectory/vault/
       Entities.kt           Table definitions
       Daos.kt               Queries
       Converters.kt         Date and time converters
-      TrajectoryDatabase.kt Database class and open verification
+      AbsenciumDatabase.kt  Database class and open verification
     storage/
       NotesStorageSettings.kt   Remembers the storage choice and folder permission
       NotesStorage.kt           Resolves the notes root folder
@@ -113,14 +120,14 @@ Dates and times are stored as ISO-8601 text. A subject that still has linked rec
 
 The user chooses one of two locations during onboarding:
 
-- **App files (default):** `Android/data/com.trajectory.vault/files/notes`. No permission is required.
+- **App files (default):** `Android/data/com.absencium.app/files/notes`. No permission is required.
 - **A chosen folder:** selected through the Android system folder picker. Read and write access is stored so it survives restarts.
 
 ## Building
 
 ### Continuous integration
 
-Every push to `main` runs the workflow in `.github/workflows/android.yml`. It builds the debug APK with `./gradlew assembleDebug` and uploads it as the `trajectory-debug-apk` artifact on the workflow run. If the build fails, the last 200 lines of Gradle output are posted as a comment on the commit.
+Every push to `main` runs the workflow in `.github/workflows/android.yml`. It builds the debug APK with `./gradlew assembleDebug` and uploads it as the `absencium-debug-apk` artifact on the workflow run. If the build fails, the last 200 lines of Gradle output are posted as a comment on the commit.
 
 ### Local build
 
@@ -140,7 +147,7 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 The app writes a running log to:
 
 ```
-Android/data/com.trajectory.vault/files/debug.log
+Android/data/com.absencium.app/files/debug.log
 ```
 
 The log records unhandled exceptions with full stack traces, activity lifecycle events, database open and migration results, and the notes storage state. When the file passes 2 MB it is moved to `debug.log.1` at the next launch and a fresh file is started.
@@ -148,7 +155,7 @@ The log records unhandled exceptions with full stack traces, activity lifecycle 
 On Android 11 and later, most file managers cannot open the `Android/data` folder. Use `adb pull` to retrieve the file:
 
 ```
-adb pull /sdcard/Android/data/com.trajectory.vault/files/debug.log
+adb pull /sdcard/Android/data/com.absencium.app/files/debug.log
 ```
 
 ## Documentation

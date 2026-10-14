@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.trajectory.vault"
+    namespace = "com.absencium.app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.trajectory.vault"
+        applicationId = "com.absencium.app"
         // Android 8.0. Monet (dynamic color) and Liquid Glass (RenderEffect blur)
         // need Android 12 (API 31) and are disabled below that at runtime.
         minSdk = 26
@@ -20,26 +20,38 @@ android {
         versionName = "0.1.0"
     }
 
-    // A fixed signing key. Without it every CI run signs with a fresh random debug key, and Android
-    // refuses to install a build over one signed with a different key ("package conflicts").
-    // This is a debug-grade key kept in the private repo; do not reuse it for a store release.
+    // The signing key is part of Absencium's identity: every APK must be signed with the same key or Android refuses
+    // to install it over the previous one. The key comes from the environment when CI has it (GitHub secrets, see
+    // docs/SIGNING.md); otherwise the upgrade key kept in this private repository is used. Never replace it casually.
     signingConfigs {
-        getByName("debug") {
-            storeFile = file("signing/trajectory-debug.jks")
-            storePassword = "trajectory-debug"
-            keyAlias = "trajectory"
-            keyPassword = "trajectory-debug"
+        create("absencium") {
+            val envStore = System.getenv("ABSENCIUM_KEYSTORE_FILE")
+            if (envStore != null && file(envStore).exists()) {
+                storeFile = file(envStore)
+                storePassword = System.getenv("ABSENCIUM_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ABSENCIUM_KEY_ALIAS")
+                keyPassword = System.getenv("ABSENCIUM_KEY_PASSWORD")
+            } else {
+                storeFile = file("signing/absencium-upgrade.jks")
+                storePassword = "kbJJ8oariMOhUxvZyUvlrECKll61"
+                keyAlias = "absencium"
+                keyPassword = "kbJJ8oariMOhUxvZyUvlrECKll61"
+            }
         }
     }
 
     buildTypes {
+        // Debug builds are signed with the same key so every APK installs over the one before.
+        debug {
+            signingConfig = signingConfigs.getByName("absencium")
+        }
         // The optimised build: shrunk and optimised with R8, not debuggable, signed with the same key as the
         // debug build so it installs over it. Debug builds are much slower than this, mostly in the first seconds.
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("absencium")
         }
     }
 
@@ -51,6 +63,11 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+ksp {
+    // Room writes the schema of each database version here; CI keeps these files in the repository.
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {

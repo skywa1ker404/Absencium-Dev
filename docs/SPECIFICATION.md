@@ -1,14 +1,14 @@
 NOTE: This is the product specification, copied from the original master specification.
-The app is now named Trajectory and the database is Trajectory.db; both names are updated below.
+The app is named Absencium and the database is Absencium.db (see docs/IDENTITY.md).
 Everything else is as originally written. See docs/PROGRESS.md for what is built and the decisions made while implementing it.
 
 ================================================================================
-TRAJECTORY APP - EXHAUSTIVE MASTER SPECIFICATION & BLUEPRINT
+ABSENCIUM APP - EXHAUSTIVE MASTER SPECIFICATION & BLUEPRINT
 ================================================================================
 
 1. CORE PHILOSOPHY & ARCHITECTURE:
 - 100% offline-first Android student companion app with zero cloud dependency, zero telemetry, and zero notification spam.
-- Powered by a single unified local SQLite/Room database named `Trajectory.db`.
+- Powered by a single unified local SQLite/Room database named `Absencium.db`.
 - Adaptive progressive disclosure UI design where elements appear contextually and dynamically based on current user state.
 
 2. FIRST-LAUNCH GATED ONBOARDING WIZARD:
@@ -41,7 +41,7 @@ TRAJECTORY APP - EXHAUSTIVE MASTER SPECIFICATION & BLUEPRINT
 6. CALENDAR, ATTENDANCE & HOLIDAY ENGINE:
 - Daily Attendance Check-In: One-tap logging for Present, Absent, or Cancelled lectures.
 - Weekend Auto-Skips: Automatic skipping for Saturdays and Sundays (configurable per schedule).
-- Unified Database Holidays: Custom holiday dates, descriptions, and auto-skips stored directly inside `Holidays_Table` within `Trajectory.db`.
+- Unified Database Holidays: Custom holiday dates, descriptions, and auto-skips stored directly inside `Holidays_Table` within `Absencium.db`.
 - Integrated Exam System: Color-coded exam badges rendered on the monthly calendar grid. Tap-to-inspect detail drawer details exam topics, weightage, room maps, syllabus notes, and access to Emergency Cram Mode.
 - Emergency Cram Mode: Overrides standard recall logic 24–48 hours before an exam to present a high-intensity review deck of unmastered questions, pinned formulas, and flagged diagrams.
 
@@ -57,7 +57,7 @@ TRAJECTORY APP - EXHAUSTIVE MASTER SPECIFICATION & BLUEPRINT
 - Theme Mode Selection: Light Mode (high contrast for daytime/outdoor campus), Dark Mode (pitch-black OLED / standard dark for night study), and System Auto (follows phone setting).
 - Color Engine Schemes: Solid Accent (custom primary color picker), Dynamic Wallpaper (Android Material You Monet extraction), and Liquid Glass (translucent frosted acrylic surface blur effects via `RenderEffect`).
 
-9. UNIFIED LOCAL DATABASE SCHEMA (`Trajectory.db`):
+9. UNIFIED LOCAL DATABASE SCHEMA (`Absencium.db`):
 - `Attendance_Table`: Subject IDs, date, status [Present/Absent/Cancelled], notes
 - `Holidays_Table`: Holiday ID, date, title, auto_skip_flag
 - `Exams_Table`: Exam ID, subject_ID, date, title, weightage, room, syllabus_notes

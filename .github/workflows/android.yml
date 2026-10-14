@@ -22,11 +22,55 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
+      - name: Identity guard
+        run: |
+          # The application ID and database name are Absencium's identity (docs/IDENTITY.md). Changing them
+          # needs an explicit migration plan, so the build refuses to continue if either one moved.
+          grep -q 'applicationId = "com.absencium.app"' app/build.gradle.kts || { echo "::error::applicationId changed. See docs/IDENTITY.md"; exit 1; }
+          grep -q 'DATABASE_NAME = "Absencium.db"' app/src/main/java/com/absencium/app/data/db/AbsenciumDatabase.kt || { echo "::error::Database name changed. See docs/IDENTITY.md"; exit 1; }
+
+      - name: Restore the signing key from secrets (when set)
+        env:
+          KEYSTORE_B64: ${{ secrets.ABSENCIUM_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/absencium.jks"
+            echo "ABSENCIUM_KEYSTORE_FILE=$RUNNER_TEMP/absencium.jks" >> "$GITHUB_ENV"
+            echo "ABSENCIUM_KEYSTORE_PASSWORD=${{ secrets.ABSENCIUM_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "ABSENCIUM_KEY_ALIAS=${{ secrets.ABSENCIUM_KEY_ALIAS }}" >> "$GITHUB_ENV"
+            echo "ABSENCIUM_KEY_PASSWORD=${{ secrets.ABSENCIUM_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          else
+            echo "No signing secrets set; using the upgrade key from the repository."
+          fi
+
       - name: Build debug APK
         run: |
           set -o pipefail
           chmod +x ./gradlew
           ./gradlew assembleDebug --console=plain 2>&1 | tee build.log
+
+      - name: Room schema guard
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Each database version's schema is kept in app/schemas. A new version is added automatically; a changed
+          # schema under an existing version number means someone forgot to bump the version and write a Migration.
+          set -e
+          if [ -d app/schemas ]; then
+            if ! git diff --quiet -- app/schemas; then
+              echo "::error::The Room schema changed without a new database version and Migration."
+              git diff -- app/schemas | head -80
+              exit 1
+            fi
+            if [ -n "$(git ls-files --others --exclude-standard app/schemas)" ] && [ "${{ github.event_name }}" = "push" ]; then
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add app/schemas
+              git commit -m "Record Room schema for this database version [skip ci]"
+              git push origin HEAD:main || echo "Could not push the schema; commit app/schemas manually."
+            fi
+          fi
 
       - name: Post build errors to a commit comment
         if: failure()
@@ -93,6 +137,18 @@ jobs:
 
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Restore the signing key from secrets (when set)
+        env:
+          KEYSTORE_B64: ${{ secrets.ABSENCIUM_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/absencium.jks"
+            echo "ABSENCIUM_KEYSTORE_FILE=$RUNNER_TEMP/absencium.jks" >> "$GITHUB_ENV"
+            echo "ABSENCIUM_KEYSTORE_PASSWORD=${{ secrets.ABSENCIUM_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "ABSENCIUM_KEY_ALIAS=${{ secrets.ABSENCIUM_KEY_ALIAS }}" >> "$GITHUB_ENV"
+            echo "ABSENCIUM_KEY_PASSWORD=${{ secrets.ABSENCIUM_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          fi
 
       - name: Build optimised APK
         run: |
