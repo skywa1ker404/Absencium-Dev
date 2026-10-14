@@ -21,10 +21,24 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDate
+import android.graphics.Bitmap
 import android.net.Uri
+import com.trajectory.vault.data.ai.AiConnection
+import com.trajectory.vault.data.ai.AiException
+import com.trajectory.vault.data.ai.ApiStyle
+import com.trajectory.vault.data.ai.YouTubeClient
+import com.trajectory.vault.data.ai.YouTubeException
+import com.trajectory.vault.data.ai.YouTubeLinks
+import com.trajectory.vault.data.ai.YouTubeVideo
+import com.trajectory.vault.ui.settings.aiReady
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 /** The steps of the Add Entry popup. */
-enum class EntryStage { SUBJECT, ACTIONS, PICTURES }
+enum class EntryStage { SUBJECT, ACTIONS, PICTURES, YOUTUBE }
+
+/** Which part of the YouTube pipeline is running. */
+enum class YouTubeStep { IDLE, TRANSCRIPT, NOTES }
 
 /** A photo that was picked or taken but is not saved into an entry yet. */
 data class PendingPicture(val id: Long, val path: String, val name: String, val mimeType: String, val sizeBytes: Long)
@@ -39,6 +53,15 @@ data class AddEntryState(
     val pictures: List<PendingPicture> = emptyList(),
     val busy: Boolean = false,
     val message: String? = null,
+    val youtubeUrl: String = "",
+    val video: YouTubeVideo? = null,
+    val videoThumb: Bitmap? = null,
+    val videoLoading: Boolean = false,
+    val videoError: String? = null,
+    val youtubeStep: YouTubeStep = YouTubeStep.IDLE,
+    /** True when the user tried to use AI before a provider, model and key were saved. */
+    val aiSetupMissing: Boolean = false,
+    val youtubeError: String? = null,
 )
 
 class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
@@ -58,6 +81,10 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
     private var nextPictureId = 1L
 
+    private val youtube = YouTubeClient()
+    private var detailsJob: Job? = null
+    private var pipelineJob: Job? = null
+
     /** The file the camera is currently writing into. */
     private var cameraFile: File? = null
 
@@ -73,6 +100,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
     /** Ends the popup without saving: pending photos are deleted from storage. */
     fun cancel() {
+        detailsJob?.cancel()
+        pipelineJob?.cancel()
         discardPictures(_state.value.pictures)
         cameraFile?.let { store.delete(it.absolutePath) }
         cameraFile = null
@@ -92,6 +121,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
     fun setTitle(title: String) = _state.update { it.copy(title = title) }
 
     fun clearMessage() = _state.update { it.copy(message = null) }
+
+    fun showMessage(text: String) = _state.update { it.copy(message = text) }
 
     /** Copies the picked photos into the app's storage so they can be edited and survive the picker closing. */
     fun addPictures(uris: List<Uri>) {
@@ -186,11 +217,151 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    fun openYouTube() = _state.update { it.copy(stage = EntryStage.YOUTUBE, message = null) }
+
+    /** Reads the pasted link. A valid link fetches the video's title, channel and thumbnail after a short pause. */
+    fun setYouTubeUrl(text: String) {
+        detailsJob?.cancel()
+        val id = YouTubeLinks.videoId(text)
+        _state.update {
+            it.copy(
+                youtubeUrl = text,
+                video = if (it.video?.id == id) it.video else null,
+                videoThumb = if (it.video?.id == id) it.videoThumb else null,
+                videoError = if (text.isBlank() || id != null) null else "That does not look like a YouTube video link.",
+                videoLoading = id != null && it.video?.id != id,
+                youtubeError = null,
+                aiSetupMissing = false,
+            )
+        }
+        if (id == null || _state.value.video?.id == id) return
+        detailsJob = viewModelScope.launch {
+            delay(400)
+            try {
+                val video = youtube.details(text)
+                val thumb = youtube.thumbnail(video.thumbnailUrl)
+                _state.update { it.copy(video = video, videoThumb = thumb, videoLoading = false, videoError = null) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: YouTubeException) {
+                _state.update { it.copy(videoLoading = false, videoError = e.message) }
+            } catch (e: Exception) {
+                DebugLogger.e("YouTube", "Could not read the video details", e)
+                _state.update { it.copy(videoLoading = false, videoError = "Could not read the video details.") }
+            }
+        }
+    }
+
+    fun dismissAiSetup() = _state.update { it.copy(aiSetupMissing = false) }
+
+    /**
+     * Fetches the transcript, has the AI write study notes from it and saves the result as a new entry.
+     * With [skipAi] the transcript alone is saved. Nothing is thrown away: the saved entry keeps the transcript
+     * under the notes. [onSaved] gets the new entry's id.
+     */
+    fun transcribe(skipAi: Boolean, onSaved: (Long) -> Unit) {
+        val current = _state.value
+        val video = current.video ?: return
+        if (current.youtubeStep != YouTubeStep.IDLE || current.subjectId == 0L) return
+        val settings = container.settingsState.value ?: return
+        val ready = aiReady(settings, container.apiKeyVault.hasKey())
+        if (!ready && !skipAi) {
+            _state.update { it.copy(aiSetupMissing = true, youtubeError = null) }
+            return
+        }
+        _state.update { it.copy(youtubeStep = YouTubeStep.TRANSCRIPT, aiSetupMissing = false, youtubeError = null) }
+        pipelineJob = viewModelScope.launch {
+            try {
+                var transcript: String? = null
+                var transcriptProblem: String? = null
+                try {
+                    transcript = youtube.transcript(video.id)
+                } catch (e: YouTubeException) {
+                    transcriptProblem = e.message
+                }
+                val connection = AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
+                var notes: String? = null
+                if (!skipAi) {
+                    _state.update { it.copy(youtubeStep = YouTubeStep.NOTES) }
+                    notes = when {
+                        transcript != null -> container.aiClient.generate(connection, notesPrompt(video, transcript))
+                        connection.style == ApiStyle.GEMINI ->
+                            container.aiClient.generate(connection, notesPromptFromVideo(video), videoUrl = video.url)
+                        else -> throw YouTubeException(transcriptProblem ?: "The transcript could not be read.")
+                    }
+                } else if (transcript == null) {
+                    throw YouTubeException(transcriptProblem ?: "The transcript could not be read.")
+                }
+                val body = buildString {
+                    append("# ").append(video.title).append('
+')
+                    append("Source: ").append(video.url)
+                    if (video.channel.isNotBlank()) append(" (").append(video.channel).append(')')
+                    append("
+
+")
+                    if (notes != null) append(notes.trim()).append("
+
+")
+                    if (transcript != null) append("---
+
+## Transcript
+
+").append(transcript).append('
+')
+                }
+                val id = container.vaultRepository.createEntry(
+                    subjectId = current.subjectId,
+                    title = video.title.take(120),
+                    kind = if (notes != null) NoteKind.AI_NOTES else NoteKind.TEXT,
+                    body = body,
+                    absentDate = current.date,
+                    attachments = emptyList(),
+                )
+                current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
+                DebugLogger.i("YouTube", "Saved entry $id from video ${video.id}")
+                _state.value = AddEntryState()
+                onSaved(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: AiException) {
+                _state.update { it.copy(youtubeStep = YouTubeStep.IDLE, youtubeError = e.message) }
+            } catch (e: YouTubeException) {
+                _state.update { it.copy(youtubeStep = YouTubeStep.IDLE, youtubeError = e.message) }
+            } catch (e: Exception) {
+                DebugLogger.e("YouTube", "The transcription pipeline failed", e)
+                _state.update { it.copy(youtubeStep = YouTubeStep.IDLE, youtubeError = "Something went wrong: ${e.message ?: e.javaClass.simpleName}") }
+            }
+        }
+    }
+
+    private fun notesPrompt(video: YouTubeVideo, transcript: String): String {
+        val text = if (transcript.length > MAX_TRANSCRIPT_CHARS) {
+            transcript.take(MAX_TRANSCRIPT_CHARS) + "\n[The transcript was cut here because it is very long.]"
+        } else {
+            transcript
+        }
+        return "You are a study assistant. Below is the transcript of the YouTube video \"${video.title}\"" +
+            (if (video.channel.isNotBlank()) " by ${video.channel}" else "") + ".\n" +
+            "Write clear, structured study notes in Markdown: a two or three line summary, then a heading for each topic with " +
+            "short bullet points, a list of key terms with one-line definitions, and five review questions at the end. " +
+            "Use only what the transcript says; do not add facts that are not in it.\n\nTranscript:\n" + text
+    }
+
+    private fun notesPromptFromVideo(video: YouTubeVideo): String =
+        "You are a study assistant. Watch the attached YouTube video \"${video.title}\" and write clear, structured study notes " +
+            "in Markdown: a two or three line summary, a heading for each topic with short bullet points, key terms with one-line " +
+            "definitions, and five review questions at the end. Use only what is in the video."
+
     private fun discardPictures(pictures: List<PendingPicture>) {
         pictures.forEach {
             store.delete(it.path)
             ImageTools.forget(it.path)
         }
+    }
+
+    private companion object {
+        const val MAX_TRANSCRIPT_CHARS = 120_000
     }
 
     override fun onCleared() {

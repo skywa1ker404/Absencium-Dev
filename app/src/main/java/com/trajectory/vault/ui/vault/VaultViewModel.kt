@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trajectory.vault.AppContainer
+import com.trajectory.vault.data.db.AttachmentEntity
+import com.trajectory.vault.data.db.AttachmentKind
 import com.trajectory.vault.data.db.GuideEntity
 import com.trajectory.vault.data.db.GuideType
 import com.trajectory.vault.data.db.NoteEntity
@@ -13,6 +15,7 @@ import com.trajectory.vault.data.storage.NotesStorage
 import com.trajectory.vault.data.storage.sanitizeFileName
 import com.trajectory.vault.data.vault.VaultData
 import com.trajectory.vault.logging.DebugLogger
+import com.trajectory.vault.ui.vault.entry.ImageTools
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,7 +87,47 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
         repository.setNoteStatus(note, status)
     }
 
-    fun deleteNote(note: NoteEntity) = perform("delete the note") { repository.deleteNote(note) }
+    fun deleteNote(note: NoteEntity) = perform("delete the note") {
+        val files = repository.attachmentsFor(note.id).map { it.filePath }
+        repository.deleteNote(note)
+        withContext(Dispatchers.IO) {
+            files.forEach {
+                container.attachmentStore.delete(it)
+                ImageTools.forget(it)
+            }
+        }
+    }
+
+    /** Adds photos picked in the editor to an existing entry. */
+    fun addPhotos(noteId: Long, uris: List<Uri>) = perform("add the photos") {
+        var skipped = 0
+        for (uri in uris) {
+            val stored = container.attachmentStore.import(uri)
+            if (stored == null || !stored.mimeType.startsWith("image/")) {
+                stored?.let { container.attachmentStore.delete(it.path) }
+                skipped++
+                continue
+            }
+            repository.addAttachment(
+                AttachmentEntity(
+                    noteId = noteId,
+                    kind = AttachmentKind.IMAGE,
+                    filePath = stored.path,
+                    displayName = stored.displayName,
+                    mimeType = stored.mimeType,
+                    sizeBytes = stored.sizeBytes,
+                ),
+            )
+        }
+        if (skipped > 0) _message.value = "$skipped ${if (skipped == 1) "file was" else "files were"} not a readable photo."
+    }
+
+    /** Removes a photo (or other attachment) from an entry and deletes its file. */
+    fun deleteAttachment(attachment: AttachmentEntity) = perform("remove the attachment") {
+        repository.deleteAttachment(attachment)
+        withContext(Dispatchers.IO) { container.attachmentStore.delete(attachment.filePath) }
+        ImageTools.forget(attachment.filePath)
+    }
 
     fun discardDraft(id: Long) = perform("remove the draft") { repository.deleteNoteById(id) }
 

@@ -24,6 +24,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.trajectory.vault.data.db.AttachmentKind
+import com.trajectory.vault.ui.vault.entry.PhotoPreviewDialog
+import com.trajectory.vault.ui.vault.entry.PhotoThumb
 import com.trajectory.vault.data.db.NoteEntity
 import com.trajectory.vault.data.db.NoteStatus
 import com.trajectory.vault.ui.components.AppCard
@@ -118,6 +125,33 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         modifier = Modifier.fillMaxWidth(),
     )
     HintText("Changes are saved automatically.")
+
+    val vault by viewModel.data.collectAsStateWithLifecycle()
+    val photos = vault?.attachmentsOf(note.id).orEmpty().filter { it.kind == AttachmentKind.IMAGE }
+    var previewIndex by remember { mutableStateOf<Int?>(null) }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        viewModel.addPhotos(note.id, uris)
+    }
+    if (photos.isNotEmpty()) {
+        Text("Photos", style = MaterialTheme.typography.titleMedium)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            itemsIndexed(photos, key = { _, p -> p.id }) { index, photo ->
+                PhotoThumb(
+                    path = photo.filePath,
+                    onClick = { previewIndex = index },
+                    onRemove = { viewModel.deleteAttachment(photo) },
+                )
+            }
+        }
+    }
+    PillButton(text = "Add photos", tonal = true, onClick = { photoPicker.launch("image/*") })
+    previewIndex?.let { index ->
+        PhotoPreviewDialog(
+            paths = photos.map { it.filePath },
+            startIndex = index.coerceIn(0, (photos.size - 1).coerceAtLeast(0)),
+            onBack = { previewIndex = null },
+        )
+    }
 
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (status == NoteStatus.FINISHED) {

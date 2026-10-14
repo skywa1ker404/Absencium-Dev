@@ -67,8 +67,16 @@ class AiClient(private val keyVault: ApiKeyVault) {
         models.sortedBy { it.label.lowercase() }
     }
 
-    /** Sends [prompt] (and any [images]) to the connection's model and returns the reply text. */
-    suspend fun generate(connection: AiConnection, prompt: String, images: List<AiImage> = emptyList()): String =
+    /**
+     * Sends [prompt] (and any [images]) to the connection's model and returns the reply text. [videoUrl] is only
+     * used by Gemini, which can read a public YouTube link directly; the other styles ignore it.
+     */
+    suspend fun generate(
+        connection: AiConnection,
+        prompt: String,
+        images: List<AiImage> = emptyList(),
+        videoUrl: String? = null,
+    ): String =
         withContext(Dispatchers.IO) {
             val key = keyFor(connection)
             val base = connection.baseUrl.trim().trimEnd('/')
@@ -112,6 +120,10 @@ class AiClient(private val keyVault: ApiKeyVault) {
 
                 ApiStyle.GEMINI -> {
                     val parts = JSONArray().put(JSONObject().put("text", prompt))
+                    // Gemini can watch a public YouTube video by its link; no other provider can.
+                    if (videoUrl != null) {
+                        parts.put(JSONObject().put("file_data", JSONObject().put("file_uri", videoUrl)))
+                    }
                     images.forEach {
                         parts.put(
                             JSONObject().put(

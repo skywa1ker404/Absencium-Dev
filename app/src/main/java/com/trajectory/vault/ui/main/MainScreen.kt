@@ -7,6 +7,8 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import com.trajectory.vault.ui.vault.entry.AddEntryPopup
+import com.trajectory.vault.ui.vault.entry.AddEntryRequest
 import com.trajectory.vault.ui.components.GlassStage
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.DraftsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.HolidayImportScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination
@@ -138,6 +141,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
     val compactState = remember { mutableStateOf(false) }
     var showAddEntry by rememberSaveable { mutableStateOf(false) }
     var fabOpen by remember { mutableStateOf(false) }
+    var addEntry by remember { mutableStateOf<AddEntryRequest?>(null) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
@@ -239,15 +243,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onEditHoliday = { editHoliday = it },
                             onOpenTimetable = { navigator.navigate(TimetableScreenDestination) },
                             threshold = settings.attendanceThresholdPercent,
-                            onAddNotes = { subjectId, date ->
-                                navigator.navigate(
-                                    NewEntryScreenDestination(
-                                        subjectId = subjectId,
-                                        draftId = 0L,
-                                        collectDate = date.toString(),
-                                    ),
-                                )
-                            },
+                            onAddNotes = { subjectId, date -> addEntry = AddEntryRequest(subjectId, date) },
                         )
 
                         else -> {
@@ -328,7 +324,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     listOf(
                         FabAction("New entry", AppIcons.Add) {
                             fabOpen = false
-                            navigator.navigate(NewEntryScreenDestination(subjectId = 0L, draftId = 0L))
+                            addEntry = AddEntryRequest()
                         },
                         FabAction("Drafts", AppIcons.Draft) { fabOpen = false; navigator.navigate(DraftsScreenDestination) },
                     )
@@ -432,6 +428,19 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 calendarViewModel.deleteExam(exam)
                 openExam = null
             },
+        )
+    }
+
+    addEntry?.let { request ->
+        AddEntryPopup(
+            onDismiss = { addEntry = null },
+            onSaved = { id ->
+                addEntry = null
+                navigator.navigate(NoteEditorScreenDestination(noteId = id))
+            },
+            onOpenAiSettings = { addEntry = null; navigator.navigate(AiSettingsScreenDestination) },
+            initialSubjectId = request.subjectId,
+            initialDate = request.date,
         )
     }
 

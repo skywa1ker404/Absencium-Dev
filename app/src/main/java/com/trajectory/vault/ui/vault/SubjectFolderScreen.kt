@@ -20,12 +20,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.trajectory.vault.data.db.GuideEntity
 import com.trajectory.vault.data.db.NoteStatus
 import com.trajectory.vault.ui.components.AppCard
+import com.trajectory.vault.ui.vault.entry.AddEntryPopup
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.MessageCard
 import com.trajectory.vault.ui.components.PillButton
@@ -42,6 +44,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     val message by viewModel.message.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var finishedOpen by rememberSaveable { mutableStateOf(false) }
+    var addEntry by remember { mutableStateOf(false) }
     var guideToDelete by remember { mutableStateOf<GuideEntity?>(null) }
     val colors = MaterialTheme.colorScheme
 
@@ -65,7 +68,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
 
         PillButton(
             text = "New entry in this folder",
-            onClick = { navigator.navigate(NewEntryScreenDestination(subjectId = subjectId, draftId = 0L)) },
+            onClick = { addEntry = true },
         )
 
         val active = loaded.notesOf(subjectId, NoteStatus.ACTIVE)
@@ -128,6 +131,21 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }) { Text("Remove") }
             },
             dismissButton = { TextButton(onClick = { guideToDelete = null }) { Text("Keep") } },
+        )
+    }
+
+    if (addEntry) {
+        AddEntryPopup(
+            onDismiss = { addEntry = false },
+            onSaved = { id ->
+                addEntry = false
+                navigator.navigate(NoteEditorScreenDestination(noteId = id))
+            },
+            onOpenAiSettings = {
+                addEntry = false
+                navigator.navigate(AiSettingsScreenDestination)
+            },
+            initialSubjectId = subjectId,
         )
     }
 }
