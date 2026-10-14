@@ -293,22 +293,12 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     throw YouTubeException(transcriptProblem ?: "The transcript could not be read.")
                 }
                 val body = buildString {
-                    append("# ").append(video.title).append('
-')
+                    append("# ").append(video.title).append("\n")
                     append("Source: ").append(video.url)
-                    if (video.channel.isNotBlank()) append(" (").append(video.channel).append(')')
-                    append("
-
-")
-                    if (notes != null) append(notes.trim()).append("
-
-")
-                    if (transcript != null) append("---
-
-## Transcript
-
-").append(transcript).append('
-')
+                    if (video.channel.isNotBlank()) append(" (").append(video.channel).append(")")
+                    append("\n\n")
+                    if (notes != null) append(notes.trim()).append("\n\n")
+                    if (transcript != null) append("---\n\n## Transcript\n\n").append(transcript).append("\n")
                 }
                 val id = container.vaultRepository.createEntry(
                     subjectId = current.subjectId,
