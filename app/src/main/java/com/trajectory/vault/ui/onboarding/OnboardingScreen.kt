@@ -221,7 +221,6 @@ fun OnboardingScreen() {
 private fun ThemeStep(settings: AppSettings, viewModel: com.trajectory.vault.ui.settings.SettingsViewModel) {
     VisualQualityChoices(
         selected = settings.visualQuality,
-        recommended = viewModel.recommendedQuality,
         onSelect = { viewModel.setVisualQuality(it) },
     )
     ThemeModeChoices(selected = settings.themeMode, onSelect = { viewModel.setThemeMode(it) })

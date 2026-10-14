@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import com.trajectory.vault.ui.components.GlassStage
 import com.trajectory.vault.ui.components.sheetContainerColor
 import com.trajectory.vault.ui.components.sheetScrimColor
 import androidx.compose.runtime.getValue
@@ -72,6 +73,7 @@ fun ProfileSheet(
         contentColor = MaterialTheme.colorScheme.onSurface,
         scrimColor = sheetScrimColor(),
     ) {
+        GlassStage {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -195,6 +197,7 @@ fun ProfileSheet(
                     }
                 }
             }
+        }
         }
     }
 }

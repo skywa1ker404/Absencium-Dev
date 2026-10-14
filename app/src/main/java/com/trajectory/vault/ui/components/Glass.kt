@@ -89,7 +89,7 @@ val LocalCardBackdrop = androidx.compose.runtime.staticCompositionLocalOf<LayerB
  * or the cards around it, and it is lighter than the floating bars: blur and a soft edge, no refraction.
  */
 @Composable
-fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color): Modifier {
+fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, tintAlpha: Float = 0.55f): Modifier {
     val blurDp = LocalGlassBlur.current
     return this.drawBackdrop(
         backdrop = backdrop,
@@ -99,8 +99,18 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color): M
             if (blurDp.value > 0f) blur(blurDp.toPx())
         },
         highlight = { Highlight.Default },
-        onDrawSurface = { drawRect(tint.copy(alpha = 0.55f)) },
+        onDrawSurface = { drawRect(tint.copy(alpha = tintAlpha)) },
     )
+}
+
+/**
+ * A control (button, switch, segmented toggle) in the theme's [tint]. With Liquid Glass it is a pane of glass over
+ * the wallpaper, tinted with [tint] at [tintAlpha]; otherwise a plain tonal fill.
+ */
+@Composable
+fun Modifier.glassControl(shape: Shape, tint: Color, tintAlpha: Float = 0.7f): Modifier {
+    val backdrop = LocalCardBackdrop.current
+    return if (backdrop != null) glassSurface(backdrop, shape, tint, tintAlpha) else this.clip(shape).background(tint)
 }
 
 /** The wallpaper behind everything in glass mode: soft blobs of the theme's own colours for the glass to blur. */
@@ -175,21 +185,21 @@ fun Modifier.glassPuck(backdrop: LayerBackdrop?, shape: Shape, isDark: Boolean):
 }
 
 /**
- * Background of bottom sheets (search, profile, entry forms). With the Liquid Glass engine the
- * sheet is translucent and tinted by the wallpaper (Monet) colours, so the app shows through it;
- * otherwise it is the plain themed surface.
+ * Background of bottom sheets (search, profile, entry forms). With Liquid Glass it is the theme's tinted background,
+ * and the sheet's cards become glass over its own wallpaper (see [GlassStage]); otherwise the plain themed surface.
  */
 @Composable
 fun sheetContainerColor(): Color {
     val colors = MaterialTheme.colorScheme
     return if (LocalGlassEnabled.current) {
-        lerp(colors.surfaceContainerHigh, colors.primaryContainer, 0.22f).copy(alpha = 0.80f)
+        // Opaque: a sheet is its own window and cannot blur the app behind it, so it must not let that app show through.
+        lerp(colors.background, colors.primaryContainer, 0.2f)
     } else {
         colors.surfaceContainerLow
     }
 }
 
-/** A lighter scrim for glass sheets so the content behind them stays visible. */
+/** The dim behind a sheet. */
 @Composable
 fun sheetScrimColor(): Color =
-    Color.Black.copy(alpha = if (LocalGlassEnabled.current) 0.2f else 0.32f)
+    Color.Black.copy(alpha = 0.4f)

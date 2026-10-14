@@ -5,11 +5,13 @@ import android.content.Context
 import android.os.Build
 
 /**
- * How much the app spends on visual effects. Performance mode keeps every feature and control and
- * only turns down blur and animation; Quality mode is the full look.
+ * How much the app spends on visual effects. Every feature and control stays in all three modes.
+ * Performance turns blur and decorative animation off; Low quality keeps blur, transparency and colour
+ * overlays but drops the shader effects (lens refraction, light bending); Quality is the full look.
  */
 enum class VisualQuality {
     PERFORMANCE,
+    LOW,
     QUALITY,
 }
 

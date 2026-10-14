@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
@@ -385,8 +386,10 @@ fun PillButton(
     enabled: Boolean = true,
     loading: Boolean = false,
     tonal: Boolean = false,
+    compact: Boolean = false,
 ) {
     val q = LocalQuality.current
+    val colors = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -394,36 +397,56 @@ fun PillButton(
         animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "pillPress",
     )
-    val pillModifier = modifier.graphicsLayer {
-        scaleX = scale
-        scaleY = scale
-    }
-    val padding = PaddingValues(horizontal = 28.dp, vertical = 14.dp)
+    val active = enabled && !loading
+    // With Liquid Glass the button is a pane of glass tinted in its usual colour; its own fill becomes clear.
+    val glass = LocalCardBackdrop.current != null
+    val tint = if (tonal) colors.secondaryContainer else colors.primary
+    val glassModifier = if (glass) Modifier.glassControl(CircleShape, tint, if (active) 0.78f else 0.3f) else Modifier
+    val pillModifier = modifier
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .then(glassModifier)
+    val padding = if (compact) PaddingValues(horizontal = 16.dp, vertical = 10.dp) else PaddingValues(horizontal = 28.dp, vertical = 14.dp)
     val label: @Composable RowScope.() -> Unit = {
         if (loading) {
             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
             Spacer(modifier = Modifier.width(8.dp))
         }
-        Text(text = text, style = MaterialTheme.typography.labelLarge)
+        Text(text = text, style = MaterialTheme.typography.labelLarge, maxLines = 1)
     }
     if (tonal) {
         FilledTonalButton(
             onClick = onClick,
             modifier = pillModifier,
-            enabled = enabled && !loading,
+            enabled = active,
             shape = CircleShape,
             contentPadding = padding,
             interactionSource = interaction,
+            colors = if (glass) {
+                ButtonDefaults.filledTonalButtonColors(
+                    containerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                )
+            } else {
+                ButtonDefaults.filledTonalButtonColors()
+            },
             content = label,
         )
     } else {
         Button(
             onClick = onClick,
             modifier = pillModifier,
-            enabled = enabled && !loading,
+            enabled = active,
             shape = CircleShape,
             contentPadding = padding,
             interactionSource = interaction,
+            colors = if (glass) {
+                ButtonDefaults.buttonColors(containerColor = Color.Transparent, disabledContainerColor = Color.Transparent)
+            } else {
+                ButtonDefaults.buttonColors()
+            },
             content = label,
         )
     }

@@ -41,7 +41,7 @@ data class AppSettings(
     /** Blur radius of the Liquid Glass surfaces, in dp. */
     val glassBlurDp: Int = DEFAULT_GLASS_BLUR,
     /** Starts at the level recommended for the phone; the user can change it at any time. */
-    val visualQuality: VisualQuality = VisualQuality.PERFORMANCE,
+    val visualQuality: VisualQuality = VisualQuality.QUALITY,
     val attendanceThresholdPercent: Int = 75,
     val focusGraceMinutes: Int = 5,
     val examModeAutoSilence: Boolean = false,

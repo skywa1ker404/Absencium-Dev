@@ -34,12 +34,15 @@ const val REQUIRES_ANDROID_12 = "Needs Android 12 or newer"
 
 fun VisualQuality.label(): String = when (this) {
     VisualQuality.PERFORMANCE -> "Performance mode"
+    VisualQuality.LOW -> "Low quality mode"
     VisualQuality.QUALITY -> "Quality mode"
 }
 
 fun VisualQuality.description(): String = when (this) {
     VisualQuality.PERFORMANCE ->
-        "Smoothest. Solid bars instead of glass, calmer animations. Every feature stays. Best for phones with 6 GB of RAM or less."
+        "Smoothest. Solid bars instead of glass, calmer animations. Every feature stays."
+    VisualQuality.LOW ->
+        "Keeps transparency, blur and colour overlays. Turns off the heavy shader effects: lens refraction, light bending and bouncy zoom motion."
     VisualQuality.QUALITY ->
         "The full look: real liquid glass that blurs and bends what is behind it (lens bending needs Android 13), and springy animations."
 }

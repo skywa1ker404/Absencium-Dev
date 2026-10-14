@@ -134,8 +134,7 @@ fun AttendanceToggle(
     BoxWithConstraints(
         modifier = modifier
             .height(52.dp)
-            .clip(CircleShape)
-            .background(colors.surfaceContainerHighest)
+            .glassControl(CircleShape, colors.surfaceContainerHighest, 0.6f)
             .alpha(if (enabled) 1f else 0.5f),
     ) {
         val half = maxWidth / 2
@@ -150,8 +149,7 @@ fun AttendanceToggle(
                     scaleX = pulse.value
                     scaleY = pulse.value
                 }
-                .clip(CircleShape)
-                .background(highlightColor),
+                .glassControl(CircleShape, highlightColor, 0.82f),
         )
         Row(modifier = Modifier.fillMaxSize()) {
             ToggleHalf("Present today", presentTint, enabled, onPresent, Modifier.weight(1f))

@@ -14,6 +14,7 @@ import com.trajectory.vault.data.calendar.CalendarRepository
 import com.trajectory.vault.data.db.TrajectoryDatabase
 import com.trajectory.vault.data.security.ApiKeyVault
 import com.trajectory.vault.data.settings.SettingsRepository
+import com.trajectory.vault.data.storage.AttachmentStore
 import com.trajectory.vault.data.storage.NotesStorage
 import com.trajectory.vault.data.storage.NotesStorageSettings
 import com.trajectory.vault.data.subjects.SubjectRepository
@@ -42,6 +43,7 @@ class AppContainer(context: Context) {
     val notesStorageSettings = NotesStorageSettings(appContext)
     val notesStorage = NotesStorage(appContext, notesStorageSettings)
     val apiKeyVault = ApiKeyVault(appContext)
+    val attachmentStore = AttachmentStore(appContext)
     val databaseBackup = DatabaseBackup(appContext)
     val aiClient = AiClient(apiKeyVault)
     val calendarRepository: CalendarRepository by lazy { CalendarRepository(database) }

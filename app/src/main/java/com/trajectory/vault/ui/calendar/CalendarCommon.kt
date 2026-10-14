@@ -1,12 +1,33 @@
 package com.trajectory.vault.ui.calendar
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import com.trajectory.vault.data.db.Priority
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-/** A stable colour per subject, used for exam dots and badges. */
-fun subjectColor(subjectId: Long): Color = Color.hsv(((subjectId * 67L) % 360L).toFloat(), 0.55f, 0.95f)
+/**
+ * A stable colour per subject, used for exam dots and badges. It is picked from the active theme's own colours
+ * (and blends of them), so the dots follow Default, Monet and every preset instead of using fixed hues.
+ */
+@Composable
+fun subjectColor(subjectId: Long): Color {
+    val scheme = MaterialTheme.colorScheme
+    val palette = remember(scheme) {
+        listOf(
+            scheme.primary,
+            scheme.tertiary,
+            scheme.secondary,
+            lerp(scheme.primary, scheme.tertiary, 0.5f),
+            lerp(scheme.secondary, scheme.tertiary, 0.5f),
+            lerp(scheme.primary, scheme.secondary, 0.5f),
+        )
+    }
+    return palette[Math.floorMod(subjectId, palette.size.toLong()).toInt()]
+}
 
 fun Priority.label(): String = when (this) {
     Priority.HIGH -> "High"

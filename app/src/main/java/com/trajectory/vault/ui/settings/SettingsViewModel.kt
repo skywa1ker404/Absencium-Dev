@@ -49,9 +49,6 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         DebugLogger.i("Quality", "Visual quality set to ${value.name}")
     }
 
-    /** The level this phone starts with, shown as "Recommended" in the picker. */
-    val recommendedQuality: VisualQuality get() = repository.deviceProfile.recommended
-
     fun setAttendanceThreshold(percent: Int) = launch { repository.setAttendanceThreshold(percent) }
 
     fun setFocusGraceMinutes(minutes: Int) = launch { repository.setFocusGraceMinutes(minutes) }

@@ -41,6 +41,10 @@ class QualityProfile private constructor(
             VisualQuality.PERFORMANCE, blurEnabled = false, glassLens = false, glassHighlight = false,
             decorativeMotion = false, minDamping = 1f, stiffnessScale = 1.6f,
         )
+        private val Low = QualityProfile(
+            VisualQuality.LOW, blurEnabled = true, glassLens = false, glassHighlight = true,
+            decorativeMotion = true, minDamping = 0.8f, stiffnessScale = 1.25f,
+        )
         private val Quality = QualityProfile(
             VisualQuality.QUALITY, blurEnabled = true, glassLens = true, glassHighlight = true,
             decorativeMotion = true, minDamping = 0f, stiffnessScale = 1f,
@@ -48,6 +52,7 @@ class QualityProfile private constructor(
 
         fun of(level: VisualQuality): QualityProfile = when (level) {
             VisualQuality.PERFORMANCE -> Performance
+            VisualQuality.LOW -> Low
             VisualQuality.QUALITY -> Quality
         }
     }

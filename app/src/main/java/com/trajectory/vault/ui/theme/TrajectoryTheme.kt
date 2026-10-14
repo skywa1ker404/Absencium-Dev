@@ -87,6 +87,9 @@ val InterFamily = FontFamily(
     Font(R.font.inter_extrabold, FontWeight.ExtraBold),
 )
 
+/** Outfit Bold, used only for the "Absencium" wordmark. */
+val OutfitFamily = FontFamily(Font(R.font.outfit_bold, FontWeight.Bold))
+
 private fun TextStyle.inter(weight: FontWeight, tracking: Double = 0.0): TextStyle =
     copy(fontFamily = InterFamily, fontWeight = weight, letterSpacing = tracking.sp)
 

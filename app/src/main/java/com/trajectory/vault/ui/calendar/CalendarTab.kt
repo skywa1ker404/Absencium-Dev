@@ -61,7 +61,11 @@ import com.trajectory.vault.domain.lecturesOn
 import com.trajectory.vault.domain.pretty
 import com.trajectory.vault.domain.subjectAttendance
 import com.trajectory.vault.domain.overall
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.Stroke
 import com.trajectory.vault.ui.components.AppCard
+import com.trajectory.vault.ui.components.LocalCardBackdrop
+import com.trajectory.vault.ui.components.glassControl
 import com.trajectory.vault.ui.components.ExpressiveChip
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.NavCard
@@ -281,7 +285,7 @@ private fun MonthSummary(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().clip(CircleShape).background(colors.surfaceContainerHighest).padding(4.dp),
+            modifier = Modifier.fillMaxWidth().glassControl(CircleShape, colors.surfaceContainerHighest, 0.6f).padding(4.dp),
         ) {
             listOf("This month" to false, "All months" to true).forEach { (label, all) ->
                 val on = showAll == all
@@ -292,8 +296,9 @@ private fun MonthSummary(
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .weight(1f)
-                        .clip(CircleShape)
-                        .background(if (on) colors.primary else androidx.compose.ui.graphics.Color.Transparent)
+                        .then(
+                            if (on) Modifier.glassControl(CircleShape, colors.primary, 0.82f) else Modifier.clip(CircleShape),
+                        )
                         .clickable { onShowAll(all) }
                         .padding(vertical = 10.dp),
                 )
@@ -357,6 +362,7 @@ private fun DayCell(
             else -> colors.onSurface
         }
     }
+    val glass = LocalCardBackdrop.current != null
     val dotColors = exams.take(3).map { subjectColor(it.subjectId) }
     // One text node; the circle, the joining bar and the exam dots are drawn directly so a month of cells
     // stays cheap to compose, measure and draw. The selected day is drawn full size, the rest slightly smaller.
@@ -372,7 +378,25 @@ private fun DayCell(
                     drawRect(bar, topLeft = Offset(left, (size.height - barHeight) / 2f), size = Size(right - left, barHeight))
                 }
                 if (fill != Color.Transparent) {
-                    drawCircle(fill, radius = if (isSelected || status == null) half else half * 0.86f)
+                    val radius = if (isSelected || status == null) half else half * 0.86f
+                    if (glass) {
+                        // A translucent bead: lighter at the top, with a thin lit edge, so it reads as glass on glass.
+                        drawCircle(
+                            brush = Brush.verticalGradient(
+                                listOf(fill.copy(alpha = 0.82f), fill.copy(alpha = 0.5f)),
+                                startY = center.y - radius,
+                                endY = center.y + radius,
+                            ),
+                            radius = radius,
+                        )
+                        drawCircle(
+                            Color.White.copy(alpha = 0.22f),
+                            radius = radius - 0.5.dp.toPx(),
+                            style = Stroke(width = 1.dp.toPx()),
+                        )
+                    } else {
+                        drawCircle(fill, radius = radius)
+                    }
                 }
                 val dot = 2.5.dp.toPx()
                 val gap = 2.dp.toPx()
@@ -605,7 +629,8 @@ private fun TodayCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(MaterialTheme.shapes.medium)
-                        .clickable { expanded = !expanded },
+                        .clickable { expanded = !expanded }
+                        .padding(horizontal = 6.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -632,9 +657,16 @@ private fun TodayCard(
                         PillButton(
                             text = "Yes, I have them",
                             tonal = true,
+                            compact = true,
+                            modifier = Modifier.weight(1f),
                             onClick = { viewModel.setNotesCollected(uncollected.map { it.subjectId }, today, true) },
                         )
-                        PillButton(text = "Add today's notes", onClick = { expanded = true })
+                        PillButton(
+                            text = "Add today's notes",
+                            compact = true,
+                            modifier = Modifier.weight(1f),
+                            onClick = { expanded = true },
+                        )
                     }
                 }
                 AnimatedVisibility(
@@ -661,10 +693,11 @@ private fun TodayCard(
                                 }
                                 if (!record.notesCollected) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        PillButton(text = "Add notes", onClick = { onAddNotes(record.subjectId, today) })
+                                        PillButton(text = "Add notes", compact = true, onClick = { onAddNotes(record.subjectId, today) })
                                         PillButton(
                                             text = "I have them",
                                             tonal = true,
+                                            compact = true,
                                             onClick = { viewModel.setNotesCollected(listOf(record.subjectId), today, true) },
                                         )
                                     }

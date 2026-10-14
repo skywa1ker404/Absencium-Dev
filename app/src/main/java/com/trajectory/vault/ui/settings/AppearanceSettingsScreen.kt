@@ -41,7 +41,6 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
     ScreenScaffold(title = "Appearance", onBack = { navigator.navigateUp() }) {
         VisualQualityChoices(
             selected = settings.visualQuality,
-            recommended = viewModel.recommendedQuality,
             onSelect = viewModel::setVisualQuality,
         )
         ThemeModeChoices(selected = settings.themeMode, onSelect = viewModel::setThemeMode)
@@ -63,14 +62,13 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
 @Composable
 fun VisualQualityChoices(
     selected: VisualQuality,
-    recommended: VisualQuality,
     onSelect: (VisualQuality) -> Unit,
 ) {
     SectionTitle("Visual quality")
-    HintText("Performance mode turns off blur and decorative animation to keep the app smooth. Quality mode adds glass blur, refraction and richer motion. Every feature stays in both.")
+    HintText("Pick what suits your phone. Every feature stays in all three.")
     VisualQuality.entries.forEach { level ->
         OptionCard(
-            title = if (level == recommended) "${level.label()} (recommended for this phone)" else level.label(),
+            title = level.label(),
             subtitle = level.description(),
             selected = selected == level,
             onClick = { onSelect(level) },

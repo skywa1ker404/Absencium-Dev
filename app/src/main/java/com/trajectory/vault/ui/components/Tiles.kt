@@ -42,8 +42,7 @@ fun StatPill(label: String, container: Color, content: Color, modifier: Modifier
         style = MaterialTheme.typography.labelLarge,
         color = content,
         modifier = modifier
-            .clip(CircleShape)
-            .background(container)
+            .glassControl(CircleShape, container, 0.62f)
             .padding(horizontal = 14.dp, vertical = 7.dp),
     )
 }

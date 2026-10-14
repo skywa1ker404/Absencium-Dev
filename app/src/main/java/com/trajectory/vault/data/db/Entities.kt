@@ -22,6 +22,11 @@ enum class Priority { HIGH, NORMAL, LOW }
 
 enum class GuideType { QP, SYLLABUS, ANSWER_BANK }
 
+/** What a vault entry was created from. Every entry can hold text and attachments whatever its kind. */
+enum class NoteKind { TEXT, PICTURES, DOCUMENT, AUDIO, HOMEWORK, AI_NOTES }
+
+enum class AttachmentKind { IMAGE, DOCUMENT, AUDIO, SKETCH }
+
 /**
  * Not listed in the spec's table list, but every other table references a subject and the
  * Settings hub needs per-subject active/muted state, so subjects need a home.
@@ -135,6 +140,47 @@ data class NoteEntity(
     val status: NoteStatus = NoteStatus.ACTIVE,
     /** Epoch milliseconds. */
     @ColumnInfo(name = "created_date") val createdDate: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "'TEXT'") val kind: NoteKind = NoteKind.TEXT,
+    @ColumnInfo(defaultValue = "0") val pinned: Boolean = false,
+    /** Comma separated tags. */
+    @ColumnInfo(defaultValue = "''") val tags: String = "",
+    /** Set once the notes have been written out on the student's own copy. */
+    @ColumnInfo(name = "written_on_copy", defaultValue = "0") val writtenOnCopy: Boolean = false,
+    /** Epoch milliseconds of when [writtenOnCopy] was set. */
+    @ColumnInfo(name = "written_at") val writtenAt: Long? = null,
+    /** The absent day these notes were collected for, if any. */
+    @ColumnInfo(name = "absent_date") val absentDate: LocalDate? = null,
+    /** Epoch milliseconds of the last edit. */
+    @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = 0L,
+)
+
+/** A photo, document, recording or sketch that belongs to an entry. The file lives in the app's own storage. */
+@Entity(
+    tableName = "Attachments_Table",
+    foreignKeys = [
+        ForeignKey(
+            entity = NoteEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["note_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("note_id")],
+)
+data class AttachmentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "note_id") val noteId: Long,
+    val kind: AttachmentKind,
+    @ColumnInfo(name = "file_path") val filePath: String,
+    @ColumnInfo(name = "display_name") val displayName: String,
+    @ColumnInfo(name = "mime_type") val mimeType: String,
+    @ColumnInfo(name = "size_bytes") val sizeBytes: Long,
+    /** Text read from the file by AI (photos, documents) or the voice-to-text transcript (recordings). */
+    @ColumnInfo(name = "extracted_text", defaultValue = "''") val extractedText: String = "",
+    /** Length of a recording in milliseconds; 0 for everything else. */
+    @ColumnInfo(name = "duration_ms", defaultValue = "0") val durationMs: Long = 0L,
+    /** Epoch milliseconds. */
+    @ColumnInfo(name = "created_at", defaultValue = "0") val createdAt: Long = System.currentTimeMillis(),
 )
 
 @Entity(

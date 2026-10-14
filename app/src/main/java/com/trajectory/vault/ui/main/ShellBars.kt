@@ -567,7 +567,11 @@ fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier =
     ) {
         Text(
             text = "Absencium",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontFamily = com.trajectory.vault.ui.theme.OutfitFamily,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                letterSpacing = 0.4.sp,
+            ),
             color = colors.primary,
         )
         val interaction = remember { MutableInteractionSource() }

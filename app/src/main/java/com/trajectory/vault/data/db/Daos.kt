@@ -145,6 +145,44 @@ interface NoteDao {
 }
 
 @Dao
+interface AttachmentDao {
+    @Insert
+    suspend fun insert(attachment: AttachmentEntity): Long
+
+    @Update
+    suspend fun update(attachment: AttachmentEntity)
+
+    @Delete
+    suspend fun delete(attachment: AttachmentEntity)
+
+    @Query("SELECT * FROM Attachments_Table ORDER BY created_at, id")
+    fun observeAll(): Flow<List<AttachmentEntity>>
+
+    @Query("SELECT * FROM Attachments_Table WHERE note_id = :noteId ORDER BY created_at, id")
+    suspend fun getForNote(noteId: Long): List<AttachmentEntity>
+
+    @Query("SELECT * FROM Attachments_Table WHERE id = :id")
+    suspend fun getById(id: Long): AttachmentEntity?
+}
+
+/** Creates an entry and its attachments together, so a failure never leaves half an entry behind. */
+@Dao
+abstract class EntryDao {
+    @Insert
+    abstract suspend fun insertNote(note: NoteEntity): Long
+
+    @Insert
+    abstract suspend fun insertAttachment(attachment: AttachmentEntity): Long
+
+    @Transaction
+    open suspend fun createWithAttachments(note: NoteEntity, attachments: List<AttachmentEntity>): Long {
+        val id = insertNote(note)
+        attachments.forEach { insertAttachment(it.copy(noteId = id)) }
+        return id
+    }
+}
+
+@Dao
 interface GuideDao {
     @Insert
     suspend fun insert(guide: GuideEntity): Long

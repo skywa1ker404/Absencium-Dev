@@ -150,11 +150,12 @@ class SettingsRepository(context: Context) {
         )
     }
 
-    /** Reads the saved mode. Builds before the two-mode setting stored LOW, MID, HIGH or ULTRA. */
+    /** Reads the saved mode. The first build with quality levels stored LOW, MID, HIGH or ULTRA; LOW now means Low quality mode. */
     private fun visualQualityFrom(saved: String?): VisualQuality = when (saved) {
-        "PERFORMANCE", "LOW", "MID" -> VisualQuality.PERFORMANCE
+        "PERFORMANCE", "MID" -> VisualQuality.PERFORMANCE
+        "LOW" -> VisualQuality.LOW
         "QUALITY", "HIGH", "ULTRA" -> VisualQuality.QUALITY
-        else -> deviceProfile.recommended
+        else -> VisualQuality.QUALITY
     }
 
     private inline fun <reified E : Enum<E>> enumOrDefault(name: String?, default: E): E =

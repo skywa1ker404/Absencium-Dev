@@ -30,8 +30,9 @@ import com.trajectory.vault.logging.DebugLogger
         UserStatsEntity::class,
         MomentumLogEntity::class,
         RecallAttemptEntity::class,
+        AttachmentEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -51,6 +52,8 @@ abstract class TrajectoryDatabase : RoomDatabase() {
     abstract fun momentumLogDao(): MomentumLogDao
     abstract fun recallAttemptDao(): RecallAttemptDao
     abstract fun subjectCascadeDao(): SubjectCascadeDao
+    abstract fun attachmentDao(): AttachmentDao
+    abstract fun entryDao(): EntryDao
 
     companion object {
         const val DATABASE_NAME = "Trajectory.db"
@@ -87,6 +90,34 @@ abstract class TrajectoryDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Version 4 adds the entry kind, pin, tags, written-on-copy flag, absent date and edit time to
+         * Notes_Table, and the Attachments_Table that holds photos, documents, recordings and sketches.
+         */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                DebugLogger.i(TAG, "Migrating $DATABASE_NAME from version 3 to 4")
+                db.execSQL("ALTER TABLE `Notes_Table` ADD COLUMN `kind` TEXT NOT NULL DEFAULT 'TEXT'")
+                db.execSQL("ALTER TABLE `Notes_Table` ADD COLUMN `pinned` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `Notes_Table` ADD COLUMN `tags` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `Notes_Table` ADD COLUMN `written_on_copy` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `Notes_Table` ADD COLUMN `written_at` INTEGER")
+                db.execSQL("ALTER TABLE `Notes_Table` ADD COLUMN `absent_date` TEXT")
+                db.execSQL("ALTER TABLE `Notes_Table` ADD COLUMN `updated_at` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE `Notes_Table` SET `updated_at` = `created_date`")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `Attachments_Table` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`note_id` INTEGER NOT NULL, `kind` TEXT NOT NULL, `file_path` TEXT NOT NULL, " +
+                        "`display_name` TEXT NOT NULL, `mime_type` TEXT NOT NULL, `size_bytes` INTEGER NOT NULL, " +
+                        "`extracted_text` TEXT NOT NULL DEFAULT '', `duration_ms` INTEGER NOT NULL DEFAULT 0, " +
+                        "`created_at` INTEGER NOT NULL DEFAULT 0, " +
+                        "FOREIGN KEY(`note_id`) REFERENCES `Notes_Table`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Attachments_Table_note_id` ON `Attachments_Table` (`note_id`)")
+                DebugLogger.i(TAG, "Migration 3 to 4 finished")
+            }
+        }
+
         @Volatile
         private var instance: TrajectoryDatabase? = null
 
@@ -96,7 +127,7 @@ abstract class TrajectoryDatabase : RoomDatabase() {
                     context.applicationContext,
                     TrajectoryDatabase::class.java,
                     DATABASE_NAME,
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { instance = it }
             }
 
         /**
