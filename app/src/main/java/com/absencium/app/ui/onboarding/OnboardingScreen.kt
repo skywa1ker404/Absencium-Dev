@@ -230,6 +230,7 @@ private fun ThemeStep(settings: AppSettings, viewModel: com.absencium.app.ui.set
         onSelect = { viewModel.setColorEngine(it) },
         onPresetSelected = { viewModel.setThemePreset(it) },
         onGlassToggle = { viewModel.setLiquidGlass(it) },
+        onFrostedToggle = { viewModel.setFrostedOverlays(it) },
     )
     if (settings.liquidGlass && isMonetAndBlurSupported) {
         SectionTitle("Frosted glass intensity")

@@ -160,6 +160,22 @@ fun GlassStage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     }
 }
 
+/** Whether overlays (profile, search, Add Entry, import and colour pickers) are frosted: Liquid Glass plus its sub-toggle. */
+val LocalFrostedOverlays = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+/**
+ * The stage for a sheet or dialog. Frosted overlays get the glass stage; otherwise the content sits on the plain
+ * surface, with no glass anywhere inside, so it stays easy to read.
+ */
+@Composable
+fun OverlayStage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    if (LocalFrostedOverlays.current) {
+        GlassStage(modifier = modifier, content = content)
+    } else {
+        CompositionLocalProvider(LocalCardBackdrop provides null) { Box(modifier = modifier) { content() } }
+    }
+}
+
 /**
  * The selected tab of the glass navigation pill. In Quality mode it is a clear lens: it does not blur, it bends
  * what is behind it, so the pill looks like glass with a bead of clearer glass sliding along it. In Performance

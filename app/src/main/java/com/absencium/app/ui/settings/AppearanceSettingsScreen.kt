@@ -22,6 +22,7 @@ import com.absencium.app.ui.REQUIRES_ANDROID_12
 import com.absencium.app.ui.components.AppCard
 import com.absencium.app.ui.components.HintText
 import com.absencium.app.ui.components.OptionCard
+import com.absencium.app.ui.components.Reveal
 import com.absencium.app.ui.components.SwitchCard
 import com.absencium.app.ui.components.ScreenScaffold
 import com.absencium.app.ui.components.SectionTitle
@@ -49,6 +50,7 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
             onSelect = viewModel::setColorEngine,
             onPresetSelected = viewModel::setThemePreset,
             onGlassToggle = viewModel::setLiquidGlass,
+            onFrostedToggle = viewModel::setFrostedOverlays,
         )
 
         if (settings.liquidGlass && isMonetAndBlurSupported) {
@@ -100,6 +102,7 @@ fun ColorEngineChoices(
     onSelect: (ColorEngine) -> Unit,
     onPresetSelected: (ThemePreset) -> Unit,
     onGlassToggle: (Boolean) -> Unit,
+    onFrostedToggle: (Boolean) -> Unit,
 ) {
     var showPresets by remember { mutableStateOf(false) }
     SectionTitle("Theme")
@@ -135,6 +138,16 @@ fun ColorEngineChoices(
         enabled = isMonetAndBlurSupported,
         onCheckedChange = onGlassToggle,
     )
+    // Appears with the same springy expansion as the notes list on the Attendance tab, and folds away with Liquid Glass.
+    Reveal(visible = settings.liquidGlass && isMonetAndBlurSupported) {
+        SwitchCard(
+            title = "Apply frosted glass on other elements",
+            subtitle = "Also frost the profile, search, Add Entry, import and colour dialogs. " +
+                "Turn it off to keep them solid when see-through glass makes them hard to read.",
+            checked = settings.frostedOverlays,
+            onCheckedChange = onFrostedToggle,
+        )
+    }
     if (showPresets) {
         PresetsPage(
             selected = settings.themePreset.takeIf { settings.colorEngine == ColorEngine.PRESET },

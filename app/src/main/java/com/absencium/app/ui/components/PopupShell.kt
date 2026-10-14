@@ -47,7 +47,8 @@ fun PopupShell(onDismissRequest: () -> Unit, content: @Composable () -> Unit) {
         ) {
             Surface(
                 shape = RoundedCornerShape(34.dp),
-                color = colors.surfaceContainerHigh,
+                // Frosted overlays let a little of the screen show through; otherwise the card is solid.
+                color = if (LocalFrostedOverlays.current) colors.surfaceContainerHigh.copy(alpha = 0.9f) else colors.surfaceContainerHigh,
                 modifier = Modifier
                     .padding(top = 56.dp)
                     .widthIn(max = 460.dp)

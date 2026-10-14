@@ -1,5 +1,6 @@
 package com.absencium.app.ui.theme
 
+import com.absencium.app.ui.components.LocalFrostedOverlays
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -149,6 +150,7 @@ fun AbsenciumTheme(
         CompositionLocalProvider(
             LocalQuality provides quality,
             LocalGlassEnabled provides glassActive,
+            LocalFrostedOverlays provides (glassActive && settings.frostedOverlays),
             LocalGlassBlur provides settings.glassBlurDp.dp,
             // Text outside a Surface would otherwise fall back to black, which is unreadable on dark themes.
             LocalContentColor provides colorScheme.onBackground,

@@ -38,7 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import com.absencium.app.ui.components.GlassStage
+import com.absencium.app.ui.components.OverlayStage
 import com.absencium.app.ui.components.sheetContainerColor
 import com.absencium.app.ui.components.sheetScrimColor
 import androidx.compose.runtime.getValue
@@ -119,7 +119,7 @@ fun AddEntrySheet(
         contentColor = MaterialTheme.colorScheme.onSurface,
         scrimColor = sheetScrimColor(),
     ) {
-        GlassStage {
+        OverlayStage {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -388,7 +388,7 @@ fun ExamDetailSheet(
         contentColor = MaterialTheme.colorScheme.onSurface,
         scrimColor = sheetScrimColor(),
     ) {
-        GlassStage {
+        OverlayStage {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())

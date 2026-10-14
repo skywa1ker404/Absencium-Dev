@@ -42,6 +42,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setLiquidGlass(value: Boolean) = launch { repository.setLiquidGlass(value) }
 
+    fun setFrostedOverlays(value: Boolean) = launch { repository.setFrostedOverlays(value) }
+
     fun setGlassBlur(dp: Int) = launch { repository.setGlassBlur(dp) }
 
     fun setVisualQuality(value: VisualQuality) = launch {
