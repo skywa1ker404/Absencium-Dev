@@ -25,6 +25,9 @@ import android.graphics.Bitmap
 import android.net.Uri
 import com.trajectory.vault.data.ai.AiConnection
 import com.trajectory.vault.data.ai.AiException
+import com.trajectory.vault.data.ai.AiImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.trajectory.vault.data.ai.ApiStyle
 import com.trajectory.vault.data.ai.YouTubeClient
 import com.trajectory.vault.data.ai.YouTubeException
@@ -62,7 +65,17 @@ data class AddEntryState(
     /** True when the user tried to use AI before a provider, model and key were saved. */
     val aiSetupMissing: Boolean = false,
     val youtubeError: String? = null,
+    /** Text extraction from the pending photos (Upload a Pic / Camera). */
+    val extractStep: ExtractStep = ExtractStep.IDLE,
+    val extractedText: String = "",
+    val extractError: String? = null,
+    val extractSetupMissing: Boolean = false,
+    /** Text the user accepted; saved as the entry's text together with the photos. */
+    val acceptedText: String? = null,
 )
+
+/** Where the photo text extraction is: nothing yet, running, or waiting for the user to keep or cancel the result. */
+enum class ExtractStep { IDLE, RUNNING, REVIEW }
 
 class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
@@ -84,6 +97,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
     private val youtube = YouTubeClient()
     private var detailsJob: Job? = null
     private var pipelineJob: Job? = null
+    private var extractJob: Job? = null
 
     /** The file the camera is currently writing into. */
     private var cameraFile: File? = null
@@ -102,6 +116,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
     fun cancel() {
         detailsJob?.cancel()
         pipelineJob?.cancel()
+        extractJob?.cancel()
         discardPictures(_state.value.pictures)
         cameraFile?.let { store.delete(it.absolutePath) }
         cameraFile = null
@@ -168,6 +183,85 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /** Swaps a photo for its cropped version. The original file is deleted once the new one is in place. */
+    fun replacePicture(id: Long, file: File) {
+        val old = _state.value.pictures.firstOrNull { it.id == id }
+        if (old == null) {
+            store.delete(file.absolutePath)
+            return
+        }
+        val updated = old.copy(path = file.absolutePath, mimeType = "image/jpeg", sizeBytes = file.length())
+        _state.update { it.copy(pictures = it.pictures.map { p -> if (p.id == id) updated else p }, acceptedText = null, extractedText = "", extractStep = ExtractStep.IDLE) }
+        store.delete(old.path)
+        ImageTools.forget(old.path)
+    }
+
+    /** A fresh file for the crop editor to write into. */
+    fun newPictureFile(): File = store.newFile("jpg")
+
+    fun dismissExtractSetup() = _state.update { it.copy(extractSetupMissing = false) }
+
+    fun cancelExtraction() {
+        extractJob?.cancel()
+        _state.update { it.copy(extractStep = ExtractStep.IDLE, extractedText = "", extractError = null, extractSetupMissing = false) }
+    }
+
+    fun setExtractedText(text: String) = _state.update { it.copy(extractedText = text) }
+
+    /** Keeps the reviewed text; it is saved with the photos. The photos themselves are kept either way. */
+    fun acceptExtraction() = _state.update {
+        it.copy(acceptedText = it.extractedText.trim().ifEmpty { null }, extractStep = ExtractStep.IDLE, extractedText = "")
+    }
+
+    fun discardAcceptedText() = _state.update { it.copy(acceptedText = null) }
+
+    /**
+     * Sends the pending photos to the AI model and shows the text it reads. Nothing is saved until the user accepts.
+     * Without a saved provider, model and key the setup prompt is shown instead.
+     */
+    fun extractText() {
+        val current = _state.value
+        if (current.pictures.isEmpty() || current.extractStep == ExtractStep.RUNNING) return
+        val settings = container.settingsState.value ?: return
+        if (!aiReady(settings, container.apiKeyVault.hasKey())) {
+            _state.update { it.copy(extractSetupMissing = true, extractError = null) }
+            return
+        }
+        _state.update { it.copy(extractStep = ExtractStep.RUNNING, extractError = null, extractSetupMissing = false) }
+        extractJob = viewModelScope.launch {
+            try {
+                val connection = AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
+                val images = withContext(Dispatchers.IO) {
+                    current.pictures.take(MAX_EXTRACT_PHOTOS).mapNotNull { picture ->
+                        val bitmap = ImageTools.decode(picture.path, EXTRACT_EDGE) ?: return@mapNotNull null
+                        val bytes = java.io.ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray()
+                        AiImage("image/jpeg", android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
+                    }
+                }
+                if (images.isEmpty()) throw AiException("The photos could not be read from storage.")
+                val reply = container.aiClient.generate(connection, extractPrompt(images.size), images)
+                if (reply.isBlank()) throw AiException("The model did not find any text in the photo${if (images.size > 1) "s" else ""}.")
+                _state.update { it.copy(extractStep = ExtractStep.REVIEW, extractedText = reply.trim()) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: AiException) {
+                _state.update { it.copy(extractStep = ExtractStep.IDLE, extractError = failureText(e.message)) }
+            } catch (e: Exception) {
+                DebugLogger.e("Extract", "Text extraction failed", e)
+                _state.update { it.copy(extractStep = ExtractStep.IDLE, extractError = failureText(e.message ?: e.javaClass.simpleName)) }
+            }
+        }
+    }
+
+    private fun failureText(reason: String?): String =
+        "Could not extract the text: ${reason ?: "unknown error"}. Check that the chosen model can read images, then try again, or save the photos without the text."
+
+    private fun extractPrompt(count: Int): String =
+        "Read all the text in the attached ${if (count == 1) "photo" else "$count photos, in order"}. " +
+            "Return only the text, keeping its structure (headings, lists, line breaks, formulas written as plain text). " +
+            (if (count > 1) "Start each photo with a line \"Photo N\". " else "") +
+            "Do not add commentary. If a part is unreadable write [unclear]. If there is no text at all, reply with nothing."
+
     fun removePicture(id: Long) {
         val removed = _state.value.pictures.firstOrNull { it.id == id } ?: return
         store.delete(removed.path)
@@ -199,7 +293,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     subjectId = current.subjectId,
                     title = title,
                     kind = NoteKind.PICTURES,
-                    body = "",
+                    body = current.acceptedText.orEmpty(),
                     absentDate = current.date,
                     attachments = attachments,
                 )
@@ -352,6 +446,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
     private companion object {
         const val MAX_TRANSCRIPT_CHARS = 120_000
+        const val MAX_EXTRACT_PHOTOS = 8
+        const val EXTRACT_EDGE = 1600
     }
 
     override fun onCleared() {

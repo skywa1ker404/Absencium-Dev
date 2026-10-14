@@ -194,6 +194,10 @@ fun AddEntryPopup(
                                 subjectName = subject?.name.orEmpty(),
                                 onBack = { back() },
                                 onSaved = onSaved,
+                                onOpenAiSettings = {
+                                    close()
+                                    onOpenAiSettings()
+                                },
                             )
                         }
                     }
@@ -469,10 +473,13 @@ private fun PicturesStage(
     subjectName: String,
     onBack: () -> Unit,
     onSaved: (Long) -> Unit,
+    onOpenAiSettings: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val colors = MaterialTheme.colorScheme
     var preview by remember { mutableStateOf<Int?>(null) }
+    // The photo being cropped, by its id; the crop editor opens over the preview.
+    var cropping by remember { mutableStateOf<Long?>(null) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
         viewModel.addPictures(uris)
@@ -543,6 +550,10 @@ private fun PicturesStage(
             }
         }
 
+        if (state.pictures.isNotEmpty()) {
+            ExtractionPanel(state = state, viewModel = viewModel, onOpenAiSettings = onOpenAiSettings)
+        }
+
         OutlinedTextField(
             value = state.title,
             onValueChange = viewModel::setTitle,
@@ -570,13 +581,115 @@ private fun PicturesStage(
             paths = state.pictures.map { it.path },
             startIndex = index.coerceIn(0, (state.pictures.size - 1).coerceAtLeast(0)),
             onBack = { preview = null },
+            onCrop = { page -> cropping = state.pictures.getOrNull(page)?.id },
         )
+    }
+
+    cropping?.let { id ->
+        val picture = state.pictures.firstOrNull { it.id == id }
+        if (picture == null) {
+            cropping = null
+        } else {
+            PhotoCropDialog(
+                path = picture.path,
+                newFile = viewModel::newPictureFile,
+                onCancel = { cropping = null },
+                onDone = { file ->
+                    viewModel.replacePicture(id, file)
+                    cropping = null
+                },
+            )
+        }
+    }
+}
+
+/** The "Extract text with AI" control under the photos, and everything it can turn into. */
+@Composable
+private fun ExtractionPanel(state: AddEntryState, viewModel: AddEntryViewModel, onOpenAiSettings: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    when {
+        state.extractStep == ExtractStep.RUNNING -> Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHighest).padding(16.dp),
+        ) {
+            LoadingDots("Extracting text", modifier = Modifier.weight(1f))
+            PillButton(text = "Cancel", compact = true, tonal = true, onClick = viewModel::cancelExtraction)
+        }
+
+        state.extractStep == ExtractStep.REVIEW -> Column(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(colors.surfaceContainerHighest).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("Text found in your photos", style = MaterialTheme.typography.titleSmall)
+            OutlinedTextField(
+                value = state.extractedText,
+                onValueChange = viewModel::setExtractedText,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(max = 220.dp),
+            )
+            Text(
+                "Check and fix anything the AI misread. Your photos are kept either way.",
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PillButton(text = "Cancel", compact = true, tonal = true, onClick = viewModel::cancelExtraction, modifier = Modifier.weight(1f))
+                PillButton(text = "Add to Text Notes", compact = true, onClick = viewModel::acceptExtraction, modifier = Modifier.weight(1.4f))
+            }
+        }
+
+        state.extractSetupMissing -> Column(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(colors.secondaryContainer).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("AI is not set up yet", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
+            Text(
+                "Reading text from photos needs an AI provider, a model that accepts images and your API key. " +
+                    "Add them in Settings, AI & Integrations, or continue without the text.",
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSecondaryContainer,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PillButton(text = "Open Settings", compact = true, onClick = onOpenAiSettings, modifier = Modifier.weight(1f))
+                PillButton(text = "Continue", compact = true, tonal = true, onClick = viewModel::dismissExtractSetup, modifier = Modifier.weight(1f))
+            }
+        }
+
+        else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (state.acceptedText != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(colors.primaryContainer).padding(start = 16.dp, end = 6.dp),
+                ) {
+                    Text(
+                        "Extracted text will be saved with these photos.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onPrimaryContainer,
+                        modifier = Modifier.weight(1f).padding(vertical = 10.dp),
+                    )
+                    androidx.compose.material3.TextButton(onClick = viewModel::discardAcceptedText) { Text("Remove") }
+                }
+            }
+            PillButton(
+                text = if (state.acceptedText != null) "Extract text again" else "Extract text with AI",
+                tonal = true,
+                onClick = viewModel::extractText,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            state.extractError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
+        }
     }
 }
 
 /** A full-screen, in-app photo viewer with a back button. Swipe sideways to move between photos. */
 @Composable
-fun PhotoPreviewDialog(paths: List<String>, startIndex: Int, onBack: () -> Unit, version: Int = 0) {
+fun PhotoPreviewDialog(
+    paths: List<String>,
+    startIndex: Int,
+    onBack: () -> Unit,
+    version: Int = 0,
+    onCrop: ((page: Int) -> Unit)? = null,
+) {
     if (paths.isEmpty()) {
         LaunchedEffect(Unit) { onBack() }
         return
@@ -610,7 +723,11 @@ fun PhotoPreviewDialog(paths: List<String>, startIndex: Int, onBack: () -> Unit,
                     text = "${pager.currentPage + 1} / ${paths.size}",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
+                    modifier = Modifier.weight(1f),
                 )
+                if (onCrop != null) {
+                    PillButton(text = "Crop", compact = true, onClick = { onCrop(pager.currentPage) })
+                }
             }
         }
     }
