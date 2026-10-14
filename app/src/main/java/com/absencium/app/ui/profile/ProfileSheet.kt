@@ -60,6 +60,7 @@ fun ProfileSheet(
     settings: AppSettings,
     onDismiss: () -> Unit,
     onSaveName: (String) -> Unit,
+    onOpenAttendance: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -167,7 +168,7 @@ fun ProfileSheet(
                 HintText("Add subjects and log lectures to see attendance here.")
             }
             rows.forEach { item ->
-                AppCard(modifier = Modifier.fillMaxWidth()) {
+                AppCard(modifier = Modifier.fillMaxWidth(), onClick = onOpenAttendance) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(subjectColor(item.subject.id)))
                         Column(modifier = Modifier.weight(1f)) {

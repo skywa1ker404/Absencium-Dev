@@ -84,6 +84,8 @@ fun HomeTab(
     contentPadding: PaddingValues,
     onOpenExam: (ExamEntity) -> Unit,
     onManageSubjects: () -> Unit,
+    onOpenAttendance: () -> Unit,
+    onOpenTimetable: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val today = now.toLocalDate()
@@ -133,7 +135,7 @@ fun HomeTab(
         }
 
         if (data.subjects.none { it.isActive }) {
-            AppCard(modifier = Modifier.fillMaxWidth()) {
+            AppCard(modifier = Modifier.fillMaxWidth(), onClick = onManageSubjects) {
                 Text("Add your subjects", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Attendance, the timetable and exams all start from your subject list.",
@@ -144,12 +146,18 @@ fun HomeTab(
                 PillButton(text = "Add subjects", onClick = onManageSubjects)
             }
         } else {
-            AttendanceCard(overallPercent = overall.percent, present = overall.present, held = overall.held, threshold = threshold)
+            AttendanceCard(
+                overallPercent = overall.percent,
+                present = overall.present,
+                held = overall.held,
+                threshold = threshold,
+                onClick = onOpenAttendance,
+            )
 
             val watch = perSubject.filter { s -> s.percent?.let { it < threshold + APPROACHING_POINTS } == true }
             if (watch.isNotEmpty()) {
                 SectionTitle("Watch these subjects")
-                AppCard(modifier = Modifier.fillMaxWidth()) {
+                AppCard(modifier = Modifier.fillMaxWidth(), onClick = onOpenAttendance) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         watch.forEach { WatchRow(it, threshold) }
                     }
@@ -158,7 +166,7 @@ fun HomeTab(
         }
 
         SectionTitle("Next up")
-        AppCard(modifier = Modifier.fillMaxWidth(), container = colors.secondaryContainer) {
+        AppCard(modifier = Modifier.fillMaxWidth(), container = colors.secondaryContainer, onClick = onOpenTimetable) {
             if (next == null) {
                 Text("No upcoming lectures", style = MaterialTheme.typography.titleMedium, color = colors.onSecondaryContainer)
                 Text(
@@ -244,12 +252,12 @@ fun HomeTab(
  * earlier stacked layout, with every number still on it.
  */
 @Composable
-private fun AttendanceCard(overallPercent: Double?, present: Int, held: Int, threshold: Int) {
+private fun AttendanceCard(overallPercent: Double?, present: Int, held: Int, threshold: Int, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val below = overallPercent != null && overallPercent < threshold
     val container = if (below) colors.errorContainer else colors.primaryContainer
     val onContainer = if (below) colors.onErrorContainer else colors.onPrimaryContainer
-    AppCard(modifier = Modifier.fillMaxWidth(), container = container) {
+    AppCard(modifier = Modifier.fillMaxWidth(), container = container, onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             RingGauge(
                 percent = overallPercent,

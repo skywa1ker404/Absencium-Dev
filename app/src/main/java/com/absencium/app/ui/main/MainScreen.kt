@@ -234,6 +234,9 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             contentPadding = contentPadding,
                             onOpenExam = { openExam = it },
                             onManageSubjects = { navigator.navigate(SubjectsScreenDestination) },
+                            // Back from the Attendance tab returns here (the tab back handler goes to Home).
+                            onOpenAttendance = { tab = TAB_ATTENDS },
+                            onOpenTimetable = { navigator.navigate(TimetableScreenDestination) },
                         )
 
                         current == TAB_ATTENDS -> CalendarTab(
@@ -479,6 +482,10 @@ fun MainScreen(navigator: DestinationsNavigator) {
             settings = settings,
             onDismiss = { showProfile = false },
             onSaveName = { settingsViewModel.setDisplayName(it) },
+            onOpenAttendance = {
+                showProfile = false
+                tab = TAB_ATTENDS
+            },
             onOpenSettings = {
                 showProfile = false
                 navigator.navigate(SettingsHubScreenDestination)
@@ -494,14 +501,24 @@ fun MainScreen(navigator: DestinationsNavigator) {
  */
 @Composable
 private fun TabSlot(visible: Boolean, fade: Boolean, content: @Composable () -> Unit) {
+    // Fade through: the page that leaves is gone before the page that arrives appears, so the two are never seen on top
+    // of each other (cross-fading two full pages showed one page's title over the other's cards).
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = if (fade) tween(durationMillis = 180) else snap(),
+        animationSpec = when {
+            !fade -> snap()
+            visible -> tween(durationMillis = 200, delayMillis = 110, easing = androidx.compose.animation.core.LinearOutSlowInEasing)
+            else -> tween(durationMillis = 110, easing = androidx.compose.animation.core.FastOutLinearInEasing)
+        },
         label = "tabAlpha",
     )
     Box(
         modifier = Modifier
-            .graphicsLayer { this.alpha = alpha }
+            .graphicsLayer {
+                this.alpha = alpha
+                // The arriving page rises a few dp into place while it fades in.
+                translationY = if (fade) (1f - alpha) * 10.dp.toPx() else 0f
+            }
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)
                 if (!visible && alpha == 0f) {
