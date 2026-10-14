@@ -67,7 +67,7 @@ private const val LAST_STEP = STEP_COUNT - 1
 
 private val StepTitles = listOf("Theme & Appearance Setup", "Notes Storage Directory", "AI Engine & Optional Modules")
 private val StepSubtitles = listOf(
-    "Pick a visual quality for your phone, then your theme: Monet, Liquid Glass, the Default Theme or a preset. Changes apply instantly.",
+    "Pick a visual quality for your phone, then your theme (Monet, the Default Theme or a preset) and whether to add Liquid Glass on top. Changes apply instantly.",
     "Choose where your notes, PDFs and recordings live, and your minimum safe attendance.",
     "Set up an optional AI connection and the background modules you want. All can be changed later in Settings.",
 )
@@ -229,8 +229,9 @@ private fun ThemeStep(settings: AppSettings, viewModel: com.trajectory.vault.ui.
         settings = settings,
         onSelect = { viewModel.setColorEngine(it) },
         onPresetSelected = { viewModel.setThemePreset(it) },
+        onGlassToggle = { viewModel.setLiquidGlass(it) },
     )
-    if (settings.colorEngine == ColorEngine.LIQUID_GLASS && isMonetAndBlurSupported) {
+    if (settings.liquidGlass && isMonetAndBlurSupported) {
         SectionTitle("Frosted glass intensity")
         GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
     }

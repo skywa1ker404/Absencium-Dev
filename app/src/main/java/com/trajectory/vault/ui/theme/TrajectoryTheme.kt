@@ -37,9 +37,9 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 val isMonetAndBlurSupported: Boolean
     get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
-/** The engine actually used: Monet and Liquid Glass need Android 12, so older phones use the Default Theme. */
+/** The engine actually used: Monet needs Android 12, so older phones use the Default Theme. */
 fun effectiveColorEngine(requested: ColorEngine): ColorEngine =
-    if ((requested == ColorEngine.MONET_WALLPAPER || requested == ColorEngine.LIQUID_GLASS) && !isMonetAndBlurSupported) {
+    if (requested == ColorEngine.MONET_WALLPAPER && !isMonetAndBlurSupported) {
         ColorEngine.DEFAULT_PALETTE
     } else {
         requested
@@ -129,7 +129,6 @@ fun TrajectoryTheme(
             // The system's own scheme: the wallpaper colour picked in Wallpaper & style, light or dark.
             ColorEngine.MONET_WALLPAPER -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             ColorEngine.DEFAULT_PALETTE -> (if (isDark) DefaultPalette.dark else DefaultPalette.light).toColorScheme(isDark)
-            ColorEngine.LIQUID_GLASS -> (if (isDark) GlassPalette.dark else GlassPalette.light).toColorScheme(isDark)
             ColorEngine.PRESET -> {
                 val (variantIsDark, variant) = settings.themePreset.palette().variantFor(isDark)
                 variant.toColorScheme(variantIsDark)
@@ -140,7 +139,8 @@ fun TrajectoryTheme(
 
     val quality = QualityProfile.of(settings.visualQuality)
     // The Liquid Glass colours stay; only the blur itself is switched off when the quality level asks for it.
-    val glassActive = engine == ColorEngine.LIQUID_GLASS && quality.blurEnabled
+    // Liquid Glass is a layer on top of the active theme; it needs Android 12 for the blur and Quality mode for the cost.
+    val glassActive = settings.liquidGlass && quality.blurEnabled && isMonetAndBlurSupported
 
     MaterialTheme(colorScheme = colorScheme, shapes = TrajectoryShapes, typography = TrajectoryTypography) {
         CompositionLocalProvider(

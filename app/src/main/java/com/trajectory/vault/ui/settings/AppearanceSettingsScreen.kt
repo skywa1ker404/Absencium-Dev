@@ -22,6 +22,7 @@ import com.trajectory.vault.ui.REQUIRES_ANDROID_12
 import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.HintText
 import com.trajectory.vault.ui.components.OptionCard
+import com.trajectory.vault.ui.components.SwitchCard
 import com.trajectory.vault.ui.components.ScreenScaffold
 import com.trajectory.vault.ui.components.SectionTitle
 import com.trajectory.vault.ui.components.SliderCard
@@ -48,9 +49,10 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
             settings = settings,
             onSelect = viewModel::setColorEngine,
             onPresetSelected = viewModel::setThemePreset,
+            onGlassToggle = viewModel::setLiquidGlass,
         )
 
-        if (settings.colorEngine == ColorEngine.LIQUID_GLASS && isMonetAndBlurSupported) {
+        if (settings.liquidGlass && isMonetAndBlurSupported) {
             SectionTitle("Frosted glass intensity")
             GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
         }
@@ -99,10 +101,11 @@ fun ColorEngineChoices(
     settings: AppSettings,
     onSelect: (ColorEngine) -> Unit,
     onPresetSelected: (ThemePreset) -> Unit,
+    onGlassToggle: (Boolean) -> Unit,
 ) {
     var showPresets by remember { mutableStateOf(false) }
     SectionTitle("Theme")
-    listOf(ColorEngine.DEFAULT_PALETTE, ColorEngine.MONET_WALLPAPER, ColorEngine.LIQUID_GLASS).forEach { engine ->
+    listOf(ColorEngine.DEFAULT_PALETTE, ColorEngine.MONET_WALLPAPER).forEach { engine ->
         val available = engine == ColorEngine.DEFAULT_PALETTE || isMonetAndBlurSupported
         OptionCard(
             title = engine.label(),
@@ -121,6 +124,18 @@ fun ColorEngineChoices(
         },
         selected = settings.colorEngine == ColorEngine.PRESET,
         onClick = { showPresets = true },
+    )
+    SwitchCard(
+        title = "Liquid Glass",
+        subtitle = if (isMonetAndBlurSupported) {
+            "Frosted, see-through glass on every surface except the wallpaper, in the colours of the theme you picked. " +
+                "Shown in Quality mode; Performance mode keeps plain surfaces so the app stays smooth."
+        } else {
+            "Frosted glass over any theme.\n$REQUIRES_ANDROID_12"
+        },
+        checked = settings.liquidGlass,
+        enabled = isMonetAndBlurSupported,
+        onCheckedChange = onGlassToggle,
     )
     if (showPresets) {
         PresetsPage(

@@ -40,6 +40,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setIntroSeen() = launch { repository.setIntroSeen(true) }
 
+    fun setLiquidGlass(value: Boolean) = launch { repository.setLiquidGlass(value) }
+
     fun setGlassBlur(dp: Int) = launch { repository.setGlassBlur(dp) }
 
     fun setVisualQuality(value: VisualQuality) = launch {

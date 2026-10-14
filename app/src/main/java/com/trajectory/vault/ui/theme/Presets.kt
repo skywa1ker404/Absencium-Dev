@@ -70,33 +70,6 @@ object DefaultPalette {
 }
 
 /**
- * Liquid Glass is deliberately colourless: greys only, no accent. The glass itself comes from blur and
- * refraction of whatever is behind it.
- */
-object GlassPalette {
-    val light = PaletteVariant(
-        background = c(0xF2F2F2),
-        text = c(0x111111),
-        textMuted = c(0x5C5C5C),
-        outline = c(0x8C8C8C),
-        primary = c(0x1C1C1C),
-        secondary = c(0x4A4A4A),
-        tertiary = c(0x6B6B6B),
-        error = c(0xB3261E),
-    )
-    val dark = PaletteVariant(
-        background = c(0x0D0D0D),
-        text = c(0xF2F2F2),
-        textMuted = c(0xB0B0B0),
-        outline = c(0x7A7A7A),
-        primary = c(0xF2F2F2),
-        secondary = c(0xCFCFCF),
-        tertiary = c(0xA8A8A8),
-        error = c(0xF2B8B5),
-    )
-}
-
-/**
  * Colours are the schemes' published values: Catppuccin palette.json, Dracula README, Everforest palette.md,
  * Gruvbox gruvbox.vim, Nord's colour page, onedark.nvim, poimandres.nvim, Rosé Pine's neovim palette and
  * tokyonight.nvim. Nord, Dracula and Poimandres have no official light scheme in those sources; Nord's light

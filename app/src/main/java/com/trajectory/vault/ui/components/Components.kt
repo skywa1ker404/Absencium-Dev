@@ -113,15 +113,18 @@ fun AppCard(
     } else {
         Modifier
     }
+    val cardBackdrop = LocalCardBackdrop.current
     Surface(
         modifier = modifier
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
-            .animateContentSize(animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy)),
+            .animateContentSize(animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy))
+            // Liquid Glass: the card is a pane of glass over the wallpaper, tinted with its own tonal colour.
+            .then(if (cardBackdrop != null) Modifier.glassSurface(cardBackdrop, shape, container) else Modifier),
         shape = shape,
-        color = container,
+        color = if (cardBackdrop != null) Color.Transparent else container,
     ) {
         Column(modifier = Modifier.then(clickModifier).padding(20.dp), content = content)
     }
@@ -179,15 +182,17 @@ fun ScreenScaffold(
                     .then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier)
                     .background(colors.background),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(padding)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    content = content,
-                )
+                GlassStage(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(padding)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        content = content,
+                    )
+                }
             }
         }
     }

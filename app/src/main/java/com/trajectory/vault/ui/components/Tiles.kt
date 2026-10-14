@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -145,5 +146,69 @@ fun <T> TileGrid(items: List<T>, modifier: Modifier = Modifier, tile: @Composabl
                 if (row.size == 1) Box(modifier = Modifier.weight(1f))
             }
         }
+    }
+}
+
+/**
+ * A compact 270 degree ring that springs to [percent], with a dot at the safe [threshold] and the number inside.
+ * Used where height is tight, such as the bunk buffer card on Home.
+ */
+@Composable
+fun RingGauge(
+    percent: Double?,
+    threshold: Int,
+    arcColor: Color,
+    trackColor: Color,
+    belowColor: Color,
+    markerColor: Color,
+    numberColor: Color,
+    modifier: Modifier = Modifier,
+    size: androidx.compose.ui.unit.Dp = 104.dp,
+) {
+    val q = LocalQuality.current
+    val target = ((percent ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
+    val progress by animateFloatAsState(
+        targetValue = target,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+        label = "ringGauge",
+    )
+    val below = percent != null && percent < threshold
+    val color by animateColorAsState(
+        targetValue = if (below) belowColor else arcColor,
+        animationSpec = q.spring(),
+        label = "ringGaugeColor",
+    )
+    Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.size(size)) {
+            val stroke = 11.dp.toPx()
+            val arcSize = Size(this.size.width - stroke, this.size.height - stroke)
+            val topLeft = Offset(stroke / 2f, stroke / 2f)
+            drawArc(
+                color = trackColor, startAngle = 135f, sweepAngle = 270f, useCenter = false,
+                topLeft = topLeft, size = arcSize, style = Stroke(width = stroke, cap = StrokeCap.Round),
+            )
+            if (progress > 0f) {
+                drawArc(
+                    color = color, startAngle = 135f, sweepAngle = 270f * progress, useCenter = false,
+                    topLeft = topLeft, size = arcSize, style = Stroke(width = stroke, cap = StrokeCap.Round),
+                )
+            }
+            val angle = Math.toRadians(135.0 + 270.0 * threshold / 100.0)
+            val radius = arcSize.width / 2f
+            drawCircle(
+                color = markerColor,
+                radius = 3.dp.toPx(),
+                center = Offset(
+                    x = this.size.width / 2f + (radius * cos(angle)).toFloat(),
+                    y = this.size.height / 2f + (radius * sin(angle)).toFloat(),
+                ),
+            )
+        }
+        Text(
+            text = if (percent == null) "--" else "${percent.roundToInt()}%",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+            color = numberColor,
+        )
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import com.trajectory.vault.ui.components.GlassStage
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -202,6 +203,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     // Inside the recorded layer, so the glass bars blur a solid page colour, not empty space.
                     .background(colors.background),
             ) {
+                GlassStage(modifier = Modifier.fillMaxSize()) {
                 // Every tab stays composed once it has been opened, so switching is just a fade, not a rebuild
                 // of the whole tab (the Calendar month grid is the heavy one). Calendar and Vault are prepared
                 // a few seconds after start while Home is idle.
@@ -265,6 +267,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     }
                         }
                     }
+                }
                 }
             }
 

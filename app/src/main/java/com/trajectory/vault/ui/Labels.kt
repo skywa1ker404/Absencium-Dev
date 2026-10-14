@@ -21,14 +21,12 @@ fun ThemeMode.description(): String = when (this) {
 fun ColorEngine.label(): String = when (this) {
     ColorEngine.DEFAULT_PALETTE -> "Default Theme"
     ColorEngine.MONET_WALLPAPER -> "Monet"
-    ColorEngine.LIQUID_GLASS -> "Liquid Glass"
     ColorEngine.PRESET -> "Presets"
 }
 
 fun ColorEngine.description(): String = when (this) {
     ColorEngine.DEFAULT_PALETTE -> "Soft olive and grey tones, in light and dark"
     ColorEngine.MONET_WALLPAPER -> "The colours of the wallpaper you picked in your phone's settings (Material You)"
-    ColorEngine.LIQUID_GLASS -> "Plain, colourless glass bars that blur and bend what scrolls behind them"
     ColorEngine.PRESET -> "Catppuccin, Dracula, Nord, Gruvbox and more"
 }
 

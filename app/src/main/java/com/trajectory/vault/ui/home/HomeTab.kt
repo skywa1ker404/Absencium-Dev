@@ -48,8 +48,7 @@ import com.trajectory.vault.ui.calendar.label
 import com.trajectory.vault.ui.calendar.subjectColor
 import com.trajectory.vault.ui.components.AppCard
 import com.trajectory.vault.ui.components.PillButton
-import com.trajectory.vault.ui.components.SemiGauge
-import com.trajectory.vault.ui.components.StatPill
+import com.trajectory.vault.ui.components.RingGauge
 import com.trajectory.vault.ui.components.TileGrid
 import com.trajectory.vault.ui.components.SectionTitle
 import com.trajectory.vault.ui.main.TabColumn
@@ -239,6 +238,11 @@ fun HomeTab(
     }
 }
 
+/**
+ * The bunk buffer, in one compact row: the attendance ring on the left; on the right the buffer headline, the
+ * sentence that explains it, and the Present / Absent / Total counts. About 55 to 60 percent shorter than the
+ * earlier stacked layout, with every number still on it.
+ */
 @Composable
 private fun AttendanceCard(overallPercent: Double?, present: Int, held: Int, threshold: Int) {
     val colors = MaterialTheme.colorScheme
@@ -246,48 +250,73 @@ private fun AttendanceCard(overallPercent: Double?, present: Int, held: Int, thr
     val container = if (below) colors.errorContainer else colors.primaryContainer
     val onContainer = if (below) colors.onErrorContainer else colors.onPrimaryContainer
     AppCard(modifier = Modifier.fillMaxWidth(), container = container) {
-        SemiGauge(
-            percent = overallPercent,
-            threshold = threshold,
-            arcColor = if (below) colors.onErrorContainer else colors.primary,
-            trackColor = onContainer.copy(alpha = 0.14f),
-            belowColor = colors.onErrorContainer,
-            markerColor = onContainer,
-            numberColor = onContainer,
-            captionColor = onContainer.copy(alpha = 0.7f),
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        ) {
-            StatPill("Present: $present", colors.primary, colors.onPrimary)
-            StatPill("Absent: ${(held - present).coerceAtLeast(0)}", colors.errorContainer.takeIf { !below } ?: colors.error, if (below) colors.onError else colors.onErrorContainer)
-            StatPill("Total: $held", colors.surface, colors.onSurface)
-        }
-        Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Bunk buffer", style = MaterialTheme.typography.titleMedium, color = onContainer)
-            if (overallPercent == null) {
-                Text(
-                    "Log a lecture on the Attendance tab to see how many you can safely miss.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = onContainer.copy(alpha = 0.8f),
-                )
-            } else {
-                val margin = attendanceMargin(present, held, threshold)
-                Text(
-                    text = marginHeadline(margin),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                    color = onContainer,
-                )
-                Text(
-                    text = marginSentence(margin, threshold),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = onContainer.copy(alpha = 0.8f),
-                )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            RingGauge(
+                percent = overallPercent,
+                threshold = threshold,
+                arcColor = colors.primary,
+                trackColor = onContainer.copy(alpha = 0.14f),
+                belowColor = colors.onErrorContainer,
+                markerColor = onContainer,
+                numberColor = onContainer,
+            )
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (overallPercent == null) {
+                    Text("Bunk buffer", style = MaterialTheme.typography.titleMedium, color = onContainer)
+                    Text(
+                        "Log a lecture on the Attendance tab to see how many you can safely miss.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = onContainer.copy(alpha = 0.8f),
+                    )
+                } else {
+                    val margin = attendanceMargin(present, held, threshold)
+                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = marginHeadline(margin),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                            color = onContainer,
+                        )
+                        Text(
+                            text = "bunk buffer",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = onContainer.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(bottom = 6.dp),
+                        )
+                    }
+                    Text(
+                        text = marginSentence(margin, threshold),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = onContainer.copy(alpha = 0.8f),
+                        maxLines = 2,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
+                    CompactPill("Present $present", colors.primary, colors.onPrimary)
+                    CompactPill(
+                        "Absent ${(held - present).coerceAtLeast(0)}",
+                        if (below) colors.error else colors.errorContainer,
+                        if (below) colors.onError else colors.onErrorContainer,
+                    )
+                    CompactPill("Total $held", colors.surface, colors.onSurface)
+                }
             }
         }
     }
+}
+
+@Composable
+private fun CompactPill(label: String, container: androidx.compose.ui.graphics.Color, content: androidx.compose.ui.graphics.Color) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        color = content,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(container)
+            .padding(horizontal = 9.dp, vertical = 4.dp),
+    )
 }
 
 private fun marginHeadline(margin: Margin): String =

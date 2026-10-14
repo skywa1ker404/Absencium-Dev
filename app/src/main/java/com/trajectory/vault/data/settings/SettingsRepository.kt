@@ -58,6 +58,8 @@ class SettingsRepository(context: Context) {
 
     suspend fun setIntroSeen(value: Boolean) = write(Keys.INTRO_SEEN, value)
 
+    suspend fun setLiquidGlass(value: Boolean) = write(Keys.LIQUID_GLASS, value)
+
     suspend fun setGlassBlur(dp: Int) = write(
         Keys.GLASS_BLUR,
         dp.coerceIn(AppSettings.MIN_GLASS_BLUR, AppSettings.MAX_GLASS_BLUR),
@@ -103,6 +105,7 @@ class SettingsRepository(context: Context) {
         val COLOR_ENGINE = stringPreferencesKey("color_engine")
         val THEME_PRESET = stringPreferencesKey("theme_preset")
         val INTRO_SEEN = booleanPreferencesKey("intro_seen")
+        val LIQUID_GLASS = booleanPreferencesKey("liquid_glass")
         val GLASS_BLUR = intPreferencesKey("glass_blur_dp")
         val VISUAL_QUALITY = stringPreferencesKey("visual_quality")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
@@ -125,7 +128,10 @@ class SettingsRepository(context: Context) {
             onboardingComplete = this[Keys.ONBOARDING_COMPLETE] ?: defaults.onboardingComplete,
             displayName = this[Keys.DISPLAY_NAME] ?: defaults.displayName,
             themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode),
+            // Before Liquid Glass became a toggle it was a theme of its own; that setting becomes the toggle on top of
+            // the default theme, and Solid Accent (also gone) falls back to the default as well.
             colorEngine = enumOrDefault(this[Keys.COLOR_ENGINE], defaults.colorEngine),
+            liquidGlass = this[Keys.LIQUID_GLASS] ?: (this[Keys.COLOR_ENGINE] == "LIQUID_GLASS"),
             themePreset = enumOrDefault(this[Keys.THEME_PRESET], defaults.themePreset),
             glassBlurDp = this[Keys.GLASS_BLUR] ?: defaults.glassBlurDp,
             visualQuality = visualQualityFrom(this[Keys.VISUAL_QUALITY]),

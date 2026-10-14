@@ -2,6 +2,13 @@ package com.trajectory.vault.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -43,7 +50,10 @@ fun Modifier.floatingGlass(
         return this.clip(shape).background(tint)
     }
     val quality = LocalQuality.current
-    val veil = if (isDark) Color(0xFF121212).copy(alpha = 0.32f) else Color(0xFFFAFAFA).copy(alpha = 0.38f)
+    // The glass takes the colours of the active theme: a veil of the surface colour, nudged toward its accent container.
+    val scheme = MaterialTheme.colorScheme
+    val veilBase = lerp(scheme.surface, scheme.primaryContainer, 0.18f)
+    val veil = veilBase.copy(alpha = if (isDark) 0.42f else 0.5f)
     val blurDp = LocalGlassBlur.current
     // Lens refraction needs rounded corners and Android 13 (a runtime shader); a plain rectangle only blurs.
     val lens = quality.glassLens && shape is CornerBasedShape && isRuntimeShaderSupported()
@@ -58,7 +68,7 @@ fun Modifier.floatingGlass(
             shape = { shape },
             effects = {
                 vibrancy()
-                blur(blurDp.toPx())
+                if (blurDp.value > 0f) blur(blurDp.toPx())
                 if (lens) {
                     lens(refractionHeight = 12.dp.toPx(), refractionAmount = 24.dp.toPx())
                 }
@@ -69,6 +79,75 @@ fun Modifier.floatingGlass(
             onDrawSurface = { drawRect(veil) },
         )
         .then(rim)
+}
+
+/** The backdrop that cards and tiles sample: only the wallpaper behind the content, never the content itself. */
+val LocalCardBackdrop = androidx.compose.runtime.staticCompositionLocalOf<LayerBackdrop?> { null }
+
+/**
+ * Glass for content surfaces (cards, tiles). It blurs only the wallpaper layer, so a card never samples itself
+ * or the cards around it, and it is lighter than the floating bars: blur and a soft edge, no refraction.
+ */
+@Composable
+fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color): Modifier {
+    val blurDp = LocalGlassBlur.current
+    return this.drawBackdrop(
+        backdrop = backdrop,
+        shape = { shape },
+        effects = {
+            vibrancy()
+            if (blurDp.value > 0f) blur(blurDp.toPx())
+        },
+        highlight = { Highlight.Default },
+        onDrawSurface = { drawRect(tint.copy(alpha = 0.55f)) },
+    )
+}
+
+/** The wallpaper behind everything in glass mode: soft blobs of the theme's own colours for the glass to blur. */
+@Composable
+fun GlassWallpaper(modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    val a = scheme.primaryContainer
+    val b = scheme.tertiaryContainer
+    val c = scheme.secondaryContainer
+    val base = scheme.background
+    Box(
+        modifier = modifier
+            .background(base)
+            .drawBehind {
+                val w = size.width
+                val h = size.height
+                fun blob(color: Color, cx: Float, cy: Float, r: Float) = drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(color.copy(alpha = 0.95f), color.copy(alpha = 0f)),
+                        center = Offset(cx, cy),
+                        radius = r,
+                    ),
+                    radius = r,
+                    center = Offset(cx, cy),
+                )
+                blob(a, w * 0.15f, h * 0.12f, w * 0.9f)
+                blob(b, w * 0.95f, h * 0.45f, w * 0.85f)
+                blob(c, w * 0.2f, h * 0.85f, w * 0.9f)
+            },
+    )
+}
+
+/**
+ * Wraps a screen's content in glass mode: draws the [GlassWallpaper] into its own layer and lets cards sample it.
+ * Without glass it is transparent to its content.
+ */
+@Composable
+fun GlassStage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    if (!LocalGlassEnabled.current) {
+        Box(modifier = modifier) { content() }
+        return
+    }
+    val wallpaper = rememberLayerBackdrop()
+    Box(modifier = modifier) {
+        GlassWallpaper(Modifier.matchParentSize().layerBackdrop(wallpaper))
+        CompositionLocalProvider(LocalCardBackdrop provides wallpaper) { content() }
+    }
 }
 
 /**

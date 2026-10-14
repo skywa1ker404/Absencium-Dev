@@ -21,9 +21,6 @@ enum class ColorEngine {
     /** The colours of the wallpaper chosen in the system settings. Needs Android 12 (API 31) or newer. */
     MONET_WALLPAPER,
 
-    /** Colourless glass bars. Needs Android 12 (API 31) or newer. */
-    LIQUID_GLASS,
-
     /** One of the schemes on the Presets page, see [AppSettings.themePreset]. */
     PRESET,
 }
@@ -39,7 +36,9 @@ data class AppSettings(
     val colorEngine: ColorEngine = ColorEngine.MONET_WALLPAPER,
     /** Used while [colorEngine] is [ColorEngine.PRESET]; remembered otherwise. */
     val themePreset: ThemePreset = ThemePreset.CATPPUCCIN,
-    /** Blur radius of the Liquid Glass bars, in dp. */
+    /** Liquid Glass on top of whichever theme is active (blur and refraction need Android 12). */
+    val liquidGlass: Boolean = false,
+    /** Blur radius of the Liquid Glass surfaces, in dp. */
     val glassBlurDp: Int = DEFAULT_GLASS_BLUR,
     /** Starts at the level recommended for the phone; the user can change it at any time. */
     val visualQuality: VisualQuality = VisualQuality.PERFORMANCE,
