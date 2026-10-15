@@ -93,17 +93,27 @@ The goal isn't to make another complicated productivity app. It's to make everyd
 
 📥 Get Absencium
 
-<p align="center">
-  <a href="obtainium://add/https%3A%2F%2Fgithub.com%2Fskywa1ker404%2FAbsencium">
-    <img src=".github/badge_obtainium.png" alt="Get it on Obtainium" height="48">
-  </a>
-  <a href="https://github.com/skywa1ker404/Absencium/releases/latest">
-    <img src="https://img.shields.io/badge/Download-Latest%20APK-777C6D?style=for-the-badge&logo=github&logoColor=white" alt="Download Latest APK">
-  </a>
-  <a href="YOUR_WEBSITE_URL">
-    <img src="https://img.shields.io/badge/Download-Official%20Website-B7B89F?style=for-the-badge&logo=googlechrome&logoColor=222222" alt="Download from Official Website">
-  </a>
-</p>
+
+<div align="center">
+
+<a href="https://github.com/skywa1ker404/Absencium/releases/latest">
+  <img src="https://img.shields.io/badge/DOWNLOAD_LATEST_APK-Download-777C6D?style=for-the-badge&logo=android&logoColor=white" alt="Download Latest APK">
+</a>
+
+<br><br>
+
+<a href="YOUR_WEBSITE_URL">
+  <img src="https://img.shields.io/badge/OFFICIAL_WEBSITE-Visit-777C6D?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Official Website">
+</a>
+
+<br><br>
+
+<a href="https://github.com/skywa1ker404/Absencium/releases/latest">
+  <img src=".github/badge_obtainium.png" alt="Get Absencium on Obtainium" width="220">
+</a>
+
+</div>
+
 
 > [!WARNING]
 Download APKs only from this repository or another distribution source explicitly linked by the project. Review release notes before installing updates.»
