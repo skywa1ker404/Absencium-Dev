@@ -565,15 +565,7 @@ fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier =
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "Absencium",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontFamily = com.absencium.app.ui.theme.OutfitFamily,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                letterSpacing = 0.4.sp,
-            ),
-            color = colors.primary,
-        )
+        AbsenciumWordmark(color = colors.primary)
         val interaction = remember { MutableInteractionSource() }
         val pressed by interaction.collectIsPressedAsState()
         val scale by animateFloatAsState(
@@ -644,3 +636,33 @@ fun SlideAway(hidden: () -> Boolean, modifier: Modifier = Modifier, content: @Co
 }
 
 val ScrimColor = Color(0x99000000)
+
+/**
+ * "Absencium" with the app icon's own A as its first letter, at the size of a normal capital A. The A springs into place
+ * when the header first appears (after the intro, that is the moment the icon's A becomes the header's A).
+ */
+@Composable
+fun AbsenciumWordmark(color: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
+    val q = LocalQuality.current
+    val style = MaterialTheme.typography.headlineSmall.copy(
+        fontFamily = com.absencium.app.ui.theme.OutfitFamily,
+        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        letterSpacing = 0.4.sp,
+    )
+    val pop = remember { Animatable(0.6f) }
+    LaunchedEffect(Unit) { pop.animateTo(1f, q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)) }
+    Row(modifier = modifier.semantics { contentDescription = "Absencium" }, verticalAlignment = Alignment.CenterVertically) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(com.absencium.app.R.drawable.ic_logo_a),
+            contentDescription = null,
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(color),
+            modifier = Modifier
+                .size(22.dp)
+                .graphicsLayer {
+                    scaleX = pop.value
+                    scaleY = pop.value
+                },
+        )
+        Text(text = "bsencium", style = style, color = color)
+    }
+}

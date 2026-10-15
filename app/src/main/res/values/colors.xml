@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="window_background">#FFFBFE</color>
-    <color name="splash_background">#3B0F8C</color>
+    <!-- The system splash is drawn before the app reads its settings, so it follows only the phone's light or dark mode. -->
+    <color name="splash_background">#FFFBFE</color>
+    <color name="launcher_icon_background">#17291D</color>
 </resources>

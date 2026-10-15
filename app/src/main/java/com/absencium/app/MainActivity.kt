@@ -12,7 +12,13 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
 import com.absencium.app.display.RefreshRatePreference
+import com.absencium.app.ui.splash.AppSplash
 import com.absencium.app.ui.about.IntroTourContent
 import com.absencium.app.ui.onboarding.OnboardingScreen
 import com.absencium.app.ui.settings.rememberSettingsViewModel
@@ -48,6 +54,7 @@ class MainActivity : ComponentActivity() {
                     onDispose { }
                 }
                 AbsenciumTheme(settings = loaded) {
+                  Box(modifier = Modifier.fillMaxSize()) {
                     // First run: the wizard is shown until its last step is finished.
                     if (loaded.onboardingComplete) {
                         DestinationsNavHost(navGraph = NavGraphs.root)
@@ -58,6 +65,10 @@ class MainActivity : ComponentActivity() {
                     } else {
                         OnboardingScreen()
                     }
+                    // The in-app splash sits on top once per launch, in the chosen theme, then fades into the app.
+                    var showSplash by rememberSaveable { mutableStateOf(true) }
+                    if (showSplash) AppSplash(onFinished = { showSplash = false })
+                  }
                 }
             }
         }
