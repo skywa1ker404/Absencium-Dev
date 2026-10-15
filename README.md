@@ -25,8 +25,11 @@ The idea is to bring your academic essentials together in one place, with a clea
 
 Built by a student, for students. ☕
 
-«[!NOTE]
+> [!NOTE]
 Absencium is an independent project and is not affiliated with any educational institution. Features described below may be planned, under development, or available depending on the current build.»
+
+---
+<img src=".github/showcase.png">
 
 ---
 
@@ -96,7 +99,7 @@ Check the "Releases page" (https://github.com/skywa1ker404/Absencium/releases) f
 
 If no release is available yet, the app may still be under development. Follow the repository for updates.
 
-«[!WARNING]
+> [!WARNING]
 Download APKs only from this repository or another distribution source explicitly linked by the project. Review release notes before installing updates.»
 
 ---
