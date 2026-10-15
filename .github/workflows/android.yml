@@ -1,10 +1,36 @@
 name: Android Build
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
+push:
+branches: [main]
+paths:
+- 'app/'
+- 'gradle/'
+- 'gradlew'
+- 'gradlew.bat'
+- 'gradle.properties'
+- 'settings.gradle'
+- 'settings.gradle.kts'
+- 'build.gradle'
+- 'build.gradle.kts'
+- 'buildSrc/'
+- 'build-logic/'
+- '.github/workflows/'
+pull_request:
+branches: [main]
+paths:
+- 'app/'
+- 'gradle/'
+- 'gradlew'
+- 'gradle.properties'
+- 'settings.gradle'
+- 'settings.gradle.kts'
+- 'build.gradle'
+- 'build.gradle.kts'
+- 'buildSrc/'
+- 'build-logic/'
+- '.github/workflows/'
+workflow_dispatch:
 
 jobs:
   assemble-debug:
