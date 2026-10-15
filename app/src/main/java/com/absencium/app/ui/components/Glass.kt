@@ -149,14 +149,13 @@ fun GlassWallpaper(modifier: Modifier = Modifier) {
  */
 @Composable
 fun GlassStage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    if (!LocalGlassEnabled.current) {
-        Box(modifier = modifier) { content() }
-        return
-    }
+    val glass = LocalGlassEnabled.current
     val wallpaper = rememberLayerBackdrop()
+    // The same layout with Liquid Glass on or off, so switching it never rebuilds the content below (which would reset
+    // scroll positions and open sections); only the wallpaper layer and the backdrop appear or go.
     Box(modifier = modifier) {
-        GlassWallpaper(Modifier.matchParentSize().layerBackdrop(wallpaper))
-        CompositionLocalProvider(LocalCardBackdrop provides wallpaper) { content() }
+        if (glass) GlassWallpaper(Modifier.matchParentSize().layerBackdrop(wallpaper))
+        CompositionLocalProvider(LocalCardBackdrop provides if (glass) wallpaper else null) { content() }
     }
 }
 

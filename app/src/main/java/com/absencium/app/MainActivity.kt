@@ -8,6 +8,12 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -25,6 +31,9 @@ import com.absencium.app.ui.settings.rememberSettingsViewModel
 import com.absencium.app.ui.rememberMainViewModel
 import com.absencium.app.ui.theme.AbsenciumTheme
 import com.absencium.app.ui.theme.isDarkTheme
+
+/** Which full-screen phase the app is in: the first-run setup, the feature tour that follows it, or the app itself. */
+private enum class AppPhase { SETUP, TOUR, APP }
 
 class MainActivity : ComponentActivity() {
 
@@ -55,15 +64,28 @@ class MainActivity : ComponentActivity() {
                 }
                 AbsenciumTheme(settings = loaded) {
                   Box(modifier = Modifier.fillMaxSize()) {
-                    // First run: the wizard is shown until its last step is finished.
-                    if (loaded.onboardingComplete) {
-                        DestinationsNavHost(navGraph = NavGraphs.root)
-                    } else if (!loaded.introSeen) {
-                        // The very first launch: the intro plays, then the setup wizard.
-                        val settingsViewModel = rememberSettingsViewModel()
-                        IntroTourContent(onFinish = settingsViewModel::setIntroSeen)
-                    } else {
-                        OnboardingScreen()
+                    // First run: the setup, then the feature tour, then the app. Each hands over to the next with a
+                    // smooth fade (the old screen fades out first, then the new one fades in), never a cut.
+                    val phase = when {
+                        !loaded.onboardingComplete -> AppPhase.SETUP
+                        !loaded.introSeen -> AppPhase.TOUR
+                        else -> AppPhase.APP
+                    }
+                    AnimatedContent(
+                        targetState = phase,
+                        transitionSpec = {
+                            fadeIn(tween(durationMillis = 380, delayMillis = 320)) togetherWith fadeOut(tween(durationMillis = 320))
+                        },
+                        label = "appPhase",
+                    ) { current ->
+                        when (current) {
+                            AppPhase.SETUP -> OnboardingScreen()
+                            AppPhase.TOUR -> {
+                                val settingsViewModel = rememberSettingsViewModel()
+                                IntroTourContent(onFinish = settingsViewModel::setIntroSeen)
+                            }
+                            AppPhase.APP -> DestinationsNavHost(navGraph = NavGraphs.root)
+                        }
                     }
                     // The in-app splash sits on top once per launch, in the chosen theme, then fades into the app.
                     var showSplash by rememberSaveable { mutableStateOf(true) }

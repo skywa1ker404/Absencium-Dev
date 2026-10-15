@@ -59,6 +59,15 @@ object AppIcons {
         )
     }
 
+    val SkipNext: ImageVector by lazy {
+        glyph("SkipNext", "M6,18l8.5,-6L6,6v12zM16,6v12h2V6h-2z")
+    }
+
+    /** A circle with its right half cut out: the light and dark theme-mode glyph. */
+    val Contrast: ImageVector by lazy {
+        glyph("Contrast", "M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM12,20L12,4c4.42,0 8,3.58 8,8s-3.58,8 -8,8z")
+    }
+
     val ChevronRight: ImageVector by lazy {
         glyph(
             "ChevronRight",

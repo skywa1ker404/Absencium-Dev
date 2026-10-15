@@ -34,6 +34,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.absencium.app.ui.components.PillButton
 import com.absencium.app.ui.components.StepIndicator
 import com.absencium.app.ui.icons.AppIcons
+import com.absencium.app.ui.splash.ThemedStage
 import com.absencium.app.ui.theme.LocalQuality
 import kotlinx.coroutines.launch
 
@@ -89,6 +90,8 @@ fun IntroTourContent(onFinish: () -> Unit) {
 
     BackHandler(enabled = page > 0) { scope.launch { pagerState.animateScrollToPage(page - 1) } }
 
+    // Themed like the setup before it: the plain background, or the glass wallpaper with Liquid Glass on.
+    ThemedStage(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = onFinish) { Text(if (last) "Close" else "Skip") }
@@ -138,5 +141,6 @@ fun IntroTourContent(onFinish: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
     }
 }
