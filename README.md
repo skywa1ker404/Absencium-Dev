@@ -1,4 +1,14 @@
-Absencium
+
+<div align="center">
+
+<h1><strong>Absencium</strong></h1>
+
+<p><strong>Your student companion.</strong></p>
+
+<p>Missed-class notes · Attendance · Reminders · Calendar</p>
+
+</div>
+
 
 <p align="center">
   <img src=".github/hero.png" alt="Absencium — your student companion for academic life" width="100%">
@@ -105,9 +115,11 @@ The goal isn't to make another complicated productivity app. It's to make everyd
   <img src="https://img.shields.io/badge/⌂_OFFICIAL_WEBSITE-VISIT-777C6D?style=for-the-badge&labelColor=45483F" alt="Official Website">
 </a>
 <br>
-<a href="https://github.com/skywa1ker404/Absencium/releases/latest">
-  <img src=".github/badge_obtainium.png" alt="Get it on Obtainium" width="230">
+
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fadd%2Fhttps%3A%2F%2Fgithub.com%2Fskywa1ker404%2FAbsencium">
+  <img src=".github/badge_obtainium.png" alt="Get Absencium on Obtainium" width="230">
 </a>
+
 
 </div>
 
