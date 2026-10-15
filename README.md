@@ -94,27 +94,24 @@ The goal isn't to make another complicated productivity app. It's to make everyd
 📥 Get Absencium
 
 
+
 <div align="center">
 
 <a href="https://github.com/skywa1ker404/Absencium/releases/latest">
-  <img src="https://img.shields.io/badge/DOWNLOAD_LATEST_APK-Download-777C6D?style=for-the-badge&logo=android&logoColor=white" alt="Download Latest APK">
+  <img src="https://img.shields.io/badge/⬇_DOWNLOAD_LATEST_APK-GET_APK-777C6D?style=for-the-badge&labelColor=45483F" alt="Download Latest APK">
 </a>
-
-<br><br>
-
+<br>
 <a href="YOUR_WEBSITE_URL">
-  <img src="https://img.shields.io/badge/OFFICIAL_WEBSITE-Visit-777C6D?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Official Website">
+  <img src="https://img.shields.io/badge/⌂_OFFICIAL_WEBSITE-VISIT-777C6D?style=for-the-badge&labelColor=45483F" alt="Official Website">
 </a>
-
-<br><br>
-
+<br>
 <a href="https://github.com/skywa1ker404/Absencium/releases/latest">
-  <img src=".github/badge_obtainium.png" alt="Get Absencium on Obtainium" width="220">
+  <img src=".github/badge_obtainium.png" alt="Get it on Obtainium" width="230">
 </a>
 
 </div>
 
-
+ 
 > [!WARNING]
 Download APKs only from this repository or another distribution source explicitly linked by the project. Review release notes before installing updates.»
 
