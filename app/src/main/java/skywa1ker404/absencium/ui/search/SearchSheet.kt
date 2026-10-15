@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import skywa1ker404.absencium.ui.components.OverlayStage
+import skywa1ker404.absencium.ui.components.PopupShell
 import skywa1ker404.absencium.ui.components.sheetContainerColor
 import skywa1ker404.absencium.ui.components.sheetScrimColor
 import androidx.compose.runtime.LaunchedEffect
@@ -117,19 +118,12 @@ fun SearchSheet(
         }
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = sheetContainerColor(),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        scrimColor = sheetScrimColor(),
-    ) {
+    PopupShell(onDismissRequest = onDismiss, scrollable = false, dismissOnOutsideTap = true) {
         OverlayStage {
         Column(
             modifier = Modifier
                 .fillMaxHeight(0.9f)
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             AppTextField(

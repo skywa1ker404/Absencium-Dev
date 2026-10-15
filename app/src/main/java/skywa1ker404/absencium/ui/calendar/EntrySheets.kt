@@ -39,6 +39,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import skywa1ker404.absencium.ui.components.OverlayStage
+import skywa1ker404.absencium.ui.components.PopupShell
 import skywa1ker404.absencium.ui.components.sheetContainerColor
 import skywa1ker404.absencium.ui.components.sheetScrimColor
 import androidx.compose.runtime.getValue
@@ -112,20 +113,13 @@ fun AddEntrySheet(
     val canSave = title.isNotBlank() && !weightageInvalid && !rangeInvalid &&
         (type == EntryType.HOLIDAY || subjectId != null)
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = sheetContainerColor(),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        scrimColor = sheetScrimColor(),
-    ) {
+    PopupShell(onDismissRequest = onDismiss, scrollable = false, dismissOnOutsideTap = false) {
         OverlayStage {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 24.dp),
+                .padding(top = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
@@ -381,20 +375,13 @@ fun ExamDetailSheet(
     val colors = MaterialTheme.colorScheme
     var confirmDelete by remember { mutableStateOf(false) }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = sheetContainerColor(),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        scrimColor = sheetScrimColor(),
-    ) {
+    PopupShell(onDismissRequest = onDismiss, scrollable = false, dismissOnOutsideTap = true) {
         OverlayStage {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 24.dp),
+                .padding(top = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(exam.title, style = MaterialTheme.typography.headlineSmall)

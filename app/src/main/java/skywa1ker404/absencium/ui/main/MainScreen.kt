@@ -48,7 +48,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.DraftsScreenDestination
 import skywa1ker404.absencium.ui.capture.ImportKind
 import skywa1ker404.absencium.ui.capture.ImportPopup
 import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination
@@ -56,7 +55,6 @@ import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenD
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SubjectFolderScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.TimetableScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.data.db.ExamEntity
 import skywa1ker404.absencium.data.db.HolidayEntity
@@ -64,7 +62,10 @@ import skywa1ker404.absencium.ui.calendar.AddEntrySheet
 import skywa1ker404.absencium.ui.calendar.CalendarTab
 import skywa1ker404.absencium.ui.calendar.CalendarViewModel
 import skywa1ker404.absencium.ui.calendar.ExamDetailSheet
+import skywa1ker404.absencium.ui.components.AnimatedPopup
 import skywa1ker404.absencium.ui.components.AppCard
+import skywa1ker404.absencium.ui.calendar.TimetablePopup
+import skywa1ker404.absencium.ui.vault.DraftsPopup
 import skywa1ker404.absencium.ui.components.floatingGlass
 import skywa1ker404.absencium.ui.containerViewModel
 import skywa1ker404.absencium.ui.home.HomeTab
@@ -145,6 +146,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var addEntry by remember { mutableStateOf<AddEntryRequest?>(null) }
     var importKind by remember { mutableStateOf<ImportKind?>(null) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
+    var showTimetable by rememberSaveable { mutableStateOf(false) }
+    var showDrafts by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
     var editExam by remember { mutableStateOf<ExamEntity?>(null) }
@@ -236,7 +239,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onManageSubjects = { navigator.navigate(SubjectsScreenDestination) },
                             // Back from the Attendance tab returns here (the tab back handler goes to Home).
                             onOpenAttendance = { tab = TAB_ATTENDS },
-                            onOpenTimetable = { navigator.navigate(TimetableScreenDestination) },
+                            onOpenTimetable = { showTimetable = true },
                         )
 
                         current == TAB_ATTENDS -> CalendarTab(
@@ -246,7 +249,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             viewModel = calendarViewModel,
                             onOpenExam = { openExam = it },
                             onEditHoliday = { editHoliday = it },
-                            onOpenTimetable = { navigator.navigate(TimetableScreenDestination) },
+                            onOpenTimetable = { showTimetable = true },
                             threshold = settings.attendanceThresholdPercent,
                             onAddNotes = { subjectId, date -> addEntry = AddEntryRequest(subjectId, date) },
                         )
@@ -261,7 +264,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                                     contentPadding = contentPadding,
                                     onOpenFolder = { navigator.navigate(SubjectFolderScreenDestination(subjectId = it)) },
                                     onManageSubjects = { navigator.navigate(SubjectsScreenDestination) },
-                                    onOpenDrafts = { navigator.navigate(DraftsScreenDestination) },
+                                    onOpenDrafts = { showDrafts = true },
                                 )
                             }
                         }
@@ -322,7 +325,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 val actions = if (tab == TAB_ATTENDS) {
                     listOf(
                         FabAction("Add entry", AppIcons.Add) { fabOpen = false; showAddEntry = true },
-                        FabAction("Timetable", AppIcons.Schedule) { fabOpen = false; navigator.navigate(TimetableScreenDestination) },
+                        FabAction("Timetable", AppIcons.Schedule) { fabOpen = false; showTimetable = true },
                         FabAction("Import holidays", AppIcons.AutoAwesome) { fabOpen = false; importKind = ImportKind.HOLIDAYS },
                         FabAction("Import exam timetable", AppIcons.AutoAwesome) { fabOpen = false; importKind = ImportKind.EXAMS },
                     )
@@ -332,7 +335,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             fabOpen = false
                             addEntry = AddEntryRequest()
                         },
-                        FabAction("Drafts", AppIcons.Draft) { fabOpen = false; navigator.navigate(DraftsScreenDestination) },
+                        FabAction("Drafts", AppIcons.Draft) { fabOpen = false; showDrafts = true },
                     )
                 }
                 SlideAway(
@@ -369,131 +372,151 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     .align(Alignment.BottomCenter)
                     .padding(bottom = bottomInset + 16.dp),
             )
+
+            // Popups live in this layer, above the page, so frosted ones can blur the page behind them like the pill does.
+            val loaded = data
+            AnimatedPopup(if (showAddEntry && loaded != null) true else null) {
+                if (loaded != null) AddEntrySheet(
+                    subjects = loaded.subjects.filter { it.isActive },
+                    initialDate = now.toLocalDate(),
+                    onDismiss = { showAddEntry = false },
+                    onSaveExam = { subjectId, date, title, weightage, room, notes, priority ->
+                        calendarViewModel.addExam(subjectId, date, title, weightage, room, notes, priority)
+                        showAddEntry = false
+                    },
+                    onSaveHoliday = { start, end, title, autoSkip, priority ->
+                        calendarViewModel.addHolidayRange(start, end, title, autoSkip, priority)
+                        showAddEntry = false
+                    },
+                    onImportWithAi = {
+                        showAddEntry = false
+                        importKind = ImportKind.HOLIDAYS
+                    },
+                )
+            }
+
+            val examBeingEdited = editExam
+            val holidayBeingEdited = editHoliday
+            AnimatedPopup(if ((examBeingEdited != null || holidayBeingEdited != null) && loaded != null) true else null) {
+                if (loaded != null) AddEntrySheet(
+                    // The exam's own subject stays selectable even if it has since been made inactive.
+                    subjects = loaded.subjects.filter { it.isActive || it.id == examBeingEdited?.subjectId },
+                    initialDate = now.toLocalDate(),
+                    onDismiss = {
+                        editExam = null
+                        editHoliday = null
+                    },
+                    onSaveExam = { _, _, _, _, _, _, _ -> },
+                    onSaveHoliday = { _, _, _, _, _ -> },
+                    editExam = examBeingEdited,
+                    editHoliday = holidayBeingEdited,
+                    onUpdateExam = {
+                        calendarViewModel.updateExam(it)
+                        editExam = null
+                    },
+                    onUpdateHoliday = {
+                        calendarViewModel.updateHoliday(it)
+                        editHoliday = null
+                    },
+                )
+            }
+
+            val exam = openExam
+            AnimatedPopup(if (exam != null && loaded != null) exam else null) { shown ->
+                if (loaded != null) ExamDetailSheet(
+                    exam = shown,
+                    subjectName = loaded.subjects.firstOrNull { it.id == shown.subjectId }?.name ?: "Unknown subject",
+                    today = now.toLocalDate(),
+                    onDismiss = { openExam = null },
+                    onEdit = {
+                        editExam = shown
+                        openExam = null
+                    },
+                    onDelete = {
+                        calendarViewModel.deleteExam(shown)
+                        openExam = null
+                    },
+                )
+            }
+
+            AnimatedPopup(importKind) { kind ->
+                ImportPopup(
+                    kind = kind,
+                    onDismiss = { importKind = null },
+                    onOpenAiSettings = { importKind = null; navigator.navigate(AiSettingsScreenDestination) },
+                )
+            }
+
+            AnimatedPopup(addEntry) { request ->
+                AddEntryPopup(
+                    onDismiss = { addEntry = null },
+                    onSaved = { id ->
+                        addEntry = null
+                        navigator.navigate(NoteEditorScreenDestination(noteId = id))
+                    },
+                    onOpenAiSettings = { addEntry = null; navigator.navigate(AiSettingsScreenDestination) },
+                    initialSubjectId = request.subjectId,
+                    initialDate = request.date,
+                )
+            }
+
+            AnimatedPopup(if (showTimetable) true else null) {
+                TimetablePopup(
+                    onDismiss = { showTimetable = false },
+                    onManageSubjects = {
+                        showTimetable = false
+                        navigator.navigate(SubjectsScreenDestination)
+                    },
+                )
+            }
+
+            AnimatedPopup(if (showDrafts) true else null) {
+                DraftsPopup(
+                    onDismiss = { showDrafts = false },
+                    onOpenDraft = { draft ->
+                        showDrafts = false
+                        navigator.navigate(NewEntryScreenDestination(subjectId = draft.subjectId, draftId = draft.id))
+                    },
+                )
+            }
+
+            AnimatedPopup(if (showSearch) true else null) {
+                SearchSheet(
+                    calendar = loaded,
+                    onDismiss = { showSearch = false },
+                    onOpenNote = { note ->
+                        if (note.status == NoteStatus.DRAFT) {
+                            navigator.navigate(NewEntryScreenDestination(subjectId = note.subjectId, draftId = note.id))
+                        } else {
+                            navigator.navigate(NoteEditorScreenDestination(noteId = note.id))
+                        }
+                    },
+                    onOpenGuide = { guide ->
+                        openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+                    },
+                    onOpenExam = { openExam = it },
+                )
+            }
+
+            AnimatedPopup(if (showProfile) true else null) {
+                ProfileSheet(
+                    data = loaded,
+                    settings = settings,
+                    onDismiss = { showProfile = false },
+                    onSaveName = { settingsViewModel.setDisplayName(it) },
+                    onOpenAttendance = {
+                        showProfile = false
+                        tab = TAB_ATTENDS
+                    },
+                    onOpenSettings = {
+                        showProfile = false
+                        navigator.navigate(SettingsHubScreenDestination)
+                    },
+                )
+            }
         }
     }
-
-    val loaded = data
-    if (showAddEntry && loaded != null) {
-        AddEntrySheet(
-            subjects = loaded.subjects.filter { it.isActive },
-            initialDate = now.toLocalDate(),
-            onDismiss = { showAddEntry = false },
-            onSaveExam = { subjectId, date, title, weightage, room, notes, priority ->
-                calendarViewModel.addExam(subjectId, date, title, weightage, room, notes, priority)
-                showAddEntry = false
-            },
-            onSaveHoliday = { start, end, title, autoSkip, priority ->
-                calendarViewModel.addHolidayRange(start, end, title, autoSkip, priority)
-                showAddEntry = false
-            },
-            onImportWithAi = {
-                showAddEntry = false
-                importKind = ImportKind.HOLIDAYS
-            },
-        )
-    }
-
-    val examBeingEdited = editExam
-    val holidayBeingEdited = editHoliday
-    if ((examBeingEdited != null || holidayBeingEdited != null) && loaded != null) {
-        AddEntrySheet(
-            // The exam's own subject stays selectable even if it has since been made inactive.
-            subjects = loaded.subjects.filter { it.isActive || it.id == examBeingEdited?.subjectId },
-            initialDate = now.toLocalDate(),
-            onDismiss = {
-                editExam = null
-                editHoliday = null
-            },
-            onSaveExam = { _, _, _, _, _, _, _ -> },
-            onSaveHoliday = { _, _, _, _, _ -> },
-            editExam = examBeingEdited,
-            editHoliday = holidayBeingEdited,
-            onUpdateExam = {
-                calendarViewModel.updateExam(it)
-                editExam = null
-            },
-            onUpdateHoliday = {
-                calendarViewModel.updateHoliday(it)
-                editHoliday = null
-            },
-        )
-    }
-
-    val exam = openExam
-    if (exam != null && loaded != null) {
-        ExamDetailSheet(
-            exam = exam,
-            subjectName = loaded.subjects.firstOrNull { it.id == exam.subjectId }?.name ?: "Unknown subject",
-            today = now.toLocalDate(),
-            onDismiss = { openExam = null },
-            onEdit = {
-                editExam = exam
-                openExam = null
-            },
-            onDelete = {
-                calendarViewModel.deleteExam(exam)
-                openExam = null
-            },
-        )
-    }
-
-    importKind?.let { kind ->
-        ImportPopup(
-            kind = kind,
-            onDismiss = { importKind = null },
-            onOpenAiSettings = { importKind = null; navigator.navigate(AiSettingsScreenDestination) },
-        )
-    }
-
-    addEntry?.let { request ->
-        AddEntryPopup(
-            onDismiss = { addEntry = null },
-            onSaved = { id ->
-                addEntry = null
-                navigator.navigate(NoteEditorScreenDestination(noteId = id))
-            },
-            onOpenAiSettings = { addEntry = null; navigator.navigate(AiSettingsScreenDestination) },
-            initialSubjectId = request.subjectId,
-            initialDate = request.date,
-        )
-    }
-
-    if (showSearch) {
-        SearchSheet(
-            calendar = loaded,
-            onDismiss = { showSearch = false },
-            onOpenNote = { note ->
-                if (note.status == NoteStatus.DRAFT) {
-                    navigator.navigate(NewEntryScreenDestination(subjectId = note.subjectId, draftId = note.id))
-                } else {
-                    navigator.navigate(NoteEditorScreenDestination(noteId = note.id))
-                }
-            },
-            onOpenGuide = { guide ->
-                openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
-            },
-            onOpenExam = { openExam = it },
-        )
-    }
-
-    if (showProfile) {
-        ProfileSheet(
-            data = loaded,
-            settings = settings,
-            onDismiss = { showProfile = false },
-            onSaveName = { settingsViewModel.setDisplayName(it) },
-            onOpenAttendance = {
-                showProfile = false
-                tab = TAB_ATTENDS
-            },
-            onOpenSettings = {
-                showProfile = false
-                navigator.navigate(SettingsHubScreenDestination)
-            },
-        )
-    }
 }
-
 
 /**
  * One tab of the shell. A tab that is not showing keeps its state and its composition but is not drawn,

@@ -139,7 +139,12 @@ class SettingsRepository(context: Context) {
             themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode),
             // Before Liquid Glass became a toggle it was a theme of its own; that setting becomes the toggle on top of
             // the default theme, and Solid Accent (also gone) falls back to the default as well.
-            colorEngine = enumOrDefault(this[Keys.COLOR_ENGINE], defaults.colorEngine),
+            // Everforest is now the Default Theme, so anyone who had picked it as a preset lands on the Default Theme.
+            colorEngine = if (this[Keys.THEME_PRESET] == "EVERFOREST" && this[Keys.COLOR_ENGINE] == "PRESET") {
+                ColorEngine.DEFAULT_PALETTE
+            } else {
+                enumOrDefault(this[Keys.COLOR_ENGINE], defaults.colorEngine)
+            },
             liquidGlass = this[Keys.LIQUID_GLASS] ?: (this[Keys.COLOR_ENGINE] == "LIQUID_GLASS"),
             themePreset = enumOrDefault(this[Keys.THEME_PRESET], defaults.themePreset),
             frostedOverlays = this[Keys.FROSTED_OVERLAYS] ?: defaults.frostedOverlays,

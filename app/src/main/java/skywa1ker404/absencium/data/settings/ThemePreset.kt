@@ -4,7 +4,6 @@ package skywa1ker404.absencium.data.settings
 enum class ThemePreset {
     CATPPUCCIN,
     DRACULA,
-    EVERFOREST,
     GRUVBOX,
     NORD,
     ONE_DARK,

@@ -27,10 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.data.db.TimetableEntity
 import skywa1ker404.absencium.domain.hm
 import skywa1ker404.absencium.domain.timetableDays
@@ -38,7 +34,8 @@ import skywa1ker404.absencium.domain.parseTimeInput
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.PillButton
-import skywa1ker404.absencium.ui.components.ScreenScaffold
+import skywa1ker404.absencium.ui.components.PopupBody
+import skywa1ker404.absencium.ui.components.PopupShell
 import skywa1ker404.absencium.ui.components.SectionTitle
 import skywa1ker404.absencium.ui.containerViewModel
 import java.time.DayOfWeek
@@ -49,10 +46,9 @@ import java.util.Locale
 
 private fun DayOfWeek.full(): String = getDisplayName(TextStyle.FULL, Locale.getDefault())
 
-/** The weekly timetable: add and remove lecture slots per weekday. */
-@Destination<RootGraph>
+/** The weekly timetable as a popup: add, change and remove lecture slots per weekday. */
 @Composable
-fun TimetableScreen(navigator: DestinationsNavigator) {
+fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
     val viewModel = containerViewModel { CalendarViewModel(it) }
     val data by viewModel.data.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
@@ -67,11 +63,12 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
     // The saved lecture being changed, or null while adding a new one.
     var editing by remember { mutableStateOf<TimetableEntity?>(null) }
 
-    ScreenScaffold(title = "Timetable", onBack = { navigator.navigateUp() }) {
+    PopupShell(onDismissRequest = onDismiss, dismissOnOutsideTap = true) {
+    PopupBody(title = "Timetable", onClose = onDismiss) {
         val loaded = data
         if (loaded == null) {
             HintText("Loading...")
-            return@ScreenScaffold
+            return@PopupBody
         }
         val subjects = loaded.subjects.filter { it.isActive }
         val weekDays = loaded.timetableDays()
@@ -150,9 +147,9 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                     color = colors.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp),
                 )
-                PillButton(text = "Manage subjects", onClick = { navigator.navigate(SubjectsScreenDestination) })
+                PillButton(text = "Manage subjects", onClick = onManageSubjects)
             }
-            return@ScreenScaffold
+            return@PopupBody
         }
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -263,5 +260,6 @@ fun TimetableScreen(navigator: DestinationsNavigator) {
                 ) { Text("Cancel editing") }
             }
         }
+    }
     }
 }

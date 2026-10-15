@@ -125,7 +125,12 @@ fun AppCard(
             // Liquid Glass: the card is a pane of glass over the wallpaper, tinted with its own tonal colour.
             .then(if (cardBackdrop != null) Modifier.glassSurface(cardBackdrop, shape, container) else Modifier),
         shape = shape,
-        color = if (cardBackdrop != null) Color.Transparent else container,
+        // In a frosted popup the card is a see-through tonal fill, so the popup's glass shows through it.
+        color = when {
+            cardBackdrop != null -> Color.Transparent
+            LocalFrostedPopup.current -> container.copy(alpha = container.alpha * 0.62f)
+            else -> container
+        },
     ) {
         HostAnimatesSize {
             Column(modifier = Modifier.then(clickModifier).padding(20.dp), content = content)
@@ -169,11 +174,14 @@ fun ScreenScaffold(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                    modifier = Modifier.floatingGlass(
-                        backdrop = backdrop,
-                        shape = RectangleShape,
-                        tint = colors.background,
-                        bordered = false,
+                    // No solid band: a soft fade of the page colour, so scrolling content dissolves under the title
+                    // instead of meeting a hard edge. The same fade as the Home, Calendar and Vault header.
+                    modifier = Modifier.background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            0f to colors.background.copy(alpha = 0.9f),
+                            0.7f to colors.background.copy(alpha = 0.55f),
+                            1f to Color.Transparent,
+                        ),
                     ),
                 )
             },

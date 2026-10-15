@@ -43,6 +43,10 @@ fun Modifier.floatingGlass(
     shape: Shape,
     tint: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
     bordered: Boolean = true,
+    /** Large surfaces (popups) skip the lens: it would bend the whole screen behind them on every frame of their motion. */
+    lens: Boolean = true,
+    /** A denser veil for surfaces that carry a lot of text, so it reads over busy content. */
+    denseVeil: Boolean = false,
 ): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     if (backdrop == null) {
@@ -53,28 +57,30 @@ fun Modifier.floatingGlass(
     // The glass takes the colours of the active theme: a veil of the surface colour, nudged toward its accent container.
     val scheme = MaterialTheme.colorScheme
     val veilBase = lerp(scheme.surface, scheme.primaryContainer, 0.18f)
-    val veil = veilBase.copy(alpha = if (isDark) 0.42f else 0.5f)
+    val veil = veilBase.copy(alpha = if (denseVeil) (if (isDark) 0.62f else 0.72f) else if (isDark) 0.42f else 0.5f)
     val blurDp = LocalGlassBlur.current
     // Lens refraction needs rounded corners and Android 13 (a runtime shader); a plain rectangle only blurs.
-    val lens = quality.glassLens && shape is CornerBasedShape && isRuntimeShaderSupported()
+    val useLens = lens && quality.glassLens && shape is CornerBasedShape && isRuntimeShaderSupported()
     val rim = if (bordered && !quality.glassHighlight) {
         Modifier.border(1.dp, Color.White.copy(alpha = if (isDark) 0.16f else 0.55f), shape)
     } else {
         Modifier
     }
-    return this
+    // Without the lens, only a blur is drawn, and a blur spills past rounded corners as a square patch. Clipping the
+    // whole surface to its shape keeps the corners round (the drop shadow is given up with it).
+    return (if (useLens) this else this.clip(shape))
         .drawBackdrop(
             backdrop = backdrop,
             shape = { shape },
             effects = {
                 vibrancy()
                 if (blurDp.value > 0f) blur(blurDp.toPx())
-                if (lens) {
+                if (useLens) {
                     lens(refractionHeight = 12.dp.toPx(), refractionAmount = 24.dp.toPx())
                 }
             },
             highlight = if (bordered && quality.glassHighlight) ({ Highlight.Default }) else null,
-            shadow = if (bordered && quality.glassHighlight) ({ Shadow.Default }) else null,
+            shadow = if (bordered && quality.glassHighlight && useLens) ({ Shadow.Default }) else null,
             // Plain glass: no colour of its own, only a faint light or dark veil so it reads on any content.
             onDrawSurface = { drawRect(veil) },
         )
@@ -91,7 +97,9 @@ val LocalCardBackdrop = androidx.compose.runtime.staticCompositionLocalOf<LayerB
 @Composable
 fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, tintAlpha: Float = 0.55f): Modifier {
     val blurDp = LocalGlassBlur.current
-    return this.drawBackdrop(
+    // Clipped to its own shape: the blur otherwise spills past rounded corners and shows as a square, pointed patch
+    // around every card and button. Cards sit flat on the wallpaper, so they carry no drop shadow.
+    return this.clip(shape).drawBackdrop(
         backdrop = backdrop,
         shape = { shape },
         effects = {
@@ -99,6 +107,7 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
             if (blurDp.value > 0f) blur(blurDp.toPx())
         },
         highlight = { Highlight.Default },
+        shadow = null,
         onDrawSurface = { drawRect(tint.copy(alpha = tintAlpha)) },
     )
 }
@@ -163,16 +172,12 @@ fun GlassStage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
 val LocalFrostedOverlays = androidx.compose.runtime.staticCompositionLocalOf { false }
 
 /**
- * The stage for a sheet or dialog. Frosted overlays get the glass stage; otherwise the content sits on the plain
- * surface, with no glass anywhere inside, so it stays easy to read.
+ * The content area of a popup. The popup itself is the pane of glass (see [PopupShell]), so what sits inside it is flat:
+ * cards and controls are plain tonal fills, never a second layer of glass over the first.
  */
 @Composable
 fun OverlayStage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    if (LocalFrostedOverlays.current) {
-        GlassStage(modifier = modifier, content = content)
-    } else {
-        CompositionLocalProvider(LocalCardBackdrop provides null) { Box(modifier = modifier) { content() } }
-    }
+    CompositionLocalProvider(LocalCardBackdrop provides null) { Box(modifier = modifier) { content() } }
 }
 
 /**

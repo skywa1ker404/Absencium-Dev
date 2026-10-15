@@ -16,30 +16,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.data.db.NoteEntity
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.HintText
-import skywa1ker404.absencium.ui.components.ScreenScaffold
+import skywa1ker404.absencium.ui.components.PopupBody
+import skywa1ker404.absencium.ui.components.PopupShell
 import skywa1ker404.absencium.ui.containerViewModel
 
-/** Entries that were saved with Save to Drafts. Tap one to keep editing it. */
-@Destination<RootGraph>
+/** Entries that were saved with Save to Drafts, as a popup. Tap one to keep editing it. */
 @Composable
-fun DraftsScreen(navigator: DestinationsNavigator) {
+fun DraftsPopup(onDismiss: () -> Unit, onOpenDraft: (NoteEntity) -> Unit) {
     val viewModel = containerViewModel { VaultViewModel(it) }
     val data by viewModel.data.collectAsStateWithLifecycle()
     var toDelete by remember { mutableStateOf<NoteEntity?>(null) }
     val colors = MaterialTheme.colorScheme
 
-    ScreenScaffold(title = "Drafts", onBack = { navigator.navigateUp() }) {
+    PopupShell(onDismissRequest = onDismiss, dismissOnOutsideTap = true) {
+    PopupBody(title = "Drafts", onClose = onDismiss) {
         val loaded = data
         if (loaded == null) {
             HintText("Loading...")
-            return@ScreenScaffold
+            return@PopupBody
         }
         val names = loaded.subjects.associate { it.id to it.name }
         if (loaded.drafts.isEmpty()) {
@@ -48,9 +45,7 @@ fun DraftsScreen(navigator: DestinationsNavigator) {
         loaded.drafts.forEach { draft ->
             AppCard(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    navigator.navigate(NewEntryScreenDestination(subjectId = draft.subjectId, draftId = draft.id))
-                },
+                onClick = { onOpenDraft(draft) },
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
@@ -69,6 +64,7 @@ fun DraftsScreen(navigator: DestinationsNavigator) {
                 }
             }
         }
+    }
     }
 
     val pending = toDelete

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import skywa1ker404.absencium.display.RefreshRatePreference
 import skywa1ker404.absencium.ui.splash.AppSplash
 import skywa1ker404.absencium.ui.about.IntroTourContent
+import skywa1ker404.absencium.ui.navigation.ScreenTransitions
 import skywa1ker404.absencium.ui.onboarding.OnboardingScreen
 import skywa1ker404.absencium.ui.settings.rememberSettingsViewModel
 import skywa1ker404.absencium.ui.rememberMainViewModel
@@ -84,7 +85,7 @@ class MainActivity : ComponentActivity() {
                                 val settingsViewModel = rememberSettingsViewModel()
                                 IntroTourContent(onFinish = settingsViewModel::setIntroSeen)
                             }
-                            AppPhase.APP -> DestinationsNavHost(navGraph = NavGraphs.root)
+                            AppPhase.APP -> DestinationsNavHost(navGraph = NavGraphs.root, defaultTransitions = ScreenTransitions)
                         }
                     }
                     // The in-app splash sits on top once per launch, in the chosen theme, then fades into the app.

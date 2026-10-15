@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import skywa1ker404.absencium.ui.components.OverlayStage
+import skywa1ker404.absencium.ui.components.PopupShell
 import skywa1ker404.absencium.ui.components.sheetContainerColor
 import skywa1ker404.absencium.ui.components.sheetScrimColor
 import androidx.compose.runtime.getValue
@@ -67,20 +68,13 @@ fun ProfileSheet(
     var name by remember(settings.displayName) { mutableStateOf(settings.displayName) }
     val threshold = settings.attendanceThresholdPercent
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = sheetContainerColor(),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        scrimColor = sheetScrimColor(),
-    ) {
+    PopupShell(onDismissRequest = onDismiss, scrollable = false, dismissOnOutsideTap = true) {
         OverlayStage {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 24.dp),
+                .padding(top = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {

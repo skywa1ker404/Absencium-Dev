@@ -36,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -69,6 +70,7 @@ import skywa1ker404.absencium.data.settings.VisualQuality
 import skywa1ker404.absencium.ui.AiKeyViewModel
 import skywa1ker404.absencium.ui.REQUIRES_ANDROID_12
 import skywa1ker404.absencium.ui.StorageViewModel
+import skywa1ker404.absencium.ui.components.AnimatedPopup
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.ExpandChevron
 import skywa1ker404.absencium.ui.components.HintText
@@ -98,6 +100,7 @@ import skywa1ker404.absencium.ui.settings.aiReady
 import skywa1ker404.absencium.ui.settings.rememberSettingsViewModel
 import skywa1ker404.absencium.ui.splash.AbsenciumMark
 import skywa1ker404.absencium.ui.splash.ThemedStage
+import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import skywa1ker404.absencium.ui.theme.LocalGlassEnabled
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import skywa1ker404.absencium.ui.theme.isDarkTheme
@@ -283,9 +286,10 @@ fun OnboardingScreen() {
             onSkip = { showSkipDialog = true },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
-    }
 
-    if (showSkipDialog) {
+        // The skip question is a popup in this screen's own layer, so it can frost the page behind it.
+        CompositionLocalProvider(LocalBackdrop provides backdrop) {
+        AnimatedPopup(if (showSkipDialog) true else null) {
         PopupShell(onDismissRequest = { showSkipDialog = false }) {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text("Skip the optional steps?", style = MaterialTheme.typography.headlineSmall)
@@ -308,6 +312,8 @@ fun OnboardingScreen() {
                     )
                 }
             }
+        }
+        }
         }
     }
 }

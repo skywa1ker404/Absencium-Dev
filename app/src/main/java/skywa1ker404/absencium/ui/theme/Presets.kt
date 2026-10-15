@@ -21,56 +21,14 @@ class ThemePalette(
 
 private fun c(hex: Long) = Color(0xFF000000 or hex)
 
-/** The plain default theme: the four olive and grey tones, adapted for light and dark. */
+/** The default theme: Everforest, medium contrast, in its dark and light variants (colours from Everforest's palette.md). */
 object DefaultPalette {
-    private val Olive = c(0x777C6D)
-    private val Sage = c(0xB7B89F)
-    private val Silver = c(0xCBCBCB)
-    private val Paper = c(0xEEEEEE)
-
-    val light = PaletteVariant(
-        background = Paper,
-        text = lerp(Olive, Color.Black, 0.78f),
-        textMuted = lerp(Olive, Color.Black, 0.35f),
-        outline = Olive,
-        primary = lerp(Olive, Color.Black, 0.2f),
-        secondary = Olive,
-        tertiary = lerp(Sage, Color.Black, 0.4f),
-        error = c(0xB3261E),
-        primaryContainer = Sage,
-        secondaryContainer = Silver,
-        surfaces = listOf(
-            lerp(Paper, Silver, 0.3f),
-            lerp(Paper, Silver, 0.55f),
-            Silver,
-            lerp(Silver, Sage, 0.35f),
-        ),
-    )
-
-    private val darkBackground = lerp(Color.Black, Olive, 0.14f)
-
-    val dark = PaletteVariant(
-        background = darkBackground,
-        text = Paper,
-        textMuted = Silver,
-        outline = lerp(Olive, Sage, 0.3f),
-        primary = Sage,
-        secondary = Silver,
-        tertiary = lerp(Sage, Paper, 0.4f),
-        error = c(0xF2B8B5),
-        primaryContainer = lerp(darkBackground, Olive, 0.55f),
-        secondaryContainer = lerp(darkBackground, Olive, 0.3f),
-        surfaces = listOf(
-            lerp(darkBackground, Olive, 0.12f),
-            lerp(darkBackground, Olive, 0.2f),
-            lerp(darkBackground, Olive, 0.28f),
-            lerp(darkBackground, Olive, 0.36f),
-        ),
-    )
+    val light: PaletteVariant get() = Everforest.light!!
+    val dark: PaletteVariant get() = Everforest.dark
 }
 
 /**
- * Colours are the schemes' published values: Catppuccin palette.json, Dracula README, Everforest palette.md,
+ * Colours are the schemes' published values: Catppuccin palette.json, Dracula README,
  * Gruvbox gruvbox.vim, Nord's colour page, onedark.nvim, poimandres.nvim, Rosé Pine's neovim palette and
  * tokyonight.nvim. Nord, Dracula and Poimandres have no official light scheme in those sources; Nord's light
  * variant uses its Snow Storm colours as backgrounds, Dracula and Poimandres stay dark.
@@ -78,7 +36,6 @@ object DefaultPalette {
 fun ThemePreset.palette(): ThemePalette = when (this) {
     ThemePreset.CATPPUCCIN -> Catppuccin
     ThemePreset.DRACULA -> Dracula
-    ThemePreset.EVERFOREST -> Everforest
     ThemePreset.GRUVBOX -> Gruvbox
     ThemePreset.NORD -> Nord
     ThemePreset.ONE_DARK -> OneDark
