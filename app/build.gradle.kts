@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.absencium.app"
+    namespace = "skywa1ker404.absencium"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.absencium.app"
+        applicationId = "skywa1ker404.absencium"
         // Android 8.0. Monet (dynamic color) and Liquid Glass (RenderEffect blur)
         // need Android 12 (API 31) and are disabled below that at runtime.
         minSdk = 26

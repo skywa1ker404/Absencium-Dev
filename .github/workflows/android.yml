@@ -54,8 +54,8 @@ jobs:
         run: |
           # The application ID and database name are Absencium's identity (docs/IDENTITY.md). Changing them
           # needs an explicit migration plan, so the build refuses to continue if either one moved.
-          grep -q 'applicationId = "com.absencium.app"' app/build.gradle.kts || { echo "::error::applicationId changed. See docs/IDENTITY.md"; exit 1; }
-          grep -q 'DATABASE_NAME = "Absencium.db"' app/src/main/java/com/absencium/app/data/db/AbsenciumDatabase.kt || { echo "::error::Database name changed. See docs/IDENTITY.md"; exit 1; }
+          grep -q 'applicationId = "skywa1ker404.absencium"' app/build.gradle.kts || { echo "::error::applicationId changed. See docs/IDENTITY.md"; exit 1; }
+          grep -q 'DATABASE_NAME = "Absencium.db"' app/src/main/java/skywa1ker404/absencium/data/db/AbsenciumDatabase.kt || { echo "::error::Database name changed. See docs/IDENTITY.md"; exit 1; }
 
       - name: Restore the signing key from secrets (when set)
         env:

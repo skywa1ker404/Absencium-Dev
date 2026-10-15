@@ -6,7 +6,7 @@ application ID or the database name moved.
 
 | Identifier | Value | Where |
 | --- | --- | --- |
-| Application ID and namespace | `com.absencium.app` | `app/build.gradle.kts` |
+| Application ID and namespace | `skywa1ker404.absencium` | `app/build.gradle.kts` |
 | Launcher label | `Absencium` | `res/values/strings.xml` |
 | Database file | `Absencium.db` | `AbsenciumDatabase.DATABASE_NAME` |
 | Settings store | `absencium_settings` (DataStore) | `SettingsRepository` |
@@ -31,3 +31,9 @@ installed side by side) and does not read their data.
 Write the plan here first: how the old data is carried over (export and import, or a one-off migration app), what
 happens to installs that cannot be updated in place, and how users are told. Then change the identifier and update the
 CI guard in the same commit.
+
+## Package change before release
+
+The application ID and package were changed once, from `com.absencium.app` to `skywa1ker404.absencium`, before any public
+release. A phone that has the older build installed treats this as a different app: install this one next to it, and the
+old one can be removed. From here on the ID stays fixed (see the table above); the Room schema is still version 1.

@@ -1,0 +1,98 @@
+package skywa1ker404.absencium.ui.settings
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import skywa1ker404.absencium.AppContainer
+import skywa1ker404.absencium.appContainer
+import skywa1ker404.absencium.data.ai.AiProvider
+import skywa1ker404.absencium.data.ai.ApiStyle
+import skywa1ker404.absencium.data.settings.AppSettings
+import skywa1ker404.absencium.data.settings.ColorEngine
+import skywa1ker404.absencium.data.settings.SettingsRepository
+import skywa1ker404.absencium.data.settings.ThemeMode
+import skywa1ker404.absencium.data.settings.ThemePreset
+import skywa1ker404.absencium.data.settings.VisualQuality
+import skywa1ker404.absencium.logging.DebugLogger
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+class SettingsViewModel(private val repository: SettingsRepository) : ViewModel() {
+
+    val settings: StateFlow<AppSettings> = repository.settings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings())
+
+    fun setDisplayName(value: String) = launch { repository.setDisplayName(value) }
+
+    fun setThemeMode(mode: ThemeMode) = launch { repository.setThemeMode(mode) }
+
+    fun setColorEngine(engine: ColorEngine) = launch { repository.setColorEngine(engine) }
+
+    fun setThemePreset(preset: ThemePreset) = launch {
+        repository.setThemePreset(preset)
+        DebugLogger.i("Theme", "Theme preset set to ${preset.name}")
+    }
+
+    fun setIntroSeen() = launch { repository.setIntroSeen(true) }
+
+    fun setLiquidGlass(value: Boolean) = launch { repository.setLiquidGlass(value) }
+
+    fun setFrostedOverlays(value: Boolean) = launch { repository.setFrostedOverlays(value) }
+
+    fun setGlassBlur(dp: Int) = launch { repository.setGlassBlur(dp) }
+
+    fun setVisualQuality(value: VisualQuality) = launch {
+        repository.setVisualQuality(value)
+        DebugLogger.i("Quality", "Visual quality set to ${value.name}")
+    }
+
+    fun setAttendanceThreshold(percent: Int) = launch { repository.setAttendanceThreshold(percent) }
+
+    fun setFocusGraceMinutes(minutes: Int) = launch { repository.setFocusGraceMinutes(minutes) }
+
+    fun setExamModeAutoSilence(value: Boolean) = launch { repository.setExamModeAutoSilence(value) }
+
+    fun setSaturdayHoliday(value: Boolean) = launch { repository.setSaturdayHoliday(value) }
+
+    fun setSundayHoliday(value: Boolean) = launch { repository.setSundayHoliday(value) }
+
+    fun setAskAiEnabled(value: Boolean) = launch { repository.setAskAiEnabled(value) }
+
+    fun setAiConnection(provider: AiProvider, baseUrl: String, model: String, style: ApiStyle) = launch {
+        repository.setAiConnection(provider, baseUrl, model, style)
+        DebugLogger.i("AI", "AI connection saved: provider=${provider.name} url=$baseUrl model=$model style=${style.name}")
+    }
+
+    fun setMomentumTrackerEnabled(value: Boolean) = launch { repository.setMomentumTrackerEnabled(value) }
+
+    fun setSemesterManagerEnabled(value: Boolean) = launch { repository.setSemesterManagerEnabled(value) }
+
+    fun setLowStorageCompressorEnabled(value: Boolean) =
+        launch { repository.setLowStorageCompressorEnabled(value) }
+
+    fun completeOnboarding() = launch {
+        repository.setOnboardingComplete(true)
+        DebugLogger.i("Onboarding", "Onboarding finished")
+    }
+
+    private fun launch(block: suspend () -> Unit) {
+        viewModelScope.launch { block() }
+    }
+}
+
+private class SettingsViewModelFactory(private val container: AppContainer) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T =
+        SettingsViewModel(container.settingsRepository) as T
+}
+
+@Composable
+fun rememberSettingsViewModel(): SettingsViewModel {
+    val container = LocalContext.current.appContainer
+    return viewModel(factory = SettingsViewModelFactory(container))
+}
