@@ -1,168 +1,220 @@
-# Absencium
+Absencium
 
-An offline-first Android companion for students. Absencium keeps attendance, timetable, exams, notes, and spaced-repetition recall in a single local app, with no account, no cloud service, and no telemetry.
+<p align="center">
+  <img src=".github/hero.png" alt="Absencium — your student companion for academic life" width="100%">
+</p><p align="center">
+  <strong>Less academic chaos. More getting your stuff together.</strong>
+</p><p align="center">
+  A native Android student companion for notes, attendance, assignments, reminders and everything in between.
+</p><p align="center">
+  <a href="https://www.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat&logo=android&logoColor=white" alt="Android"></a>
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white" alt="Kotlin"></a>
+  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose"></a>
+  <a href="https://github.com/skywa1ker404/Absencium"><img src="https://img.shields.io/badge/Project-Absencium-777C6D?style=flat&logo=github&logoColor=white" alt="Absencium"></a>
+</p><p align="center">
+  <a href="https://github.com/skywa1ker404/Absencium/stargazers"><img src="https://img.shields.io/github/stars/skywa1ker404/Absencium?style=flat&logo=github&color=yellow" alt="GitHub Stars"></a>
+  <a href="https://github.com/skywa1ker404/Absencium/issues"><img src="https://img.shields.io/github/issues/skywa1ker404/Absencium?style=flat&logo=github&color=blue" alt="Open Issues"></a>
+  <a href="https://github.com/skywa1ker404/Absencium/releases"><img src="https://img.shields.io/github/v/release/skywa1ker404/Absencium?style=flat&logo=github&label=Latest%20Release" alt="Latest Release"></a>
+</p><p align="center">
+  <a href="https://www.buymeachai.in/skywa1ker404"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Chai-Support%20my%20work-C59B75?style=flat&logo=buymeacoffee&logoColor=white" alt="Buy Me a Chai"></a>
+</p>Absencium is a student-focused Android app I'm building to make academic life a little less chaotic.
 
-**Status:** early development. The foundation (logging, local database, notes storage) is built. The user-facing screens are not built yet. See [Project status](#project-status).
+Missed a class? Forgot an assignment? Can't remember where you saved those notes? Yeah, same kind of problems I'm trying to solve.
 
-## Contents
+The idea is to bring your academic essentials together in one place, with a clean native Android interface and a focus on keeping your information under your control.
 
-- [Design principles](#design-principles)
-- [Planned features](#planned-features)
-- [Project status](#project-status)
-- [Technology](#technology)
-- [Compatibility](#compatibility)
-- [Project structure](#project-structure)
-- [Data and storage](#data-and-storage)
-- [Building](#building)
-- [Debug logging](#debug-logging)
-- [Documentation](#documentation)
-- [License](#license)
+Built by a student, for students. ☕
 
-## Design principles
+«[!NOTE]
+Absencium is an independent project and is not affiliated with any educational institution. Features described below may be planned, under development, or available depending on the current build.»
 
-- **Offline first.** Everything works without a network connection. There is no cloud dependency and no telemetry.
-- **Local ownership of data.** All records live in one local database. Notes and media live in a folder the user chooses.
-- **Quiet by default.** No notification spam. Interface elements appear only when they are relevant, such as exam banners within 48 hours of an exam or attendance warnings near the chosen threshold.
-- **Optional extras stay optional.** The Ask AI assistant uses the user's own API key and can be skipped. The app is fully usable without it.
+---
 
-## Planned features
+✨ Features
 
-| Area | Highlights |
-| --- | --- |
-| Onboarding | A required first-launch wizard for theme, color scheme, and notes storage location. A skippable step for the optional AI key and optional modules. |
-| Home dashboard | Attendance gauge with a safe-margin forecast, next lecture, exam countdowns, a 10-minute daily study timer, a compact daily recall card, and global search across notes, handwritten pages, and PDF titles. |
-| Notes vault | Subject folders, a Finished archive, a Guides and Question Banks folder for PDFs, audio lecture memos with timestamp bookmarks, a focus guard that discourages leaving notes mid-session, and a contextual Ask AI drawer. |
-| Calendar and attendance | One-tap present, absent, or cancelled logging. Weekend and holiday auto-skip. Exam badges on a monthly grid with a detail drawer and an Emergency Cram Mode. |
-| Profile | Per-subject attendance records and safety graphs, study and recall streaks, recall history, AI query history with links back to source notes, and a post-study category log. |
-| Appearance | Light, dark OLED, and system-following themes. Solid accent, Material You wallpaper colors, or a translucent blur surface style. |
-| Settings | Four sections: General, Appearance, Storage and Data, and AI and Integrations. |
-| Optional modules | Semester archive, low-storage media compressor, and a momentum and consistency tracker. All off by default. |
+🏠 Dashboard
 
-The complete product specification is in [docs/SPECIFICATION.md](docs/SPECIFICATION.md).
+A little summary of everything important, helping you keep track of your attendance, upcoming work and academic reminders.
 
-## Project status
+📚 Vault
 
-| Module | Status |
-| --- | --- |
-| Project setup and continuous integration | Done |
-| Debug file logger | Done |
-| Local database (`Absencium.db`) | Done |
-| Notes storage layer (app files or a chosen folder) | Done |
-| Onboarding wizard and Settings hub | Not started |
-| Home dashboard | Not started |
-| Notes vault | Not started |
-| Calendar and attendance | Not started |
-| Profile hub | Not started |
-| Optional modules | Not started |
+Keep missed-class notes organized by subject and date. Write your own notes or store photos of notebook pages and study material.
 
-Detailed status, decisions, and next steps are in [docs/PROGRESS.md](docs/PROGRESS.md).
+Optional AI-assisted image-to-text tools are part of the broader project vision, where supported and configured.
 
-## Technology
+📊 Attendance
 
-| Component | Version |
-| --- | --- |
-| Language | Kotlin 2.4.10 |
-| UI | Jetpack Compose (UI and Foundation 1.12.1) with Material 3 1.4.0 |
-| Local database | Room 2.8.5, with KSP 2.3.11 |
-| Asynchronous work | kotlinx.coroutines 1.11.0 |
-| Folder access | AndroidX DocumentFile 1.1.0 (Storage Access Framework) |
-| Build | Android Gradle Plugin 9.4.0, Gradle 9.8.1, JDK 17 |
+Mark yourself present or absent, review your attendance history and keep an eye on your attendance percentage.
 
-## Identity and upgrades
+Weekends are treated as holidays in the attendance logic.
 
-Absencium is its own app: application ID `com.absencium.app`, database `Absencium.db`. Every APK is signed with the
-same key and the database only ever changes through versioned Room migrations, so an update keeps the user's data.
-See [docs/IDENTITY.md](docs/IDENTITY.md) and [docs/SIGNING.md](docs/SIGNING.md). CI refuses to build if the identity
-or the database schema changes without a version bump.
+⏰ Reminders & Tasks
 
-## Compatibility
+Keep track of assignments, homework, deadlines and other academic tasks. Set reminders so important dates don't get buried under everything else.
 
-- Minimum supported version: Android 8.0 (API 26).
-- Compile SDK 37, target SDK 36.
-- Material You wallpaper colors and the blur surface style require Android 12 (API 31) or higher. They are planned to be shown as unavailable on earlier versions.
+🗓️ Calendar
 
-## Project structure
+See upcoming holidays and manage your own holiday list, including unexpected college closures due to weather, strikes or other events.
 
-```
-app/src/main/java/com/absencium/app/
-  AbsenciumApp.kt          Application entry point; starts the logger and startup checks
-  MainActivity.kt           Single activity hosting the Compose UI
-  logging/
-    DebugLogger.kt          File logger, crash capture, lifecycle logging
-  data/
-    db/
-      Entities.kt           Table definitions
-      Daos.kt               Queries
-      Converters.kt         Date and time converters
-      AbsenciumDatabase.kt  Database class and open verification
-    storage/
-      NotesStorageSettings.kt   Remembers the storage choice and folder permission
-      NotesStorage.kt           Resolves the notes root folder
-      StorageFolder.kt          Folder abstraction for app files and chosen folders
-docs/
-  SPECIFICATION.md          Product specification
-  PROGRESS.md               Status, decisions, and how to resume work
-.github/workflows/
-  android.yml               Continuous integration build
-```
+📝 Drafts
 
-## Data and storage
+Save unfinished entries and return to them later instead of losing work when leaving the editor.
 
-### Database
+🎨 Personalization
 
-A single Room database named `Absencium.db` holds all structured data:
+Make the app feel like yours with custom color schemes, light and dark appearances, and a carefully designed Material 3 Expressive interface.
 
-`Subjects_Table`, `Attendance_Table`, `Holidays_Table`, `Exams_Table`, `Timetable_Table`, `Notes_Table`, `Guides_Table`, `Audio_Memos_Table`, `Recall_Quiz_Table`, `AI_History_Table`, `User_Stats_Table`, `Momentum_Log_Table`
+🪄 Modern Android design
 
-Dates and times are stored as ISO-8601 text. A subject that still has linked records cannot be deleted. Audio memos and recall questions are removed together with their note. AI history entries are kept if their source note is deleted.
+Expressive shapes, pill-shaped navigation, thoughtful animations and a distinctive visual identity inspired by modern Android design.
 
-### Notes storage
+📱 Offline-first approach
 
-The user chooses one of two locations during onboarding:
+Everyday academic tools should remain useful without requiring a constant internet connection. Optional online features may need connectivity.
 
-- **App files (default):** `Android/data/com.absencium.app/files/notes`. No permission is required.
-- **A chosen folder:** selected through the Android system folder picker. Read and write access is stored so it survives restarts.
+---
 
-## Building
+🎨 Design philosophy
 
-### Continuous integration
+Absencium is built around the idea that a student organizer should feel calm, useful and genuinely nice to use.
 
-Every push to `main` runs the workflow in `.github/workflows/android.yml`. It builds the debug APK with `./gradlew assembleDebug` and uploads it as the `absencium-debug-apk` artifact on the workflow run. If the build fails, the last 200 lines of Gradle output are posted as a comment on the commit.
+- Native Android development with Kotlin and Jetpack Compose.
+- Material 3 Expressive-inspired shapes, components and motion.
+- A signature pill-based navigation experience.
+- Custom themes and carefully chosen color palettes.
+- A focus on usability rather than adding features just for the sake of it.
 
-### Local build
+The goal isn't to make another complicated productivity app. It's to make everyday student life easier to manage.
 
-Requirements:
+---
 
-- JDK 17
-- Android SDK with platform 37 and build tools 36.0.0
+📥 Download
 
-```
-./gradlew assembleDebug
-```
+Official source: "Absencium on GitHub" (https://github.com/skywa1ker404/Absencium)
 
-The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
+Check the "Releases page" (https://github.com/skywa1ker404/Absencium/releases) for published builds.
 
-## Debug logging
+If no release is available yet, the app may still be under development. Follow the repository for updates.
 
-The app writes a running log to:
+«[!WARNING]
+Download APKs only from this repository or another distribution source explicitly linked by the project. Review release notes before installing updates.»
 
-```
-Android/data/com.absencium.app/files/debug.log
-```
+---
 
-The log records unhandled exceptions with full stack traces, activity lifecycle events, database open and migration results, and the notes storage state. When the file passes 2 MB it is moved to `debug.log.1` at the next launch and a fresh file is started.
+🛠️ Technology
 
-On Android 11 and later, most file managers cannot open the `Android/data` folder. Use `adb pull` to retrieve the file:
+The project architecture is based on the following technologies:
 
-```
-adb pull /sdcard/Android/data/com.absencium.app/files/debug.log
-```
+- Kotlin — primary programming language.
+- Jetpack Compose — declarative native Android UI.
+- Material 3 — UI components and theming.
+- Room — local database.
+- DataStore — persistent preferences.
+- Coroutines & Flow — asynchronous operations and reactive state.
+- MVVM and repositories — separation of UI, business logic and data access.
 
-## Documentation
+The exact implementation may evolve during development.
 
-- [Product specification](docs/SPECIFICATION.md)
-- [Progress and resume guide](docs/PROGRESS.md)
+---
 
-## License
+🔒 Privacy
 
-No license has been specified yet.
+Your notes, attendance records and academic information are personal.
+
+Absencium is designed with a local-first approach, aiming to keep everyday data on your device without requiring a cloud account.
+
+- No advertising or telemetry is intended.
+- No mandatory cloud account is intended.
+- Optional AI integrations may communicate with external services when used.
+- API keys and other secrets should be handled securely.
+- Features that require online services may process the information you choose to send.
+
+Review the documentation and current implementation before using optional integrations with sensitive information.
+
+---
+
+🗺️ Roadmap
+
+The broader vision for Absencium includes:
+
+- [ ] Refine the dashboard and academic overview.
+- [ ] Improve subject-based vaults and note management.
+- [ ] Complete attendance history and analytics.
+- [ ] Improve reminders, assignments and task handling.
+- [ ] Expand editable holiday and calendar management.
+- [ ] Polish draft saving and restoration.
+- [ ] Refine Material 3 Expressive animations and themes.
+- [ ] Improve accessibility, reliability and offline behavior.
+- [ ] Maintain useful release notes and automated builds.
+
+The roadmap can change as development progresses. Check the repository and releases for current implementation status.
+
+---
+
+🐛 Bugs & feature requests
+
+Found a bug or have an idea that could make student life easier?
+
+"Open an issue on GitHub" (https://github.com/skywa1ker404/Absencium/issues).
+
+Please include enough information to understand the problem, and never post private academic records, API keys or other sensitive information in public issues.
+
+Contributions are welcome when contribution guidelines and the relevant project setup are available.
+
+---
+
+☕ Support the project
+
+I'm a student building apps in my free time. If you like what I'm making, you can support the project with a chai.
+
+"Buy Me a Chai ☕" (https://www.buymeachai.in/skywa1ker404)
+
+No pressure, though. Using the app, reporting bugs, suggesting improvements or starring the repository is already appreciated.
+
+---
+
+📜 License
+
+The applicable license is provided in the ""LICENSE"" (LICENSE) file.
+
+Please check that file before redistributing or modifying the project.
+
+---
+
+The FAQ
+
+Why another student organizer?
+
+Because managing attendance, missed-class notes, deadlines and holidays shouldn't require five different apps. I wanted to build something around the everyday problems students actually deal with.
+
+Is Absencium free?
+
+The project is intended to be freely accessible. Optional third-party services may have their own usage limits or costs.
+
+Does it work offline?
+
+Offline-first behavior is a core design goal. Features that rely on remote services, such as optional AI assistance, need an internet connection.
+
+Will my notes be uploaded to the cloud?
+
+Local storage is the intended default. Optional online integrations may send selected content to external services when you use them. Check the current implementation and documentation for details.
+
+Why isn't it on the Play Store?
+
+I'm focusing on independent development and distribution through GitHub for now. I'll consider other distribution channels when it makes sense.
+
+Will there be an iOS version?
+
+No plans for one. Absencium is staying Android-only so I can focus on building one native app properly.
+
+Can I request a feature?
+
+Absolutely. Open a GitHub issue and explain what problem you're trying to solve. I can't promise every idea will make it in, but useful suggestions are welcome.
+
+Do I need to donate to use Absencium?
+
+Nope. Support is completely optional.
+
+Who's making this?
+
+Just a student building apps, learning along the way and probably having more ideas than free time. ☕
