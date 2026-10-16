@@ -1,0 +1,62 @@
+name: Dev release
+
+# Manual only. Publishes an UNSTABLE development prerelease of the Dev repository: a dev-signed debug APK and optimised APK
+# with SHA-256 checksums. Nothing here is a stable release, and nothing here runs on a push.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag for this development build, for example dev-2026.10.17-1'
+        required: true
+      notes:
+        description: 'What changed and what to test (one paragraph)'
+        required: true
+
+jobs:
+  dev-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Build both APKs
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug assembleRelease --console=plain
+
+      - name: Verify and collect
+        run: |
+          mkdir out
+          cp app/build/outputs/apk/debug/app-debug.apk out/Absencium-Dev-debug.apk
+          cp app/build/outputs/apk/release/app-release.apk out/Absencium-Dev-optimized.apk
+          for f in out/*.apk; do bash .github/scripts/verify_apk.sh "$f" skywa1ker404.absencium.dev; echo; done | tee out/apk-report.txt
+          (cd out && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Create the prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          {
+            echo "## UNSTABLE development build"
+            echo
+            echo "For testing only. It installs as **Absencium Dev** (\`skywa1ker404.absencium.dev\`), a separate app from the stable Absencium, and is signed with a public development key. Do not rely on it for real data and do not treat it as a stable release."
+            echo
+            echo "$NOTES"
+            echo
+            echo "Commit: ${{ github.sha }}"
+            echo
+            echo "Checksums are in \`SHA256SUMS.txt\`; check them with \`sha256sum -c SHA256SUMS.txt\`."
+          } > notes.md
+          gh release create "$TAG" out/* --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease \
+            --title "Absencium Dev $TAG (unstable)" --notes-file notes.md

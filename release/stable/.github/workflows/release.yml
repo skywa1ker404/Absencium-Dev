@@ -1,0 +1,66 @@
+name: Stable release
+
+# Runs when a SemVer tag such as v1.0.0 is pushed. It signs with the stable key from the GitHub secrets, checks that the
+# APK's certificate is the one you expect, and creates a DRAFT release. Nothing is public until you press Publish.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ABSENCIUM_KEYSTORE_B64: ${{ secrets.ABSENCIUM_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Require the signing secrets
+        run: |
+          [ -n "$ABSENCIUM_KEYSTORE_B64" ] || { echo "::error::The ABSENCIUM_* secrets are not set. See docs/SIGNING.md."; exit 1; }
+          [ -n "${{ vars.ABSENCIUM_CERT_SHA256 }}" ] || { echo "::error::Set the repository variable ABSENCIUM_CERT_SHA256 (the expected certificate SHA-256). See docs/SIGNING.md."; exit 1; }
+          echo "$ABSENCIUM_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/absencium.jks"
+          echo "ABSENCIUM_KEYSTORE_FILE=$RUNNER_TEMP/absencium.jks" >> "$GITHUB_ENV"
+          echo "ABSENCIUM_KEYSTORE_PASSWORD=${{ secrets.ABSENCIUM_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "ABSENCIUM_KEY_ALIAS=${{ secrets.ABSENCIUM_KEY_ALIAS }}" >> "$GITHUB_ENV"
+          echo "ABSENCIUM_KEY_PASSWORD=${{ secrets.ABSENCIUM_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+
+      - name: Work out the version
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          IFS=. read -r major minor patch <<< "$v"
+          echo "VERSION_NAME=$v" >> "$GITHUB_ENV"
+          # 1.0.0 -> 10000, 1.2.3 -> 10203. Always higher than the one before for a normal SemVer sequence.
+          echo "VERSION_CODE=$((major * 10000 + minor * 100 + patch))" >> "$GITHUB_ENV"
+
+      - name: Build and test
+        run: |
+          chmod +x ./gradlew
+          ./gradlew testDebugUnitTest assembleRelease -PabsenciumVersionName="$VERSION_NAME" -PabsenciumVersionCode="$VERSION_CODE" --console=plain
+
+      - name: Verify the APK and its certificate
+        run: |
+          mkdir out
+          cp app/build/outputs/apk/release/app-release.apk "out/Absencium-$VERSION_NAME.apk"
+          bash .github/scripts/verify_apk.sh "out/Absencium-$VERSION_NAME.apk" skywa1ker404.absencium | tee out/apk-report.txt
+          got=$(grep -m1 'certificate SHA-256 digest' out/apk-report.txt | sed -E 's/.*: *//' | tr -d ': ' | tr 'A-F' 'a-f')
+          want=$(echo "${{ vars.ABSENCIUM_CERT_SHA256 }}" | tr -d ': ' | tr 'A-F' 'a-f')
+          [ "$got" = "$want" ] || { echo "::error::The APK is signed with a different certificate than ABSENCIUM_CERT_SHA256."; exit 1; }
+          (cd out && sha256sum "Absencium-$VERSION_NAME.apk" > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -f "release-notes/$GITHUB_REF_NAME.md" ] || { echo "::error::Write release-notes/$GITHUB_REF_NAME.md first."; exit 1; }
+          gh release create "$GITHUB_REF_NAME" out/* --repo "${{ github.repository }}" --draft --verify-tag \
+            --title "Absencium $VERSION_NAME" --notes-file "release-notes/$GITHUB_REF_NAME.md"
