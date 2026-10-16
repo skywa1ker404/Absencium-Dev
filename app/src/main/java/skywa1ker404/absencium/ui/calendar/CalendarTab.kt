@@ -4,6 +4,12 @@ import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
 import skywa1ker404.absencium.ui.components.Reveal
 import androidx.compose.animation.core.Spring
+import kotlin.math.roundToInt
+import androidx.compose.ui.layout.layout
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -285,26 +291,7 @@ private fun MonthSummary(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().glassControl(CircleShape, colors.surfaceContainerHighest, 0.6f).padding(4.dp),
-        ) {
-            listOf("This month" to false, "All months" to true).forEach { (label, all) ->
-                val on = showAll == all
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (on) colors.onPrimary else colors.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .then(
-                            if (on) Modifier.glassControl(CircleShape, colors.primary, 0.82f) else Modifier.clip(CircleShape),
-                        )
-                        .clickable { onShowAll(all) }
-                        .padding(vertical = 10.dp),
-                )
-            }
-        }
+        MonthScopeSwitch(showAll = showAll, onShowAll = onShowAll)
         SemiGauge(
             percent = percent,
             threshold = threshold,
@@ -320,9 +307,67 @@ private fun MonthSummary(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
-            StatPill("Present: $present", colors.primaryContainer, colors.onPrimaryContainer)
-            StatPill("Absent: $absent", colors.errorContainer, colors.onErrorContainer)
-            StatPill("Total: $total", colors.surfaceContainerHighest, colors.onSurface)
+            val q = LocalQuality.current
+            val presentShown by animateIntAsState(present, q.spring(), label = "presentCount")
+            val absentShown by animateIntAsState(absent, q.spring(), label = "absentCount")
+            val totalShown by animateIntAsState(total, q.spring(), label = "totalCount")
+            StatPill("Present: $presentShown", colors.primaryContainer, colors.onPrimaryContainer)
+            StatPill("Absent: $absentShown", colors.errorContainer, colors.onErrorContainer)
+            StatPill("Total: $totalShown", colors.surfaceContainerHighest, colors.onSurface)
+        }
+    }
+}
+
+/**
+ * The This month / All months switch. The selected pill slides between the two labels on the app's spring and the
+ * label colours cross-fade, instead of the pill jumping.
+ */
+@Composable
+private fun MonthScopeSwitch(showAll: Boolean, onShowAll: (Boolean) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val q = LocalQuality.current
+    val slide by animateFloatAsState(
+        targetValue = if (showAll) 1f else 0f,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy),
+        label = "monthScopeSlide",
+    )
+    Box(
+        modifier = Modifier.fillMaxWidth().glassControl(CircleShape, colors.surfaceContainerHighest, 0.6f).padding(4.dp),
+    ) {
+        Box(modifier = Modifier.matchParentSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .fillMaxHeight()
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        layout(placeable.width, placeable.height) {
+                            placeable.place((placeable.width * slide).roundToInt(), 0)
+                        }
+                    }
+                    .glassControl(CircleShape, colors.primary, 0.82f),
+            )
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            listOf("This month" to false, "All months" to true).forEach { (label, all) ->
+                val on = showAll == all
+                val textColor by animateColorAsState(
+                    targetValue = if (on) colors.onPrimary else colors.onSurfaceVariant,
+                    animationSpec = q.spring(),
+                    label = "monthScopeLabel",
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = textColor,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(CircleShape)
+                        .clickable { onShowAll(all) }
+                        .padding(vertical = 10.dp),
+                )
+            }
         }
     }
 }

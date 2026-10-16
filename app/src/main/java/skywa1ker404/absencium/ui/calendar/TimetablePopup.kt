@@ -21,6 +21,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.clickable
+import skywa1ker404.absencium.ui.components.ExpandChevron
+import skywa1ker404.absencium.ui.components.Reveal
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +66,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
     var sameEveryDay by remember { mutableStateOf(false) }
     // The saved lecture being changed, or null while adding a new one.
     var editing by remember { mutableStateOf<TimetableEntity?>(null) }
+    var addOpen by rememberSaveable { mutableStateOf(false) }
 
     PopupShell(onDismissRequest = onDismiss, dismissOnOutsideTap = true) {
     PopupBody(title = "Timetable", onClose = onDismiss) {
@@ -131,27 +136,36 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
             }
         }
 
-        SectionTitle(
-            when {
-                editing != null -> "Edit lecture"
-                sameEveryDay -> "Add a lecture every weekday"
-                else -> "Add a lecture on ${day.full()}"
-            },
-        )
-        if (subjects.isEmpty()) {
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                Text("Add a subject first", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Every lecture belongs to a subject.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
-                PillButton(text = "Manage subjects", onClick = onManageSubjects)
-            }
-            return@PopupBody
+        // The add form lives in a dropdown that is closed by default; changing a saved lecture opens it.
+        val formOpen = addOpen || editing != null
+        val formTitle = when {
+            editing != null -> "Edit lecture"
+            sameEveryDay -> "Add a lecture every weekday"
+            else -> "Add a lecture on ${day.full()}"
         }
         AppCard(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(enabled = editing == null) { addOpen = !addOpen },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(formTitle, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                ExpandChevron(expanded = formOpen, description = if (formOpen) "Close the form" else "Open the form")
+            }
+            Reveal(visible = formOpen) {
+                androidx.compose.foundation.layout.Column(modifier = Modifier.padding(top = 12.dp)) {
+                    if (subjects.isEmpty()) {
+                        Text("Add a subject first", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "Every lecture belongs to a subject.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                        PillButton(text = "Manage subjects", onClick = onManageSubjects)
+                    } else {
             Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 subjects.forEach { subject ->
                     ExpressiveChip(
@@ -245,6 +259,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                         start = ""
                         end = ""
                         room = ""
+                        addOpen = false
                     }
                 },
                 modifier = Modifier.padding(top = 12.dp),
@@ -258,6 +273,9 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                         room = ""
                     },
                 ) { Text("Cancel editing") }
+            }
+                    }
+                }
             }
         }
     }

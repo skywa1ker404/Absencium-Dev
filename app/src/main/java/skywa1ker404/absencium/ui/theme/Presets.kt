@@ -32,15 +32,35 @@ object DefaultPalette {
  * Gruvbox gruvbox.vim, Nord's colour page, onedark.nvim, poimandres.nvim, Rosé Pine's neovim palette and
  * tokyonight.nvim. Nord, Dracula and Poimandres have no official light scheme in those sources; Nord's light
  * variant uses its Snow Storm colours as backgrounds, Dracula and Poimandres stay dark.
+ *
+ * Added later, colour values only, each read from the scheme's own repository (all MIT; the notices are in
+ * docs/THIRD_PARTY_LICENSES.md): altercation/solarized, rebelot/kanagawa.nvim, savq/melange-nvim,
+ * ribru17/bamboo.nvim, ayu-theme/ayu-colors, jolaleye/horizon-theme-vscode, kaicataldo/material.vim,
+ * sdras/night-owl-vscode-theme, wesbos/Cobalt2-VSCode, ahmadawais/shades-of-purple-vscode,
+ * robb0wen/synthwave-vscode, loctvl842/monokai-pro.nvim, NLKNguyen/papercolor-theme and sainnhe/sonokai.
  */
 fun ThemePreset.palette(): ThemePalette = when (this) {
+    ThemePreset.AYU_MIRAGE -> AyuMirage
+    ThemePreset.BAMBOO -> Bamboo
     ThemePreset.CATPPUCCIN -> Catppuccin
+    ThemePreset.COBALT2 -> Cobalt2
     ThemePreset.DRACULA -> Dracula
     ThemePreset.GRUVBOX -> Gruvbox
+    ThemePreset.HORIZON -> Horizon
+    ThemePreset.KANAGAWA -> Kanagawa
+    ThemePreset.MATERIAL_OCEAN -> MaterialOcean
+    ThemePreset.MELANGE -> Melange
+    ThemePreset.MONOKAI_PRO -> MonokaiPro
+    ThemePreset.NIGHT_OWL -> NightOwl
     ThemePreset.NORD -> Nord
     ThemePreset.ONE_DARK -> OneDark
+    ThemePreset.PAPERCOLOR -> PaperColor
     ThemePreset.POIMANDRES -> Poimandres
     ThemePreset.ROSE_PINE -> RosePine
+    ThemePreset.SHADES_OF_PURPLE -> ShadesOfPurple
+    ThemePreset.SOLARIZED -> Solarized
+    ThemePreset.SONOKAI -> Sonokai
+    ThemePreset.SYNTHWAVE_84 -> SynthWave84
     ThemePreset.TOKYO_NIGHT -> TokyoNight
 }
 
@@ -154,4 +174,169 @@ private val TokyoNight = ThemePalette(
         background = c(0xE1E2E7), text = c(0x3760BF), textMuted = c(0x6172B0), outline = c(0x8990B3),
         primary = c(0x2E7DE9), secondary = c(0x9854F1), tertiary = c(0x118C74), error = c(0xF52A65),
     ),
+)
+
+private val AyuMirage = ThemePalette(
+    name = "Ayu Mirage",
+    variants = "Dark only",
+    dark = PaletteVariant(
+        background = c(0x1F2430), text = c(0xCCCAC2), textMuted = c(0x707A8C), outline = c(0x6E7C8F),
+        primary = c(0xFFCC66), secondary = c(0x73D0FF), tertiary = c(0x95E6CB), error = c(0xFF6666),
+    ),
+    light = null,
+)
+
+private val Bamboo = ThemePalette(
+    name = "Bamboo",
+    variants = "Vulgaris · Light",
+    dark = PaletteVariant(
+        background = c(0x252623), text = c(0xF1E9D2), textMuted = c(0x838781), outline = c(0x5B5E5A),
+        primary = c(0x8FB573), secondary = c(0x57A5E5), tertiary = c(0xDBB651), error = c(0xE75A7C),
+    ),
+    light = PaletteVariant(
+        background = c(0xFAFAE0), text = c(0x3A4238), textMuted = c(0x838781), outline = c(0x838781),
+        primary = c(0x27850B), secondary = c(0x1745D5), tertiary = c(0xA77B00), error = c(0xC72A3C),
+    ),
+)
+
+private val Cobalt2 = ThemePalette(
+    name = "Cobalt2",
+    variants = "Dark only",
+    dark = PaletteVariant(
+        background = c(0x193549), text = c(0xFFFFFF),
+        primary = c(0xFFC600), secondary = c(0x0088FF), tertiary = c(0x80FCFF), error = c(0xFF628C),
+    ),
+    light = null,
+)
+
+// Horizon Bright's own error colour is not in the sources read, so the light variant reuses the dark one.
+private val Horizon = ThemePalette(
+    name = "Horizon",
+    variants = "Dark · Bright",
+    dark = PaletteVariant(
+        background = c(0x1C1E26), text = c(0xD5D8DA),
+        primary = c(0xE95378), secondary = c(0x26BBD9), tertiary = c(0x29D398), error = c(0xF43E5C),
+    ),
+    light = PaletteVariant(
+        background = c(0xFDF0ED), text = c(0x06060C),
+        primary = c(0xE84A72), secondary = c(0x26BBD9), tertiary = c(0x1EB980), error = c(0xF43E5C),
+    ),
+)
+
+private val Kanagawa = ThemePalette(
+    name = "Kanagawa",
+    variants = "Wave · Lotus",
+    dark = PaletteVariant(
+        background = c(0x1F1F28), text = c(0xDCD7BA), textMuted = c(0xC8C093), outline = c(0x727169),
+        primary = c(0x7E9CD8), secondary = c(0x957FB8), tertiary = c(0x98BB6C), error = c(0xE46876),
+    ),
+    light = PaletteVariant(
+        background = c(0xF2ECBC), text = c(0x545464), outline = c(0x8A8980),
+        primary = c(0x4D699B), secondary = c(0x624C83), tertiary = c(0x6F894E), error = c(0xC84053),
+    ),
+)
+
+private val MaterialOcean = ThemePalette(
+    name = "Material Ocean",
+    variants = "Dark only",
+    dark = PaletteVariant(
+        background = c(0x0F111A), text = c(0x8F93A2), outline = c(0x464B5D),
+        primary = c(0x82AAFF), secondary = c(0xC792EA), tertiary = c(0xC3E88D), error = c(0xFF5370),
+    ),
+    light = null,
+)
+
+private val Melange = ThemePalette(
+    name = "Melange",
+    variants = "Dark · Light",
+    dark = PaletteVariant(
+        background = c(0x292522), text = c(0xECE1D7), textMuted = c(0xC1A78E), outline = c(0x867462),
+        primary = c(0xA3A9CE), secondary = c(0xCF9BC2), tertiary = c(0x85B695), error = c(0xD47766),
+    ),
+    light = PaletteVariant(
+        background = c(0xF1F1F1), text = c(0x54433A), textMuted = c(0x7D6658), outline = c(0xA98A78),
+        primary = c(0x465AA4), secondary = c(0x904180), tertiary = c(0x3A684A), error = c(0xBF0021),
+    ),
+)
+
+private val MonokaiPro = ThemePalette(
+    name = "Monokai Pro",
+    variants = "Pro · Light",
+    dark = PaletteVariant(
+        background = c(0x2D2A2E), text = c(0xFCFCFA), textMuted = c(0x939293), outline = c(0x727072),
+        primary = c(0xAB9DF2), secondary = c(0x78DCE8), tertiary = c(0xA9DC76), error = c(0xFF6188),
+    ),
+    light = PaletteVariant(
+        background = c(0xFAF4F2), text = c(0x29242A), textMuted = c(0x706B6E), outline = c(0x918C8E),
+        primary = c(0x7058BE), secondary = c(0x1C8CA8), tertiary = c(0x269D69), error = c(0xE14775),
+    ),
+)
+
+private val NightOwl = ThemePalette(
+    name = "Night Owl",
+    variants = "Night Owl · Light Owl",
+    dark = PaletteVariant(
+        background = c(0x011627), text = c(0xD6DEEB), textMuted = c(0x5F7E97), outline = c(0x5F7E97),
+        primary = c(0x82AAFF), secondary = c(0xC792EA), tertiary = c(0x21C7A8), error = c(0xEF5350),
+    ),
+    light = PaletteVariant(
+        background = c(0xFBFBFB), text = c(0x403F53), outline = c(0x93A1A1),
+        primary = c(0x288ED7), secondary = c(0xD6438A), tertiary = c(0x2AA298), error = c(0xE64D49),
+    ),
+)
+
+private val PaperColor = ThemePalette(
+    name = "PaperColor",
+    variants = "Dark · Light",
+    dark = PaletteVariant(
+        background = c(0x1C1C1C), text = c(0xD0D0D0), textMuted = c(0x808080), outline = c(0x808080),
+        primary = c(0x5FAFD7), secondary = c(0xAF87D7), tertiary = c(0x5FAF00), error = c(0xAF005F),
+    ),
+    light = PaletteVariant(
+        background = c(0xEEEEEE), text = c(0x444444), textMuted = c(0x878787), outline = c(0x878787),
+        primary = c(0x005FAF), secondary = c(0x8700AF), tertiary = c(0x008700), error = c(0xAF0000),
+    ),
+)
+
+private val ShadesOfPurple = ThemePalette(
+    name = "Shades of Purple",
+    variants = "Dark only",
+    dark = PaletteVariant(
+        background = c(0x2D2B55), text = c(0xFFFFFF), textMuted = c(0xA599E9),
+        primary = c(0xB362FF), secondary = c(0xFAD000), tertiary = c(0x80FCFF), error = c(0xEC3A37),
+    ),
+    light = null,
+)
+
+private val Solarized = ThemePalette(
+    name = "Solarized",
+    variants = "Dark · Light",
+    dark = PaletteVariant(
+        background = c(0x002B36), text = c(0x839496), outline = c(0x586E75),
+        primary = c(0x268BD2), secondary = c(0x2AA198), tertiary = c(0xB58900), error = c(0xDC322F),
+    ),
+    light = PaletteVariant(
+        background = c(0xFDF6E3), text = c(0x657B83), textMuted = c(0x93A1A1), outline = c(0x93A1A1),
+        primary = c(0x268BD2), secondary = c(0x2AA198), tertiary = c(0x6C71C4), error = c(0xDC322F),
+    ),
+)
+
+private val Sonokai = ThemePalette(
+    name = "Sonokai",
+    variants = "Default · Dark only",
+    dark = PaletteVariant(
+        background = c(0x2C2E34), text = c(0xE2E2E3), textMuted = c(0x7F8490), outline = c(0x7F8490),
+        primary = c(0x76CCE0), secondary = c(0xB39DF3), tertiary = c(0x9ED072), error = c(0xFC5D7C),
+    ),
+    light = null,
+)
+
+private val SynthWave84 = ThemePalette(
+    name = "SynthWave '84",
+    variants = "Dark only",
+    dark = PaletteVariant(
+        background = c(0x262335), text = c(0xFFFFFF), textMuted = c(0x848BBD),
+        primary = c(0xFF7EDB), secondary = c(0x03EDF9), tertiary = c(0xFEDE5D), error = c(0xFE4450),
+    ),
+    light = null,
 )
