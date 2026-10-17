@@ -59,6 +59,8 @@ jobs:
           # (docs/IDENTITY.md, docs/SIGNING.md). The build refuses to continue if one of them moved.
           grep -q '^absenciumChannel=dev$' gradle.properties || { echo "::error::gradle.properties must say absenciumChannel=dev in the Dev repository."; exit 1; }
           grep -q 'DATABASE_NAME = "Absencium.db"' app/src/main/java/skywa1ker404/absencium/data/db/AbsenciumDatabase.kt || { echo "::error::Database name changed. See docs/IDENTITY.md"; exit 1; }
+          # The in-app licence screen ships copies of the notices; they must match docs/ (scripts/sync_licences.sh).
+          diff -q docs/THIRD_PARTY_LICENSES.md app/src/main/assets/licences/THIRD_PARTY_LICENSES.md && diff -rq docs/licenses app/src/main/assets/licences/licenses || { echo "::error::In-app notices are out of date. Run scripts/sync_licences.sh and commit."; exit 1; }
           bad=$(git ls-files | grep -E '\.(jks|keystore|p12|pfx|pem)$' | grep -v '^app/signing/absencium-dev\.jks$' || true)
           if [ -n "$bad" ]; then
             echo "::warning::Tracked key files other than the public dev key (see docs/SIGNING.md, to be removed after approval): $bad"

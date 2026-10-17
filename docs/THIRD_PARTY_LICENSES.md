@@ -89,7 +89,7 @@ its badge is not used.
 The "A" logo (`app/src/main/res/drawable/ic_logo_a.xml` and the launcher icon layers) was, by the project owner's account,
 generated using GPT (OpenAI). OpenAI's terms say the user owns the Output, with OpenAI assigning its rights, if any, to the
 extent the law permits; whether such an image is protected by copyright is unsettled, and no source file or prompt is kept.
-The logo is shown here for transparency and may be replaced; see the pre-licence review in the development repository.
+The project owner decided on 2026-10-17 to keep this logo.
 
 ## Colour schemes (Presets page)
 

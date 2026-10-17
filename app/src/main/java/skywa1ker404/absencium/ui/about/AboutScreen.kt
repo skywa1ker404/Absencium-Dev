@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ChangelogScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.LicensesScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.NavCard
@@ -110,6 +111,14 @@ fun AboutScreen(navigator: DestinationsNavigator) {
             title = "Changelog",
             subtitle = "What changed in each version",
             onClick = { navigator.navigate(ChangelogScreenDestination) },
+        )
+
+        SectionTitle("Legal")
+        NavCard(
+            icon = AppIcons.Description,
+            title = "Open-source licences",
+            subtitle = "Fonts, icons, libraries and colour schemes used in Absencium",
+            onClick = { navigator.navigate(LicensesScreenDestination) },
         )
     }
 }

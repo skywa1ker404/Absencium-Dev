@@ -51,7 +51,7 @@ Last updated: 2026-10-17. Stable-repo secrets and variable: Anakin reports they 
 | 1b.7 | Stable export dry run: file set builds, link check passes except `LICENSE` (expected) | DONE for the file set; stable `README.md` still to write (Step 7) |
 | 1b.8 | Decisions needed from Anakin: authorship wording, logo ownership, keep or drop the captions switch, old keys | OPEN |
 
-## Step 1c. Resolved audit decisions (7 tasks)
+## Step 1c. Resolved audit decisions (8 tasks)
 
 | # | Task | Status |
 | - | --- | --- |
@@ -59,8 +59,9 @@ Last updated: 2026-10-17. Stable-repo secrets and variable: Anakin reports they 
 | 1c.2 | Authorship sentence added to the README FAQ and licence section (not a substitute for the GPL text) | written |
 | 1c.3 | `absencium-upgrade.jks` removed from the tree, `.gitignore` blocks keystores, passwords out of the docs, migration plan for friends' APKs in `docs/SIGNING.md`; history not rewritten | DONE (CI green `b6c0288`, not device-tested) |
 | 1c.4 | Stable CI guard: commits must be authored by skywa1ker404 (staged in `release/stable`, not published) | written, runs only after publishing |
-| 1c.5 | Logo provenance recorded (GPT, by the owner's account); OpenAI terms read; original replacement proposed, **not applied** | OPEN: needs Anakin's choice |
-| 1c.6 | Contributor-licence sentence explained; `CONTRIBUTION.md` **not changed** | OPEN: needs Anakin's wording |
+| 1c.5 | Logo provenance recorded (GPT, by the owner's account); OpenAI terms read. ~~Original replacement proposed~~ Owner decided to keep the current logo | DONE (documents) |
+| 1c.6 | ~~Contributor sentence only explained~~ Contributor-licence sentence applied to `CONTRIBUTION.md` | WAITING FOR CI (text only) |
+| 1c.8 | In-app "Open-source licences" screen (About, Legal) with notices copied into assets; CI checks the copies match `docs/` | WAITING FOR CI |
 | 1c.7 | `LICENSE_AUDIT.md` and notices updated; source scanner could not run (no PyPI), so verification is incomplete | DONE (documents) |
 
 ## Step 2. Timetable overhaul (11 tasks) — pending, needs Room v2 migration
@@ -96,7 +97,7 @@ New `teacher` column: bump the database to version 2 with a real `Migration` and
 7. Several API keys per AI provider.
 8. Navigation pill label clipping.
 9. Garbled text under the glass navigation bar.
-10. In-app "Open-source licences" screen (needed for Apache-2.0, MIT and OFL notices in the APK).
+10. ~~In-app "Open-source licences" screen~~ done in Step 1c (task 1c.8).
 11. About "Buy Me a Chai" card (https://www.buymeachai.in/skywa1ker404).
 12. Outdated docs refresh: `IDENTITY.md`, changelog file and in-app changelog, README, intro text.
 

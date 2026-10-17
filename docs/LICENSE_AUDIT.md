@@ -3,7 +3,7 @@
 Date: 2026-10-16. Commit audited: `40bd035` plus the audit commits after it. This is an engineering review of evidence in
 the repository and the upstream projects, not legal advice. No LICENSE file was created or changed.
 
-## Readiness status: NOT YET CLEARED; THREE DECISIONS LEFT (updated 2026-10-17)
+## Readiness status: NOT YET CLEARED; verification incomplete (updated 2026-10-17)
 
 Nothing found makes GPL-3.0 impossible: every library in the release build declares Apache-2.0, MIT or BSD-3-Clause, and
 no GPL-incompatible, proprietary or unlicensed component was found. The items that could be fixed in code, art and notices
@@ -42,14 +42,14 @@ have been fixed (table below). What remains cannot be settled from the repositor
 
 1. **Old keys remain in Git history** (not rewritten, by your decision). They are public for good; nothing signs with them.
    History cleanup needs a separate approval from you and breaks every clone, so it is not recommended once nothing trusts them.
-2. **Contributor terms** (`docs/CONTRIBUTION.md`): unchanged until you approve exact wording (proposal below).
-3. **Licence notices inside the APK**: no "Open-source licences" screen yet (`TODOList.md`, Step 4, task 10).
+2. ~~Contributor terms unchanged~~ The sentence below is now in `docs/CONTRIBUTION.md` (applied 2026-10-17 on your instruction).
+3. ~~No licence notices inside the APK~~ Added: About, Legal, "Open-source licences" shows the notices and licence texts from `app/src/main/assets/licences` (copies of `docs/`, kept in sync by `scripts/sync_licences.sh`; CI fails when they differ). It compiles; it has not been opened on a device.
 4. **The source-licence scanner could not run.** ScanCode (and similar tools) are installed from PyPI, and the sandbox cannot
    reach PyPI, so no automated scan of the Kotlin sources for copied code or foreign licence headers was done. What was done
    instead is manual and limited: a text search for copyright headers, "adapted from" notes and pasted URLs, which found none,
    plus the dependency and notice checks in the Verification table. This is **not** a complete verification. Running ScanCode
    once on your own computer would close the gap.
-5. **Logo**: see below.
+5. **Logo**: you decided to keep it (2026-10-17); see below. The residual risk (unsettled AI-image copyright, unverified resemblance to other marks) remains.
 
 ### Logo
 
@@ -67,7 +67,7 @@ have been fixed (table below). What remains cannot be settled from the repositor
   protected by copyright at all is unsettled and differs by country, so "you own it" may mean little in practice. (2) Similar
   images may exist; I cannot run a reverse image search from here, so I cannot rule out a resemblance to someone else's mark.
   (3) The vector file has no provenance record. None of this shows a problem; the position is "likely fine, not proven".
-- **Proposal, not applied:** an original replacement mark drawn from basic shapes (two rounded strokes forming an "A" with a tick
+- **Decision (2026-10-17): keep the current logo.** The replacement proposal below was not applied and is kept only for the record. Proposal: an original replacement mark drawn from basic shapes (two rounded strokes forming an "A" with a tick
   as its crossbar, in the Default Theme's green and yellow on its dark background; the preview was sent to you separately). If you
   approve it I will build the launcher icon layers, the in-app mark and the splash from it. If you keep the current logo, the only
   change needed is a note in the README and `THIRD_PARTY_LICENSES.md` stating your account of how it was made.
@@ -76,7 +76,7 @@ have been fixed (table below). What remains cannot be settled from the repositor
 
 ### Contributor licence: what the proposed sentence would mean
 
-Proposed wording, for you to approve or change (nothing in `CONTRIBUTION.md` has been edited):
+Wording as applied to `docs/CONTRIBUTION.md` (with one added sentence saying contributors keep their copyright):
 
 > By submitting a contribution you agree that it is licensed under the same GNU General Public License v3.0 as the project, and
 > that you have the right to submit it.
@@ -152,7 +152,7 @@ Nothing here means the project is legally cleared; it means no known blocker was
 
 ## What you must do
 
-1. Decide the logo (keep with a note, or approve the original replacement) and approve or edit the contributor sentence.
-2. Run a source licence scanner once on your own computer if you want that assurance; I could not.
-3. Test the Dev APK, then approve 1.0.0. Only then add the official GPL-3.0 text as `LICENSE` through GitHub (Add file, Create new
-   file, name it `LICENSE`, then "Choose a license template" and pick GNU General Public License v3.0).
+1. Optionally run a source licence scanner (ScanCode, FOSSA) on your own computer; I could not.
+2. Test the Dev APK (including About, Legal, Open-source licences), then approve 1.0.0.
+3. Add the official GPL-3.0 text as `LICENSE` yourself through GitHub (Add file, Create new file, name it `LICENSE`, then
+   "Choose a license template" and pick GNU General Public License v3.0). I have not added it.

@@ -35,3 +35,7 @@ Pull requests
 Please be respectful and constructive.
 
 Thank you for helping make Absencium better!
+
+Licence of contributions
+
+By submitting a contribution you agree that it is licensed under the same GNU General Public License v3.0 as the project, and that you have the right to submit it. You keep the copyright in your contribution; nothing is assigned to the maintainer.
