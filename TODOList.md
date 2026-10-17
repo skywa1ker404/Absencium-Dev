@@ -10,7 +10,7 @@ Single source of truth for what is done, in progress, pending and planned. Updat
 - Steps are in implementation order; each heading shows how many tasks the step holds.
 - Development, CI, testing and reports happen in `skywa1ker404/Absencium-Dev`. `skywa1ker404/Absencium` stays empty until a stable 1.0.0 is recommended, tested and explicitly approved by Anakin.
 
-Last updated: 2026-10-17. Stable-repo secrets and variable: Anakin reports they are set in `Absencium` settings (not verifiable from here; no values were read).
+Last updated: 2026-10-18. Stable-repo secrets and variable: Anakin reports they are set in `Absencium` settings (not verifiable from here; no values were read).
 
 ---
 
@@ -63,6 +63,18 @@ Last updated: 2026-10-17. Stable-repo secrets and variable: Anakin reports they 
 | 1c.6 | ~~Contributor sentence only explained~~ Contributor-licence sentence applied to `CONTRIBUTION.md` | DONE (text; CI green `af7303a`) |
 | 1c.8 | In-app "Open-source licences" screen (About, Legal) with notices copied into assets; CI checks the copies match `docs/` | DONE (CI green `af7303a`; not opened on a device) |
 | 1c.7 | `LICENSE_AUDIT.md` and notices updated; source scanner could not run (no PyPI), so verification is incomplete | DONE (documents) |
+
+## Step 1d. Reported on-device issues and release docs (7 tasks)
+
+| # | Task | Status |
+| - | --- | --- |
+| 1d.1 | Navigation pill: page text no longer shows garbled through the pill and the selection bead (denser veil, light 4 dp softening); the bead's lens refraction is kept; label fades in only when fully open | DONE (CI green `525d03b`, not device-tested) |
+| 1d.2 | AI & Integrations: API style chips wrap instead of squeezing "Google Gemini" into single letters | DONE (CI green `525d03b`, not device-tested) |
+| 1d.3 | Page headers: title area nearly opaque so scrolled text cannot bleed through it | DONE (CI green `525d03b`, not device-tested) |
+| 1d.4 | Long lists: licences screen and subject folders are lazy lists with a scrollbar on the licences screen; search waits for a typing pause and scores only the first 20,000 characters of a note; model filter remembered. Other screens with long text not yet profiled | DONE for these screens (CI green `525d03b`); lag on other screens (for example very long notes) **still open, not measured** |
+| 1d.5 | "No colour" preset (neutral greys), listed first and offered only while Liquid Glass is on; with glass off it falls back to the default theme | DONE (CI green `525d03b`, not device-tested) |
+| 1d.6 | Stable export now includes `LICENSE`, the stable README and the images it links; link check skips the bundled notice copies; export fails on a broken link or a keystore | DONE in a temporary directory (not CI) |
+| 1d.7 | Dev README, stable README (`release/stable/README.md`) and `release/stable/release-notes/v1.0.0.md` drafted from source-checked facts; the release notes still need the certificate fingerprint pasted in | written, awaiting Anakin's review |
 
 ## Step 2. Timetable overhaul (11 tasks) — pending, needs Room v2 migration
 
