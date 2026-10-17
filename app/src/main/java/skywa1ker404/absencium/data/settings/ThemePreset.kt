@@ -12,7 +12,6 @@ enum class ThemePreset {
     KANAGAWA,
     MATERIAL_OCEAN,
     MELANGE,
-    MONOKAI_PRO,
     NIGHT_OWL,
     NORD,
     ONE_DARK,

@@ -37,7 +37,7 @@ object DefaultPalette {
  * docs/THIRD_PARTY_LICENSES.md): altercation/solarized, rebelot/kanagawa.nvim, savq/melange-nvim,
  * ribru17/bamboo.nvim, ayu-theme/ayu-colors, jolaleye/horizon-theme-vscode, kaicataldo/material.vim,
  * sdras/night-owl-vscode-theme, wesbos/Cobalt2-VSCode, ahmadawais/shades-of-purple-vscode,
- * robb0wen/synthwave-vscode, loctvl842/monokai-pro.nvim, NLKNguyen/papercolor-theme and sainnhe/sonokai.
+ * robb0wen/synthwave-vscode, NLKNguyen/papercolor-theme and sainnhe/sonokai.
  */
 fun ThemePreset.palette(): ThemePalette = when (this) {
     ThemePreset.AYU_MIRAGE -> AyuMirage
@@ -50,7 +50,6 @@ fun ThemePreset.palette(): ThemePalette = when (this) {
     ThemePreset.KANAGAWA -> Kanagawa
     ThemePreset.MATERIAL_OCEAN -> MaterialOcean
     ThemePreset.MELANGE -> Melange
-    ThemePreset.MONOKAI_PRO -> MonokaiPro
     ThemePreset.NIGHT_OWL -> NightOwl
     ThemePreset.NORD -> Nord
     ThemePreset.ONE_DARK -> OneDark
@@ -256,19 +255,6 @@ private val Melange = ThemePalette(
     light = PaletteVariant(
         background = c(0xF1F1F1), text = c(0x54433A), textMuted = c(0x7D6658), outline = c(0xA98A78),
         primary = c(0x465AA4), secondary = c(0x904180), tertiary = c(0x3A684A), error = c(0xBF0021),
-    ),
-)
-
-private val MonokaiPro = ThemePalette(
-    name = "Monokai Pro",
-    variants = "Pro · Light",
-    dark = PaletteVariant(
-        background = c(0x2D2A2E), text = c(0xFCFCFA), textMuted = c(0x939293), outline = c(0x727072),
-        primary = c(0xAB9DF2), secondary = c(0x78DCE8), tertiary = c(0xA9DC76), error = c(0xFF6188),
-    ),
-    light = PaletteVariant(
-        background = c(0xFAF4F2), text = c(0x29242A), textMuted = c(0x706B6E), outline = c(0x918C8E),
-        primary = c(0x7058BE), secondary = c(0x1C8CA8), tertiary = c(0x269D69), error = c(0xE14775),
     ),
 )
 

@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><style>
+body { width: 1100px; height: 612px; position: relative; overflow: hidden;
+  background: radial-gradient(900px 500px at 85% 40%, #3F5143 0%, rgba(45,53,59,0) 70%), linear-gradient(135deg, #2B3A33 0%, #2D353B 60%); }
+.left { position: absolute; left: 64px; top: 70px; width: 500px; }
+h1 { font-size: 74px; letter-spacing: -1px; color: #E9DFC4; }
+.tag { margin-top: 18px; font-size: 25px; line-height: 1.4; color: var(--fg); font-weight: 500; }
+.bar { margin-top: 26px; width: 120px; height: 4px; border-radius: 4px; background: var(--green); }
+.chips { position: absolute; left: 64px; bottom: 44px; width: 560px; display: flex; flex-wrap: wrap; gap: 10px; }
+.phone { position: absolute; left: 650px; top: 52px; width: 300px; height: 520px; border-radius: 40px; background: var(--bg); border: 8px solid #1E2326; box-shadow: 0 30px 60px rgba(0,0,0,.45); padding: 22px 18px; }
+.hi { font-family: "Outfit"; font-size: 24px; color: #E9DFC4; }
+.date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.buf { margin-top: 16px; padding: 14px; display: flex; gap: 14px; align-items: center; background: #3C4841; }
+.buf .ring { width: 64px; height: 64px; background: conic-gradient(var(--green) 0 92%, var(--bg3) 0); position: relative; font-size: 14px; }
+.buf .ring::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: #3C4841; }
+.buf .ring span { position: relative; z-index: 1; }
+.buf b { font-family: "Outfit"; font-size: 20px; color: #E9DFC4; display: block; }
+.buf small { font-size: 11px; color: var(--muted); }
+.pills { margin-top: 8px; display: flex; gap: 6px; }
+.pill { font-size: 10px; padding: 3px 8px; border-radius: 99px; background: var(--bg3); }
+.next { margin-top: 12px; padding: 14px; background: var(--bg1); }
+.next small { font-size: 11px; color: var(--muted); }
+.next div { font-size: 14px; font-weight: 600; margin-top: 4px; }
+.nav { position: absolute; left: 50%; transform: translateX(-50%); bottom: 18px; display: flex; gap: 8px; padding: 6px; border-radius: 99px; background: var(--bg2); }
+.nav i { display: block; width: 44px; height: 28px; border-radius: 99px; background: var(--bg3); }
+.nav i.on { width: 72px; background: var(--green); }
+.cal { position: absolute; left: 860px; top: 330px; width: 190px; padding: 14px; background: rgba(61,72,77,.92); border-radius: 22px; box-shadow: 0 16px 36px rgba(0,0,0,.4); }
+.cal h3 { font-size: 13px; text-align: center; margin-bottom: 8px; color: #E9DFC4; }
+.grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.grid i { aspect-ratio: 1; border-radius: 50%; background: var(--bg3); }
+.grid i.p { background: #6F8A5E; } .grid i.a { background: #A9595B; } .grid i.t { background: var(--green); }
+.note { position: absolute; right: 22px; bottom: 14px; font-size: 11px; color: var(--muted); }
+</style></head><body>
+<div class="left"><h1>Absencium</h1>
+<p class="tag">Attendance, a bunk buffer, your timetable and your notes, in one calm, offline-first Android app.</p><div class="bar"></div></div>
+<div class="chips"><span class="chip">Bunk buffer</span><span class="chip">Timetable</span><span class="chip">Notes vault</span><span class="chip">Attendance calendar</span><span class="chip">Themes</span></div>
+<div class="phone"><div class="hi">Good afternoon</div><div class="date">Saturday</div>
+ <div class="card buf"><div class="ring"><span>92%</span></div><div><b>Skip 1</b><small>lecture you can miss</small><div class="pills"><span class="pill">Present</span><span class="pill">Absent</span></div></div></div>
+ <div class="card next"><small>Next up</small><div>Subject name</div><small>Room and time</small></div>
+ <div class="nav"><i class="on"></i><i></i><i></i></div></div>
+<div class="cal"><h3>Month</h3><div class="grid" id="g"></div></div>
+<div class="note">Illustration of the Home screen, not a screenshot.</div>
+<script>
+const g=document.getElementById('g'); const cls={3:'p',4:'p',5:'a',10:'p',11:'p',12:'p',17:'a',18:'p',19:'t'};
+for(let i=0;i<35;i++){const e=document.createElement('i'); if(cls[i])e.className=cls[i]; g.appendChild(e);}
+</script></body></html>

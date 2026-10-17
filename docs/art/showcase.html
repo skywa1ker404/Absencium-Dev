@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><style>
+body { width: 992px; padding: 44px 44px 36px; background: #232A2E; }
+h1 { font-size: 40px; color: #E9DFC4; }
+.sub { margin-top: 8px; color: var(--muted); font-size: 15px; }
+.grid3 { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.tile { background: var(--bg); border-radius: 22px; padding: 20px; height: 300px; position: relative; overflow: hidden; border: 1px solid #3A454A; }
+.tile h3 { font-size: 21px; color: #E9DFC4; }
+.tile p { margin-top: 8px; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.art { position: absolute; left: 20px; right: 20px; bottom: 18px; }
+.row { display: flex; align-items: center; gap: 10px; background: var(--bg1); border-radius: 14px; padding: 10px 12px; margin-top: 6px; font-size: 12px; }
+.row b { font-weight: 600; } .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); flex: none; }
+.row small { margin-left: auto; color: var(--muted); }
+.ring { width: 62px; height: 62px; background: conic-gradient(var(--green) 0 92%, var(--bg3) 0); position: relative; font-size: 13px; }
+.ring::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: var(--bg1); }
+.ring span { position: relative; z-index: 1; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal i { aspect-ratio: 1; border-radius: 50%; background: var(--bg2); } .cal i.p { background: #6F8A5E; } .cal i.a { background: #A9595B; } .cal i.t { background: var(--green); }
+.sw { display: flex; align-items: center; gap: 6px; background: var(--bg1); border-radius: 14px; padding: 8px 12px; margin-top: 6px; font-size: 12px; }
+.sw s { display: block; width: 14px; height: 14px; border-radius: 50%; text-decoration: none; }
+.sw span { margin-right: auto; font-weight: 600; }
+.glass { height: 110px; border-radius: 16px; background: linear-gradient(120deg, #A7C080, #3C4841 55%, #DBBC7F); position: relative; }
+.glass i { position: absolute; left: 18px; right: 18px; bottom: 14px; height: 42px; border-radius: 99px; background: rgba(211,198,170,.22); border: 1px solid rgba(255,255,255,.35); backdrop-filter: blur(8px); }
+.foot { margin-top: 18px; font-size: 12px; color: var(--muted); text-align: center; }
+</style></head><body>
+<h1>What is inside Absencium</h1>
+<p class="sub">An offline-first Android app for attendance, timetable, calendar and notes.</p>
+<div class="grid3">
+ <div class="tile"><h3>Bunk buffer</h3><p>See how many lectures you can still miss in each subject before you drop below your target.</p>
+  <div class="art"><div class="row"><div class="ring" style="border-radius:50%;display:grid;place-items:center;font-weight:700"><span>92%</span></div><div><b style="font-size:17px">Skip 1</b><br><small style="margin:0">lecture you can miss</small></div></div></div></div>
+ <div class="tile"><h3>Attendance calendar</h3><p>Mark days present or absent, add holidays and exams, and see each month's share at a glance.</p>
+  <div class="art"><div class="cal" id="c1"></div></div></div>
+ <div class="tile"><h3>Timetable</h3><p>Weekly lectures with times and rooms. The next lecture is always on the Home screen.</p>
+  <div class="art"><div class="row"><span class="dot"></span><b>Subject A</b><small>9:00 · Room 1</small></div><div class="row"><span class="dot" style="background:var(--yellow)"></span><b>Subject B</b><small>10:00 · Room 2</small></div><div class="row"><span class="dot" style="background:var(--aqua)"></span><b>Subject C</b><small>11:30 · Room 3</small></div></div></div>
+ <div class="tile"><h3>Notes vault</h3><p>Keep notes, photos and guides per subject and date, and find them again with search.</p>
+  <div class="art"><div class="row"><span class="dot"></span><b>Subject A</b><small>3 notes</small></div><div class="row"><span class="dot" style="background:var(--yellow)"></span><b>Subject B</b><small>1 note</small></div><div class="row"><span class="dot" style="background:var(--aqua)"></span><b>Subject C</b><small>5 notes</small></div></div></div>
+ <div class="tile"><h3>Optional AI import</h3><p>Bring your own API key to turn a photo, text or a lecture video into notes. Off until you set it up.</p>
+  <div class="art"><div class="row"><b>Photo</b><small>to notes</small></div><div class="row"><b>Text</b><small>to notes</small></div><div class="row"><b>Video</b><small>to notes</small></div></div></div>
+ <div class="tile"><h3>Make it yours</h3><p>A default theme, Material You colours from your wallpaper, and 21 colour schemes, light or dark.</p>
+  <div class="art"><div class="sw"><span>Catppuccin</span><s style="background:#CBA6F7"></s><s style="background:#A6E3A1"></s><s style="background:#89B4FA"></s></div><div class="sw"><span>Nord</span><s style="background:#88C0D0"></s><s style="background:#A3BE8C"></s><s style="background:#EBCB8B"></s></div><div class="sw"><span>Gruvbox</span><s style="background:#FE8019"></s><s style="background:#B8BB26"></s><s style="background:#8EC07C"></s></div></div></div>
+</div>
+<div class="grid3" style="margin-top:16px">
+ <div class="tile" style="height:210px"><h3>Liquid Glass</h3><p>Frosted, see-through surfaces on Android 12 and newer. Off in Performance mode.</p><div class="art"><div class="glass" style="height:60px"><i style="height:26px;bottom:12px"></i></div></div></div>
+ <div class="tile" style="height:210px"><h3>Offline first</h3><p>Your data stays in a local database on your phone. Backup and restore are built in.</p></div>
+ <div class="tile" style="height:210px"><h3>Free and open source</h3><p>The source is public. Built with Kotlin, Jetpack Compose and Material 3.</p></div>
+</div>
+<p class="foot">Illustrations drawn for this README from the app's colours. They are not screenshots.</p>
+<script>
+const cls={3:'p',4:'p',5:'a',10:'p',11:'p',12:'p',17:'a',18:'p',19:'t'}; const c=document.getElementById('c1');
+for(let i=0;i<28;i++){const e=document.createElement('i'); if(cls[i])e.className=cls[i]; c.appendChild(e);}
+</script></body></html>

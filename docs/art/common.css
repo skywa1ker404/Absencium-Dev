@@ -1,0 +1,17 @@
+/* Artwork for the README. Drawn from scratch in HTML and CSS for this project; colours are the app's Default Theme (Everforest, medium dark).
+   Fonts are the Inter and Outfit files bundled in the app (SIL OFL 1.1, docs/licenses). Rendered by render.py. */
+@font-face { font-family: "Inter"; font-weight: 400; src: url("../../app/src/main/res/font/inter_regular.otf"); }
+@font-face { font-family: "Inter"; font-weight: 500; src: url("../../app/src/main/res/font/inter_medium.otf"); }
+@font-face { font-family: "Inter"; font-weight: 600; src: url("../../app/src/main/res/font/inter_semibold.otf"); }
+@font-face { font-family: "Inter"; font-weight: 700; src: url("../../app/src/main/res/font/inter_bold.otf"); }
+@font-face { font-family: "Outfit"; font-weight: 700; src: url("../../app/src/main/res/font/outfit_bold.ttf"); }
+:root {
+  --bg: #2D353B; --bg1: #343F44; --bg2: #3D484D; --bg3: #475258; --fg: #D3C6AA; --muted: #9DA9A0; --outline: #7A8478;
+  --green: #A7C080; --aqua: #83C092; --yellow: #DBBC7F; --red: #E67E80;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Inter", sans-serif; color: var(--fg); background: var(--bg); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: "Outfit", "Inter", sans-serif; font-weight: 700; }
+.chip { display: inline-block; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--outline); font-size: 14px; font-weight: 500; color: var(--fg); }
+.card { background: var(--bg1); border-radius: 22px; }
+.ring { border-radius: 50%; display: grid; place-items: center; font-weight: 700; }

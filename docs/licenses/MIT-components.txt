@@ -22,7 +22,6 @@ Copyright (c) 2018 Sarah Drasner (night-owl-vscode-theme, https://github.com/sdr
 Copyright (c) 2018 Wes Bos, Roberto Achar (Cobalt2-VSCode, https://github.com/wesbos/Cobalt2-VSCode)
 Copyright (c) 2015-∞ Ahmad Awais (shades-of-purple-vscode, https://github.com/ahmadawais/shades-of-purple-vscode)
 Copyright (c) 2019 Robb Owen (synthwave-vscode, https://github.com/robb0wen/synthwave-vscode)
-Copyright (c) 2023 Loc (monokai-pro.nvim, https://github.com/loctvl842/monokai-pro.nvim)
 Copyright (c) 2015-2020 Nikyle Nguyen (papercolor-theme, https://github.com/NLKNguyen/papercolor-theme)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

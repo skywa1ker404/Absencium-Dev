@@ -368,10 +368,14 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             try {
                 var transcript: String? = null
                 var transcriptProblem: String? = null
-                try {
-                    transcript = youtube.transcript(video.id)
-                } catch (e: YouTubeException) {
-                    transcriptProblem = e.message
+                if (settings.youtubeCaptionsDirect) {
+                    try {
+                        transcript = youtube.transcript(video.id)
+                    } catch (e: YouTubeException) {
+                        transcriptProblem = e.message
+                    }
+                } else {
+                    transcriptProblem = "Reading YouTube captions directly is off. Turn it on in AI & Integrations, or use Gemini, which can watch a public link."
                 }
                 val connection = AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
                 var notes: String? = null

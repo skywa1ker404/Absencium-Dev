@@ -48,6 +48,8 @@ data class AppSettings(
     val focusGraceMinutes: Int = 5,
     val examModeAutoSilence: Boolean = false,
     val askAiEnabled: Boolean = false,
+    /** Off by default: reading a video's captions uses YouTube's unofficial app endpoint (see data/ai/YouTube.kt). */
+    val youtubeCaptionsDirect: Boolean = false,
     val aiProvider: AiProvider = AiProvider.OPENAI,
     /** Empty until the user saves a connection. Never has a trailing slash. */
     val aiBaseUrl: String = "",

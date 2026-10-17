@@ -131,7 +131,7 @@ The goal isn't to make another complicated productivity app. It's to make everyd
   </a>
   <br>
   <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fadd%2Fhttps%3A%2F%2Fgithub.com%2Fskywa1ker404%2FAbsencium">
-    <img src=".github/badge_obtainium.png" alt="Get Absencium on Obtainium" width="230">
+    <img src=".github/badge_obtainium.png" alt="Get Absencium with Obtainium" width="230">
   </a>
 </p>
 
@@ -225,6 +225,8 @@ Absencium is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
 See the [`LICENSE`](LICENSE) file for the full license text.
 
 You may use, study, modify, and redistribute the project under the terms of the GPL-3.0 license.
+
+Third-party components (fonts, icons, libraries and colour schemes) keep their own licences. They are credited in [`docs/THIRD_PARTY_LICENSES.md`](docs/THIRD_PARTY_LICENSES.md), with the full texts in [`docs/licenses`](docs/licenses). The pictures in this README are illustrations drawn for the project, not screenshots (sources in [`docs/art`](docs/art)).
 
 ---
 

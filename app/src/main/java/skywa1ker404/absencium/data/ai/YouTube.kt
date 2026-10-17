@@ -46,6 +46,10 @@ object YouTubeLinks {
  * Captions are read through YouTube's own app endpoint, which is not an official API: it can change or refuse
  * requests, and videos without captions have nothing to read. Every failure comes back as a [YouTubeException]
  * with a reason the user can act on.
+ *
+ * The caption request sends YouTube's Android app client name and user agent, so it is a terms-of-service risk as well as a
+ * reliability one (docs/LICENSE_AUDIT.md). It only runs when the user turns on "Read YouTube captions directly" in
+ * AI & Integrations; it is off by default.
  */
 class YouTubeClient {
 

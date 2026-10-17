@@ -10,6 +10,7 @@ import skywa1ker404.absencium.ui.AiKeyViewModel
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.ScreenScaffold
 import skywa1ker404.absencium.ui.components.SectionTitle
+import skywa1ker404.absencium.ui.components.SwitchCard
 import skywa1ker404.absencium.ui.containerViewModel
 
 @Destination<RootGraph>
@@ -30,5 +31,13 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
 
         SectionTitle("Integrations")
         MomentumToggle(settings, settingsViewModel)
+        SwitchCard(
+            title = "Read YouTube captions directly",
+            subtitle = "Lets the app fetch a video's captions through YouTube's own app interface, which is not an official API. " +
+                "YouTube's terms may not allow it, and it can stop working at any time. Off by default. " +
+                "With it off, Gemini can still watch a public link; other providers need this switch.",
+            checked = settings.youtubeCaptionsDirect,
+            onCheckedChange = settingsViewModel::setYoutubeCaptionsDirect,
+        )
     }
 }

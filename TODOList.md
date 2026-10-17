@@ -38,6 +38,19 @@ Last updated: 2026-10-17. Stable-repo secrets and variable: Anakin reports they 
 | 1.7 | ~~Plain platform date dialogs~~ date chooser is an app popup that follows "Apply frosted glass on other elements" (used by the holiday/exam editor and Add Entry custom date) | DONE (CI green `6834a09`, not device-tested) |
 | 1.8 | About: website link https://skywa1ker404.github.io/apps/absencium/ | DONE (CI green `6834a09`, not device-tested) |
 
+## Step 1b. Licence review fixes before GPL-3.0 approval (8 tasks)
+
+| # | Task | Status |
+| - | --- | --- |
+| 1b.1 | 16 untraceable icons replaced with Google's Material path data (Apache-2.0); Draft uses `edit_note` | WAITING FOR CI |
+| 1b.2 | ~~AI-generated `hero.png` and `showcase.png`~~ original illustrations (`docs/art/`, rendered by `render.py`), labelled as illustrations | written, images checked by eye; no code involved |
+| 1b.3 | ~~Obtainium's badge image~~ plain text badge drawn for the project | written |
+| 1b.4 | ~~Monokai Pro preset~~ removed (21 presets); stored selection falls back to the default preset | WAITING FOR CI |
+| 1b.5 | YouTube captions: unofficial endpoint is now opt-in (new setting `youtubeCaptionsDirect`, off by default, switch in AI & Integrations) | WAITING FOR CI |
+| 1b.6 | Third-party notices, README licence paragraph, `LICENSE_AUDIT.md` updated; notices no longer link dev-only files | written |
+| 1b.7 | Stable export dry run: file set builds, link check passes except `LICENSE` (expected) | DONE for the file set; stable `README.md` still to write (Step 7) |
+| 1b.8 | Decisions needed from Anakin: authorship wording, logo ownership, keep or drop the captions switch, old keys | OPEN |
+
 ## Step 2. Timetable overhaul (11 tasks) — pending, needs Room v2 migration
 
 New `teacher` column: bump the database to version 2 with a real `Migration` and an exported schema. Never destructive.
@@ -102,7 +115,7 @@ New `teacher` column: bump the database to version 2 with a real `Migration` and
 4. `release-notes/v1.0.0.md`.
 5. Run `scripts/export_stable.sh` into a temporary folder and check every link.
 6. Remove the old public keys from the tree (**needs approval**).
-7. Decide the open licence items (authorship wording, logo and hero/showcase images, 16 icons, Monokai Pro port, YouTube captions endpoint, contributor terms).
+7. Decide the remaining licence items (authorship wording, logo ownership, whether the captions switch stays, contributor terms). Icons, hero/showcase, badge and Monokai Pro are handled in Step 1b.
 8. Add the GPL-3.0 `LICENSE` (**needs approval**).
 9. On approval only: publish to `Absencium`, run the stable workflow, publish the verified 1.0.0 release, update `data/projects.json` in `skywa1ker404.github.io` (text only).
 

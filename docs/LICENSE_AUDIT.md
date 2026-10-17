@@ -3,92 +3,84 @@
 Date: 2026-10-16. Commit audited: `40bd035` plus the audit commits after it. This is an engineering review of evidence in
 the repository and the upstream projects, not legal advice. No LICENSE file was created or changed.
 
-## Readiness status: READY AFTER MANUAL REVIEW
+## Readiness status: READY AFTER YOUR FIVE DECISIONS (updated 2026-10-17)
 
 Nothing found makes GPL-3.0 impossible: every library in the release build declares Apache-2.0, MIT or BSD-3-Clause, and
-no GPL-incompatible, proprietary or unlicensed component was found. The items under "Needs your decision" cannot be
-settled from the repository and should be looked at before the first public release. One security problem (the public
-signing key) is separate from licensing but must be fixed before anything is distributed.
+no GPL-incompatible, proprietary or unlicensed component was found. The items that could be fixed in code, art and notices
+have been fixed (table below). What remains cannot be settled from the repository; it needs a statement from you
+("Decisions for you"). This is an engineering review of evidence, not legal advice. No LICENSE file was created or changed.
 
 ## What was inspected
 
-- All 130 tracked files: 85 Kotlin sources (about 17,000 lines), resources, fonts, vector drawables, docs, CI workflow,
+- All tracked files: Kotlin sources (about 17,000 lines), resources, fonts, vector drawables, docs, CI workflows,
   Gradle files, wrapper, README, `.github` images and the committed Room schema.
 - The full git history (authors, commit trailers, files that ever held keys or passwords).
-- The Gradle dependency graph of the release build (`releaseRuntimeClasspath`), resolved on CI, with the licence read from
-  each library's own POM: [DEPENDENCY_LICENSES.md](DEPENDENCY_LICENSES.md).
-- The real LICENSE file of every directly used library and of the source of every colour scheme (shallow clones of the
-  upstream repositories), the embedded licence metadata of the font files, and Google's Material icon repository.
+- The Gradle dependency graph of the release build, with the licence read from each library's own POM:
+  [DEPENDENCY_LICENSES.md](DEPENDENCY_LICENSES.md).
+- The real LICENSE file of every directly used library and of the source of every colour scheme, the embedded licence
+  metadata of the font files, and Google's Material icon repository.
 
 ## Findings
 
-### Fixed in this audit
+### Fixed
 
 | Issue | Change |
 | --- | --- |
-| `THIRD_PARTY_LICENSES.md` credited only Inter, Outfit and Backdrop. MaterialKolor, FileKit, Compose Destinations, the Material-style icons, the Gradle wrapper and all colour schemes were missing. | Rewritten with each licence and copyright line read from the component's own files. |
-| Backdrop was credited as "Copyright Kyant0". Its LICENSE says "Copyright 2025 Kyant". | Corrected. |
-| The Presets header comment named five MIT sources loosely and no licences. | Comment now lists the exact repositories; notices are in `docs/licenses/MIT-components.txt`. |
-| The fonts were credited with a link only. The OFL FAQ (Q1.20) says a mobile app should include the copyright statement, licence notice and licence text. | Upstream licence files added unchanged under `docs/licenses/`. |
-| Apache-2.0 attribution for the Material-style icons was missing. | Credited; Google's LICENSE file added. |
-| No machine-readable dependency licence list existed. | Added the manual `Dependency licence report` workflow and its output, `DEPENDENCY_LICENSES.md`. |
+| Notices missing for MaterialKolor, FileKit, Compose Destinations, icons, wrapper, colour schemes; Backdrop copyright wrong | `THIRD_PARTY_LICENSES.md` rewritten from each component's own files. |
+| Fonts credited by link only | Upstream OFL texts added under `docs/licenses/`. |
+| No dependency licence list | Manual "Dependency licence report" workflow and `DEPENDENCY_LICENSES.md`. |
+| **16 icons with no traceable source** (CalendarMonth, Search, Contrast, Palette, Storage, AutoAwesome, Science, Tune, Person, Draft, Info, History, PlayCircle, PhotoCamera, Mic, Description) | Replaced with the exact path data of Google's `materialicons` set (Apache-2.0) from `google/material-design-icons` at commit `49d4db35df`. Draft now uses Material's `edit_note` because Material Icons has no "draft" glyph. All 32 icons now come from one named source. Shapes differ very slightly from before. |
+| **`hero.png` and `showcase.png`**: AI-generated mock-ups with garbled text ("Adreranty", "Ocroper 2026"), no source or prompt in the repository, and claims the app did not meet ("Real screens", home-screen widgets) | Replaced with original illustrations drawn in HTML/CSS and rendered with Chromium (`docs/art/`). They use the app's own colours and the bundled OFL fonts, name only features that exist, and say they are illustrations, not screenshots. |
+| **Obtainium badge**: Obtainium's repository (GPL-3.0) says nothing about reusing its badge; no permission could be found | Replaced with a plain text badge drawn for this project. The link to Obtainium's own redirect service is unchanged. |
+| **Monokai Pro preset**: values came from an MIT neovim port of a commercial theme. Monokai's licence (monokai.pro/license) says "Monokai Pro may not be sub-licensed, resold, or redistributed", keeps all other rights, and covers derivative works containing it; the port's README shows no permission from Monokai | Preset removed (21 presets remain), with its notices. Anyone who had it selected falls back to the default preset. |
+| **YouTube captions** (undocumented `youtubei/v1/player` endpoint sent with the YouTube Android app's client name and user agent) | Now off by default behind an explicit switch, "Read YouTube captions directly", in AI & Integrations, with a plain warning. See "YouTube captions" below. |
+| CI published a `build-N` prerelease on every push | Removed; releases only through the manual `dev-release.yml` (Dev) and the tag-driven draft workflow (stable). |
 
-### Confirmed and still open
+### Still open
 
-1. **The signing keystore and its password are public.** The repository is public (GitHub API: `private: false`).
-   `app/signing/absencium-upgrade.jks` is tracked, and its password is written in `app/build.gradle.kts`. An older debug
-   keystore, `app/signing/trajectory-debug.jks`, with the password `trajectory-debug`, is still in git history. Anyone can
-   build an APK that Android accepts as an update to Absencium. Not a licence issue, but a blocker for any release.
-   Next step: generate a new key, store it as the four `ABSENCIUM_*` GitHub secrets (docs/SIGNING.md), then remove the
-   key and the password from the repository. The key cannot be cleaned from history without rewriting it. Because the
-   key is public, treat it as burned and do not publish releases signed with it.
-2. **CI publishes a release on every push to `main`.** `.github/workflows/android.yml` creates a `build-N` prerelease with
-   debug and optimised APKs (currently `build-38` and later). On a public repository these are public downloads. All audit
-   commits were pushed with `[skip ci]` or touched only docs, so the audit created none, but the feature commit
-   `40bd035` that preceded it did publish one automatically.
+1. **The old signing keystores are public** (`app/signing/absencium-upgrade.jks` and its password in git history,
+   `trajectory-debug.jks` in history). The build no longer uses them: Dev signs with a public throwaway key, stable only
+   with GitHub secrets. They are still tracked, and removing them needs your approval (see `docs/SIGNING.md`).
+2. **Contributor terms**: `docs/CONTRIBUTION.md` does not say under which licence contributions are accepted. Usual
+   wording: contributions are licensed under the project's licence (GPL-3.0). I did not add it; it is a term you set.
+3. **Licence notices inside the APK**: the app has no "Open-source licences" screen yet (Step 4, task 10 in `TODOList.md`).
+4. **No source scanner was run** (ScanCode needs PyPI, which the sandbox cannot reach). Run ScanCode or FOSSA once on your
+   own machine if you want that assurance.
 
-### Needs your decision (cannot be verified from here)
+### Decisions for you
 
-1. **Authorship and AI-generated code.** 39 of the 65 commits up to `40bd035` are authored as `Claude <noreply@anthropic.com>` and carry
-   `Co-Authored-By: Claude` and a session link in their messages; 17 are yours through the GitHub web editor and 8 are
-   authored as `skywa1ker404`. The README states that AI tools were used. Whether AI-generated code is copyrightable,
-   and who holds the copyright for the parts, is unsettled law and varies by country, so the repository cannot honestly
-   assert more than "written by the maintainer with AI assistance". The audit also found no copied code (no foreign
-   copyright headers, no "adapted from" notices, no pasted URLs beyond API endpoints), but a text search cannot rule out
-   that generated code resembles some existing project. No ScanCode-style scanner could be run: the sandbox cannot reach
-   PyPI. If this matters to you, run ScanCode or FOSSA once on your own machine.
-2. **Icons.** `ui/icons/AppIcons.kt` has 32 icons. The path data of 16 is identical (same coordinates) to Google's Material icons
-   (Apache-2.0), now credited. The other 16 (CalendarMonth, Search, Contrast, Palette, Storage, AutoAwesome, Science, Tune, Person,
-   Draft, Info, History, PlayCircle, PhotoCamera, Mic, Description) are Material-style but match no icon in that
-   repository, so their origin is not established. Options: keep them (they are simple pictograms, but I cannot prove
-   their origin), or redraw them yourself. Nothing was deleted.
-3. **App logo and the three `.github` images.** `ic_logo_a.xml` and the launcher icons are a traced vector of the
-   "A" mark. `hero.png` and `showcase.png` look like AI-generated mock-ups (several garbled words such as "Presences",
-   and the showcase says "Real screens" though they are not real screenshots). The repository holds no source file,
-   prompt or tool record for them. You need to confirm you created them and that the tool you used allows this use.
-   `badge_obtainium.png` is Obtainium's "Get it on" badge, which belongs to that project; check its repository for the
-   terms of reuse (I could not verify them) or replace it with a plain text link.
-4. **Monokai Pro preset.** Its values come from `loctvl842/monokai-pro.nvim` (MIT), a port of the commercial Monokai Pro
-   theme. The MIT licence covers that port's code; whether the commercial theme's owner allows reuse of its palette is not
-   something I could check. Options: keep, or remove or rename the preset. The same question applies, more weakly, to the
-   other schemes: a colour list is facts, not code, and every source repository is MIT or Apache-2.0.
-5. **Poimandres source.** The neovim port the values were first read from, `olivercederborg/poimandres.nvim`, has no
-   LICENSE file. The same hex values do appear in the original, `drcmda/poimandres-theme` (MIT), which is now the credited
-   source, so this is resolved unless you disagree.
-6. **YouTube captions.** `data/ai/YouTube.kt` calls YouTube's undocumented app endpoint (`youtubei/v1/player`) with an
-   Android client name, version and user agent. That is a Terms-of-Service question, not a copyright one, and the same
-   technique is used in other open-source projects, so I cannot say where the approach originated. The code itself is
-   short and its comments say the endpoint is unofficial.
-7. **Licence notices inside the APK.** Apache-2.0, MIT and OFL ask that recipients get the licence text and notices. The
-   source repository now has them, but the installed app has no "Open-source licences" screen. This is a small code
-   change (an About entry that shows `THIRD_PARTY_LICENSES.md`). It was not made here because any code push publishes a
-   CI prerelease; say if you want it.
-8. **Contributor terms.** `docs/CONTRIBUTION.md` does not say under which licence contributions are accepted. The usual
-   wording is that contributions are licensed under the project's licence (GPL-3.0). I did not add it, since that is a
-   term you set.
-9. **Gradle wrapper.** `gradle-wrapper.jar` matches Gradle's published wrapper checksum for 8.14.x, so it is genuine, while
-   the build downloads Gradle 9.8.1. This works. Running `./gradlew wrapper --gradle-version 9.8.1` would align them and
-   `distributionSha256Sum` can pin the download.
+1. **Authorship and AI-generated code.** 39 of the first 65 commits are authored as `Claude <noreply@anthropic.com>`,
+   17 are yours through the GitHub editor and 8 are `skywa1ker404`. Whether AI-generated code is copyrightable, and who
+   holds the copyright, is unsettled and differs by country. The README says AI tools were used. Decision: approve this
+   wording for the README and licence header: "Written by the maintainer with AI assistance. Copyright (c) 2026 skywa1ker404
+   to the extent copyright applies." (or give me yours).
+2. **The app logo** (`ic_logo_a.xml` and the launcher layers): a traced vector of the "A" mark, committed on 2026-10-15
+   from an image you supplied. The repository has no source file or record of who drew it or with what tool. Decision:
+   confirm you made it, or that its creator or tool allows this use. If you cannot, say so and I will draw an original mark
+   (a new launcher icon and splash) in its place.
+3. **YouTube captions.** Decide whether the optional switch stays at all. Options: (a) keep it, off by default (current);
+   (b) remove the unofficial fetch entirely and keep only Gemini's supported YouTube-link reading plus a "paste the
+   transcript" box; (c) keep it on by default (not recommended).
+4. **Monokai Pro.** Done (removed). If you hold a Monokai Pro licence or written permission to use its palette in a GPL
+   app, tell me and I can restore it, but I recommend leaving it out.
+5. **Anything you want credited differently** in `THIRD_PARTY_LICENSES.md` (for example your preferred copyright line).
+
+### YouTube captions: terms and reliability
+
+- What the code does: it posts to `https://www.youtube.com/youtubei/v1/player` claiming to be the YouTube Android app
+  (`clientName` "ANDROID", the app's user agent) and downloads the caption file from the address that comes back. Its own
+  comments call this unofficial.
+- Terms: I could not read YouTube's main Terms of Service (the page refuses automated reading, and I did not work around
+  that). The API Services Terms I did read say the developer may "only access (or attempt to access) the YouTube API
+  Services to develop and operate your API Client(s)" (section 3.1) and grant no right to "make audiovisual content
+  available in any manner other than through the use of the YouTube API Services" (16.3). The official captions download
+  call of the Data API only works for the video's owner, so there is no official way for this app to read other people's
+  captions. This is a terms question, not a copyright one; whether it breaches them for a user's own request is not
+  something I can decide.
+- Reliability: the client version (`20.10.38`) is hard-coded, and the endpoint and caption URLs can change or be refused
+  at any time. Videos without captions have nothing to read. The app turns each failure into a plain message.
+- Supported alternative already in the app: Gemini can read a public YouTube link directly (`file_data` in the Gemini API).
+  With the switch off, that path works; other providers need the switch or a pasted transcript.
 
 ### Checked and fine
 
@@ -118,7 +110,7 @@ Icons: Google Material icons (Apache-2.0). Colour schemes: see [THIRD_PARTY_LICE
 | `Dependency licence report` workflow (190 libraries, POM licences) | passed; every library declares a licence |
 | Upstream LICENSE files of 31 repositories | read; all MIT or Apache-2.0 (Gruvbox states MIT/X11 only in README/package.json) |
 | Font metadata (Inter, Outfit) | OFL 1.1, copyright and licence strings present |
-| Icon path data against Google's repository | 16 of 32 identical |
+| Icon path data against Google's repository | all 32 now taken from it (16 replaced) |
 | Gradle wrapper checksum against gradle.org | matches 8.14.x wrapper JAR |
 | Unit tests | none exist in the repository |
 | Source licence scanner (ScanCode and similar) | not run: no network to PyPI from the sandbox |
@@ -128,7 +120,7 @@ Nothing here means the project is legally cleared; it means no known blocker was
 
 ## What you must do
 
-1. Replace the signing key (finding 1) before publishing anything.
-2. Decide the items under "Needs your decision", at least 1, 3 and 4.
-3. Add the official GPL-3.0 text as `LICENSE` through GitHub (Add file, Create new file, name it `LICENSE`, then use the
-   "Choose a license template" button and pick GNU General Public License v3.0).
+1. Make the decisions above (at least 1, 2 and 3).
+2. Approve removing the old keystores from the tree (docs/SIGNING.md explains what that does and does not fix).
+3. Test the Dev APK, then approve 1.0.0. Only then add the official GPL-3.0 text as `LICENSE` through GitHub (Add file,
+   Create new file, name it `LICENSE`, then "Choose a license template" and pick GNU General Public License v3.0).
