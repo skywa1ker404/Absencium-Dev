@@ -32,6 +32,7 @@ import skywa1ker404.absencium.R
 import skywa1ker404.absencium.data.settings.AppSettings
 import skywa1ker404.absencium.data.settings.ColorEngine
 import skywa1ker404.absencium.data.settings.ThemeMode
+import skywa1ker404.absencium.data.settings.ThemePreset
 import com.kyant.backdrop.backdrops.LayerBackdrop
 
 /** Monet (wallpaper colors) and the real blur behind Liquid Glass both need Android 12. */
@@ -128,23 +129,28 @@ fun AbsenciumTheme(
     val isDark = resolveDark(settings, systemDark)
     val engine = effectiveColorEngine(settings.colorEngine)
 
-    val colorScheme: ColorScheme = remember(engine, isDark, settings.themePreset, settings.themeMode, context, LocalConfiguration.current) {
+    val quality = QualityProfile.of(settings.visualQuality)
+    // The Liquid Glass colours stay; only the blur itself is switched off when the quality level asks for it.
+    // Liquid Glass is a layer on top of the active theme; it needs Android 12 for the blur and Quality mode for the cost.
+    val glassActive = settings.liquidGlass && quality.blurEnabled && isMonetAndBlurSupported
+
+    val colorScheme: ColorScheme = remember(engine, isDark, settings.themePreset, settings.themeMode, glassActive, context, LocalConfiguration.current) {
         val generated = when (engine) {
             // The system's own scheme: the wallpaper colour picked in Wallpaper & style, light or dark.
             ColorEngine.MONET_WALLPAPER -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             ColorEngine.DEFAULT_PALETTE -> (if (isDark) DefaultPalette.dark else DefaultPalette.light).toColorScheme(isDark)
             ColorEngine.PRESET -> {
-                val (variantIsDark, variant) = settings.themePreset.palette().variantFor(isDark)
-                variant.toColorScheme(variantIsDark)
+                if (settings.themePreset == ThemePreset.NO_COLOUR && !glassActive) {
+                    // "No colour" exists only for Liquid Glass; with glass off the default theme is used instead.
+                    (if (isDark) DefaultPalette.dark else DefaultPalette.light).toColorScheme(isDark)
+                } else {
+                    val (variantIsDark, variant) = settings.themePreset.palette().variantFor(isDark)
+                    variant.toColorScheme(variantIsDark)
+                }
             }
         }
         if (settings.themeMode == ThemeMode.DARK_OLED && isDark) generated.oledBlack() else generated
     }
-
-    val quality = QualityProfile.of(settings.visualQuality)
-    // The Liquid Glass colours stay; only the blur itself is switched off when the quality level asks for it.
-    // Liquid Glass is a layer on top of the active theme; it needs Android 12 for the blur and Quality mode for the cost.
-    val glassActive = settings.liquidGlass && quality.blurEnabled && isMonetAndBlurSupported
 
     MaterialTheme(colorScheme = colorScheme, shapes = AbsenciumShapes, typography = AbsenciumTypography) {
         CompositionLocalProvider(

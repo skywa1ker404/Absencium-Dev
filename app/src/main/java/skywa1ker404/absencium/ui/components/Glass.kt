@@ -199,7 +199,8 @@ fun Modifier.glassPuck(backdrop: LayerBackdrop?, shape: Shape, isDark: Boolean):
         backdrop = backdrop,
         shape = { shape },
         effects = {
-            blur(10.dp.toPx())
+            // Only a light softening; the lens below is the pill's light bending and must stay (owner's rule).
+            blur(4.dp.toPx())
             lens(refractionHeight = 8.dp.toPx(), refractionAmount = 16.dp.toPx())
         },
         highlight = { Highlight.Default },

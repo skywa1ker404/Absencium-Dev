@@ -3,8 +3,13 @@
 import os, re, sys
 root = sys.argv[1] if len(sys.argv) > 1 else "."
 bad = 0
+# Verbatim copies of docs/ bundled into the app as plain text. They are shown as text, their relative links are not
+# navigable, and the originals are checked in docs/, so checking the copies only gives false alarms.
+SKIP_DIRS = (os.path.join("app", "src", "main", "assets", "licences"),)
 for dirpath, _, files in os.walk(root):
     if ".git" in dirpath.split(os.sep) or "/build" in dirpath:
+        continue
+    if any(os.path.relpath(dirpath, root).startswith(skip) for skip in SKIP_DIRS):
         continue
     for name in files:
         if not name.endswith(".md"):

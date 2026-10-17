@@ -61,6 +61,7 @@ fun ThemePreset.palette(): ThemePalette = when (this) {
     ThemePreset.SONOKAI -> Sonokai
     ThemePreset.SYNTHWAVE_84 -> SynthWave84
     ThemePreset.TOKYO_NIGHT -> TokyoNight
+    ThemePreset.NO_COLOUR -> NoColour
 }
 
 private val Catppuccin = ThemePalette(
@@ -325,4 +326,18 @@ private val SynthWave84 = ThemePalette(
         primary = c(0xFF7EDB), secondary = c(0x03EDF9), tertiary = c(0xFEDE5D), error = c(0xFE4450),
     ),
     light = null,
+)
+
+/** Neutral greys only (every channel equal), so Liquid Glass over it has no colour of its own. Not taken from any scheme. */
+private val NoColour = ThemePalette(
+    name = "No colour",
+    variants = "Plain glass · Dark · Light",
+    dark = PaletteVariant(
+        background = c(0x141414), text = c(0xEDEDED), textMuted = c(0xA3A3A3), outline = c(0x707070),
+        primary = c(0xDCDCDC), secondary = c(0xBEBEBE), tertiary = c(0x9E9E9E), error = c(0xF2B8B5),
+    ),
+    light = PaletteVariant(
+        background = c(0xF2F2F2), text = c(0x1C1C1C), textMuted = c(0x5E5E5E), outline = c(0x8C8C8C),
+        primary = c(0x3A3A3A), secondary = c(0x5A5A5A), tertiary = c(0x7A7A7A), error = c(0xB3261E),
+    ),
 )

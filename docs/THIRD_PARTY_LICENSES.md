@@ -78,7 +78,7 @@ Material's "edit_note" (Material Icons has no "draft" icon). The Apache-2.0 text
 ## Artwork in the README
 
 `.github/hero.png`, `.github/showcase.png` and `.github/badge_obtainium.png` are original illustrations drawn for this
-project in HTML and CSS and rendered with Chromium (`docs/art/`, run `python3 docs/art/render.py`). They use the app's own
+project in HTML and CSS and rendered with Chromium (sources in `docs/art/` of the Absencium-Dev repository, rendered with `python3 docs/art/render.py`). They use the app's own
 colours, the bundled Inter and Outfit fonts (SIL OFL 1.1) and no third-party logos or photographs. They are illustrations,
 not screenshots, and say so on the image. The badge is a plain text badge and does not use Obtainium's name as a logo or
 its artwork; Obtainium (https://github.com/ImranR98/Obtainium, GPL-3.0) publishes no terms for reusing its own badge, so

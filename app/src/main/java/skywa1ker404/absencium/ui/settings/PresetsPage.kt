@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import skywa1ker404.absencium.data.settings.ThemePreset
+import skywa1ker404.absencium.ui.theme.LocalGlassEnabled
 import skywa1ker404.absencium.ui.theme.ThemePalette
 import skywa1ker404.absencium.ui.theme.palette
 
@@ -76,7 +77,11 @@ fun PresetsPage(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(ThemePreset.entries.toList(), key = { it.name }) { preset ->
+                // "No colour" is offered only while Liquid Glass is on, and is listed first.
+                val glassOn = LocalGlassEnabled.current
+                val presets = (if (glassOn) listOf(ThemePreset.NO_COLOUR) else emptyList()) +
+                    ThemePreset.entries.filter { it != ThemePreset.NO_COLOUR }
+                items(presets, key = { it.name }) { preset ->
                     PresetRow(
                         palette = preset.palette(),
                         isDark = isDark,

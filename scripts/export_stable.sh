@@ -24,7 +24,11 @@ for f in SIGNING.md IDENTITY.md CONTRIBUTION.md THIRD_PARTY_LICENSES.md DEPENDEN
   [ -f "docs/$f" ] && cp "docs/$f" "$target/docs/$f"
 done
 cp -r docs/licenses "$target/docs/licenses"
-[ -f release/stable/README.md ] && cp release/stable/README.md "$target/README.md"
+# The stable README and the licence text. Both are required: the export stops if either is missing.
+[ -f release/stable/README.md ] || { echo "release/stable/README.md is missing."; exit 1; }
+[ -f LICENSE ] || { echo "LICENSE is missing."; exit 1; }
+cp release/stable/README.md "$target/README.md"
+cp LICENSE "$target/LICENSE"
 [ -d release/stable/release-notes ] && cp -r release/stable/release-notes "$target/release-notes"
 # README images (only those the stable README links).
 if [ -f "$target/README.md" ]; then
@@ -33,6 +37,13 @@ if [ -f "$target/README.md" ]; then
     if [ -e "$rel" ] && [ ! -e "$target/$rel" ]; then mkdir -p "$target/$(dirname "$rel")"; cp -r "$rel" "$target/$rel"; fi
   done
 fi
-echo "Exported to $target. Not copied on purpose: app/signing/, dev workflows, TODOList, ROADMAP, MASTER_SPEC, LICENSE_AUDIT, caches, logs."
-echo "Still missing until you approve: LICENSE (add it through GitHub)."
-echo "Check README links:"; python3 scripts/check_links.py "$target" || true
+echo "Exported to $target. Not copied on purpose: app/signing/, dev workflows, the Dev README, TODOList, ROADMAP, MASTER_SPEC, LICENSE_AUDIT, docs/art, caches, logs."
+echo "Check links and assets:"
+rc=0
+python3 scripts/check_links.py "$target" || rc=1
+# The stable tree must hold the licence text unchanged, and no keystore of any kind.
+cmp -s LICENSE "$target/LICENSE" || { echo "LICENSE differs from the source."; rc=1; }
+if find "$target" \( -name '*.jks' -o -name '*.keystore' -o -name '*.p12' -o -name '*.pfx' -o -name '*.pem' \) | grep -q .; then
+  echo "A keystore file was copied; that must never happen."; rc=1
+fi
+exit $rc
