@@ -55,9 +55,9 @@ Last updated: 2026-10-17. Stable-repo secrets and variable: Anakin reports they 
 
 | # | Task | Status |
 | - | --- | --- |
-| 1c.1 | YouTube option (b): unofficial caption fetch and its setting removed; Gemini link reading kept; paste-the-transcript box for other providers; tile and screen renamed "YouTube Video Notes" | WAITING FOR CI |
+| 1c.1 | YouTube option (b): unofficial caption fetch and its setting removed; Gemini link reading kept; paste-the-transcript box for other providers; tile and screen renamed "YouTube Video Notes" | DONE (CI green `b6c0288`, not device-tested) |
 | 1c.2 | Authorship sentence added to the README FAQ and licence section (not a substitute for the GPL text) | written |
-| 1c.3 | `absencium-upgrade.jks` removed from the tree, `.gitignore` blocks keystores, passwords out of the docs, migration plan for friends' APKs in `docs/SIGNING.md`; history not rewritten | WAITING FOR CI |
+| 1c.3 | `absencium-upgrade.jks` removed from the tree, `.gitignore` blocks keystores, passwords out of the docs, migration plan for friends' APKs in `docs/SIGNING.md`; history not rewritten | DONE (CI green `b6c0288`, not device-tested) |
 | 1c.4 | Stable CI guard: commits must be authored by skywa1ker404 (staged in `release/stable`, not published) | written, runs only after publishing |
 | 1c.5 | Logo provenance recorded (GPT, by the owner's account); OpenAI terms read; original replacement proposed, **not applied** | OPEN: needs Anakin's choice |
 | 1c.6 | Contributor-licence sentence explained; `CONTRIBUTION.md` **not changed** | OPEN: needs Anakin's wording |
