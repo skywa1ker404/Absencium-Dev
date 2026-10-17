@@ -72,15 +72,15 @@ fun PresetsPage(
                 }
                 TextButton(onClick = onDismiss) { Text("Done") }
             }
+            val glassOn = LocalGlassEnabled.current
+            val presets = (if (glassOn) listOf(ThemePreset.NO_COLOUR) else emptyList()) +
+                ThemePreset.entries.filter { it != ThemePreset.NO_COLOUR }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 // "No colour" is offered only while Liquid Glass is on, and is listed first.
-                val glassOn = LocalGlassEnabled.current
-                val presets = (if (glassOn) listOf(ThemePreset.NO_COLOUR) else emptyList()) +
-                    ThemePreset.entries.filter { it != ThemePreset.NO_COLOUR }
                 items(presets, key = { it.name }) { preset ->
                     PresetRow(
                         palette = preset.palette(),
