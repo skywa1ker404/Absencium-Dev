@@ -25,7 +25,7 @@ fun ColorEngine.label(): String = when (this) {
 }
 
 fun ColorEngine.description(): String = when (this) {
-    ColorEngine.DEFAULT_PALETTE -> "Everforest: calm greens and warm earth tones, in light and dark"
+    ColorEngine.DEFAULT_PALETTE -> "Calm greens and warm earth tones, in light and dark"
     ColorEngine.MONET_WALLPAPER -> "The colours of the wallpaper you picked in your phone's settings (Material You)"
     ColorEngine.PRESET -> "Catppuccin, Dracula, Nord, Gruvbox and more"
 }

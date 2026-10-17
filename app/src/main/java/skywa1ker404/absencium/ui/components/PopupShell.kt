@@ -81,6 +81,7 @@ fun <T : Any> AnimatedPopup(item: T?, content: @Composable (T) -> Unit) {
  * - The card owns the one size animation. Everything inside only fades and changes size at once
  *   ([LocalHostAnimatesSize]); two competing size animations make the layout stutter.
  *
+ * [centered] shows it in the middle of the screen (growing from the centre) instead of at the bottom.
  * [scrollable] wraps the content in a scroll; pass false when the content scrolls itself (a list, or its own column).
  * Tapping the dimmed area calls [onDismissRequest] only when [dismissOnOutsideTap] is set (forms keep it off).
  */
@@ -89,6 +90,7 @@ fun PopupShell(
     onDismissRequest: () -> Unit,
     scrollable: Boolean = true,
     dismissOnOutsideTap: Boolean = false,
+    centered: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val q = LocalQuality.current
@@ -115,16 +117,16 @@ fun PopupShell(
         }
         BoxWithConstraints(
             modifier = Modifier.fillMaxSize().systemBarsPadding().imePadding().padding(horizontal = 16.dp, vertical = 12.dp),
-            contentAlignment = Alignment.BottomCenter,
+            contentAlignment = if (centered) Alignment.Center else Alignment.BottomCenter,
         ) {
             val maxCardHeight = maxHeight
             AnimatedVisibility(
                 visibleState = transition,
                 enter = fadeIn(tween(160)) + expandVertically(
                     animationSpec = q.spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow),
-                    expandFrom = Alignment.Bottom,
+                    expandFrom = if (centered) Alignment.CenterVertically else Alignment.Bottom,
                 ),
-                exit = fadeOut(tween(140)) + shrinkVertically(tween(200), shrinkTowards = Alignment.Bottom),
+                exit = fadeOut(tween(140)) + shrinkVertically(tween(200), shrinkTowards = if (centered) Alignment.CenterVertically else Alignment.Bottom),
             ) {
                 Box(
                     modifier = Modifier

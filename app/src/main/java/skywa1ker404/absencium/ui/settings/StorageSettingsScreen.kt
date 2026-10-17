@@ -16,7 +16,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import android.content.Intent
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
@@ -89,14 +91,19 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
             AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true) {
                 Text("Restore ready", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "The backup is applied the next time Absencium starts. Close the app now, then open it again. " +
+                    text = "The backup is applied when Absencium starts again. Restart it now to apply it. " +
                         "Your current data is kept as a safety copy.",
                     style = MaterialTheme.typography.bodySmall,
                 )
+                val context = LocalContext.current
                 PillButton(
-                    text = "Close app",
+                    text = "Restart app",
                     onClick = {
-                        DebugLogger.i("Backup", "Closing the app so the staged restore can be applied")
+                        DebugLogger.i("Backup", "Restarting the app so the staged restore can be applied")
+                        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                        if (launch != null) {
+                            context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                        }
                         exitProcess(0)
                     },
                     modifier = Modifier.padding(top = 12.dp),

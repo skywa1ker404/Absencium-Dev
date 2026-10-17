@@ -33,7 +33,7 @@ data class AppSettings(
     /** Shown on the profile avatar and greeting. Empty until the user sets one. */
     val displayName: String = "",
     val themeMode: ThemeMode = ThemeMode.SYSTEM_AUTO,
-    val colorEngine: ColorEngine = ColorEngine.MONET_WALLPAPER,
+    val colorEngine: ColorEngine = ColorEngine.DEFAULT_PALETTE,
     /** Used while [colorEngine] is [ColorEngine.PRESET]; remembered otherwise. */
     val themePreset: ThemePreset = ThemePreset.CATPPUCCIN,
     /** Liquid Glass on top of whichever theme is active (blur and refraction need Android 12). */

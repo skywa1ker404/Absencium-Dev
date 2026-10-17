@@ -2,6 +2,12 @@ package skywa1ker404.absencium.ui.calendar
 
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.AnimatedContent
 import skywa1ker404.absencium.ui.components.Reveal
 import androidx.compose.animation.core.Spring
 import kotlin.math.roundToInt
@@ -86,6 +92,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
@@ -100,6 +107,7 @@ fun CalendarTab(
     onEditHoliday: (HolidayEntity) -> Unit,
     onOpenTimetable: () -> Unit,
     onAddNotes: (subjectId: Long, date: LocalDate) -> Unit,
+    onPickMonth: (MonthPickRequest) -> Unit,
     threshold: Int = 75,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -128,6 +136,13 @@ fun CalendarTab(
             threshold = threshold,
             onPrevious = { monthOffset-- },
             onNext = { monthOffset++ },
+            onTitleClick = {
+                onPickMonth(
+                    MonthPickRequest(month) { picked ->
+                        monthOffset = ChronoUnit.MONTHS.between(YearMonth.from(today), picked).toInt()
+                    },
+                )
+            },
             onSelect = { selectedIso = it.toString() },
         )
 
@@ -168,6 +183,10 @@ fun CalendarTab(
     }
 }
 
+/** A short fade-through between months (M3 Expressive: the old month leaves quickly, the new one eases in). */
+private fun monthFade() =
+    (fadeIn(tween(210, delayMillis = 90)) togetherWith fadeOut(tween(90))).using(SizeTransform(clip = false) { _, _ -> snap() })
+
 @Composable
 private fun MonthCard(
     month: YearMonth,
@@ -177,14 +196,12 @@ private fun MonthCard(
     threshold: Int,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onTitleClick: () -> Unit,
     onSelect: (LocalDate) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val firstDay = WeekFields.of(Locale.getDefault()).firstDayOfWeek
     val weekdays = (0..6).map { firstDay.plus(it.toLong()) }
-    // Number of empty cells before the 1st so it lands under the right weekday.
-    val leading = (month.atDay(1).dayOfWeek.value - firstDay.value + 7) % 7
-    val totalCells = ((leading + month.lengthOfMonth() + 6) / 7) * 7
     // Looked up once per change instead of once per day cell on every frame.
     val holidaysByDate = remember(data.holidays) { data.holidays.associateBy { it.date } }
     val examsByDate = remember(data.exams) { data.exams.groupBy { it.date } }
@@ -211,10 +228,21 @@ private fun MonthCard(
                 onClick = onPrevious,
                 modifier = Modifier.semantics { contentDescription = "Previous month" },
             ) { Icon(AppIcons.ChevronLeft, contentDescription = null) }
-            Text(
-                text = "${month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${month.year}",
-                style = MaterialTheme.typography.titleMedium,
-            )
+            AnimatedContent(
+                targetState = month,
+                transitionSpec = { monthFade() },
+                label = "monthTitle",
+            ) { shown ->
+                Text(
+                    text = "${shown.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${shown.year}",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable(onClick = onTitleClick)
+                        .semantics { contentDescription = "Choose month and year" }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                )
+            }
             TextButton(
                 onClick = onNext,
                 modifier = Modifier.semantics { contentDescription = "Next month" },
@@ -231,15 +259,24 @@ private fun MonthCard(
                 )
             }
         }
+        // The grid fades from one month to the next; the card (the size owner) animates the height change.
+        AnimatedContent(
+            targetState = month,
+            transitionSpec = { monthFade() },
+            label = "monthGrid",
+        ) { shown ->
+            // Number of empty cells before the 1st so it lands under the right weekday.
+            val leading = (shown.atDay(1).dayOfWeek.value - firstDay.value + 7) % 7
+            val totalCells = ((leading + shown.lengthOfMonth() + 6) / 7) * 7
         Column(modifier = Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             for (week in 0 until totalCells / 7) {
                 Row(modifier = Modifier.fillMaxWidth()) {
                     for (column in 0..6) {
                         val dayNumber = week * 7 + column - leading + 1
-                        if (dayNumber < 1 || dayNumber > month.lengthOfMonth()) {
+                        if (dayNumber < 1 || dayNumber > shown.lengthOfMonth()) {
                             Box(modifier = Modifier.weight(1f).aspectRatio(1f))
                         } else {
-                            val date = month.atDay(dayNumber)
+                            val date = shown.atDay(dayNumber)
                             val status = statusByDate[date]
                             DayCell(
                                 date = date,
@@ -249,7 +286,7 @@ private fun MonthCard(
                                 status = status,
                                 // A run of days with the same status is joined by a soft bar, within a week row.
                                 joinLeft = status != null && column > 0 && statusByDate[date.minusDays(1)] == status && dayNumber > 1,
-                                joinRight = status != null && column < 6 && statusByDate[date.plusDays(1)] == status && dayNumber < month.lengthOfMonth(),
+                                joinRight = status != null && column < 6 && statusByDate[date.plusDays(1)] == status && dayNumber < shown.lengthOfMonth(),
                                 exams = examsByDate[date].orEmpty(),
                                 onClick = { onSelect(date) },
                                 modifier = Modifier.weight(1f),
@@ -258,6 +295,7 @@ private fun MonthCard(
                     }
                 }
             }
+        }
         }
         MonthSummary(
             month = month,

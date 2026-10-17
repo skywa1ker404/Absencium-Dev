@@ -72,6 +72,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import skywa1ker404.absencium.data.db.AttendanceEntity
 import skywa1ker404.absencium.ui.components.DropdownOption
 import skywa1ker404.absencium.ui.components.InlineDropdown
+import skywa1ker404.absencium.ui.components.AnimatedPopup
+import skywa1ker404.absencium.ui.components.DatePickerPopup
 import skywa1ker404.absencium.ui.components.PopupShell
 import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.containerViewModel
@@ -183,31 +185,12 @@ fun AddEntryPopup(
                     }
     }
 
-    if (pickingDate) {
-        CustomDateDialog(initial = state.date, onPicked = viewModel::chooseDate, onDismiss = { pickingDate = false })
-    }
-}
-
-/** Lets the user choose any date, for notes that belong to a day that is not a logged absence. */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun CustomDateDialog(initial: LocalDate?, onPicked: (LocalDate) -> Unit, onDismiss: () -> Unit) {
-    val pickerState = androidx.compose.material3.rememberDatePickerState(
-        initialSelectedDateMillis = (initial ?: LocalDate.now()).atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
-    )
-    androidx.compose.material3.DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            androidx.compose.material3.TextButton(onClick = {
-                pickerState.selectedDateMillis?.let {
-                    onPicked(java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate())
-                }
-                onDismiss()
-            }) { Text("OK") }
-        },
-        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } },
-    ) {
-        androidx.compose.material3.DatePicker(state = pickerState, showModeToggle = false)
+    AnimatedPopup(if (pickingDate) true else null) {
+        DatePickerPopup(
+            initial = state.date ?: java.time.LocalDate.now(),
+            onPicked = viewModel::chooseDate,
+            onDismiss = { pickingDate = false },
+        )
     }
 }
 

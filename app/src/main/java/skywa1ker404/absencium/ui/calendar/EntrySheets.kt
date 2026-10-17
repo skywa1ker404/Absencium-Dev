@@ -23,8 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import skywa1ker404.absencium.ui.components.ExpressiveChip
 import androidx.compose.material3.Icon
@@ -35,10 +33,11 @@ import skywa1ker404.absencium.ui.components.AppTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import skywa1ker404.absencium.ui.components.OverlayStage
+import skywa1ker404.absencium.ui.components.AnimatedPopup
+import skywa1ker404.absencium.ui.components.DatePickerPopup
 import skywa1ker404.absencium.ui.components.PopupShell
 import skywa1ker404.absencium.ui.components.sheetContainerColor
 import skywa1ker404.absencium.ui.components.sheetScrimColor
@@ -58,16 +57,9 @@ import skywa1ker404.absencium.domain.pretty
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.components.PillButton
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 
 private enum class EntryType { EXAM, HOLIDAY }
-
-/** The date picker works in UTC milliseconds at the start of the chosen day. */
-private fun LocalDate.toPickerMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-
-private fun Long.fromPickerMillis(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
 
 /** The Add Calendar Entry form: a scheduled exam or a college holiday. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -335,29 +327,20 @@ fun AddEntrySheet(
         }
     }
 
-    if (showPicker) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = (if (pickingEnd) endDate else date).toPickerMillis(),
-        )
-        DatePickerDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let {
-                        if (pickingEnd) {
-                            endDate = it.fromPickerMillis()
-                        } else {
-                            date = it.fromPickerMillis()
-                            if (endDate.isBefore(date)) endDate = date
-                        }
-                    }
-                    showPicker = false
-                }) { Text("OK") }
+    AnimatedPopup(if (showPicker) true else null) {
+        DatePickerPopup(
+            initial = if (pickingEnd) endDate else date,
+            title = if (pickingEnd) "Pick the end date" else "Pick a date",
+            onPicked = {
+                if (pickingEnd) {
+                    endDate = it
+                } else {
+                    date = it
+                    if (endDate.isBefore(date)) endDate = date
+                }
             },
-            dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancel") } },
-        ) {
-            DatePicker(state = pickerState, showModeToggle = false)
-        }
+            onDismiss = { showPicker = false },
+        )
     }
 }
 

@@ -72,6 +72,7 @@ import skywa1ker404.absencium.ui.REQUIRES_ANDROID_12
 import skywa1ker404.absencium.ui.StorageViewModel
 import skywa1ker404.absencium.ui.components.AnimatedPopup
 import skywa1ker404.absencium.ui.components.AppCard
+import skywa1ker404.absencium.ui.components.GreyedOut
 import skywa1ker404.absencium.ui.components.ExpandChevron
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.OptionCard
@@ -395,12 +396,13 @@ private fun LookPage(
             title = "Liquid Glass",
             value = when {
                 !isMonetAndBlurSupported -> "Needs Android 12"
+                settings.visualQuality == VisualQuality.PERFORMANCE -> "Not in Performance mode"
                 settings.liquidGlass -> "On"
                 else -> "Off"
             },
             open = panel == PANEL_GLASS,
             active = settings.liquidGlass,
-            enabled = isMonetAndBlurSupported,
+            enabled = isMonetAndBlurSupported && settings.visualQuality != VisualQuality.PERFORMANCE,
             modifier = Modifier.weight(1f).fillMaxHeight(),
             onClick = {
                 // One tap turns glass on and opens its options; once it is on, the tile just opens and closes them.
@@ -466,6 +468,7 @@ private fun LookPage(
             }
         }
         Reveal(visible = panel == PANEL_GLASS) {
+            GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
             PanelColumn {
                 SwitchCard(
                     title = "Liquid Glass",
@@ -484,6 +487,7 @@ private fun LookPage(
                         )
                     }
                 }
+            }
             }
         }
     }

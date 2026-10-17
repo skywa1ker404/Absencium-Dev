@@ -62,6 +62,8 @@ import skywa1ker404.absencium.ui.calendar.AddEntrySheet
 import skywa1ker404.absencium.ui.calendar.CalendarTab
 import skywa1ker404.absencium.ui.calendar.CalendarViewModel
 import skywa1ker404.absencium.ui.calendar.ExamDetailSheet
+import skywa1ker404.absencium.ui.calendar.MonthPickRequest
+import skywa1ker404.absencium.ui.calendar.MonthYearPopup
 import skywa1ker404.absencium.ui.components.AnimatedPopup
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.calendar.TimetablePopup
@@ -147,6 +149,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var importKind by remember { mutableStateOf<ImportKind?>(null) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var showTimetable by rememberSaveable { mutableStateOf(false) }
+    var monthPicker by remember { mutableStateOf<MonthPickRequest?>(null) }
     var showDrafts by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
@@ -252,6 +255,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onOpenTimetable = { showTimetable = true },
                             threshold = settings.attendanceThresholdPercent,
                             onAddNotes = { subjectId, date -> addEntry = AddEntryRequest(subjectId, date) },
+                            onPickMonth = { monthPicker = it },
                         )
 
                         else -> {
@@ -458,6 +462,10 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     initialSubjectId = request.subjectId,
                     initialDate = request.date,
                 )
+            }
+
+            AnimatedPopup(monthPicker) { request ->
+                MonthYearPopup(request = request, onDismiss = { monthPicker = null })
             }
 
             AnimatedPopup(if (showTimetable) true else null) {

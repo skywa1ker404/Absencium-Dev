@@ -28,6 +28,7 @@ import skywa1ker404.absencium.ui.icons.AppIcons
 
 const val DEVELOPER_NAME = "Skywa1ker"
 const val REPOSITORY_URL = "https://github.com/skywa1ker404/Absencium"
+const val WEBSITE_URL = "https://skywa1ker404.github.io/apps/absencium/"
 
 @Destination<RootGraph>
 @Composable
@@ -83,17 +84,24 @@ fun AboutScreen(navigator: DestinationsNavigator) {
                 }
             }
         }
+        val openLink = { url: String ->
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(context, "No app can open links on this phone.", Toast.LENGTH_SHORT).show()
+            }
+        }
+        NavCard(
+            icon = AppIcons.OpenInNew,
+            title = "Website",
+            subtitle = "skywa1ker404.github.io/apps/absencium",
+            onClick = { openLink(WEBSITE_URL) },
+        )
         NavCard(
             icon = AppIcons.OpenInNew,
             title = "GitHub",
             subtitle = "github.com/skywa1ker404/Absencium",
-            onClick = {
-                try {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(REPOSITORY_URL)))
-                } catch (e: ActivityNotFoundException) {
-                    Toast.makeText(context, "No app can open links on this phone.", Toast.LENGTH_SHORT).show()
-                }
-            },
+            onClick = { openLink(REPOSITORY_URL) },
         )
 
         SectionTitle("What's new")

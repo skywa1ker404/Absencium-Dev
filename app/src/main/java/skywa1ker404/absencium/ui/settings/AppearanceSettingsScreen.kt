@@ -30,6 +30,7 @@ import skywa1ker404.absencium.ui.components.SliderCard
 import skywa1ker404.absencium.ui.description
 import skywa1ker404.absencium.ui.label
 import skywa1ker404.absencium.ui.theme.isDarkTheme
+import skywa1ker404.absencium.ui.components.GreyedOut
 import skywa1ker404.absencium.ui.theme.isMonetAndBlurSupported
 import skywa1ker404.absencium.ui.theme.palette
 
@@ -55,7 +56,9 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
 
         if (settings.liquidGlass && isMonetAndBlurSupported) {
             SectionTitle("Frosted glass intensity")
-            GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
+            GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
+                GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
+            }
         }
     }
 }
@@ -135,18 +138,20 @@ fun ColorEngineChoices(
             "Frosted glass over any theme.\n$REQUIRES_ANDROID_12"
         },
         checked = settings.liquidGlass,
-        enabled = isMonetAndBlurSupported,
+        enabled = isMonetAndBlurSupported && settings.visualQuality != VisualQuality.PERFORMANCE,
         onCheckedChange = onGlassToggle,
     )
     // Appears with the same springy expansion as the notes list on the Attendance tab, and folds away with Liquid Glass.
     Reveal(visible = settings.liquidGlass && isMonetAndBlurSupported) {
-        SwitchCard(
-            title = "Apply frosted glass on other elements",
-            subtitle = "Also frost the profile, search, Add Entry, import and colour dialogs. " +
-                "Turn it off to keep them solid when see-through glass makes them hard to read.",
-            checked = settings.frostedOverlays,
-            onCheckedChange = onFrostedToggle,
-        )
+        GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
+            SwitchCard(
+                title = "Apply frosted glass on other elements",
+                subtitle = "Also frost the profile, search, Add Entry, import and colour dialogs. " +
+                    "Turn it off to keep them solid when see-through glass makes them hard to read.",
+                checked = settings.frostedOverlays,
+                onCheckedChange = onFrostedToggle,
+            )
+        }
     }
     if (showPresets) {
         PresetsPage(
