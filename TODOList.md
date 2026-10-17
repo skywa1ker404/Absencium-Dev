@@ -42,11 +42,11 @@ Last updated: 2026-10-17. Stable-repo secrets and variable: Anakin reports they 
 
 | # | Task | Status |
 | - | --- | --- |
-| 1b.1 | 16 untraceable icons replaced with Google's Material path data (Apache-2.0); Draft uses `edit_note` | WAITING FOR CI |
+| 1b.1 | 16 untraceable icons replaced with Google's Material path data (Apache-2.0); Draft uses `edit_note` | DONE (CI green `8099a04`, not device-tested) |
 | 1b.2 | ~~AI-generated `hero.png` and `showcase.png`~~ original illustrations (`docs/art/`, rendered by `render.py`), labelled as illustrations | written, images checked by eye; no code involved |
 | 1b.3 | ~~Obtainium's badge image~~ plain text badge drawn for the project | written |
-| 1b.4 | ~~Monokai Pro preset~~ removed (21 presets); stored selection falls back to the default preset | WAITING FOR CI |
-| 1b.5 | YouTube captions: unofficial endpoint is now opt-in (new setting `youtubeCaptionsDirect`, off by default, switch in AI & Integrations) | WAITING FOR CI |
+| 1b.4 | ~~Monokai Pro preset~~ removed (21 presets); stored selection falls back to the default preset | DONE (CI green `8099a04`, not device-tested) |
+| 1b.5 | YouTube captions: unofficial endpoint is now opt-in (new setting `youtubeCaptionsDirect`, off by default, switch in AI & Integrations) | DONE (CI green `8099a04`, not device-tested) |
 | 1b.6 | Third-party notices, README licence paragraph, `LICENSE_AUDIT.md` updated; notices no longer link dev-only files | written |
 | 1b.7 | Stable export dry run: file set builds, link check passes except `LICENSE` (expected) | DONE for the file set; stable `README.md` still to write (Step 7) |
 | 1b.8 | Decisions needed from Anakin: authorship wording, logo ownership, keep or drop the captions switch, old keys | OPEN |
