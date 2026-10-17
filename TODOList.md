@@ -10,7 +10,7 @@ Single source of truth for what is done, in progress, pending and planned. Updat
 - Steps are in implementation order; each heading shows how many tasks the step holds.
 - Development, CI, testing and reports happen in `skywa1ker404/Absencium-Dev`. `skywa1ker404/Absencium` stays empty until a stable 1.0.0 is recommended, tested and explicitly approved by Anakin.
 
-Last updated: 2026-10-17.
+Last updated: 2026-10-17. Stable-repo secrets and variable: Anakin reports they are set in `Absencium` settings (not verifiable from here; no values were read).
 
 ---
 
@@ -18,25 +18,25 @@ Last updated: 2026-10-17.
 
 | # | Task | Status |
 | - | --- | --- |
-| 0.1 | Dev application ID `skywa1ker404.absencium.dev`, stable ID `skywa1ker404.absencium`, chosen by `absenciumChannel` | WAITING FOR CI (release APK built, debug APK blocked by 0.6) |
-| 0.2 | Dev signs with the public throwaway key `app/signing/absencium-dev.jks`; stable signs only from the four `ABSENCIUM_*` secrets | WAITING FOR CI |
-| 0.3 | ~~CI publishes a `build-N` prerelease on every push~~ CI builds, tests and uploads APK artifacts only; releases come from the manual `dev-release.yml` | WAITING FOR CI |
-| 0.4 | APK verification script (`verify_apk.sh`: ID, certificate, ABIs, SHA-256) | WAITING FOR CI |
+| 0.1 | Dev application ID `skywa1ker404.absencium.dev`, stable ID `skywa1ker404.absencium`, chosen by `absenciumChannel` | DONE (CI green `6834a09`, not device-tested) |
+| 0.2 | Dev signs with the public throwaway key `app/signing/absencium-dev.jks`; stable signs only from the four `ABSENCIUM_*` secrets | DONE (CI green `6834a09`, not device-tested) |
+| 0.3 | ~~CI publishes a `build-N` prerelease on every push~~ CI builds, tests and uploads APK artifacts only; releases come from the manual `dev-release.yml` | DONE (CI green `6834a09`, not device-tested) |
+| 0.4 | APK verification script (`verify_apk.sh`: ID, certificate, ABIs, SHA-256) | DONE (CI green `6834a09`, not device-tested) |
 | 0.5 | Stable repo templates in `release/stable/` and `scripts/export_stable.sh` with a link check | written, export dry run pending |
-| 0.6 | **Bug:** the "Identity and secret guard" matched its own pattern list in `android.yml` and failed `assemble-debug`. Fixed by excluding `.github` and `release` from the scan; error comment no longer empty | WAITING FOR CI |
+| 0.6 | **Bug:** the "Identity and secret guard" matched its own pattern list in `android.yml` and failed `assemble-debug`. Fixed by excluding `.github` and `release` from the scan; error comment no longer empty | DONE (CI green `6834a09`, not device-tested) |
 
 ## Step 1. Reported bugs and small UX fixes (8 tasks)
 
 | # | Task | Status |
 | - | --- | --- |
-| 1.1 | Default Theme description no longer says "Everforest" | WAITING FOR CI |
-| 1.2 | ~~Default colour engine: Monet~~ the app starts on the Default Theme; it can still be changed in onboarding | WAITING FOR CI |
-| 1.3 | ~~Restore card: "Close app"~~ "Restart app" relaunches Absencium so the staged restore is applied | WAITING FOR CI |
-| 1.4 | Liquid Glass options greyed out and not tappable in Performance mode (onboarding tile and panel, Appearance settings switch, blur slider, "Apply frosted glass on other elements") | WAITING FOR CI |
-| 1.5 | Calendar month forward/back: short fade-through (90 ms out, 210 ms in) while the card animates its height | WAITING FOR CI |
-| 1.6 | Tap "Month Year" in the calendar header: centred popup with year arrows and a month grid | WAITING FOR CI |
-| 1.7 | ~~Plain platform date dialogs~~ date chooser is an app popup that follows "Apply frosted glass on other elements" (used by the holiday/exam editor and Add Entry custom date) | WAITING FOR CI |
-| 1.8 | About: website link https://skywa1ker404.github.io/apps/absencium/ | WAITING FOR CI |
+| 1.1 | Default Theme description no longer says "Everforest" | DONE (CI green `6834a09`, not device-tested) |
+| 1.2 | ~~Default colour engine: Monet~~ the app starts on the Default Theme; it can still be changed in onboarding | DONE (CI green `6834a09`, not device-tested) |
+| 1.3 | ~~Restore card: "Close app"~~ "Restart app" relaunches Absencium so the staged restore is applied | DONE (CI green `6834a09`, not device-tested) |
+| 1.4 | Liquid Glass options greyed out and not tappable in Performance mode (onboarding tile and panel, Appearance settings switch, blur slider, "Apply frosted glass on other elements") | DONE (CI green `6834a09`, not device-tested) |
+| 1.5 | Calendar month forward/back: short fade-through (90 ms out, 210 ms in) while the card animates its height | DONE (CI green `6834a09`, not device-tested) |
+| 1.6 | Tap "Month Year" in the calendar header: centred popup with year arrows and a month grid | DONE (CI green `6834a09`, not device-tested) |
+| 1.7 | ~~Plain platform date dialogs~~ date chooser is an app popup that follows "Apply frosted glass on other elements" (used by the holiday/exam editor and Add Entry custom date) | DONE (CI green `6834a09`, not device-tested) |
+| 1.8 | About: website link https://skywa1ker404.github.io/apps/absencium/ | DONE (CI green `6834a09`, not device-tested) |
 
 ## Step 2. Timetable overhaul (11 tasks) — pending, needs Room v2 migration
 
@@ -109,7 +109,7 @@ New `teacher` column: bump the database to version 2 with a real `Migration` and
 ---
 
 ## Known bugs
-- Dev debug build failed on `0b1ab56` because of the guard (task 0.6). Fix pending CI.
+- ~~Dev debug build failed on `0b1ab56` because of the guard (task 0.6).~~ Fixed; CI green on `6834a09`. A first compile error in the month fade (`using` outside its scope) was fixed the same way.
 - No unit tests exist; `testDebugUnitTest` runs with nothing to test.
 
 ## Open decisions for Anakin
