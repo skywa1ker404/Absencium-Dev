@@ -5,7 +5,6 @@ import android.graphics.BitmapFactory
 import skywa1ker404.absencium.logging.DebugLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -42,14 +41,10 @@ object YouTubeLinks {
 }
 
 /**
- * Reads a video's public details (YouTube's oEmbed endpoint, which is documented and needs no key) and its captions.
- * Captions are read through YouTube's own app endpoint, which is not an official API: it can change or refuse
- * requests, and videos without captions have nothing to read. Every failure comes back as a [YouTubeException]
- * with a reason the user can act on.
- *
- * The caption request sends YouTube's Android app client name and user agent, so it is a terms-of-service risk as well as a
- * reliability one (docs/LICENSE_AUDIT.md). It only runs when the user turns on "Read YouTube captions directly" in
- * AI & Integrations; it is off by default.
+ * Reads a video's public details through YouTube's oEmbed endpoint, which is documented and needs no key. It does not
+ * read captions or download anything from YouTube: the app has no unofficial YouTube access. Notes from a video come from
+ * Gemini, which can read a public link itself, or from a transcript the user pastes. Every failure comes back as a
+ * [YouTubeException] with a reason the user can act on.
  */
 class YouTubeClient {
 
@@ -96,62 +91,6 @@ class YouTubeClient {
         }
     }
 
-    /** The video's captions as plain text, without timestamps. Prefers a hand-written English track. */
-    suspend fun transcript(videoId: String): String = withContext(Dispatchers.IO) {
-        val payload = JSONObject()
-            .put(
-                "context",
-                JSONObject().put(
-                    "client",
-                    JSONObject().put("clientName", "ANDROID").put("clientVersion", ANDROID_CLIENT_VERSION).put("hl", "en"),
-                ),
-            )
-            .put("videoId", videoId)
-        val reply = request(
-            "POST",
-            "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
-            mapOf(
-                "Content-Type" to "application/json",
-                "User-Agent" to "com.google.android.youtube/$ANDROID_CLIENT_VERSION (Linux; U; Android 14) gzip",
-            ),
-            payload.toString(),
-        )
-        val json = try {
-            JSONObject(reply)
-        } catch (e: org.json.JSONException) {
-            throw YouTubeException("YouTube sent back an answer the app could not read.")
-        }
-        val playability = json.optJSONObject("playabilityStatus")
-        val status = playability?.optString("status").orEmpty()
-        if (status.isNotEmpty() && status != "OK") {
-            val reason = playability?.optString("reason").orEmpty().ifBlank { status }
-            throw YouTubeException("YouTube will not give out this video's captions: $reason")
-        }
-        val tracks = json.optJSONObject("captions")
-            ?.optJSONObject("playerCaptionsTracklistRenderer")
-            ?.optJSONArray("captionTracks")
-        if (tracks == null || tracks.length() == 0) {
-            throw YouTubeException("This video has no captions, so there is no transcript to read.")
-        }
-        val track = pickTrack(tracks)
-        val baseUrl = track.optString("baseUrl")
-        if (baseUrl.isBlank()) throw YouTubeException("YouTube did not give a caption address for this video.")
-        val xml = request("GET", baseUrl, mapOf("User-Agent" to "Mozilla/5.0"), null)
-        val text = parseCaptions(xml)
-        if (text.isBlank()) throw YouTubeException("The captions came back empty. YouTube may be limiting caption downloads right now.")
-        text
-    }
-
-    private fun pickTrack(tracks: JSONArray): JSONObject {
-        val all = (0 until tracks.length()).map { tracks.getJSONObject(it) }
-        fun english(t: JSONObject) = t.optString("languageCode").startsWith("en")
-        fun manual(t: JSONObject) = t.optString("kind") != "asr"
-        return all.firstOrNull { english(it) && manual(it) }
-            ?: all.firstOrNull { manual(it) }
-            ?: all.firstOrNull { english(it) }
-            ?: all.first()
-    }
-
     private fun request(method: String, url: String, headers: Map<String, String>, body: String?): String {
         val shown = url.substringBefore('?')
         val connection = try {
@@ -186,36 +125,5 @@ class YouTubeClient {
 
     private companion object {
         const val TAG = "YouTube"
-        const val ANDROID_CLIENT_VERSION = "20.10.38"
     }
-}
-
-private val TextTag = Regex("""<text[^>]*>(.*?)</text>""", RegexOption.DOT_MATCHES_ALL)
-private val ParagraphTag = Regex("""<p[^>]*>(.*?)</p>""", RegexOption.DOT_MATCHES_ALL)
-private val AnyTag = Regex("""<[^>]+>""")
-private val NumericEntity = Regex("""&#(x?[0-9a-fA-F]+);""")
-
-/** Turns a YouTube caption file (either of its XML shapes) into one block of plain text. */
-internal fun parseCaptions(xml: String): String {
-    val lines = TextTag.findAll(xml).map { it.groupValues[1] }.toList()
-        .ifEmpty { ParagraphTag.findAll(xml).map { it.groupValues[1] }.toList() }
-    return lines
-        .map { decodeEntities(decodeEntities(AnyTag.replace(it, ""))).replace('\n', ' ').trim() }
-        .filter { it.isNotEmpty() }
-        .joinToString(" ")
-}
-
-private fun decodeEntities(text: String): String {
-    val numeric = NumericEntity.replace(text) { m ->
-        val raw = m.groupValues[1]
-        val code = if (raw.startsWith("x", ignoreCase = true)) raw.substring(1).toIntOrNull(16) else raw.toIntOrNull()
-        if (code != null && code in 1..0x10FFFF) String(Character.toChars(code)) else m.value
-    }
-    return numeric
-        .replace("&quot;", "\"")
-        .replace("&apos;", "'")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&nbsp;", " ")
-        .replace("&amp;", "&")
 }

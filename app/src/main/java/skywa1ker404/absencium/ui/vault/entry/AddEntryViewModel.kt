@@ -40,8 +40,8 @@ import kotlinx.coroutines.delay
 /** The steps of the Add Entry popup. */
 enum class EntryStage { SUBJECT, ACTIONS, PICTURES, YOUTUBE }
 
-/** Which part of the YouTube pipeline is running. */
-enum class YouTubeStep { IDLE, TRANSCRIPT, NOTES }
+/** Whether the AI is writing notes from the video. */
+enum class YouTubeStep { IDLE, NOTES }
 
 /** A photo that was picked or taken but is not saved into an entry yet. */
 data class PendingPicture(val id: Long, val path: String, val name: String, val mimeType: String, val sizeBytes: Long)
@@ -62,6 +62,8 @@ data class AddEntryState(
     val videoLoading: Boolean = false,
     val videoError: String? = null,
     val youtubeStep: YouTubeStep = YouTubeStep.IDLE,
+    /** A transcript the user pasted; used for notes with any provider and saved under the notes. */
+    val pastedTranscript: String = "",
     /** True when the user tried to use AI before a provider, model and key were saved. */
     val aiSetupMissing: Boolean = false,
     val youtubeError: String? = null,
@@ -346,49 +348,43 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    fun setPastedTranscript(text: String) = _state.update { it.copy(pastedTranscript = text, youtubeError = null) }
+
+    /** True when the chosen AI provider is Gemini, which can read a public YouTube link without a transcript. */
+    fun canWatchLink(): Boolean = container.settingsState.value?.effectiveAiStyle == ApiStyle.GEMINI
+
     fun dismissAiSetup() = _state.update { it.copy(aiSetupMissing = false) }
 
     /**
-     * Fetches the transcript, has the AI write study notes from it and saves the result as a new entry.
-     * With [skipAi] the transcript alone is saved. Nothing is thrown away: the saved entry keeps the transcript
-     * under the notes. [onSaved] gets the new entry's id.
+     * Has the AI write study notes and saves them as a new entry. The notes come from the pasted transcript when there is
+     * one (any provider), otherwise from the video link itself (Gemini only). With [skipAi] the pasted transcript alone is
+     * saved. Nothing is thrown away: the saved entry keeps the transcript under the notes. [onSaved] gets the new entry's id.
      */
     fun transcribe(skipAi: Boolean, onSaved: (Long) -> Unit) {
         val current = _state.value
         val video = current.video ?: return
         if (current.youtubeStep != YouTubeStep.IDLE || current.subjectId == 0L) return
         val settings = container.settingsState.value ?: return
+        val transcript = current.pastedTranscript.trim().ifEmpty { null }
         val ready = aiReady(settings, container.apiKeyVault.hasKey())
         if (!ready && !skipAi) {
             _state.update { it.copy(aiSetupMissing = true, youtubeError = null) }
             return
         }
-        _state.update { it.copy(youtubeStep = YouTubeStep.TRANSCRIPT, aiSetupMissing = false, youtubeError = null) }
+        _state.update { it.copy(youtubeStep = YouTubeStep.NOTES, aiSetupMissing = false, youtubeError = null) }
         pipelineJob = viewModelScope.launch {
             try {
-                var transcript: String? = null
-                var transcriptProblem: String? = null
-                if (settings.youtubeCaptionsDirect) {
-                    try {
-                        transcript = youtube.transcript(video.id)
-                    } catch (e: YouTubeException) {
-                        transcriptProblem = e.message
-                    }
-                } else {
-                    transcriptProblem = "Reading YouTube captions directly is off. Turn it on in AI & Integrations, or use Gemini, which can watch a public link."
-                }
                 val connection = AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
                 var notes: String? = null
                 if (!skipAi) {
-                    _state.update { it.copy(youtubeStep = YouTubeStep.NOTES) }
                     notes = when {
                         transcript != null -> container.aiClient.generate(connection, notesPrompt(video, transcript))
                         connection.style == ApiStyle.GEMINI ->
                             container.aiClient.generate(connection, notesPromptFromVideo(video), videoUrl = video.url)
-                        else -> throw YouTubeException(transcriptProblem ?: "The transcript could not be read.")
+                        else -> throw YouTubeException(NEEDS_TRANSCRIPT)
                     }
                 } else if (transcript == null) {
-                    throw YouTubeException(transcriptProblem ?: "The transcript could not be read.")
+                    throw YouTubeException(NEEDS_TRANSCRIPT)
                 }
                 val body = buildString {
                     append("# ").append(video.title).append("\n")
@@ -417,7 +413,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: YouTubeException) {
                 _state.update { it.copy(youtubeStep = YouTubeStep.IDLE, youtubeError = e.message) }
             } catch (e: Exception) {
-                DebugLogger.e("YouTube", "The transcription pipeline failed", e)
+                DebugLogger.e("YouTube", "The notes pipeline failed", e)
                 _state.update { it.copy(youtubeStep = YouTubeStep.IDLE, youtubeError = "Something went wrong: ${e.message ?: e.javaClass.simpleName}") }
             }
         }
@@ -450,6 +446,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
     private companion object {
         const val MAX_TRANSCRIPT_CHARS = 120_000
+        const val NEEDS_TRANSCRIPT = "Paste the video's transcript below. Only Gemini can write notes from the link alone."
         const val MAX_EXTRACT_PHOTOS = 8
         const val EXTRACT_EDGE = 1600
     }

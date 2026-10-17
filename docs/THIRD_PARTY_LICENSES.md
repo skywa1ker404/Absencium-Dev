@@ -84,6 +84,13 @@ not screenshots, and say so on the image. The badge is a plain text badge and do
 its artwork; Obtainium (https://github.com/ImranR98/Obtainium, GPL-3.0) publishes no terms for reusing its own badge, so
 its badge is not used.
 
+## App logo
+
+The "A" logo (`app/src/main/res/drawable/ic_logo_a.xml` and the launcher icon layers) was, by the project owner's account,
+generated using GPT (OpenAI). OpenAI's terms say the user owns the Output, with OpenAI assigning its rights, if any, to the
+extent the law permits; whether such an image is protected by copyright is unsettled, and no source file or prompt is kept.
+The logo is shown here for transparency and may be replaced; see the pre-licence review in the development repository.
+
 ## Colour schemes (Presets page)
 
 Only colour values are used; no theme code is copied. Each scheme's values were read from the repository below.

@@ -226,6 +226,8 @@ See the [`LICENSE`](LICENSE) file for the full license text.
 
 You may use, study, modify, and redistribute the project under the terms of the GPL-3.0 license.
 
+Written by the maintainer with AI assistance. Copyright (c) 2026 skywa1ker404 to the extent copyright applies. This notice only names the author; it does not replace or change the GPL-3.0 text, which alone sets the licence terms.
+
 Third-party components (fonts, icons, libraries and colour schemes) keep their own licences. They are credited in [`docs/THIRD_PARTY_LICENSES.md`](docs/THIRD_PARTY_LICENSES.md), with the full texts in [`docs/licenses`](docs/licenses). The pictures in this README are illustrations drawn for the project, not screenshots (sources in [`docs/art`](docs/art)).
 
 ---
@@ -292,6 +294,8 @@ Nope. Support is completely optional.
 <summary><strong>Who's making Absencium?</strong></summary>
 
 Absencium is an independent project built around my ideas for making everyday academic life easier. I handle the feature planning, design decisions, and overall direction of the project, using AI-assisted tools to help build and improve the app.
+
+Written by the maintainer with AI assistance. Copyright (c) 2026 skywa1ker404 to the extent copyright applies.
 
 I'm a student building something I hope will be useful to other students, learning along the way. ☕
 

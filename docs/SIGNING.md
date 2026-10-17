@@ -11,12 +11,13 @@ certificate. Absencium therefore uses two separate keys.
 The two channels are also different apps on a phone: Dev installs as `skywa1ker404.absencium.dev` ("Absencium Dev"), stable as
 `skywa1ker404.absencium`. A dev build can never update or overwrite the stable app.
 
-## The retired key
+## The retired keys
 
-`app/signing/absencium-upgrade.jks` and its password were committed to a public repository and are **compromised**. So is the
-older `app/signing/trajectory-debug.jks` (password `trajectory-debug`) in git history. Nothing in the build uses either of
-them any more. They stay in the tree only until you approve their removal (the history keeps them either way; see
-"Removing the old key").
+Two earlier keystores were committed to a public repository, so they are **compromised** and nothing may be signed with them:
+`app/signing/absencium-upgrade.jks` (removed from the current tree on 2026-10-17) and the older `app/signing/trajectory-debug.jks`
+(removed earlier). No password for either is written anywhere in the current tree. They remain in Git history, which has not been
+rewritten (see "Removing the old key"). Nothing in the build uses them; a scan of the tree on 2026-10-17 found no other copy of a
+keystore (`.jks`, `.keystore`, `.p12`, `.pfx`, `.pem`) apart from the public Dev key, and `.gitignore` now blocks new ones.
 
 ## Create the stable key (you do this, on your own computer)
 
@@ -68,10 +69,20 @@ secrets. Without them a stable release build is unsigned and the workflow stops.
 
 ## Removing the old key
 
-Deleting `absencium-upgrade.jks`, `trajectory-debug.jks` and the old passwords from the tree only hides them from new commits.
-Anyone who already cloned the repository, and the Git history of the old repository, still have them. Treat the keys as
-public forever, which is fine as long as nothing signs with them. Rewriting history is not needed once nothing trusts them, and
-it breaks every clone, so I will not do it without your explicit decision.
+The two keystores and their passwords are gone from the current tree (2026-10-17). That only hides them from new commits. Anyone
+who already cloned the repository, and the Git history, still have them. Treat the keys as public forever, which is fine as long
+as nothing signs with them. Rewriting history is not needed once nothing trusts them, and it breaks every clone, so it is not done
+without a separate explicit decision.
+
+## Plan for the APKs already given to friends
+
+1. Builds shared so far are signed with one of the retired keys or, before 2026-10-12, with a throwaway CI debug key (see "Updating existing installs"). They keep working; nothing is taken away from them.
+2. Dev builds (`skywa1ker404.absencium.dev`) are a different app and install next to them. They never update those APKs.
+3. Stable 1.0.0 (`skywa1ker404.absencium`, new key) cannot be installed over a build signed with a retired key. For each friend:
+   export a backup (Settings, Storage), uninstall the old Absencium, install 1.0.0, then Restore the backup.
+4. From 1.0.0 the stable key never changes, so every later version updates in place.
+5. Until 1.0.0 exists, friends should not install anything that claims to be an Absencium update: only APKs from the Dev
+   repository's artifacts or releases, with the SHA-256 listed beside them.
 
 ## Play Store
 

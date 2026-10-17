@@ -10,3 +10,10 @@ local.properties
 *.apk
 *.aab
 .DS_Store
+
+# Keystores are never committed. The one exception is the public Dev key (docs/SIGNING.md).
+*.jks
+*.keystore
+*.p12
+*.pfx
+!app/signing/absencium-dev.jks

@@ -46,10 +46,22 @@ Last updated: 2026-10-17. Stable-repo secrets and variable: Anakin reports they 
 | 1b.2 | ~~AI-generated `hero.png` and `showcase.png`~~ original illustrations (`docs/art/`, rendered by `render.py`), labelled as illustrations | written, images checked by eye; no code involved |
 | 1b.3 | ~~Obtainium's badge image~~ plain text badge drawn for the project | written |
 | 1b.4 | ~~Monokai Pro preset~~ removed (21 presets); stored selection falls back to the default preset | DONE (CI green `8099a04`, not device-tested) |
-| 1b.5 | YouTube captions: unofficial endpoint is now opt-in (new setting `youtubeCaptionsDirect`, off by default, switch in AI & Integrations) | DONE (CI green `8099a04`, not device-tested) |
+| 1b.5 | ~~YouTube captions: unofficial endpoint opt-in switch~~ superseded by 1c.1 | DONE (CI green `8099a04`, not device-tested) |
 | 1b.6 | Third-party notices, README licence paragraph, `LICENSE_AUDIT.md` updated; notices no longer link dev-only files | written |
 | 1b.7 | Stable export dry run: file set builds, link check passes except `LICENSE` (expected) | DONE for the file set; stable `README.md` still to write (Step 7) |
 | 1b.8 | Decisions needed from Anakin: authorship wording, logo ownership, keep or drop the captions switch, old keys | OPEN |
+
+## Step 1c. Resolved audit decisions (7 tasks)
+
+| # | Task | Status |
+| - | --- | --- |
+| 1c.1 | YouTube option (b): unofficial caption fetch and its setting removed; Gemini link reading kept; paste-the-transcript box for other providers; tile and screen renamed "YouTube Video Notes" | WAITING FOR CI |
+| 1c.2 | Authorship sentence added to the README FAQ and licence section (not a substitute for the GPL text) | written |
+| 1c.3 | `absencium-upgrade.jks` removed from the tree, `.gitignore` blocks keystores, passwords out of the docs, migration plan for friends' APKs in `docs/SIGNING.md`; history not rewritten | WAITING FOR CI |
+| 1c.4 | Stable CI guard: commits must be authored by skywa1ker404 (staged in `release/stable`, not published) | written, runs only after publishing |
+| 1c.5 | Logo provenance recorded (GPT, by the owner's account); OpenAI terms read; original replacement proposed, **not applied** | OPEN: needs Anakin's choice |
+| 1c.6 | Contributor-licence sentence explained; `CONTRIBUTION.md` **not changed** | OPEN: needs Anakin's wording |
+| 1c.7 | `LICENSE_AUDIT.md` and notices updated; source scanner could not run (no PyPI), so verification is incomplete | DONE (documents) |
 
 ## Step 2. Timetable overhaul (11 tasks) — pending, needs Room v2 migration
 
@@ -114,8 +126,8 @@ New `teacher` column: bump the database to version 2 with a real `Migration` and
 3. Dev README (status, testing, APK downloads, risks, contribution) and stable README (verified links and badges only).
 4. `release-notes/v1.0.0.md`.
 5. Run `scripts/export_stable.sh` into a temporary folder and check every link.
-6. Remove the old public keys from the tree (**needs approval**).
-7. Decide the remaining licence items (authorship wording, logo ownership, whether the captions switch stays, contributor terms). Icons, hero/showcase, badge and Monokai Pro are handled in Step 1b.
+6. ~~Remove the old public keys from the tree (needs approval).~~ Done in Step 1c (approved); Git history stays as it is unless Anakin approves a rewrite separately.
+7. Decide the remaining licence items: the logo and the contributor sentence (Step 1c). Icons, hero/showcase, badge, Monokai Pro, captions, authorship wording and old keys are handled in Steps 1b and 1c.
 8. Add the GPL-3.0 `LICENSE` (**needs approval**).
 9. On approval only: publish to `Absencium`, run the stable workflow, publish the verified 1.0.0 release, update `data/projects.json` in `skywa1ker404.github.io` (text only).
 

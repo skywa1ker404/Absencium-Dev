@@ -15,12 +15,23 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - name: Authorship guard (commits must be authored by skywa1ker404)
+        env:
+          RANGE_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # Every new commit must carry the maintainer's identity: author email aalaskar43@gmail.com, or the GitHub
+          # no-reply address of the skywa1ker404 account (what the web editor uses when the email is private).
+          if [ -z "$RANGE_BASE" ] || [ "$RANGE_BASE" = "0000000000000000000000000000000000000000" ]; then range="-1"; else range="$RANGE_BASE..HEAD"; fi
+          bad=$(git log $range --format='%h %an <%ae>' | grep -v -E '<(aalaskar43@gmail\.com|([0-9]+\+)?skywa1ker404@users\.noreply\.github\.com)>$' || true)
+          if [ -n "$bad" ]; then echo "::error::Commits not authored by skywa1ker404:"; echo "$bad"; exit 1; fi
       - name: Guard
         run: |
           grep -q '^absenciumChannel=stable$' gradle.properties || { echo "::error::gradle.properties must say absenciumChannel=stable."; exit 1; }

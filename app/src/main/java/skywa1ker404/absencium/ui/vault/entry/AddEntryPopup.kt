@@ -353,7 +353,7 @@ private fun ActionsStage(
             ActionTile("Solve Homework", AppIcons.School, colors.primaryContainer, colors.onPrimaryContainer, 2, { onComingSoon("Solve Homework") }, Modifier.weight(1f), 104.dp)
             ActionTile("Generate AI Notes", AppIcons.AutoAwesome, colors.secondaryContainer, colors.onSecondaryContainer, 1, { onComingSoon("Generate AI Notes") }, Modifier.weight(1f), 104.dp)
         }
-        ActionTile("Transcribe YouTube Video", AppIcons.PlayCircle, colors.tertiaryContainer, colors.onTertiaryContainer, 3, onYouTube, Modifier.fillMaxWidth(), 84.dp)
+        ActionTile("YouTube Video Notes", AppIcons.PlayCircle, colors.tertiaryContainer, colors.onTertiaryContainer, 3, onYouTube, Modifier.fillMaxWidth(), 84.dp)
         if (message != null) {
             Text(message, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
@@ -712,7 +712,7 @@ private fun YouTubeStage(
     Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SquareIconButton(AppIcons.ArrowBack, "Back", onBack)
-            Text("Transcribe YouTube Video", style = MaterialTheme.typography.titleLarge)
+            Text("YouTube Video Notes", style = MaterialTheme.typography.titleLarge)
         }
         AppTextField(
             value = state.youtubeUrl,
@@ -777,16 +777,39 @@ private fun YouTubeStage(
             }
         }
 
+        if (video != null) {
+            val canWatch = remember(video.id) { viewModel.canWatchLink() }
+            AppTextField(
+                value = state.pastedTranscript,
+                onValueChange = viewModel::setPastedTranscript,
+                label = { Text(if (canWatch) "Transcript (optional)" else "Paste the transcript") },
+                enabled = !running,
+                minLines = 3,
+                maxLines = 6,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = if (canWatch) {
+                    "Gemini can watch the video from its link, so a transcript is optional. If you paste one, the notes are written from it."
+                } else {
+                    "Your AI provider cannot watch a link. On YouTube open the video, tap the description, choose Show transcript, copy it and paste it here."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+            )
+        }
+
         if (running) {
             LoadingDots(
-                label = if (state.youtubeStep == YouTubeStep.TRANSCRIPT) "Fetching the transcript" else "Writing your notes",
+                label = "Writing your notes",
             )
         }
         state.youtubeError?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error)
             if (state.video != null) {
                 Text(
-                    "You can try again, or save just the transcript without AI.",
+                    "You can try again, or save just your pasted transcript without AI.",
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -805,7 +828,7 @@ private fun YouTubeStage(
                 Text("AI is not set up yet", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
                 Text(
                     "Add an AI provider, a model and your API key in Settings, AI & Integrations, then come back. " +
-                        "Or skip the AI and keep just the transcript.",
+                        "Or skip the AI and keep just the transcript you pasted.",
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSecondaryContainer,
                 )
@@ -825,7 +848,7 @@ private fun YouTubeStage(
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             PillButton(text = "Back", tonal = true, onClick = onBack, enabled = !running, modifier = Modifier.weight(1f))
             PillButton(
-                text = "Transcribe & Generate Notes",
+                text = "Generate Notes",
                 enabled = video != null && !running,
                 loading = running,
                 onClick = { viewModel.transcribe(skipAi = false, onSaved = onSaved) },
@@ -834,7 +857,7 @@ private fun YouTubeStage(
         }
         if (state.youtubeError != null && video != null && !running) {
             Text(
-                text = "Save the transcript only",
+                text = "Save the pasted transcript only",
                 style = MaterialTheme.typography.labelLarge,
                 color = colors.primary,
                 modifier = Modifier

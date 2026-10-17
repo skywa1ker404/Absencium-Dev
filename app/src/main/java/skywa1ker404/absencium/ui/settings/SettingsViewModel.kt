@@ -44,8 +44,6 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setFrostedOverlays(value: Boolean) = launch { repository.setFrostedOverlays(value) }
 
-    fun setYoutubeCaptionsDirect(value: Boolean) = launch { repository.setYoutubeCaptionsDirect(value) }
-
     fun setGlassBlur(dp: Int) = launch { repository.setGlassBlur(dp) }
 
     fun setVisualQuality(value: VisualQuality) = launch {
