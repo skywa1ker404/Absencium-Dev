@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -144,6 +146,7 @@ fun aiReady(settings: AppSettings, hasKey: Boolean): Boolean =
  * Which AI service Ask AI talks to: the provider, its API URL and the model name. The URL
  * starts from the provider's default and can be edited. The key lives in the vault card below.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AiConnectionSection(settings: AppSettings, viewModel: SettingsViewModel) {
     var provider by remember(settings.aiProvider) { mutableStateOf(settings.aiProvider) }
@@ -224,8 +227,10 @@ fun AiConnectionSection(settings: AppSettings, viewModel: SettingsViewModel) {
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(top = 12.dp),
             )
-            Row(
+            // Wraps onto a second line instead of squeezing the last chip into a column of single letters.
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.padding(top = 4.dp),
             ) {
                 ApiStyle.entries.forEach { option ->
@@ -235,7 +240,7 @@ fun AiConnectionSection(settings: AppSettings, viewModel: SettingsViewModel) {
                             style = option
                             saved = false
                         },
-                        label = { Text(option.label) },
+                        label = { Text(option.label, maxLines = 1, softWrap = false) },
                         shape = CircleShape,
                     )
                 }

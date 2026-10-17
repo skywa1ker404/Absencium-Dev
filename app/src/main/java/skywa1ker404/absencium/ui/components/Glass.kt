@@ -192,11 +192,14 @@ fun Modifier.glassPuck(backdrop: LayerBackdrop?, shape: Shape, isDark: Boolean):
     if (backdrop == null || !quality.glassLens || !isRuntimeShaderSupported() || shape !is CornerBasedShape) {
         return this.clip(shape).background(faint)
     }
-    val sheen = if (isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.22f)
+    // A bead of clear glass still softens what is under it: without a blur the page text behind the pill showed
+    // through the lens as garbled, half-readable letters over the tab label.
+    val sheen = if (isDark) Color.White.copy(alpha = 0.14f) else Color.White.copy(alpha = 0.34f)
     return this.drawBackdrop(
         backdrop = backdrop,
         shape = { shape },
         effects = {
+            blur(10.dp.toPx())
             lens(refractionHeight = 8.dp.toPx(), refractionAmount = 16.dp.toPx())
         },
         highlight = { Highlight.Default },

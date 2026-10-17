@@ -2,6 +2,12 @@ package skywa1ker404.absencium.ui.vault
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import skywa1ker404.absencium.ui.components.verticalScrollbar
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
@@ -51,7 +57,8 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     val loaded = data
     val subject = loaded?.subjects?.firstOrNull { it.id == subjectId }
 
-    ScreenScaffold(title = subject?.name ?: "Folder", onBack = { navigator.navigateUp() }) {
+    // A lazy list: a folder with hundreds of notes only builds the rows on screen instead of every card at once.
+    ScreenScaffold(title = subject?.name ?: "Folder", onBack = { navigator.navigateUp() }, scrollable = false) {
         if (loaded == null) {
             HintText("Loading...")
             return@ScreenScaffold
@@ -60,61 +67,78 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             HintText("This subject no longer exists.")
             return@ScreenScaffold
         }
-        if (message != null) {
-            AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true, onClick = { viewModel.clearMessage() }) {
-                Text(message.orEmpty(), style = MaterialTheme.typography.bodyMedium)
+        val active = remember(loaded, subjectId) { loaded.notesOf(subjectId, NoteStatus.ACTIVE) }
+        val finished = remember(loaded, subjectId) { loaded.notesOf(subjectId, NoteStatus.FINISHED) }
+        val guides = remember(loaded, subjectId) { loaded.guides.filter { it.subjectId == subjectId } }
+        val listState = rememberLazyListState()
+
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize().verticalScrollbar(listState, colors.onSurfaceVariant),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 24.dp),
+        ) {
+            if (message != null) {
+                item(key = "message") {
+                    AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true, onClick = { viewModel.clearMessage() }) {
+                        Text(message.orEmpty(), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
-        }
-
-        PillButton(
-            text = "New entry in this folder",
-            onClick = { addEntry = true },
-        )
-
-        val active = loaded.notesOf(subjectId, NoteStatus.ACTIVE)
-        val finished = loaded.notesOf(subjectId, NoteStatus.FINISHED)
-        val guides = loaded.guides.filter { it.subjectId == subjectId }
-
-        SectionTitle("Notes")
-        if (active.isEmpty()) HintText("No notes yet. Notes you mark as finished move to the archive below.")
-        active.forEach { note ->
-            NoteCard(note, onClick = { navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) })
-        }
-
-        SectionTitle("Finished / Written Notes")
-        AppCard(modifier = Modifier.fillMaxWidth(), onClick = { finishedOpen = !finishedOpen }) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = "${finished.size} ${if (finished.size == 1) "note" else "notes"} archived",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = if (finishedOpen) "Hide" else "Show",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = colors.primary,
+            item(key = "new") {
+                PillButton(
+                    text = "New entry in this folder",
+                    onClick = { addEntry = true },
                 )
             }
-        }
-        if (finishedOpen) {
-            finished.forEach { note ->
+
+            item(key = "notes-title") { SectionTitle("Notes") }
+            if (active.isEmpty()) {
+                item(key = "notes-empty") { HintText("No notes yet. Notes you mark as finished move to the archive below.") }
+            }
+            items(active, key = { "note-${it.id}" }) { note ->
                 NoteCard(note, onClick = { navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) })
             }
-        }
 
-        SectionTitle("Guides & Question Banks")
-        if (guides.isEmpty()) HintText("No PDFs yet. Add one from a new entry with the Guide / Answer PDF format.")
-        guides.forEach { guide ->
-            GuideCard(
-                guide = guide,
-                onClick = {
-                    openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
-                },
-                onDelete = { guideToDelete = guide },
-            )
+            item(key = "finished-title") { SectionTitle("Finished / Written Notes") }
+            item(key = "finished-toggle") {
+                AppCard(modifier = Modifier.fillMaxWidth(), onClick = { finishedOpen = !finishedOpen }) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "${finished.size} ${if (finished.size == 1) "note" else "notes"} archived",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            text = if (finishedOpen) "Hide" else "Show",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = colors.primary,
+                        )
+                    }
+                }
+            }
+            if (finishedOpen) {
+                items(finished, key = { "done-${it.id}" }) { note ->
+                    NoteCard(note, onClick = { navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) })
+                }
+            }
+
+            item(key = "guides-title") { SectionTitle("Guides & Question Banks") }
+            if (guides.isEmpty()) {
+                item(key = "guides-empty") { HintText("No PDFs yet. Add one from a new entry with the Guide / Answer PDF format.") }
+            }
+            items(guides, key = { "guide-${it.id}" }) { guide ->
+                GuideCard(
+                    guide = guide,
+                    onClick = {
+                        openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+                    },
+                    onDelete = { guideToDelete = guide },
+                )
+            }
         }
     }
 

@@ -183,7 +183,7 @@ fun BottomPill(
 
     // Not clipped, so the swollen highlight can reach past the edge of the pill.
     Box(modifier = modifier.width(with(density) { totalWidthPx.toDp() }).height(PillHeight)) {
-        Box(modifier = Modifier.matchParentSize().floatingGlass(backdrop, CircleShape))
+        Box(modifier = Modifier.matchParentSize().floatingGlass(backdrop, CircleShape, denseVeil = true))
         Box(
             modifier = Modifier
                 .offset { IntOffset(indicatorLeft(position).roundToInt(), ((PillHeight - ItemHeight) / 2).roundToPx()) }
@@ -358,7 +358,8 @@ private fun PillTab(
                 modifier = Modifier
                     .padding(start = LabelGap)
                     .wrapContentWidth(align = Alignment.Start, unbounded = true)
-                    .alpha(weight.coerceIn(0f, 1f)),
+                    // Fades in only once most of the room is there, so a half-open label never shows as cut-off letters.
+                    .alpha(((weight - 0.45f) / 0.55f).coerceIn(0f, 1f)),
             )
         }
     }

@@ -140,7 +140,8 @@ fun ModelPickerCard(
             }
         }
     }
-    val shown = state.models
+    // Filtered once per change of list, search text or filter, not on every recomposition (each key typed elsewhere on the screen).
+    val shown = remember(state.models, query, filter) { state.models
         .filter { model ->
             (query.isBlank() || model.label.contains(query, ignoreCase = true) || model.id.contains(query, ignoreCase = true)) &&
                 when (filter) {
@@ -148,7 +149,7 @@ fun ModelPickerCard(
                     CostFilter.FREE -> model.cost == ModelCost.FREE
                     CostFilter.PAID -> model.cost == ModelCost.PAID
                 }
-        }
+        } }
     Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         shown.take(MAX_SHOWN).forEach { model ->
             val selected = model.id == selectedId

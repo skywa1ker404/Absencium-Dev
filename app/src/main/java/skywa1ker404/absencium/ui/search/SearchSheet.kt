@@ -66,6 +66,9 @@ private data class SearchResults(
     val isEmpty: Boolean get() = notes.isEmpty() && guides.isEmpty() && exams.isEmpty()
 }
 
+/** Only the start of a very long note is scored, so one huge note cannot stall the search. */
+private const val MAX_SCORED_BODY = 20_000
+
 private fun <T> List<T>.ranked(score: (T) -> Int): List<T> =
     map { it to score(it) }.filter { it.second > 0 }.sortedByDescending { it.second }.map { it.first }.take(MAX_PER_GROUP)
 
@@ -97,13 +100,15 @@ fun SearchSheet(
         value = if (text.isEmpty()) {
             SearchResults()
         } else {
+            // Wait for a pause in typing: each key restarts this block, so a fast typist never scores big notes per letter.
+            kotlinx.coroutines.delay(180)
             withContext(Dispatchers.Default) {
                 SearchResults(
                     notes = index.notes.ranked { note ->
                         // A title match counts double over a match somewhere in the body.
                         maxOf(
                             FuzzySearch.score(text, note.title) * 2,
-                            FuzzySearch.score(text, note.bodyText),
+                            FuzzySearch.score(text, note.bodyText.take(MAX_SCORED_BODY)),
                         )
                     },
                     guides = index.guides.ranked { FuzzySearch.score(text, it.fileName) },

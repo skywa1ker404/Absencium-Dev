@@ -143,7 +143,8 @@ fun AppCard(
 /**
  * A themed screen: a top bar, a scrolling column of content and an optional floating [bottomBar].
  * The content scrolls underneath the bars. With the Liquid Glass engine the bars are frosted
- * glass that blur the content passing behind them.
+ * glass that blur the content passing behind them. With [scrollable] false the content is not put in a scroll, for
+ * screens whose content is a lazy list.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -152,6 +153,7 @@ fun ScreenScaffold(
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
     bottomBar: @Composable () -> Unit = {},
+    scrollable: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val glass = LocalGlassEnabled.current
@@ -180,8 +182,9 @@ fun ScreenScaffold(
                     // instead of meeting a hard edge. The same fade as the Home, Calendar and Vault header.
                     modifier = Modifier.background(
                         androidx.compose.ui.graphics.Brush.verticalGradient(
-                            0f to colors.background.copy(alpha = 0.9f),
-                            0.7f to colors.background.copy(alpha = 0.55f),
+                            // Nearly opaque behind the title itself, so scrolled text never shows through it as garbled letters.
+                            0f to colors.background.copy(alpha = 0.98f),
+                            0.75f to colors.background.copy(alpha = 0.94f),
                             1f to Color.Transparent,
                         ),
                     ),
@@ -199,7 +202,8 @@ fun ScreenScaffold(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
+                            // [scrollable] false: the content scrolls itself (a lazy list), so it must not sit in a scroll.
+                            .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                             .padding(padding)
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
