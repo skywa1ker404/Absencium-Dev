@@ -8,6 +8,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
 import skywa1ker404.absencium.ui.components.Reveal
 import androidx.compose.animation.core.Spring
 import kotlin.math.roundToInt
@@ -184,8 +185,8 @@ fun CalendarTab(
 }
 
 /** A short fade-through between months (M3 Expressive: the old month leaves quickly, the new one eases in). */
-private fun monthFade() =
-    (fadeIn(tween(210, delayMillis = 90)) togetherWith fadeOut(tween(90))).using(SizeTransform(clip = false) { _, _ -> snap() })
+private fun AnimatedContentTransitionScope<YearMonth>.monthFade() =
+    (fadeIn(tween(210, delayMillis = 90)) togetherWith fadeOut(tween(90))) using SizeTransform(clip = false) { _, _ -> snap() }
 
 @Composable
 private fun MonthCard(
