@@ -76,6 +76,16 @@ Last updated: 2026-10-18. Stable-repo secrets and variable: Anakin reports they 
 | 1d.6 | Stable export now includes `LICENSE`, the stable README and the images it links; link check skips the bundled notice copies; export fails on a broken link or a keystore | DONE in a temporary directory (not CI) |
 | 1d.7 | Dev README, stable README (`release/stable/README.md`) and `release/stable/release-notes/v1.0.0.md` drafted from source-checked facts; the release notes still need the certificate fingerprint pasted in | written, awaiting Anakin's review |
 
+## Step 1e. Pill drag, title and scrollbar corrections (5 tasks)
+
+| # | Task | Status |
+| - | --- | --- |
+| 1e.1 | Pill look restored exactly as before step 1d (veil, lens bead, label fade, header fades); the 1d.1 and 1d.3 changes are withdrawn at the owner's request | WAITING FOR CI |
+| 1e.2 | **Bug:** dragging the selection pill to the last tab made it shake. Cause (worked out from the geometry, not measured on a device): the pill is centred and narrows as the last tab opens, so its left edge moves under the finger, and the drag position was measured from that edge; near the end the highlight's on-screen position even runs backwards for a few pixels. Fix: measure from the pill's centre and place the finger between each tab's resting spot, which only rises | WAITING FOR CI, needs a device check |
+| 1e.3 | Licences scrollbar can be dragged (28 dp strip at the right edge) | WAITING FOR CI |
+| 1e.4 | Liquid Glass look: soft sheen on glass cards and a fourth colour plus a light streak in the glass wallpaper, after the reference pictures; the pill and floating bars are untouched | WAITING FOR CI |
+| 1e.5 | Docs-only push test: a documentation-only commit (this file) pushed without `[skip ci]` to see whether CI stays idle | result in the report |
+
 ## Step 2. Timetable overhaul (11 tasks) — pending, needs Room v2 migration
 
 New `teacher` column: bump the database to version 2 with a real `Migration` and an exported schema. Never destructive.
