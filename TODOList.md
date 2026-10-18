@@ -90,7 +90,7 @@ Last updated: 2026-10-18 (unified plan). Stable-repo secrets and variable: Anaki
 
 | # | Task | Status |
 | - | --- | --- |
-| 1f.1 | Settings, Appearance: "Glossy glass" switch, shown only while Liquid Glass is on, **off by default**; adds a shine band and a glint to glass cards and buttons (not to the pill or floating bars) | WAITING FOR CI |
+| 1f.1 | Settings, Appearance: "Glossy glass" switch, shown only while Liquid Glass is on, **off by default**; adds a shine band and a glint to glass cards and buttons (not to the pill or floating bars) | DONE (CI green `1d33a15`, not device-tested) |
 
 ## Step 2. Open bugs and checks on what already compiled (7 tasks)
 
