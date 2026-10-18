@@ -286,8 +286,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     // No bar: only a soft fade of the background colour so scrolling content never collides with the title.
                     .background(
                         androidx.compose.ui.graphics.Brush.verticalGradient(
-                            0f to colors.background.copy(alpha = 0.98f),
-                            0.75f to colors.background.copy(alpha = 0.92f),
+                            0f to colors.background.copy(alpha = 0.88f),
+                            0.7f to colors.background.copy(alpha = 0.5f),
                             1f to androidx.compose.ui.graphics.Color.Transparent,
                         ),
                     ),

@@ -182,9 +182,8 @@ fun ScreenScaffold(
                     // instead of meeting a hard edge. The same fade as the Home, Calendar and Vault header.
                     modifier = Modifier.background(
                         androidx.compose.ui.graphics.Brush.verticalGradient(
-                            // Nearly opaque behind the title itself, so scrolled text never shows through it as garbled letters.
-                            0f to colors.background.copy(alpha = 0.98f),
-                            0.75f to colors.background.copy(alpha = 0.94f),
+                            0f to colors.background.copy(alpha = 0.9f),
+                            0.7f to colors.background.copy(alpha = 0.55f),
                             1f to Color.Transparent,
                         ),
                     ),

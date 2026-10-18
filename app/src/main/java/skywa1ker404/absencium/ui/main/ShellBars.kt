@@ -183,7 +183,7 @@ fun BottomPill(
 
     // Not clipped, so the swollen highlight can reach past the edge of the pill.
     Box(modifier = modifier.width(with(density) { totalWidthPx.toDp() }).height(PillHeight)) {
-        Box(modifier = Modifier.matchParentSize().floatingGlass(backdrop, CircleShape, denseVeil = true))
+        Box(modifier = Modifier.matchParentSize().floatingGlass(backdrop, CircleShape))
         Box(
             modifier = Modifier
                 .offset { IntOffset(indicatorLeft(position).roundToInt(), ((PillHeight - ItemHeight) / 2).roundToPx()) }
@@ -235,19 +235,34 @@ fun BottomPill(
                         val center = centerAt(start)
                         // Only a touch that starts on the highlight drags it; other touches are plain taps.
                         if (abs(down.position.x - center) > widthAt(start) / 2f) return@awaitEachGesture
-                        val grab = down.position.x - center
 
-                        // The highlight's position whose centre is under the finger (the centre
-                        // grows steadily with the position, so a bisection finds it).
+                        // The pill is centred on screen and changes width as the highlight moves, so its left edge moves
+                        // under the finger. Measuring from the left edge made the highlight and the pill chase each other
+                        // at the last tab (the shaking). Everything here is measured from the pill's centre, which stays
+                        // put, and the finger's offset from it is compared with the highlight's offset from it.
+                        fun totalAt(p: Float): Float {
+                            var t = paddingPx * 2
+                            for (i in 0..lastIndex) t += basePx + extras[i] * weight(i, p) * openNow
+                            return t
+                        }
+                        fun offsetAt(p: Float) = centerAt(p) - totalAt(p) / 2f
+                        // The pill's width in the frame the finger position belongs to (its end padding is outside this row).
+                        fun fingerOffset(x: Float) = x - (size.width + paddingPx) / 2f
+                        val grab = fingerOffset(down.position.x) - offsetAt(start)
+
+                        // Where the highlight rests on each tab, measured from the centre. The highlight's own offset does not
+                        // rise steadily between tabs (the pill narrows around its centre as the last tab opens, which pushes
+                        // the highlight back a few pixels near the end), so matching the finger against it exactly could
+                        // not settle. The finger is placed between the resting spots instead, which only ever rises.
+                        val rests = FloatArray(lastIndex + 1) { offsetAt(it.toFloat()) }
                         fun positionAt(x: Float): Float {
-                            val wanted = x - grab
-                            var lo = 0f
-                            var hi = lastIndex.toFloat()
-                            repeat(18) {
-                                val mid = (lo + hi) / 2f
-                                if (centerAt(mid) < wanted) lo = mid else hi = mid
-                            }
-                            return ((lo + hi) / 2f).coerceIn(0f, lastIndex.toFloat())
+                            val wanted = fingerOffset(x) - grab
+                            if (wanted <= rests[0]) return 0f
+                            if (wanted >= rests[lastIndex]) return lastIndex.toFloat()
+                            var k = 0
+                            while (k < lastIndex - 1 && wanted >= rests[k + 1]) k++
+                            val span = (rests[k + 1] - rests[k]).coerceAtLeast(1f)
+                            return (k + (wanted - rests[k]) / span).coerceIn(0f, lastIndex.toFloat())
                         }
 
                         var lastCommitted = currentSelected
@@ -358,8 +373,7 @@ private fun PillTab(
                 modifier = Modifier
                     .padding(start = LabelGap)
                     .wrapContentWidth(align = Alignment.Start, unbounded = true)
-                    // Fades in only once most of the room is there, so a half-open label never shows as cut-off letters.
-                    .alpha(((weight - 0.45f) / 0.55f).coerceIn(0f, 1f)),
+                    .alpha(weight.coerceIn(0f, 1f)),
             )
         }
     }

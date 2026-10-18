@@ -97,6 +97,11 @@ val LocalCardBackdrop = androidx.compose.runtime.staticCompositionLocalOf<LayerB
 @Composable
 fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, tintAlpha: Float = 0.55f): Modifier {
     val blurDp = LocalGlassBlur.current
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    // Light catches the upper-left of the pane and fades across it, like the panes in a glass UI kit: a soft sheen, strongest
+    // at the top-left corner, gone by the lower right.
+    val sheenStrong = Color.White.copy(alpha = if (isDark) 0.11f else 0.30f)
+    val sheenSoft = Color.White.copy(alpha = if (isDark) 0.03f else 0.08f)
     // Clipped to its own shape: the blur otherwise spills past rounded corners and shows as a square, pointed patch
     // around every card and button. Cards sit flat on the wallpaper, so they carry no drop shadow.
     return this.clip(shape).drawBackdrop(
@@ -108,7 +113,18 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
         },
         highlight = { Highlight.Default },
         shadow = null,
-        onDrawSurface = { drawRect(tint.copy(alpha = tintAlpha)) },
+        onDrawSurface = {
+            drawRect(tint.copy(alpha = tintAlpha))
+            drawRect(
+                Brush.linearGradient(
+                    0f to sheenStrong,
+                    0.4f to sheenSoft,
+                    1f to Color.Transparent,
+                    start = Offset.Zero,
+                    end = Offset(size.width, size.height),
+                ),
+            )
+        },
     )
 }
 
@@ -130,15 +146,16 @@ fun GlassWallpaper(modifier: Modifier = Modifier) {
     val b = scheme.tertiaryContainer
     val c = scheme.secondaryContainer
     val base = scheme.background
+    val streak = Color.White.copy(alpha = if (base.luminance() < 0.5f) 0.07f else 0.22f)
     Box(
         modifier = modifier
             .background(base)
             .drawBehind {
                 val w = size.width
                 val h = size.height
-                fun blob(color: Color, cx: Float, cy: Float, r: Float) = drawCircle(
+                fun blob(color: Color, cx: Float, cy: Float, r: Float, peak: Float = 0.95f) = drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(color.copy(alpha = 0.95f), color.copy(alpha = 0f)),
+                        colors = listOf(color.copy(alpha = peak), color.copy(alpha = 0f)),
                         center = Offset(cx, cy),
                         radius = r,
                     ),
@@ -148,6 +165,18 @@ fun GlassWallpaper(modifier: Modifier = Modifier) {
                 blob(a, w * 0.15f, h * 0.12f, w * 0.9f)
                 blob(b, w * 0.95f, h * 0.45f, w * 0.85f)
                 blob(c, w * 0.2f, h * 0.85f, w * 0.9f)
+                // A fourth, fainter colour in the middle so the glass has more to bend, and a soft diagonal streak of light
+                // across the screen, as in the reference glass designs.
+                blob(lerp(a, b, 0.5f), w * 0.55f, h * 0.65f, w * 0.7f, peak = 0.55f)
+                drawRect(
+                    Brush.linearGradient(
+                        0f to Color.Transparent,
+                        0.45f to streak,
+                        0.6f to Color.Transparent,
+                        start = Offset(0f, 0f),
+                        end = Offset(w, h * 0.7f),
+                    ),
+                )
             },
     )
 }
@@ -192,15 +221,11 @@ fun Modifier.glassPuck(backdrop: LayerBackdrop?, shape: Shape, isDark: Boolean):
     if (backdrop == null || !quality.glassLens || !isRuntimeShaderSupported() || shape !is CornerBasedShape) {
         return this.clip(shape).background(faint)
     }
-    // A bead of clear glass still softens what is under it: without a blur the page text behind the pill showed
-    // through the lens as garbled, half-readable letters over the tab label.
-    val sheen = if (isDark) Color.White.copy(alpha = 0.14f) else Color.White.copy(alpha = 0.34f)
+    val sheen = if (isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.22f)
     return this.drawBackdrop(
         backdrop = backdrop,
         shape = { shape },
         effects = {
-            // Only a light softening; the lens below is the pill's light bending and must stay (owner's rule).
-            blur(4.dp.toPx())
             lens(refractionHeight = 8.dp.toPx(), refractionAmount = 16.dp.toPx())
         },
         highlight = { Highlight.Default },
