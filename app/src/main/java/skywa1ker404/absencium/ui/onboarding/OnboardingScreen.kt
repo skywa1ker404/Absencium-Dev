@@ -395,7 +395,7 @@ private fun LookPage(
             icon = AppIcons.AutoAwesome,
             title = "Liquid Glass",
             value = when {
-                !isMonetAndBlurSupported -> "Needs Android 12"
+                !isMonetAndBlurSupported -> "Not supported by your Android version"
                 settings.visualQuality == VisualQuality.PERFORMANCE -> "Not in Performance mode"
                 settings.liquidGlass -> "On"
                 else -> "Off"

@@ -638,15 +638,10 @@ fun SlideAway(hidden: () -> Boolean, modifier: Modifier = Modifier, content: @Co
         animationSpec = q.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "slideAway",
     )
-    val alpha by animateFloatAsState(
-        targetValue = if (isHidden) 0f else 1f,
-        animationSpec = q.spring(stiffness = Spring.StiffnessMediumLow),
-        label = "slideAwayAlpha",
-    )
+    // Slide only, no fade: a fading control is drawn into an off-screen layer, and the glass behind the button (a blur over
+    // the page) then showed up as a pale square around it until the fade ended. The control leaves the screen anyway.
     Box(
-        modifier = modifier
-            .graphicsLayer { translationX = offsetX.toPx() }
-            .alpha(alpha),
+        modifier = modifier.graphicsLayer { translationX = offsetX.toPx() },
     ) { content() }
 }
 

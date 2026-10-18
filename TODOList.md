@@ -207,7 +207,7 @@ Needs the notification groundwork of Step 5 and the attendance logic of Step 7.
 | 8.2 | Reboot-, time-zone- and update-safe scheduling (re-registers after boot, time change and app update); battery-conscious, no polling | pending |
 | 8.3 | Quiet Mode: one-tap on, essential notifications you choose, a visible indicator, optional automatic exit; shares its settings, timer and statistics with Focus Guard and the study timer instead of copying them | pending |
 | 8.4 | Notification actions per Android version: classic actions everywhere; newer features (Android 16 progress / Live Updates and anything newer) only where the version supports them, with a fallback; confirm Android 17 specifics against developer.android.com before building | pending |
-| 8.5 | Eisenhower task view and Deadline Radar (confirm release scope first) | needs decision |
+| 8.5 | Eisenhower task view and Deadline Radar | deferred to 1.x (owner decision 2026-10-18) |
 | 8.6 | "Next up" opens the lecture details; the next lectures are an expandable dropdown there | pending |
 
 **Tests:** Reboot, force-stop, time-zone change, denied permission, airplane mode, DST-free and midnight cases; no duplicate notifications. · **Effort:** L
@@ -243,39 +243,46 @@ The editor and file tools come before study tools, widgets and sharing because t
 
 ## Step 11. AI Hub and AI settings (5 tasks)
 
+**Deferred to 1.x by the owner (2026-10-18), except any dependency the approved core scope needs.**
+
 Builds on the existing providers, model picker and key vault; adds to them rather than replacing them.
 
 | # | Task | Status |
 | - | --- | --- |
-| 11.1 | Several API keys per provider with a setup guide dropdown | pending |
-| 11.2 | Show Gemini as recommended (can read YouTube links) and OpenRouter as recommended for its free/paid listing; look up and verify free models of the other providers before showing a recommended all-rounder for each; if none can be verified use the provider's current Flash-Lite model, name taken from the fetched model list, never typed from memory; other providers under an "Other models" dropdown; guide for getting the chosen provider's key | pending |
-| 11.3 | Clear explanation of what data is sent to an AI provider; AI failures never block local features; AI stays optional and off by default | pending |
-| 11.4 | Ask AI inside notes with query history and jump-to-source (from the master specification); voice prompt on long-press of the AI icon; optional AI Memory (off by default) | pending |
-| 11.5 | Design reference from the repository audit (Agora, LastChat) for conversation management, context handling and tool calling, decided after the audit | pending |
+| 11.1 | Several API keys per provider with a setup guide dropdown | deferred to 1.x |
+| 11.2 | Show Gemini as recommended (can read YouTube links) and OpenRouter as recommended for its free/paid listing; look up and verify free models of the other providers before showing a recommended all-rounder for each; for Gemini recommend the Flash-Lite 3.5 model if the fetched model list contains it (otherwise the nearest Flash-Lite entry that list does contain); the name always comes from the fetched list, never typed from memory; other providers under an "Other models" dropdown; guide for getting the chosen provider's key | deferred to 1.x |
+| 11.3 | Clear explanation of what data is sent to an AI provider; AI failures never block local features; AI stays optional and off by default | deferred to 1.x |
+| 11.4 | Ask AI inside notes with query history and jump-to-source (from the master specification); voice prompt on long-press of the AI icon; optional AI Memory (off by default) | deferred to 1.x |
+| 11.5 | Design reference from the repository audit (Agora, LastChat) for conversation management, context handling and tool calling, decided after the audit | deferred to 1.x |
 
 **Tests:** Provider list fetched offline and online; a failing key leaves notes untouched. · **Effort:** L
 
-## Step 12. Study and focus tools (5 tasks)
+## Step 12. Study and focus tools (6 tasks)
+
+**Deferred to 1.x by the owner (2026-10-18), except any dependency the approved core scope needs.**
 
 | # | Task | Status |
 | - | --- | --- |
-| 12.1 | Study timer that survives backgrounding, screen lock and process death, one notification, no duplicates | pending |
-| 12.2 | Daily Recall and spaced repetition (7-day loop, sticky lock, repeat badge) as specified; flashcards; Emergency Cram Mode before exams | pending |
-| 12.3 | Semester-linked exam preparation and syllabus tracking; optional AI-generated study material | pending |
-| 12.4 | Retrospective study category log and Momentum tracker (optional, off by default) | pending |
-| 12.5 | Gradebook and GPA, and optional GPS attendance assistance (marks present after 5 minutes in a classroom area): **scope to be confirmed** before any work; the GPS part needs location permission, so it is opt-in per subject and never background by default | needs decision |
+| 12.1 | Study timer that survives backgrounding, screen lock and process death, one notification, no duplicates | deferred to 1.x |
+| 12.2 | Daily Recall and spaced repetition (7-day loop, sticky lock, repeat badge) as specified; flashcards; Emergency Cram Mode before exams | deferred to 1.x |
+| 12.3 | Semester-linked exam preparation and syllabus tracking; optional AI-generated study material | deferred to 1.x |
+| 12.4 | Retrospective study category log and Momentum tracker (optional, off by default) | deferred to 1.x |
+| 12.5 | Gradebook and GPA | deferred to 1.x (owner decision 2026-10-18) |
+| 12.6 | ~~Optional GPS attendance assistance (marks present after 5 minutes in a classroom area)~~ **excluded**: manual attendance is enough and it avoids location permission | excluded |
 
 **Tests:** Timer survives a force-stop; recall questions respect the lock; spaced dates correct across time-zone change. · **Effort:** L
 
 ## Step 13. Widgets, shortcuts and quick actions (3 tasks)
 
+**Deferred to 1.x by the owner (2026-10-18), except any dependency the approved core scope needs.**
+
 Needs attendance, tasks and the timer to exist.
 
 | # | Task | Status |
 | - | --- | --- |
-| 13.1 | Home-screen widgets: 1x1 quick capture, then 1x2 up to 4x4 (attendance, next up, deadlines); theme-aware, resizable, refresh and stale-data handling. The widget framework (Jetpack Glance or RemoteViews) is chosen after weighing APK size | pending |
-| 13.2 | Launcher shortcuts, Quick Settings tile, Quick Add, notification actions | pending |
-| 13.3 | Customizable, smart dashboard summaries and start-screen choice | pending |
+| 13.1 | Home-screen widgets: 1x1 quick capture, then 1x2 up to 4x4 (attendance, next up, deadlines); theme-aware, resizable, refresh and stale-data handling. The widget framework (Jetpack Glance or RemoteViews) is chosen after weighing APK size | deferred to 1.x |
+| 13.2 | Launcher shortcuts, Quick Settings tile, Quick Add, notification actions | deferred to 1.x |
+| 13.3 | Customizable, smart dashboard summaries and start-screen choice | deferred to 1.x |
 
 **Tests:** Widget on a real launcher at several sizes; after reboot; with the app force-stopped. · **Effort:** L
 
@@ -306,7 +313,7 @@ The consistency sweep that needs most features in place.
 
 ## Step 16. Final testing and the stable 1.0.0 release (9 tasks)
 
-Proposed: 1.0.0 ships after Steps 2 to 10 and 14 to 16; the AI Hub, study tools and widgets (Steps 11 to 13) follow as 1.x. **Decision needed.** Nothing is published without your explicit approval.
+**Approved scope (2026-10-18): 1.0.0 is Steps 2 to 10 and 14 to 16, in order, bug fixes first.** The AI Hub, study tools and widgets (Steps 11 to 13) follow as 1.x. Nothing is published until device testing and release checks pass and you approve.
 
 | # | Task | Status |
 | - | --- | --- |
@@ -322,34 +329,35 @@ Proposed: 1.0.0 ships after Steps 2 to 10 and 14 to 16; the AI Hub, study tools 
 
 **Tests:** The release checklist above, on a real phone, from the signed APK. · **Effort:** M · **Gate:** Anakin's explicit approval
 
-## Step 17. Sharing and Sharewave (very last for now) (6 tasks)
+## Step 17. Sharing and Sharewave (after the stable release) (6 tasks)
 
-Needs the export format, scoped repository view and Transport seam of Step 4 and the `ShareService` of Step 10, so it adds code rather than rewriting. Android Sharesheet first, then Sharewave. Order of the two final steps can be swapped on request.
+Approved placement: after the stable release; sync stays later still. Needs the export format, scoped repository view and Transport seam of Step 4 and the `ShareService` of Step 10, so it adds code rather than rewriting.
 
 | # | Task | Status |
 | - | --- | --- |
 | 17.1 | Audit the repository, current sharing code and permissions, then report the plan, risks, compatibility limits and required permissions before significant changes | pending |
-| 17.2 | Android Sharesheet: `ACTION_SEND` / `ACTION_SEND_MULTIPLE` for notes, text, images, PDFs, documents, selected files, exported timetables and folder archives; correct MIME types; `FileProvider` content URIs; URI permissions, temporary files, missing apps, unsupported formats and errors handled; native Sharesheet stays the universal fallback; no assumption that other apps expose chats or contacts | pending |
+| 17.2 | Android Sharesheet: `ACTION_SEND` / `ACTION_SEND_MULTIPLE` for notes, text, images, PDFs, documents, selected files, exported timetables and folder archives; correct MIME types; `FileProvider` content URIs; URI permissions, temporary files, missing apps, unsupported formats and errors handled; the native Sharesheet stays the universal fallback; no assumption that other apps expose chats or contacts | pending |
 | 17.3 | Sharewave research and prototype on real devices: discovery (BLE or local network), pairing (QR and manual fallback), transfer over Wi-Fi Direct, local Wi-Fi or hotspot; Google Nearby Connections only as an optional transport; document Android-version permissions (location only if a mechanism truly needs it) and manufacturer limits before choosing | pending |
-| 17.4 | Quick Send: send entries, notes, images, files and folders with structure and metadata; recipient must accept; progress, cancel, retry, recovery; authenticated pairing and encrypted transfer; filename, size, type and path validation; never overwrite silently, never execute received files | pending |
+| 17.4 | Quick Send: entries, notes, images, files and folders with structure and metadata; recipient must accept; progress, cancel, retry, recovery; authenticated pairing and encrypted transfer; filename, size, type and path validation; never overwrite silently, never execute received files | pending |
 | 17.5 | Shared Vault Access: owner exposes only selected folders or entries for a limited time; recipient browses, previews, caches, downloads or imports with conflict handling; active-session list with devices, paths, permissions, status and expiry; manual revoke and automatic expiry (copies already taken stay); live access needs the owner's device | pending |
 | 17.6 | Security, compatibility, accessibility and failure-path tests (interrupted transfer, low storage, denied permission, corrupted data, expired or revoked session); update specs, roadmap, README and user docs | pending |
 
 **Tests:** Two or more real phones from different makers; transfer with Wi-Fi off and airplane mode on; tampered and oversized files rejected. · **Effort:** XL · **Gate:** Anakin approves the plan and the transport choice
 
-## Step 18. Sync mode with a home server (very last, only when the app is stable) (5 tasks)
+## Step 18. Optional cloud: sync and routine backup (after Step 17, off by default) (6 tasks)
 
-Optional and off by default; costs nothing when off. Not started without your approval. Route and difficulty are in `docs/ROADMAP.md`.
+Approved shape (2026-10-18): both features are **disabled by default and make no network request without explicit user consent**. ~~Sync mode with a home server, Route A snapshots or Route B own server, optional Drive transport~~ replaced by:
 
 | # | Task | Status |
 | - | --- | --- |
-| 18.1 | Decide the route with the owner: A) encrypted snapshots to a WebDAV or Nextcloud folder, B) own small server in Docker with a change-feed API, C) both, A first | needs decision |
-| 18.2 | Route A: scheduled or manual upload and download of encrypted snapshots using the Step 4 export and the `Transport` seam; restore-with-merge screen; Wi-Fi only, off by default | pending |
-| 18.3 | Route B: server (Docker image, SQLite or Postgres, token auth, TLS through a reverse proxy or a private network), change feed from `updatedAt`/tombstones, per-row conflict screen, explicit sync; no real-time claims; server security tests | pending |
-| 18.4 | Optional Google Drive `drive.appdata` transport (needs an OAuth client and the final signing certificate, which only the owner can create) | needs decision |
-| 18.5 | Greyed-out AI sync and backup items while a sync mode is active; disconnect and delete-remote controls; docs for self-hosting | pending |
+| 18.1 | **Sync, Route A first:** user-provided WebDAV or Nextcloud server (self-hosted, free or paid) with encrypted snapshots, an offline queue that holds changes until a connection and consent exist, and a conflict-resolution screen (per row: keep mine, keep theirs, keep both); built on the Step 4 export, `updatedAt` and tombstones through the `Transport` seam | pending |
+| 18.2 | Google Drive as an additional sync target only if it can be done within Google's Terms and API policy (decided when this step starts; Drive scope `drive.appdata`; needs an OAuth client and the final signing certificate that only the owner can create) | needs decision |
+| 18.3 | **Routine encrypted backup and restore: Google Drive only**, subject to Google API policy approval; scheduled backup off by default, Wi-Fi only, retention, disconnect and delete-remote controls. The manual local backup file of Step 4 stays as it is | pending |
+| 18.4 | Consent gate shared by both: a clear first-use explanation of what leaves the device, nothing sent before it, a visible status, and a master off switch; no background work while off | pending |
+| 18.5 | Greyed-out AI sync and backup items while a sync mode is active; docs for connecting a WebDAV or Nextcloud server | pending |
+| 18.6 | Route B (own server in Docker with a change-feed API) remains a later option; not started | deferred |
 
-**Tests:** Two devices converging after offline edits; server down; wrong token; clock skew. · **Effort:** XL · **Gate:** Anakin approves
+**Tests:** Two devices converging after offline edits; server unreachable; wrong credentials; clock skew; no network traffic while both are off (checked with a proxy). · **Effort:** XL · **Gate:** Anakin approves
 
 ---
 
@@ -370,10 +378,29 @@ The repository should not grow documents for every list you send. After you appr
 - No unit tests exist yet; `testDebugUnitTest` runs with nothing to test (fixed by the test infrastructure of Step 4).
 - Everything is compile-verified only; device behaviour is unknown until you test.
 
+## Decisions recorded (2026-10-18)
+1. 1.0.0 is Steps 2 to 10 and 14 to 16, in order, bug fixes first. Nothing is published until device testing and release checks pass and Anakin approves.
+2. Steps 11 to 13 (AI Hub, study tools, widgets) move to 1.x, except dependencies the core needs.
+3. Gradebook / GPA, Eisenhower view and Deadline Radar: 1.x. GPS attendance: excluded.
+4. Sync: Route A first (user-provided WebDAV or Nextcloud, encrypted snapshots, offline queue, conflict screen); Google Drive for routine backup and restore only, and as a sync target only if Google's terms allow. Both off by default, no network without consent. Route B later.
+5. Sharing (Step 17) after the stable release; sync later still.
+6. Minimum Android stays API 26 unless the repository audit finds a compelling reason. Monet and Liquid Glass are greyed out with "Not supported by your Android version" below Android 12.
+7. Android 16 notification features are used where the version supports them, with fallbacks. Gemini's recommended model is Flash-Lite 3.5 taken from the fetched model list.
+8. The repository audit report (`docs/FEATURE_AUDIT.md`) must be approved before any code or dependency from those repositories is used.
+9. Cleanup is approved only after Anakin has seen the file-by-file changes; reference documents stay until their content is merged.
+
+## Cleanup proposal (nothing is deleted without your approval)
+
+| File | Proposal |
+| --- | --- |
+| `docs/SPECIFICATION.md` | master specification copy; keep until its content is folded into the steps above, then remove |
+| `docs/MASTER_SPEC.md` | the 711-line original text; keep as reference for database, sync and Drive details until Steps 4 and 18 are built, then archive |
+| `docs/ROADMAP.md` | kept, short: explains the order and the technical routes |
+| `docs/CHNAGELOG.md` | contains only "working on it" and its name is misspelt; replace by `CHANGELOG.md` when the changelog is refreshed |
+| `docs/LICENSE_AUDIT.md` | keep until the audit is cleared, then fold into `THIRD_PARTY_LICENSES.md` |
+| `docs/IDENTITY.md`, `docs/SIGNING.md`, `docs/CONTRIBUTION.md`, `docs/THIRD_PARTY_LICENSES.md`, `docs/DEPENDENCY_LICENSES.md`, `docs/licenses/`, `docs/art/` | keep |
+
 ## Open decisions for Anakin
-1. Whether 1.0.0 is Steps 2 to 10 and 14 to 16 (proposed) or includes Steps 11 to 13.
-2. Scope of gradebook / GPA, GPS attendance, Eisenhower view and Deadline Radar (Steps 8 and 12).
-3. Route for sync mode (Step 18) and whether Sharing (Step 17) comes before it.
-4. Cleanup proposal above.
-5. Approval of the repository audit report before any code or dependency from it is used.
-6. Minimum Android version: recommendation is to keep 26 (see `docs/ROADMAP.md`).
+1. Approval of the audit report once it is written (Step 3).
+2. Whether Google Drive can be a sync target (Step 18.2), decided when that step starts.
+3. Approval of the cleanup table above, file by file.

@@ -30,7 +30,7 @@ fun ColorEngine.description(): String = when (this) {
     ColorEngine.PRESET -> "Catppuccin, Dracula, Nord, Gruvbox and more"
 }
 
-const val REQUIRES_ANDROID_12 = "Needs Android 12 or newer"
+const val REQUIRES_ANDROID_12 = "Not supported by your Android version (needs Android 12 or newer)"
 
 fun VisualQuality.label(): String = when (this) {
     VisualQuality.PERFORMANCE -> "Performance mode"
