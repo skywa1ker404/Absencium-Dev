@@ -61,6 +61,7 @@ class SettingsRepository(context: Context) {
     suspend fun setLiquidGlass(value: Boolean) = write(Keys.LIQUID_GLASS, value)
 
     suspend fun setFrostedOverlays(value: Boolean) = write(Keys.FROSTED_OVERLAYS, value)
+    suspend fun setGlassGloss(value: Boolean) = write(Keys.GLASS_GLOSS, value)
 
     suspend fun setGlassBlur(dp: Int) = write(
         Keys.GLASS_BLUR,
@@ -114,6 +115,7 @@ class SettingsRepository(context: Context) {
         val LIQUID_GLASS = booleanPreferencesKey("liquid_glass")
         val GLASS_BLUR = intPreferencesKey("glass_blur_dp")
         val FROSTED_OVERLAYS = booleanPreferencesKey("frosted_overlays")
+        val GLASS_GLOSS = booleanPreferencesKey("glass_gloss")
         val VISUAL_QUALITY = stringPreferencesKey("visual_quality")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
         val FOCUS_GRACE_MINUTES = intPreferencesKey("focus_grace_minutes")
@@ -148,6 +150,7 @@ class SettingsRepository(context: Context) {
             liquidGlass = this[Keys.LIQUID_GLASS] ?: (this[Keys.COLOR_ENGINE] == "LIQUID_GLASS"),
             themePreset = enumOrDefault(this[Keys.THEME_PRESET], defaults.themePreset),
             frostedOverlays = this[Keys.FROSTED_OVERLAYS] ?: defaults.frostedOverlays,
+            glassGloss = this[Keys.GLASS_GLOSS] ?: defaults.glassGloss,
             glassBlurDp = this[Keys.GLASS_BLUR] ?: defaults.glassBlurDp,
             visualQuality = visualQualityFrom(this[Keys.VISUAL_QUALITY]),
             attendanceThresholdPercent = this[Keys.ATTENDANCE_THRESHOLD] ?: defaults.attendanceThresholdPercent,

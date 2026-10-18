@@ -67,6 +67,9 @@ val LocalGlassBlur = staticCompositionLocalOf { 20.dp }
 /** True while the Liquid Glass engine is active: floating bars become frosted glass. */
 val LocalGlassEnabled = staticCompositionLocalOf { false }
 
+/** True while the optional glossy shine is on; it can only be on together with Liquid Glass. */
+val LocalGlassGloss = staticCompositionLocalOf { false }
+
 /**
  * The backdrop of the screen currently being drawn, or null when glass is off. A screen's
  * scrolling content is recorded into it; its floating bars blur and refract what scrolls behind them.
@@ -156,6 +159,7 @@ fun AbsenciumTheme(
         CompositionLocalProvider(
             LocalQuality provides quality,
             LocalGlassEnabled provides glassActive,
+            LocalGlassGloss provides (glassActive && settings.glassGloss),
             LocalFrostedOverlays provides (glassActive && settings.frostedOverlays),
             LocalGlassBlur provides settings.glassBlurDp.dp,
             // Text outside a Surface would otherwise fall back to black, which is unreadable on dark themes.

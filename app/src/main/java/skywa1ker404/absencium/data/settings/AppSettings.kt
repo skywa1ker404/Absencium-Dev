@@ -40,6 +40,8 @@ data class AppSettings(
     val liquidGlass: Boolean = false,
     /** With Liquid Glass on: also frost the profile, search, Add Entry, import and other overlays. Off keeps them solid. */
     val frostedOverlays: Boolean = true,
+    /** Optional extra shine on glass surfaces. Only offered while Liquid Glass is on; off by default. */
+    val glassGloss: Boolean = false,
     /** Blur radius of the Liquid Glass surfaces, in dp. */
     val glassBlurDp: Int = DEFAULT_GLASS_BLUR,
     /** Starts at the level recommended for the phone; the user can change it at any time. */

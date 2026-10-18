@@ -1,105 +1,99 @@
 # Roadmap
 
-How [MASTER_SPEC.md](MASTER_SPEC.md) maps onto what exists today, in the order it can be built. Nothing below is claimed to
-work until a CI build compiled it and, where it needs a device, you have tried it. Status words: **exists** (in the code
-now), **partly** (some of it exists), **planned**.
+This file explains **why the steps in [`TODOList.md`](../TODOList.md) are in the order they are** and records the technical
+routes behind them. `TODOList.md` is the single list of tasks and their status; nothing is duplicated here. Nothing is claimed to
+work until a CI build compiled it and, where it needs a device, you have tried it.
 
 ## What exists today (the base to extend, not rebuild)
 
 | Area | State |
 | --- | --- |
-| Local database (Room, v1 `Absencium.db`, schema guard in CI) | exists; no stable sync ids, revisions or tombstones yet |
-| Backup file | partly: `DatabaseBackup` zips the database; no manifest, versioning, integrity hash or encryption; staged restore on next start exists |
-| Storage folder | partly: `StorageFolder` over app files or a SAF folder; no ".Absencium subfolder or directory itself" choice dialog |
-| API key storage | exists: `ApiKeyVault`; one key per provider only |
-| AI | exists: providers, model list and picker, text extraction from photos, YouTube transcript notes, holiday import |
-| Vault, drafts, notes, subjects, timetable, exams, holidays | exists; the Text Notes editor and four Add Entry actions (Document or file, Audio note, Solve homework, Generate AI notes) are unfinished |
-| Search, profile, popups, themes, glass, onboarding | exists |
-| Diagnostics | partly: debug logger and Test Lab; no redacted export |
-| Widgets, Operations card, update engine, Drive, sync, pairing, 2FA, OCR, PDF parsing, EXIF scrubbing, Share note, Markdown toolbar, snapshots, focus mode, undo/trash, tag autocomplete | planned |
+| Local database (Room v1 `Absencium.db`, schema guard in CI) | exists; no stable ids, revisions or tombstones yet |
+| Backup file | partly: the database is zipped; no manifest, version, hash or encryption; staged restore plus **Restart app** exist |
+| Storage folder | partly: app files or a SAF folder |
+| API key storage | exists: `ApiKeyVault`, one key per provider |
+| AI | exists: providers, model list and picker, photo-to-text, YouTube video notes (Gemini link reading or pasted transcript), holiday import |
+| Home, Attendance, Vault, drafts, subjects, timetable, exams, holidays, search, profile, themes (21 presets and No colour), Liquid Glass, onboarding, About, Open-source licences | exist |
+| Diagnostics | partly: debug logger and Test Lab |
+| Tasks and reminders, notifications, widgets, undo and trash, OCR, PDF handling, sharing, sync, app lock, translations | planned (no code) |
 
-## Order of work (each phase needs the one before it)
+## Order and reasons
 
-### Phase 0: before anything is released
-- Replace the public signing key and put the new one in GitHub secrets (LICENSE_AUDIT.md finding 1). Google sign-in later
-  needs the signing certificate's SHA-1, so the key must be final first.
-- Decide the open items in LICENSE_AUDIT.md; add the GPL-3.0 `LICENSE` through GitHub.
-- Add an in-app Open-source licences screen and the About "Buy Me a Chai" card
-  (https://www.buymeachai.in/skywa1ker404).
+| Step | Area | Why it sits here |
+| --- | --- | --- |
+| 2 | Bugs and checks on what compiled | bugs first; nothing built so far has run on a phone |
+| 3 | Audit of 16 candidate repositories | audit only; decides which designs to follow before code is written, and which licences forbid copying |
+| 4 | Data foundation | ids, tombstones, one export format and the test setup that undo, backup, widgets, sharing and sync all depend on |
+| 5 | Android integration base | language, time zones, notifications, process death: needed by reminders, widgets and translations |
+| 6 | Timetable overhaul | needs the teacher column from the Step 4 migration; attendance calculations read the timetable |
+| 7 | Attendance and academic correctness | the numbers every other feature shows |
+| 8 | Reminders, tasks, Quiet Mode | needs Step 5 notifications and Step 7 attendance |
+| 9 | Calendar, search, navigation | needs time zones (Step 5) and the data model (Steps 4, 7) |
+| 10 | Vault, editor, files, note sharing | study tools, widgets and sharing all read notes and attachments |
+| 11 | AI Hub | extends the existing providers; benefits from the editor and OCR |
+| 12 | Study and focus tools | needs the editor, tasks and the timer |
+| 13 | Widgets, shortcuts, quick actions | need attendance, tasks and the timer to exist |
+| 14 | Settings, privacy, accessibility, polish | a sweep that needs most features in place |
+| 15 | Performance pass | measure after the features exist; fix only measured causes |
+| 16 | Final testing and stable 1.0.0 | proposed scope: Steps 2 to 10 and 14 to 16 (decision needed) |
+| 17 | Sharing and Sharewave | needs the export format, scoped repository view and `ShareService` |
+| 18 | Sync mode with a home server | needs the change data of Step 4; optional, off by default |
 
-### Phase 1: the data foundation (everything else sits on it)
-1. Stable ids, `updatedAt` revision, `deletedAt` tombstone on every syncable table; one Room migration with exported
-   schema; a trash with restore (this is also the QoL undo).
-2. Operation queue table (pending changes) independent of the UI and of any cloud provider.
-3. One versioned export format: manifest (format version, app version, schema version, created, item counts, SHA-256 per
-   file), the database, attachments, settings without secrets. Import validates the manifest and hashes first.
-4. Optional password encryption (AES-256-GCM with PBKDF2 or Argon2 from a reviewed library, never hand-written crypto),
-   with a threat model in `docs/PRIVACY.md`.
-5. Rolling local snapshots (3) built on the same export code.
+### Why sharing and sync do not need a rewrite later
 
-### Phase 2: Local-only mode, the default (no account anywhere)
-1. Storage directory dialog: ".Absencium subfolder" or "this directory directly"; the database and secrets stay private.
-2. Export and restore in Settings and in onboarding, reusing Phase 1.
-3. Delete-everything wizard with optional export first.
-4. Operations dashboard card in Profile plus the Operations sheet, fed by the real queue, never invented progress.
-5. Optional biometric lock (BiometricPrompt).
+Step 4 builds the pieces they will both use, with only a local implementation behind each:
 
-### Phase 3: file handling (local, no AI needed)
-1. PDF text extraction, Tesseract OCR with downloadable language packs (separate from AI), EXIF scrubbing on export.
-2. "Extract Text" popup: With AI or Locally, with the disclaimers; AI options greyed out with a toast when Ask AI is off or no
-   key or model is set; turning Ask AI off hides everything AI.
-3. Finish the Add Entry actions (Document or file, Audio note, Solve homework, Generate AI notes) on top of these.
+- stable `uuid`, `updatedAt` and `deletedAt` on every syncable row (the change set for sync, the identity for import conflict handling);
+- one versioned export with a hashed manifest (what Quick Send transfers and what a sync snapshot contains);
+- a `Transport` interface (send or receive an export or change set) so Sharesheet, Sharewave, WebDAV and a home server are interchangeable back ends;
+- a scoped, read-only repository view (what a Shared Vault session exposes, and what a widget reads).
 
-### Phase 4: the editor and the Vault
-1. Text Notes editor with a floating Markdown toolbar; tag autocomplete; autosave indicator.
-2. Vault as a file explorer: breadcrumbs, badges, long-press multi-select, batch actions; drafts folded into it.
-3. Share note as PDF, Markdown or ZIP.
+Step 10 adds a small `ShareService` for note export through Android's Sharesheet; Step 17 extends it.
 
-### Phase 5: calendar, tasks, widgets
-1. Calendar list view and To-Do; smarter reminders; countdown and Focus mode.
-2. Home-screen widgets: 1x1 quick capture, then 1x2 up to 4x4.
-3. Permissions onboarding; power and thermal handling.
+## Minimum Android version
 
-### Phase 6: Backup mode (Google Drive, optional)
-Needs: Phase 1 export and encryption, a Google Cloud project with an OAuth client for `skywa1ker404.absencium` and the
-final signing key (only you can create these).
-1. `drive.appdata` scope only, explained before the request; Google sign-in only when this mode is chosen.
-2. Encrypted incremental snapshots (hashes, tombstones), Wi-Fi only, 5 MB large-file threshold, retention, scheduled backup
-   off by default, disconnect and delete-remote controls.
-3. Greyed-out AI sync and backup items when cloud backup or sync is active.
+**Recommendation: keep `minSdk` 26 (Android 8.0).** Reasons that are facts about the platform: `java.time` and notification
+channels are part of API 26, so no desugaring or compatibility code is needed for dates, time zones and notification control.
+Newer features are used only where present and have a fallback: Monet colours need Android 12, the pill's lens needs
+Android 13 (both already gated), exact alarms changed in Android 12 and 13, runtime notification permission came in
+Android 13, and foreground-service type rules came in Android 14. I did not look up install-base percentages; check Google's
+current Android distribution figures before deciding to raise it.
 
-### Phase 7: Experimental sync (only if a backend exists)
-Needs a backend you approve; free tier only, no billing without your say-so (spec section 15). Until one is configured the
-mode stays disabled. Covers: conflict screen, explicit sync, device pairing and sessions, TOTP, account deletion, backend
-security tests. No real-time claims.
+### Notification features by Android version
 
-### Phase 8: updates and polish
-1. GitHub Releases updater (check, download, verify signature and hash, hand off to the Android installer; no silent
-   install claims), with the Settings switch.
-2. Privacy docs, README rewrite, in-app Diagnostics screen with redacted log export.
-3. The QoL list: universal search, quick actions, bulk selection, accessibility, scroll-position memory, haptics setting,
-   date and time format settings, swipe actions and tab swipes, first-launch gesture guide, predictive back, long-press
-   shortcuts, reset preferences. Several are cheap and can land earlier whenever a screen is already open for work.
+| Version | Feature | Plan |
+| --- | --- | --- |
+| 8.0+ (26) | notification channels, actions | baseline for everything |
+| 12+ (31), 13+ (33) | exact-alarm permission changes; runtime `POST_NOTIFICATIONS` | inexact by default; exact only on opt-in; explain a denied permission |
+| 16 (36) | progress-centric notifications and Live Updates (`Notification.ProgressStyle`) for ongoing, time-bound activity | study timer and "class in N minutes", with the normal ongoing notification as fallback. Source: [Pro Android Dev](https://proandroiddev.com/live-updates-in-android-16-exploring-the-next-evolution-of-notifications-1a5cf5de2068), [Android Developers Blog](https://android-developers.googleblog.com/2025/01/first-beta-android16.html) |
+| 15 and 17 | other notification changes | **not verified**: I found no source for Android 17 specifics; they are checked against developer.android.com when Step 8 starts |
 
-Also open from earlier requests: multiple API keys per provider with a setup-instructions dropdown, replacing the last
-custom dropdowns with `InlineDropdown`, nav pill label clipping, garbled text under the glass nav, voice-prompt popup on
-long-press of the AI icon (after Phase 3), optional AI Memory (off by default), CHANGELOG and docs refresh.
+## Sync mode with a home server (Step 18, not started)
 
-## Conflicts and how they are resolved
+Nothing here changes the app until you approve it. Two routes, which can coexist:
 
-- Spec: "no F-Droid, GitHub Releases and own website only". The README mentions Obtainium; that is a GitHub-releases
-  client, so both are consistent.
-- Spec: Google sign-in, device pairing and 2FA "only where a backend supports them". They stay out of Local-only mode and
-  are built only in Phases 6 and 7.
-- Spec: "never export API keys". The existing `DatabaseBackup` zips the whole database; the keys live in `ApiKeyVault`, not
-  in the database, but this must be re-checked when Phase 1 defines the export contents.
-- The CI publishes a prerelease on every push to `main`. For a public repository this should become tag-driven before the
-  first real release.
-- Changing the application ID made the new app a different app from `com.absencium.app`; there is no upgrade path from it.
+| Route | What it is | Difficulty | Cost when off |
+| --- | --- | --- | --- |
+| A. Snapshot folder | encrypted export uploaded to a WebDAV or Nextcloud folder you already run; restore with merge | medium | none |
+| B. Own server | a small server in a Docker container (SQLite or Postgres, token auth, TLS through a reverse proxy such as Caddy, or a private network such as WireGuard) with a change-feed API built from `updatedAt` and tombstones, and a per-row conflict screen | very large: server code, security tests, conflict UI, self-hosting docs | none |
+
+It can be done without removing any feature or slowing the app: sync stays off by default, registers no listeners and no
+background work until switched on, runs only on demand or on a schedule over Wi-Fi, and reads the data already prepared in
+Step 4. The server is a separate project and repository. Plain `http://` stays limited to a private network; a public server
+requires TLS. The earlier optional Google Drive `drive.appdata` idea is kept as a third transport; it needs an OAuth client
+and the final signing certificate, which only you can create.
+
+## Conflicts and how they were resolved
+
+- Spec: "no F-Droid, GitHub Releases and own website only". Obtainium reads GitHub Releases, so both agree.
+- Spec: Google sign-in, device pairing and 2FA exist only where a backend needs them: they are out of Local-only mode and belong to Step 18.
+- Spec: "never export API keys". Keys live in `ApiKeyVault`, not the database, and the Step 4 export excludes secrets by definition; re-check when it is written.
+- ~~CI publishes a prerelease on every push~~ resolved: CI uploads artifacts only; the manual *Dev release* workflow publishes development prereleases.
+- Application ID changed from `com.absencium.app`; there is no upgrade path from it (see `docs/SIGNING.md`).
+- Peer-to-peer sharing is deferred until the core app is stable (Step 17), as requested.
 
 ## When is it 1.0?
 
-Phases 0 to 4 done and used on a real phone for a few weeks: Local-only mode with export, import and snapshots; a
-migrated database with trash; the file tools; the editor and Vault; a verified signing key; a GitHub release built from a tag;
-privacy docs that match what the app does. Backup mode (Phase 6) can follow as 1.1; experimental sync stays labelled
-experimental and is not needed for 1.0.
+Proposed: Steps 2 to 10 and 14 to 16 done and used on a real phone for a few weeks, with a verified signing key, a release
+built from a tag, privacy docs that match the app, and your explicit approval. Steps 11 to 13 follow as 1.x; Steps 17 and 18 stay
+last. This is a proposal for you to decide.

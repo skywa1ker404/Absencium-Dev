@@ -5,7 +5,7 @@ root = sys.argv[1] if len(sys.argv) > 1 else "."
 bad = 0
 # Verbatim copies of docs/ bundled into the app as plain text. They are shown as text, their relative links are not
 # navigable, and the originals are checked in docs/, so checking the copies only gives false alarms.
-SKIP_DIRS = (os.path.join("app", "src", "main", "assets", "licences"),)
+SKIP_DIRS = (os.path.join("app", "src", "main", "assets", "licences"), os.path.join("release", "stable"))  # the stable README is checked inside the exported tree
 for dirpath, _, files in os.walk(root):
     if ".git" in dirpath.split(os.sep) or "/build" in dirpath:
         continue
