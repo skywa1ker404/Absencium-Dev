@@ -97,9 +97,9 @@ Last updated: 2026-10-18 (unified plan). Stable-repo secrets and variable: Anaki
 | # | Task | Status |
 | - | --- | --- |
 | 1g.1 | Search and + button square artefact: the slide-away no longer fades (a fade made the glass blur show as a pale square) | DONE (CI green `2fb6710`, not device-tested) |
-| 1g.2 | Year list of the date picker had no background (Add Entry for the calendar and for notes): container is now opaque | compiled pending CI, not device-tested |
-| 1g.3 | Lag in popups in Liquid Glass (Add Entry, AI import confirmation list): the glass pane is now its own layer under the content so scrolling, toggling and typing do not redo the blur. Cause is reasoned from the code, not measured | compiled pending CI, not device-tested |
-| 1g.4 | "College Holiday" chip wrapped onto two lines: chips wrap as a row and labels stay on one line | compiled pending CI, not device-tested |
+| 1g.2 | Year list of the date picker had no background (Add Entry for the calendar and for notes): container is now opaque | DONE (CI green `a38c782`, not device-tested) |
+| 1g.3 | Lag in popups in Liquid Glass (Add Entry, AI import confirmation list): the glass pane is now its own layer under the content so scrolling, toggling and typing do not redo the blur. Cause is reasoned from the code, not measured | DONE (CI green `a38c782`, not device-tested) |
+| 1g.4 | "College Holiday" chip wrapped onto two lines: chips wrap as a row and labels stay on one line | DONE (CI green `a38c782`, not device-tested) |
 
 ## Step 2. Open bugs and checks on what already compiled (7 tasks)
 
