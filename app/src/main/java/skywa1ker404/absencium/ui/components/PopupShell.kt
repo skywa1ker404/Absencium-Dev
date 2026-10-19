@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -134,14 +135,23 @@ fun PopupShell(
                         .fillMaxWidth()
                         .animateContentSize(q.spring(dampingRatio = 0.92f, stiffness = Spring.StiffnessMediumLow))
                         .heightIn(max = maxCardHeight)
-                        .then(
-                            if (frosted) {
-                                Modifier.floatingGlass(backdrop, shape, colors.surfaceContainerHigh, lens = false, denseVeil = true)
-                            } else {
-                                Modifier.clip(shape).background(colors.surfaceContainerHigh)
-                            },
-                        ),
+                        .clip(shape),
                 ) {
+                    // The pane sits in its own layer beneath the content. Drawn on the content's own node, the blur was
+                    // redone on every scroll frame, checkbox toggle and keystroke; as a sibling layer it is redone only
+                    // when the card itself changes size.
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .graphicsLayer()
+                            .then(
+                                if (frosted) {
+                                    Modifier.floatingGlass(backdrop, shape, colors.surfaceContainerHigh, lens = false, denseVeil = true)
+                                } else {
+                                    Modifier.clip(shape).background(colors.surfaceContainerHigh)
+                                },
+                            ),
+                    )
                     CompositionLocalProvider(
                         LocalCardBackdrop provides null,
                         LocalHostAnimatesSize provides true,

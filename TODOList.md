@@ -92,6 +92,15 @@ Last updated: 2026-10-18 (unified plan). Stable-repo secrets and variable: Anaki
 | - | --- | --- |
 | 1f.1 | Settings, Appearance: "Glossy glass" switch, shown only while Liquid Glass is on, **off by default**; adds a shine band and a glint to glass cards and buttons (not to the pill or floating bars) | DONE (CI green `1d33a15`, not device-tested) |
 
+## Step 1g. Popups, date picker and chips (4 tasks)
+
+| # | Task | Status |
+| - | --- | --- |
+| 1g.1 | Search and + button square artefact: the slide-away no longer fades (a fade made the glass blur show as a pale square) | DONE (CI green `2fb6710`, not device-tested) |
+| 1g.2 | Year list of the date picker had no background (Add Entry for the calendar and for notes): container is now opaque | compiled pending CI, not device-tested |
+| 1g.3 | Lag in popups in Liquid Glass (Add Entry, AI import confirmation list): the glass pane is now its own layer under the content so scrolling, toggling and typing do not redo the blur. Cause is reasoned from the code, not measured | compiled pending CI, not device-tested |
+| 1g.4 | "College Holiday" chip wrapped onto two lines: chips wrap as a row and labels stay on one line | compiled pending CI, not device-tested |
+
 ## Step 2. Open bugs and checks on what already compiled (7 tasks)
 
 Bugs come before features. Everything marked DONE above compiled on CI but has not been tried on a phone.
@@ -115,9 +124,9 @@ Nothing is copied or added until this report is approved. It decides which prove
 | # | Task | Status |
 | - | --- | --- |
 | 3.1 | Inspect Absencium-Dev first (source, this file, `docs/MASTER_SPEC.md`, `docs/ROADMAP.md`, `docs/SPECIFICATION.md`) and list existing, partial, planned and missing features | pending |
-| 3.2 | Audit 16 repositories: ImageToolbox, June, Kori, Reef, Tomato, FaceDown, Self-Attendance, baca., LastChat, Damier, bubble-notice-android, WikiReader, yearly-progress, Keshu, Etar Calendar, Agora. For each: README, source, actual LICENSE files (check version differences), dependencies, assets, the inspected commit, unresolved uncertainties. Special licence checks: Yearly Progress AGPL/GPL discrepancy, Damier Commons Clause, Reef additional terms, Kori licence, FaceDown and Self-Attendance reuse permission. No code with unclear permission is copied; AGPL code is not assumed to become GPL-only | pending |
-| 3.3 | Comparison matrix (repository, verified licence, feature, existing equivalent, benefit, difficulty, risks, recommendation) and a recommended / deferred list per area (Vault, AI Hub, Attendance, Reminders, Tasks, Calendar, focus tools, widgets) | pending |
-| 3.4 | Save the report as `docs/FEATURE_AUDIT.md`, update the steps below only where it changes them, and wait for approval | pending |
+| 3.2 | **Draft written** (licences read from each repo's own file; features traced to source paths; dependencies, bundled assets and file headers not audited, ScanCode not run). Audit 16 repositories: ImageToolbox, June, Kori, Reef, Tomato, FaceDown, Self-Attendance, baca., LastChat, Damier, bubble-notice-android, WikiReader, yearly-progress, Keshu, Etar Calendar, Agora. For each: README, source, actual LICENSE files (check version differences), dependencies, assets, the inspected commit, unresolved uncertainties. Special licence checks: Yearly Progress AGPL/GPL discrepancy, Damier Commons Clause, Reef additional terms, Kori licence, FaceDown and Self-Attendance reuse permission. No code with unclear permission is copied; AGPL code is not assumed to become GPL-only | pending |
+| 3.3 | Comparison matrix (repository, verified licence, feature, existing equivalent, benefit, difficulty, risks, recommendation) and a recommended / deferred list per area (Vault, AI Hub, Attendance, Reminders, Tasks, Calendar, focus tools, widgets) | draft in `docs/FEATURE_AUDIT.md` (feature table and recommendations); awaiting your review |
+| 3.4 | Save the report as `docs/FEATURE_AUDIT.md`, update the steps below only where it changes them, and wait for approval | draft saved; **waiting for your approval** |
 
 **Tests:** Every claim cites a file or commit; anything only read from a README is labelled as such. · **Effort:** L (research only) · **Gate:** Anakin approves the report
 

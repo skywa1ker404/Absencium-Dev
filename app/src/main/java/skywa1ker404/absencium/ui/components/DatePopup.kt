@@ -9,7 +9,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.time.LocalDate
@@ -36,7 +38,9 @@ fun DatePickerPopup(
                 state = state,
                 title = null,
                 showModeToggle = false,
-                colors = DatePickerDefaults.colors(containerColor = Color.Transparent),
+                // Opaque: the year list is drawn over the month grid, and with a transparent container the grid showed through it.
+                colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                modifier = Modifier.clip(RoundedCornerShape(24.dp)),
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PillButton(text = "Cancel", onClick = onDismiss, tonal = true, modifier = Modifier.weight(1f))

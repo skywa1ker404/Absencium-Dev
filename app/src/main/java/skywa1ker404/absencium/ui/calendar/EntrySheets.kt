@@ -12,6 +12,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -62,7 +63,7 @@ import java.time.LocalDate
 private enum class EntryType { EXAM, HOLIDAY }
 
 /** The Add Calendar Entry form: a scheduled exam or a college holiday. */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun AddEntrySheet(
     subjects: List<SubjectEntity>,
@@ -123,14 +124,14 @@ fun AddEntrySheet(
                 style = MaterialTheme.typography.headlineSmall,
             )
 
-            if (!editing) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!editing) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ExpressiveChip(
                     selected = type == EntryType.EXAM,
                     onClick = {
                         type = EntryType.EXAM
                         priority = Priority.HIGH
                     },
-                    label = { Text("🚨 Scheduled Exam") },
+                    label = { Text("🚨 Scheduled Exam", maxLines = 1, softWrap = false) },
                     shape = CircleShape,
                 )
                 ExpressiveChip(
@@ -139,7 +140,7 @@ fun AddEntrySheet(
                         type = EntryType.HOLIDAY
                         priority = Priority.LOW
                     },
-                    label = { Text("🏖️ College Holiday") },
+                    label = { Text("🏖️ College Holiday", maxLines = 1, softWrap = false) },
                     shape = CircleShape,
                 )
             }
