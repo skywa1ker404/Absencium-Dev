@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -77,7 +80,8 @@ class AiModelsViewModel(private val container: AppContainer) : ViewModel() {
 
 private enum class CostFilter { ALL, FREE, PAID }
 
-private const val MAX_SHOWN = 40
+private const val MAX_SHOWN = 100
+private val LIST_MAX_HEIGHT = 360.dp
 
 /**
  * The list of models a provider offers, with a search box. OpenRouter publishes prices, so its models
@@ -150,8 +154,13 @@ fun ModelPickerCard(
                     CostFilter.PAID -> model.cost == ModelCost.PAID
                 }
         } }
-    Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        shown.take(MAX_SHOWN).forEach { model ->
+    // A lazy list of bounded height: only the rows on screen exist, so scrolling the page or the list stays cheap however
+    // long the provider's list is.
+    LazyColumn(
+        modifier = Modifier.padding(top = 8.dp).heightIn(max = LIST_MAX_HEIGHT),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        items(shown.take(MAX_SHOWN)) { model ->
             val selected = model.id == selectedId
             Row(
                 modifier = Modifier

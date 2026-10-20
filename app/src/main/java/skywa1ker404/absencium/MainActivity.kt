@@ -102,10 +102,12 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         refreshRate.start()
+        skywa1ker404.absencium.logging.FrameMonitor.start()
     }
 
     override fun onStop() {
         refreshRate.stop()
+        skywa1ker404.absencium.logging.FrameMonitor.stop()
         super.onStop()
     }
 }

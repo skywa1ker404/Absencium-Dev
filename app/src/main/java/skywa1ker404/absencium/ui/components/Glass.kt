@@ -73,7 +73,8 @@ fun Modifier.floatingGlass(
             backdrop = backdrop,
             shape = { shape },
             effects = {
-                vibrancy()
+                // A dense popup veil hides the colour boost, so the extra full-size pass is skipped there.
+                if (!denseVeil) vibrancy()
                 if (blurDp.value > 0f) blur(blurDp.toPx())
                 if (useLens) {
                     lens(refractionHeight = 12.dp.toPx(), refractionAmount = 24.dp.toPx())
@@ -94,6 +95,7 @@ val LocalCardBackdrop = androidx.compose.runtime.staticCompositionLocalOf<LayerB
  * Glass for content surfaces (cards, tiles). It blurs only the wallpaper layer, so a card never samples itself
  * or the cards around it, and it is lighter than the floating bars: blur and a soft edge, no refraction.
  */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, tintAlpha: Float = 0.55f): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -104,20 +106,15 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
     val gloss = skywa1ker404.absencium.ui.theme.LocalGlassGloss.current
     val glossTop = Color.White.copy(alpha = if (isDark) 0.20f else 0.38f)
     val glossGlint = Color.White.copy(alpha = if (isDark) 0.10f else 0.22f)
-    // Clipped to its own shape: the blur otherwise spills past rounded corners and shows as a square, pointed patch
-    // around every card and button. Cards sit flat on the wallpaper, so they carry no drop shadow.
-    return this.clip(shape).drawBackdrop(
-        backdrop = backdrop,
-        shape = { shape },
-        effects = {
-            // No blur here on purpose: a card only ever samples the GlassWallpaper, which is made of smooth gradients, so a
-            // blur changes nothing you can see, yet it was a full-size offscreen pass per card on every scroll frame.
-            // (Floating bars, which have real content scrolling behind them, still blur.)
-            vibrancy()
-        },
-        highlight = { Highlight.Default },
-        shadow = null,
-        onDrawSurface = {
+    // Drawn flat, with no backdrop sampling at all. A card only ever sampled the smooth GlassWallpaper, so the sampled copy
+    // looked the same as the tint laid straight over the real wallpaper, but it cost an offscreen effect pass per card on
+    // every scroll frame (and a very tall card, like the model list, cost a very tall one). The edge light is a thin gradient
+    // rim instead of the library's highlight. Floating bars and popups, which have real content behind them, keep real glass.
+    val rimStrong = Color.White.copy(alpha = if (isDark) 0.30f else 0.70f)
+    val rimSoft = Color.White.copy(alpha = if (isDark) 0.05f else 0.18f)
+    return this
+        .clip(shape)
+        .drawBehind {
             drawRect(tint.copy(alpha = tintAlpha))
             drawRect(
                 Brush.linearGradient(
@@ -147,8 +144,12 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
                     ),
                 )
             }
-        },
-    )
+        }
+        .border(
+            1.dp,
+            Brush.linearGradient(0f to rimStrong, 0.5f to rimSoft, 1f to rimStrong.copy(alpha = rimStrong.alpha * 0.4f)),
+            shape,
+        )
 }
 
 /**

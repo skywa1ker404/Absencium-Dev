@@ -7,7 +7,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -188,7 +187,9 @@ private fun ToggleHalf(
             .clickable(
                 enabled = enabled,
                 interactionSource = interaction,
-                indication = LocalIndication.current,
+                // No ripple: its half-width pill outlived the slide and showed as a ghost behind the highlight. The press
+                // scale and the sliding highlight are the feedback.
+                indication = null,
                 onClick = onClick,
             ),
         contentAlignment = Alignment.Center,

@@ -145,7 +145,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                     )
                 }
                 Text(
-                    text = "The backup is applied when Absencium starts again. Your current data is kept as a safety copy.",
+                    text = "Restart to apply it. This erases the data you have now and replaces it with this backup (one safety copy of the current data is kept). Discard to keep what you have.",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp),
                 )
@@ -195,13 +195,24 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
         AlertDialog(
             onDismissRequest = { confirmRestore = false },
             shape = RoundedCornerShape(28.dp),
-            title = { Text("Restore from a backup?") },
+            title = { Text("Erase current data and restore?") },
             text = {
-                Text(
-                    "The backup is checked first (every file against its checksum) and nothing changes until you restart. " +
-                        "Restoring then replaces your database, and your photos if the backup has them. " +
-                        "Your current data is kept as a safety copy, but only one copy is kept.",
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Warning: restoring erases the data you have now.",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        "Your current subjects, attendance, exams, holidays, timetable and notes are replaced by what is in the backup" +
+                            " (and your photos and files too, if the backup has them). Anything you added since that backup was made is lost.",
+                    )
+                    Text(
+                        "The backup is checked first and nothing changes until you restart. Your current data is then kept as one " +
+                            "safety copy on this phone, but only one: restoring a second time replaces it. Make a backup of the current " +
+                            "data first if you might want it back.",
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
@@ -259,9 +270,9 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
             onDismissRequest = { pendingSnapshot = null },
             shape = RoundedCornerShape(28.dp),
             title = { Text("Restore this snapshot?") },
-            text = { Text("Your database goes back to how it was on ${whenText(snap.createdAt)}. Nothing changes until you restart.") },
+            text = { Text("Warning: this erases the data you have now. Your database goes back to how it was on ${whenText(snap.createdAt)}, so anything added since is lost. Nothing changes until you restart, and one safety copy of the current data is kept.") },
             confirmButton = {
-                TextButton(onClick = { pendingSnapshot = null; storageViewModel.restoreSnapshot(snap) }) { Text("Restore") }
+                TextButton(onClick = { pendingSnapshot = null; storageViewModel.restoreSnapshot(snap) }) { Text("Erase and restore") }
             },
             dismissButton = { TextButton(onClick = { pendingSnapshot = null }) { Text("Cancel") } },
         )
