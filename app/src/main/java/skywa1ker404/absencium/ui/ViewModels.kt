@@ -9,6 +9,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import skywa1ker404.absencium.AppContainer
 import skywa1ker404.absencium.appContainer
+import skywa1ker404.absencium.data.backup.BackupSummary
+import skywa1ker404.absencium.data.backup.SnapshotInfo
+import skywa1ker404.absencium.data.backup.StageResult
 import skywa1ker404.absencium.data.db.SubjectEntity
 import skywa1ker404.absencium.data.storage.NotesStorageMode
 import skywa1ker404.absencium.logging.DebugLogger
@@ -44,12 +47,23 @@ data class StorageUiState(
     val message: String? = null,
     val busy: Boolean = false,
     val restoreStaged: Boolean = false,
+    /** The chosen backup is password-protected and the password has not been given (or was wrong). */
+    val needsPassword: Boolean = false,
+    val passwordWasWrong: Boolean = false,
+    /** What the staged backup contains, shown next to the Restart button. */
+    val preview: BackupSummary? = null,
+    val snapshots: List<SnapshotInfo> = emptyList(),
 )
 
 class StorageViewModel(private val container: AppContainer) : ViewModel() {
 
-    private val _state = MutableStateFlow(StorageUiState(restoreStaged = container.databaseBackup.hasStagedRestore()))
+    private val backups = container.backupManager
+
+    private val _state = MutableStateFlow(StorageUiState(restoreStaged = backups.hasStagedRestore()))
     val state: StateFlow<StorageUiState> = _state.asStateFlow()
+
+    /** The encrypted file the user chose, kept while the password is asked for. */
+    private var pendingRestore: Uri? = null
 
     init {
         refresh()
@@ -60,7 +74,8 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
             val (mode, path) = withContext(Dispatchers.IO) {
                 container.notesStorageSettings.selectedMode() to container.notesStorage.rootFolder()?.displayPath
             }
-            _state.update { it.copy(mode = mode, path = path) }
+            val snapshots = withContext(Dispatchers.IO) { backups.snapshots() }
+            _state.update { it.copy(mode = mode, path = path, snapshots = snapshots) }
         }
     }
 
@@ -84,29 +99,97 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun backupTo(uri: Uri) {
+    /** Writes a backup package. A blank [password] leaves it unencrypted. */
+    fun backupTo(uri: Uri, password: String, includeAttachments: Boolean) {
         runBusy("Backup") {
-            val size = container.appContext.contentResolver.openOutputStream(uri, "wt")?.use { out ->
-                container.databaseBackup.export(out)
+            val settingsJson = container.settingsRepository.exportJson()
+            val chars = password.toCharArray().takeIf { it.isNotEmpty() }
+            val result = container.appContext.contentResolver.openOutputStream(uri, "wt")?.use { out ->
+                backups.export(out, chars, includeAttachments, settingsJson)
             }
-            if (size == null) "Could not open the file to write the backup." else "Backup saved ($size bytes of data)."
+            if (result == null) {
+                "Could not open the file to write the backup."
+            } else {
+                val note = buildString {
+                    append(if (result.includesAttachments) "with ${result.attachmentFiles} files" else "database and settings only")
+                    append(if (result.encrypted) ", password-protected" else ", not encrypted")
+                }
+                container.settingsRepository.setLastBackup(System.currentTimeMillis(), note)
+                "Backup saved ($note)."
+            }
         }
     }
 
-    fun restoreFrom(uri: Uri) {
+    /** Checks the chosen backup and stages it. An encrypted one first asks for its password ([needsPassword]). */
+    fun restoreFrom(uri: Uri, password: String? = null) {
         runBusy("Restore") {
-            val input = container.appContext.contentResolver.openInputStream(uri)
-            // stageRestore returns null on success, so the stream check has to be separate.
-            val error = if (input == null) {
-                "Could not open the backup file."
-            } else {
-                input.use { container.databaseBackup.stageRestore(it) }
+            pendingRestore = null
+            val resolver = container.appContext.contentResolver
+            val size = resolver.query(uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null)?.use {
+                if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else null
             }
-            if (error == null) {
-                _state.update { it.copy(restoreStaged = true) }
-                "Backup checked and ready. Close and reopen Absencium to finish restoring."
-            } else {
-                error
+            val input = resolver.openInputStream(uri) ?: return@runBusy "Could not open the backup file."
+            val result = input.use { backups.stage(it, password?.toCharArray()?.takeIf { c -> c.isNotEmpty() }, size) }
+            finishStage(result) { pendingRestore = uri }
+        }
+    }
+
+    fun cancelPassword() {
+        pendingRestore = null
+        _state.update { it.copy(needsPassword = false, passwordWasWrong = false) }
+    }
+
+    fun submitPassword(password: String) {
+        val uri = pendingRestore ?: return
+        restoreFrom(uri, password)
+    }
+
+    fun createSnapshotNow() {
+        runBusy("Snapshot") {
+            val made = backups.createSnapshot(container.settingsRepository.exportJson())
+            refresh()
+            if (made == null) "Could not save a snapshot (is there enough free storage?)." else "Snapshot saved."
+        }
+    }
+
+    fun restoreSnapshot(snapshot: SnapshotInfo) {
+        runBusy("Restore") { finishStage(backups.stageSnapshot(snapshot)) {} }
+    }
+
+    fun deleteSnapshot(snapshot: SnapshotInfo) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { backups.deleteSnapshot(snapshot) }
+            refresh()
+        }
+    }
+
+    fun discardStagedRestore() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { backups.cancelStagedRestore() }
+            _state.update { it.copy(restoreStaged = false, preview = null, message = "The staged restore was discarded.") }
+        }
+    }
+
+    private fun finishStage(result: StageResult, onNeedsPassword: () -> Unit): String {
+        return when (result) {
+            is StageResult.Ready -> {
+                _state.update { it.copy(restoreStaged = true, preview = result.summary, needsPassword = false, passwordWasWrong = false) }
+                if (result.summary.sameAsCurrent) {
+                    "This backup is identical to the data on this phone. It is ready anyway; restart to apply it, or discard it."
+                } else {
+                    "Backup checked and ready. Restart Absencium to finish restoring."
+                }
+            }
+            StageResult.NeedsPassword -> {
+                onNeedsPassword()
+                _state.update { it.copy(needsPassword = true, passwordWasWrong = false) }
+                "This backup is password-protected."
+            }
+            is StageResult.Failed -> {
+                if (result.passwordProblem) {
+                    _state.update { it.copy(needsPassword = true, passwordWasWrong = true) }
+                }
+                result.message
             }
         }
     }

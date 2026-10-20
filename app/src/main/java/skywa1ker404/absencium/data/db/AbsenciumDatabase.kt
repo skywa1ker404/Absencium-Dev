@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import skywa1ker404.absencium.logging.DebugLogger
 
 /**
@@ -31,7 +32,7 @@ import skywa1ker404.absencium.logging.DebugLogger
         RecallAttemptEntity::class,
         AttachmentEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -58,10 +59,10 @@ abstract class AbsenciumDatabase : RoomDatabase() {
         const val DATABASE_NAME = "Absencium.db"
         private const val TAG = "Room"
 
-        // Absencium's schema history starts here: version 1 is the first released schema. Every change after it
-        // needs a version bump and a Migration added to the list below, never a destructive reset. The schema JSON of
-        // each version is exported to app/schemas and checked by CI, so an edit without a version bump fails the build.
-        private val MIGRATIONS: Array<Migration> = emptyArray()
+        // Absencium's schema history: version 1 is the first released schema. Every change after it needs a version bump
+        // and a Migration added to the list below, never a destructive reset. The schema JSON of each version is exported
+        // to app/schemas and checked by CI, so an edit without a version bump fails the build.
+        private val MIGRATIONS: Array<Migration> = arrayOf(Migration2)
 
         @Volatile
         private var instance: AbsenciumDatabase? = null
@@ -72,7 +73,9 @@ abstract class AbsenciumDatabase : RoomDatabase() {
                     context.applicationContext,
                     AbsenciumDatabase::class.java,
                     DATABASE_NAME,
-                ).addMigrations(*MIGRATIONS).build().also { instance = it }
+                ).addMigrations(*MIGRATIONS)
+                    .addCallback(TouchTriggers)
+                    .build().also { instance = it }
             }
 
         /**
@@ -101,5 +104,66 @@ abstract class AbsenciumDatabase : RoomDatabase() {
                 DebugLogger.e(TAG, "Database failed to open or migrate: $DATABASE_NAME", t)
             }
         }
+
+        /** Tables whose rows carry `uuid` and `updated_at`. */
+        val TOUCHED_TABLES = listOf(
+            "Subjects_Table", "Attendance_Table", "Holidays_Table", "Exams_Table",
+            "Timetable_Table", "Notes_Table", "Attachments_Table", "Guides_Table",
+        )
+
+        /** Tables whose rows can be moved to the Trash (`deleted_at`). */
+        val TRASHABLE_TABLES = listOf("Holidays_Table", "Exams_Table", "Timetable_Table", "Notes_Table")
+    }
+}
+
+/**
+ * Version 2: stable ids, change times, trash marks and the teacher of a lecture. Every statement only adds to the schema
+ * or fills the new columns, so existing rows keep all their data.
+ */
+internal object Migration2 : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        for (sql in statements()) db.execSQL(sql)
+    }
+
+    /** The statements, as plain text so they can also be run against a copy of the version 1 schema outside Android. */
+    fun statements(): List<String> {
+        val out = mutableListOf<String>()
+        val uuidExpr = "lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || " +
+            "substr('89ab', 1 + (abs(random()) % 4), 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))"
+        val nowMs = "CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)"
+        for (table in AbsenciumDatabase.TOUCHED_TABLES) {
+            out += "ALTER TABLE `$table` ADD COLUMN `uuid` TEXT NOT NULL DEFAULT ''"
+            out += "UPDATE `$table` SET `uuid` = $uuidExpr"
+            out += "CREATE UNIQUE INDEX IF NOT EXISTS `index_${table}_uuid` ON `$table` (`uuid`)"
+            // Notes already had updated_at in version 1.
+            if (table != "Notes_Table") {
+                out += "ALTER TABLE `$table` ADD COLUMN `updated_at` INTEGER NOT NULL DEFAULT 0"
+                out += "UPDATE `$table` SET `updated_at` = $nowMs"
+            }
+        }
+        for (table in AbsenciumDatabase.TRASHABLE_TABLES) {
+            out += "ALTER TABLE `$table` ADD COLUMN `deleted_at` INTEGER"
+        }
+        out += "ALTER TABLE `Timetable_Table` ADD COLUMN `teacher` TEXT"
+        return out
+    }
+}
+
+/**
+ * Keeps `updated_at` current without every write having to remember it: after any update that did not itself change
+ * `updated_at`, the row gets the current time. Created on every open (idempotent), so a restored database has them too.
+ * SQLite does not run a trigger from its own update unless recursive triggers are on, which they are not.
+ */
+internal object TouchTriggers : RoomDatabase.Callback() {
+    override fun onOpen(db: SupportSQLiteDatabase) {
+        super.onOpen(db)
+        for (sql in statements()) db.execSQL(sql)
+    }
+
+    fun statements(): List<String> = AbsenciumDatabase.TOUCHED_TABLES.map { table ->
+        "CREATE TRIGGER IF NOT EXISTS `touch_$table` AFTER UPDATE ON `$table` FOR EACH ROW " +
+            "WHEN NEW.`updated_at` = OLD.`updated_at` BEGIN " +
+            "UPDATE `$table` SET `updated_at` = CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) " +
+            "WHERE `rowid` = NEW.`rowid`; END"
     }
 }

@@ -123,6 +123,9 @@ fun AttendanceToggle(
         targetValue = if (selected == AttendanceStatus.ABSENT) colors.onErrorContainer else colors.onSurfaceVariant,
         label = "absentTint",
     )
+    // A double tap on the same half would log the status and then clear it again, so the second tap is ignored.
+    val presentTap = rememberTapGuard(onClick = onPresent)
+    val absentTap = rememberTapGuard(onClick = onAbsent)
     val pulse = remember { Animatable(1f) }
     LaunchedEffect(selected) {
         if (selected != null) {
@@ -149,11 +152,11 @@ fun AttendanceToggle(
                     scaleX = pulse.value
                     scaleY = pulse.value
                 }
-                .glassControl(CircleShape, highlightColor, 0.82f),
+                .flatGlassFill(CircleShape, highlightColor, 0.82f),
         )
         Row(modifier = Modifier.fillMaxSize()) {
-            ToggleHalf("Present today", presentTint, enabled, onPresent, Modifier.weight(1f))
-            ToggleHalf("Absent today", absentTint, enabled, onAbsent, Modifier.weight(1f))
+            ToggleHalf("Present today", presentTint, enabled, presentTap, Modifier.weight(1f))
+            ToggleHalf("Absent today", absentTint, enabled, absentTap, Modifier.weight(1f))
         }
     }
 }

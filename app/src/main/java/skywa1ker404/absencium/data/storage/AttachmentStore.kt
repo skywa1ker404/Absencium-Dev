@@ -71,7 +71,8 @@ class AttachmentStore(private val context: Context) {
         }
     }
 
-    private companion object {
+    companion object {
+        /** Name of the folder inside the app's files directory that holds the attachments. */
         const val FOLDER = "vault_attachments"
     }
 }

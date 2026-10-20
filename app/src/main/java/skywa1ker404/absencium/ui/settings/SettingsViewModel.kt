@@ -58,6 +58,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setExamModeAutoSilence(value: Boolean) = launch { repository.setExamModeAutoSilence(value) }
 
+    fun setAutoSnapshots(value: Boolean) = launch { repository.setAutoSnapshots(value) }
+
     fun setSaturdayHoliday(value: Boolean) = launch { repository.setSaturdayHoliday(value) }
 
     fun setSundayHoliday(value: Boolean) = launch { repository.setSundayHoliday(value) }

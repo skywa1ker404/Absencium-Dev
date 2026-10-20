@@ -413,6 +413,7 @@ fun PillButton(
         label = "pillPress",
     )
     val active = enabled && !loading
+    val tap = rememberTapGuard(onClick = onClick)
     // With Liquid Glass the button is a pane of glass tinted in its usual colour; its own fill becomes clear.
     val glass = LocalCardBackdrop.current != null
     val tint = if (tonal) colors.secondaryContainer else colors.primary
@@ -433,7 +434,7 @@ fun PillButton(
     }
     if (tonal) {
         FilledTonalButton(
-            onClick = onClick,
+            onClick = tap,
             modifier = pillModifier,
             enabled = active,
             shape = CircleShape,
@@ -451,7 +452,7 @@ fun PillButton(
         )
     } else {
         Button(
-            onClick = onClick,
+            onClick = tap,
             modifier = pillModifier,
             enabled = active,
             shape = CircleShape,
@@ -466,6 +467,26 @@ fun PillButton(
         )
     }
 }
+
+/**
+ * Wraps a click so a second tap within [windowMs] of the first is ignored. A double tap on Save, Delete or Mark present
+ * then does the thing once instead of twice (or, for a toggle, does it and undoes it).
+ */
+@Composable
+fun rememberTapGuard(windowMs: Long = 450L, onClick: () -> Unit): () -> Unit {
+    val latest by androidx.compose.runtime.rememberUpdatedState(onClick)
+    val last = remember { longArrayOf(0L) }
+    return remember(windowMs) {
+        {
+            val now = android.os.SystemClock.uptimeMillis()
+            if (now - last[0] >= windowMs) {
+                last[0] = now
+                latest()
+            }
+        }
+    }
+}
+
 
 /** Progress dots for the wizard: the current step stretches into a pill. */
 @Composable

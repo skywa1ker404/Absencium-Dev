@@ -25,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import skywa1ker404.absencium.display.RefreshRatePreference
 import skywa1ker404.absencium.ui.splash.AppSplash
+import skywa1ker404.absencium.ui.components.UndoHost
 import skywa1ker404.absencium.ui.about.IntroTourContent
 import skywa1ker404.absencium.ui.navigation.ScreenTransitions
 import skywa1ker404.absencium.ui.onboarding.OnboardingScreen
@@ -88,6 +89,7 @@ class MainActivity : ComponentActivity() {
                             AppPhase.APP -> DestinationsNavHost(navGraph = NavGraphs.root, defaultTransitions = ScreenTransitions)
                         }
                     }
+                    if (phase == AppPhase.APP) UndoHost(container.undoBus)
                     // The in-app splash sits on top once per launch, in the chosen theme, then fades into the app.
                     var showSplash by rememberSaveable { mutableStateOf(true) }
                     if (showSplash) AppSplash(onFinished = { showSplash = false })

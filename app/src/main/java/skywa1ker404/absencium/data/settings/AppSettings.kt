@@ -63,6 +63,12 @@ data class AppSettings(
     val saturdayHoliday: Boolean = true,
     /** Sundays count as holidays: no lectures are expected and the timetable hides the day. */
     val sundayHoliday: Boolean = true,
+    /** Keeps the three newest local snapshots (database and settings, no photos), at most one a day. */
+    val autoSnapshots: Boolean = true,
+    /** Epoch milliseconds of the last backup made on this phone, 0 if none. Not part of a backup. */
+    val lastBackupAt: Long = 0L,
+    /** What that backup was, for the status line in Settings. */
+    val lastBackupNote: String = "",
 ) {
     /** The API style actually used for requests. */
     val effectiveAiStyle: ApiStyle

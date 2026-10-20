@@ -96,7 +96,6 @@ val LocalCardBackdrop = androidx.compose.runtime.staticCompositionLocalOf<LayerB
  */
 @Composable
 fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, tintAlpha: Float = 0.55f): Modifier {
-    val blurDp = LocalGlassBlur.current
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     // Light catches the upper-left of the pane and fades across it, like the panes in a glass UI kit: a soft sheen, strongest
     // at the top-left corner, gone by the lower right.
@@ -111,8 +110,10 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
         backdrop = backdrop,
         shape = { shape },
         effects = {
+            // No blur here on purpose: a card only ever samples the GlassWallpaper, which is made of smooth gradients, so a
+            // blur changes nothing you can see, yet it was a full-size offscreen pass per card on every scroll frame.
+            // (Floating bars, which have real content scrolling behind them, still blur.)
             vibrancy()
-            if (blurDp.value > 0f) blur(blurDp.toPx())
         },
         highlight = { Highlight.Default },
         shadow = null,
@@ -158,6 +159,31 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
 fun Modifier.glassControl(shape: Shape, tint: Color, tintAlpha: Float = 0.7f): Modifier {
     val backdrop = LocalCardBackdrop.current
     return if (backdrop != null) glassSurface(backdrop, shape, tint, tintAlpha) else this.clip(shape).background(tint)
+}
+
+/**
+ * A tinted pane for small things that move or animate on top of glass (the sliding highlight of a switch): the same tint and
+ * sheen as [glassControl], drawn flat with no backdrop sampling, so it never lags behind its own motion or leaves a ghost.
+ * Without Liquid Glass it is the plain opaque tint.
+ */
+@Composable
+fun Modifier.flatGlassFill(shape: Shape, tint: Color, tintAlpha: Float = 0.8f): Modifier {
+    if (LocalCardBackdrop.current == null) return this.clip(shape).background(tint)
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val sheenStrong = Color.White.copy(alpha = if (isDark) 0.11f else 0.30f)
+    val sheenSoft = Color.White.copy(alpha = if (isDark) 0.03f else 0.08f)
+    return this.clip(shape).drawBehind {
+        drawRect(tint.copy(alpha = tintAlpha))
+        drawRect(
+            Brush.linearGradient(
+                0f to sheenStrong,
+                0.4f to sheenSoft,
+                1f to Color.Transparent,
+                start = Offset.Zero,
+                end = Offset(size.width, size.height),
+            ),
+        )
+    }
 }
 
 /** The wallpaper behind everything in glass mode: soft blobs of the theme's own colours for the glass to blur. */

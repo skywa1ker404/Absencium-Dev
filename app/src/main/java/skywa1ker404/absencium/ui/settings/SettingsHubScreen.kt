@@ -11,6 +11,7 @@ import com.ramcosta.composedestinations.generated.destinations.AppearanceSetting
 import com.ramcosta.composedestinations.generated.destinations.GeneralSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.StorageSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.TestLabScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.TrashScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.ui.components.NavCard
 import skywa1ker404.absencium.ui.icons.AppIcons
@@ -38,6 +39,12 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
             title = "Storage & Data",
             subtitle = "Notes folder, backup and restore, archive tools",
             onClick = { navigator.navigate(StorageSettingsScreenDestination) },
+        )
+        NavCard(
+            icon = AppIcons.Delete,
+            title = "Trash",
+            subtitle = "Restore deleted entries, exams, holidays and lectures",
+            onClick = { navigator.navigate(TrashScreenDestination) },
         )
         NavCard(
             icon = AppIcons.AutoAwesome,

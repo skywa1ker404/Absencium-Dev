@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.UUID
 
 // Enums are stored as their name (TEXT). Dates are stored as ISO-8601 text
 // (see Converters), so ordering by a date column sorts chronologically.
@@ -33,13 +34,17 @@ enum class AttachmentKind { IMAGE, DOCUMENT, AUDIO, SKETCH }
  */
 @Entity(
     tableName = "Subjects_Table",
-    indices = [Index(value = ["name"], unique = true)],
+    indices = [Index(value = ["name"], unique = true), Index(value = ["uuid"], unique = true)],
 )
 data class SubjectEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     @ColumnInfo(name = "is_active") val isActive: Boolean = true,
     @ColumnInfo(name = "is_muted") val isMuted: Boolean = false,
+    /** Stable identity that survives export, import and (later) sync; the numeric id is local to one database. */
+    @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
+    /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
+    @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
 )
 
 @Entity(
@@ -52,7 +57,7 @@ data class SubjectEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index("subject_id"), Index("date")],
+    indices = [Index("subject_id"), Index("date"), Index(value = ["uuid"], unique = true)],
 )
 data class AttendanceEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -62,11 +67,15 @@ data class AttendanceEntity(
     val notes: String? = null,
     /** For an absent day: whether the notes that were taught that day have been collected. */
     @ColumnInfo(name = "notes_collected", defaultValue = "0") val notesCollected: Boolean = false,
+    /** Stable identity that survives export, import and (later) sync; the numeric id is local to one database. */
+    @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
+    /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
+    @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
 )
 
 @Entity(
     tableName = "Holidays_Table",
-    indices = [Index("date")],
+    indices = [Index("date"), Index(value = ["uuid"], unique = true)],
 )
 data class HolidayEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -74,6 +83,12 @@ data class HolidayEntity(
     val title: String,
     @ColumnInfo(name = "auto_skip_flag") val autoSkip: Boolean = true,
     @ColumnInfo(defaultValue = "'LOW'") val priority: Priority = Priority.LOW,
+    /** Stable identity that survives export, import and (later) sync; the numeric id is local to one database. */
+    @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
+    /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
+    @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
+    /** Epoch milliseconds when the row was moved to the Trash, or null while it is live. */
+    @ColumnInfo(name = "deleted_at") val deletedAt: Long? = null,
 )
 
 @Entity(
@@ -86,7 +101,7 @@ data class HolidayEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index("subject_id"), Index("date")],
+    indices = [Index("subject_id"), Index("date"), Index(value = ["uuid"], unique = true)],
 )
 data class ExamEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -97,6 +112,12 @@ data class ExamEntity(
     val room: String? = null,
     @ColumnInfo(name = "syllabus_notes") val syllabusNotes: String? = null,
     @ColumnInfo(defaultValue = "'HIGH'") val priority: Priority = Priority.HIGH,
+    /** Stable identity that survives export, import and (later) sync; the numeric id is local to one database. */
+    @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
+    /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
+    @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
+    /** Epoch milliseconds when the row was moved to the Trash, or null while it is live. */
+    @ColumnInfo(name = "deleted_at") val deletedAt: Long? = null,
 )
 
 @Entity(
@@ -109,7 +130,7 @@ data class ExamEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index("subject_id"), Index("day_of_week")],
+    indices = [Index("subject_id"), Index("day_of_week"), Index(value = ["uuid"], unique = true)],
 )
 data class TimetableEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -118,6 +139,14 @@ data class TimetableEntity(
     @ColumnInfo(name = "start_time") val startTime: LocalTime,
     @ColumnInfo(name = "end_time") val endTime: LocalTime,
     @ColumnInfo(name = "room_number") val roomNumber: String? = null,
+    /** The teacher of the lecture, shown on the timetable. */
+    val teacher: String? = null,
+    /** Stable identity that survives export, import and (later) sync; the numeric id is local to one database. */
+    @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
+    /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
+    @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
+    /** Epoch milliseconds when the row was moved to the Trash, or null while it is live. */
+    @ColumnInfo(name = "deleted_at") val deletedAt: Long? = null,
 )
 
 @Entity(
@@ -130,7 +159,7 @@ data class TimetableEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index("subject_id"), Index("status")],
+    indices = [Index("subject_id"), Index("status"), Index(value = ["uuid"], unique = true)],
 )
 data class NoteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -152,6 +181,10 @@ data class NoteEntity(
     @ColumnInfo(name = "absent_date") val absentDate: LocalDate? = null,
     /** Epoch milliseconds of the last edit. */
     @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = 0L,
+    /** Stable identity that survives export, import and (later) sync; the numeric id is local to one database. */
+    @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
+    /** Epoch milliseconds when the row was moved to the Trash, or null while it is live. */
+    @ColumnInfo(name = "deleted_at") val deletedAt: Long? = null,
 )
 
 /** A photo, document, recording or sketch that belongs to an entry. The file lives in the app's own storage. */
@@ -165,7 +198,7 @@ data class NoteEntity(
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("note_id")],
+    indices = [Index("note_id"), Index(value = ["uuid"], unique = true)],
 )
 data class AttachmentEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -181,6 +214,10 @@ data class AttachmentEntity(
     @ColumnInfo(name = "duration_ms", defaultValue = "0") val durationMs: Long = 0L,
     /** Epoch milliseconds. */
     @ColumnInfo(name = "created_at", defaultValue = "0") val createdAt: Long = System.currentTimeMillis(),
+    /** Stable identity that survives export, import and (later) sync; the numeric id is local to one database. */
+    @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
+    /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
+    @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
 )
 
 @Entity(
@@ -193,7 +230,7 @@ data class AttachmentEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index("subject_id")],
+    indices = [Index("subject_id"), Index(value = ["uuid"], unique = true)],
 )
 data class GuideEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -201,6 +238,10 @@ data class GuideEntity(
     @ColumnInfo(name = "file_name") val fileName: String,
     @ColumnInfo(name = "local_uri") val localUri: String,
     @ColumnInfo(name = "guide_type") val guideType: GuideType,
+    /** Stable identity that survives export, import and (later) sync; the numeric id is local to one database. */
+    @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
+    /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
+    @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
 )
 
 @Entity(

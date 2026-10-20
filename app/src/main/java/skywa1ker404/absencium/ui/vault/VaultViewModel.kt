@@ -88,13 +88,19 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun deleteNote(note: NoteEntity) = perform("delete the note") {
+        // A draft is thrown away at once, files included. Anything else goes to the Trash with its photos kept, so the
+        // undo (or a later restore) finds everything; the files are removed when the Trash is emptied.
         val files = repository.attachmentsFor(note.id).map { it.filePath }
-        repository.deleteNote(note)
-        withContext(Dispatchers.IO) {
-            files.forEach {
-                container.attachmentStore.delete(it)
-                ImageTools.forget(it)
+        val wasDraft = repository.deleteNote(note)
+        if (wasDraft) {
+            withContext(Dispatchers.IO) {
+                files.forEach {
+                    container.attachmentStore.delete(it)
+                    ImageTools.forget(it)
+                }
             }
+        } else {
+            container.undoBus.offer("Entry moved to the Trash") { repository.restoreNote(note.id) }
         }
     }
 

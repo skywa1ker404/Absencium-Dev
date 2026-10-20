@@ -1,11 +1,13 @@
 package skywa1ker404.absencium.data.settings
 
 import android.content.Context
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import skywa1ker404.absencium.data.ai.AiProvider
@@ -13,10 +15,20 @@ import skywa1ker404.absencium.data.ai.ApiStyle
 import skywa1ker404.absencium.logging.DebugLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.json.JSONObject
 import java.io.IOException
 
-private val Context.settingsDataStore by preferencesDataStore(name = "absencium_settings")
+// A settings file that cannot be read (damaged by a crash or a bad restore) is replaced by defaults instead of crashing the
+// app on every start; the reason is logged.
+private val Context.settingsDataStore by preferencesDataStore(
+    name = "absencium_settings",
+    corruptionHandler = ReplaceFileCorruptionHandler { error ->
+        DebugLogger.e("Settings", "The settings file was damaged and has been reset to the defaults", error)
+        emptyPreferences()
+    },
+)
 
 /**
  * Source of truth for [AppSettings]. Reads are a Flow so the UI follows every change,
@@ -101,6 +113,59 @@ class SettingsRepository(context: Context) {
 
     suspend fun setSundayHoliday(value: Boolean) = write(Keys.SUNDAY_HOLIDAY, value)
 
+    suspend fun setAutoSnapshots(value: Boolean) = write(Keys.AUTO_SNAPSHOTS, value)
+
+    suspend fun setLastBackup(at: Long, note: String) {
+        dataStore.edit {
+            it[Keys.LAST_BACKUP_AT] = at
+            it[Keys.LAST_BACKUP_NOTE] = note
+        }
+    }
+
+    /**
+     * Every saved setting as JSON, for a backup. Secrets are not in DataStore at all (the AI key lives in its own encrypted
+     * vault), and the per-phone backup status is left out.
+     */
+    suspend fun exportJson(): String {
+        val prefs = try {
+            dataStore.data.first()
+        } catch (e: IOException) {
+            emptyPreferences()
+        }
+        val values = JSONObject()
+        prefs.asMap().forEach { (key, value) ->
+            if (key.name in Keys.NOT_IN_BACKUP) return@forEach
+            when (value) {
+                is Boolean, is Int, is Long, is String -> values.put(key.name, value)
+            }
+        }
+        return JSONObject().put("version", 1).put("values", values).toString()
+    }
+
+    /** Applies settings from a backup. Only keys this app knows, with the type it expects, are taken; the rest is ignored. */
+    suspend fun importJson(json: String): Boolean {
+        val values = try {
+            JSONObject(json).getJSONObject("values")
+        } catch (e: Exception) {
+            DebugLogger.w(TAG, "Settings in the backup could not be read: ${e.message}")
+            return false
+        }
+        dataStore.edit { prefs ->
+            val names = values.keys()
+            while (names.hasNext()) {
+                val name = names.next()
+                if (name in Keys.NOT_IN_BACKUP) continue
+                val raw = values.opt(name)
+                when {
+                    name in Keys.BOOLEANS && raw is Boolean -> prefs[booleanPreferencesKey(name)] = raw
+                    name in Keys.INTS && raw is Int -> prefs[intPreferencesKey(name)] = raw
+                    name in Keys.STRINGS && raw is String -> prefs[stringPreferencesKey(name)] = raw
+                }
+            }
+        }
+        return true
+    }
+
     private suspend fun <T> write(key: Preferences.Key<T>, value: T) {
         dataStore.edit { it[key] = value }
     }
@@ -130,6 +195,22 @@ class SettingsRepository(context: Context) {
         val LOW_STORAGE_COMPRESSOR_ENABLED = booleanPreferencesKey("low_storage_compressor_enabled")
         val SATURDAY_HOLIDAY = booleanPreferencesKey("saturday_holiday")
         val SUNDAY_HOLIDAY = booleanPreferencesKey("sunday_holiday")
+        val AUTO_SNAPSHOTS = booleanPreferencesKey("auto_snapshots")
+        val LAST_BACKUP_AT = longPreferencesKey("last_backup_at")
+        val LAST_BACKUP_NOTE = stringPreferencesKey("last_backup_note")
+
+        /** Per-phone state that a backup must not carry over. */
+        val NOT_IN_BACKUP = setOf(LAST_BACKUP_AT.name, LAST_BACKUP_NOTE.name)
+
+        // The keys a restore may set, by type. A key not listed here is never imported.
+        val BOOLEANS = setOf(
+            ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, GLASS_GLOSS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
+            MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY, AUTO_SNAPSHOTS,
+        ).map { it.name }.toSet()
+        val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES).map { it.name }.toSet()
+        val STRINGS = setOf(
+            DISPLAY_NAME, THEME_MODE, COLOR_ENGINE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
+        ).map { it.name }.toSet()
     }
 
     private fun Preferences.toAppSettings(): AppSettings {
@@ -167,6 +248,9 @@ class SettingsRepository(context: Context) {
                 this[Keys.LOW_STORAGE_COMPRESSOR_ENABLED] ?: defaults.lowStorageCompressorEnabled,
             saturdayHoliday = this[Keys.SATURDAY_HOLIDAY] ?: defaults.saturdayHoliday,
             sundayHoliday = this[Keys.SUNDAY_HOLIDAY] ?: defaults.sundayHoliday,
+            autoSnapshots = this[Keys.AUTO_SNAPSHOTS] ?: defaults.autoSnapshots,
+            lastBackupAt = this[Keys.LAST_BACKUP_AT] ?: defaults.lastBackupAt,
+            lastBackupNote = this[Keys.LAST_BACKUP_NOTE] ?: defaults.lastBackupNote,
         )
     }
 

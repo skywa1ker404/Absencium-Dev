@@ -24,6 +24,7 @@ import java.time.LocalTime
 class CalendarViewModel(container: AppContainer) : ViewModel() {
 
     private val repository = container.calendarRepository
+    private val undoBus = container.undoBus
 
     /** Null until the first read from the database finishes. */
     val data: StateFlow<CalendarData?> = repository.data
@@ -65,7 +66,10 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
     fun setNotesCollected(subjectIds: Collection<Long>, date: LocalDate, collected: Boolean) =
         perform("update the notes status") { repository.setNotesCollected(subjectIds, date, collected) }
 
-    fun deleteHoliday(holiday: HolidayEntity) = perform("delete the holiday") { repository.deleteHoliday(holiday) }
+    fun deleteHoliday(holiday: HolidayEntity) = perform("delete the holiday") {
+        repository.deleteHoliday(holiday)
+        undoBus.offer("Holiday moved to the Trash") { repository.restoreHoliday(holiday) }
+    }
 
     fun addExam(
         subjectId: Long,
@@ -79,7 +83,10 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
         repository.addExam(subjectId, date, title, weightage, room, syllabusNotes, priority)
     }
 
-    fun deleteExam(exam: ExamEntity) = perform("delete the exam") { repository.deleteExam(exam) }
+    fun deleteExam(exam: ExamEntity) = perform("delete the exam") {
+        repository.deleteExam(exam)
+        undoBus.offer("Exam moved to the Trash") { repository.restoreExam(exam) }
+    }
 
     fun updateExam(exam: ExamEntity) = perform("save the exam") { repository.updateExam(exam) }
 
@@ -97,7 +104,10 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
     fun addSlots(days: Collection<DayOfWeek>, subjectId: Long, start: LocalTime, end: LocalTime, room: String?) =
         perform("add the lectures") { repository.addSlots(days, subjectId, start, end, room) }
 
-    fun deleteSlot(slot: TimetableEntity) = perform("delete the lecture") { repository.deleteSlot(slot) }
+    fun deleteSlot(slot: TimetableEntity) = perform("delete the lecture") {
+        repository.deleteSlot(slot)
+        undoBus.offer("Lecture moved to the Trash") { repository.restoreSlot(slot) }
+    }
 
     private fun perform(action: String, block: suspend () -> Unit) {
         viewModelScope.launch {

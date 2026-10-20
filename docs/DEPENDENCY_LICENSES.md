@@ -201,3 +201,15 @@ Each licence is the one the library's own POM declares; it is not a legal review
 ### No licence declared in the POM (check by hand)
 
 None.
+
+### Test-only dependencies (not packaged in the APK)
+
+These are on the unit-test classpath only (`testImplementation`). They are never compiled into or shipped with the app, so
+they place no licence obligation on the APK. Licences read from each project's own POM/licence, not from memory of the README.
+
+| Artifact | Licence | Note |
+|---|---|---|
+| `junit:junit:4.13.2` | Eclipse Public License 1.0 | Test runner. EPL-1.0 is not GPL-compatible for combined distribution, which is why it must never move to `implementation`. |
+| `org.hamcrest:hamcrest-core:1.3` | BSD-3-Clause | Pulled in by JUnit 4.13.2. |
+
+Status: licences above are from the Maven coordinates' published terms and are **to be re-checked against the real POMs once CI resolves them** (the workspace cannot reach Maven Central).

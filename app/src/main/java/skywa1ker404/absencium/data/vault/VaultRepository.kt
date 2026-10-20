@@ -10,6 +10,8 @@ import skywa1ker404.absencium.data.db.SubjectEntity
 import skywa1ker404.absencium.data.db.AbsenciumDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 
 /** Everything the Vault screens show, read from Room in one snapshot. */
@@ -40,14 +42,19 @@ class VaultRepository(private val database: AbsenciumDatabase) {
 
     suspend fun getNote(id: Long): NoteEntity? = database.noteDao().getById(id)
 
+    /** Saves of one note run one at a time, in the order they were asked for, so an older save can never land after a newer one. */
+    private val saveLock = Mutex()
+
     /**
      * Saves a note and returns its id. An [id] of 0, or one that no longer exists, inserts a new
      * note; otherwise the existing row is updated, so saving the same draft twice never makes a copy.
      */
-    suspend fun saveNote(id: Long, subjectId: Long, title: String, body: String, status: NoteStatus): Long {
+    suspend fun saveNote(id: Long, subjectId: Long, title: String, body: String, status: NoteStatus): Long = saveLock.withLock {
         val dao = database.noteDao()
-        val existing = if (id == 0L) null else dao.getById(id)
-        return if (existing == null) {
+        // A note deleted while its editor was open still exists in the Trash. Saving writes to that row (it stays in the
+        // Trash with the new text) rather than inserting a second copy next to it.
+        val existing = if (id == 0L) null else dao.getAnyById(id)
+        if (existing == null) {
             dao.insert(
                 NoteEntity(
                     subjectId = subjectId,
@@ -108,7 +115,20 @@ class VaultRepository(private val database: AbsenciumDatabase) {
         database.noteDao().update(note.copy(status = status))
     }
 
-    suspend fun deleteNote(note: NoteEntity) = database.noteDao().delete(note)
+    /**
+     * Moves an entry to the Trash (its photos stay until it is purged, so a restore finds them). Returns true when the
+     * entry was a draft, which is thrown away for good instead because nobody wants a draft back.
+     */
+    suspend fun deleteNote(note: NoteEntity): Boolean {
+        if (note.status == NoteStatus.DRAFT) {
+            database.noteDao().delete(note)
+            return true
+        }
+        database.noteDao().softDelete(note.id, System.currentTimeMillis())
+        return false
+    }
+
+    suspend fun restoreNote(id: Long) = database.noteDao().restore(id)
 
     suspend fun deleteNoteById(id: Long) {
         database.noteDao().getById(id)?.let { database.noteDao().delete(it) }

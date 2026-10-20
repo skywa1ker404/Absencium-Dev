@@ -3,6 +3,7 @@ package skywa1ker404.absencium.ui.settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,7 +27,10 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.logging.DebugLogger
 import skywa1ker404.absencium.ui.StorageViewModel
+import skywa1ker404.absencium.data.backup.SnapshotInfo
 import skywa1ker404.absencium.ui.components.AppCard
+import skywa1ker404.absencium.ui.components.AppTextField
+import skywa1ker404.absencium.ui.components.SwitchCard
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.MessageCard
 import skywa1ker404.absencium.ui.components.PillButton
@@ -36,7 +40,12 @@ import skywa1ker404.absencium.ui.containerViewModel
 import java.time.LocalDate
 import kotlin.system.exitProcess
 
-private val RestoreMimeTypes = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
+private val RestoreMimeTypes = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream", "*/*")
+
+private val dateTime = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm")
+
+private fun whenText(epochMs: Long): String =
+    java.time.Instant.ofEpochMilli(epochMs).atZone(java.time.ZoneId.systemDefault()).format(dateTime)
 
 @Destination<RootGraph>
 @Composable
@@ -46,11 +55,16 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
     val storage by storageViewModel.state.collectAsStateWithLifecycle()
     var confirmRestore by remember { mutableStateOf(false) }
+    var password by remember { mutableStateOf("") }
+    var includeFiles by remember { mutableStateOf(true) }
+    var restorePassword by remember { mutableStateOf("") }
+    var pendingSnapshot by remember { mutableStateOf<SnapshotInfo?>(null) }
 
+    val encrypted = password.isNotEmpty()
     val backupLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/zip"),
+        ActivityResultContracts.CreateDocument("application/octet-stream"),
     ) { uri ->
-        if (uri != null) storageViewModel.backupTo(uri)
+        if (uri != null) storageViewModel.backupTo(uri, password, includeFiles)
     }
     val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) storageViewModel.restoreFrom(uri)
@@ -61,12 +75,40 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
 
         SectionTitle("Backup and restore")
         AppCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Database backup", style = MaterialTheme.typography.titleMedium)
+            Text("Back up everything", style = MaterialTheme.typography.titleMedium)
             Text(
-                text = "Saves everything in the Absencium database (subjects, attendance, exams, notes index and more) " +
-                    "as one .zip file you can keep anywhere. Note files and appearance settings are not inside it.",
+                text = "One file with your database (subjects, attendance, exams, notes, timetable), your settings and, if you " +
+                    "like, the photos, documents and recordings of your entries. Note files in your notes folder are not inside it. " +
+                    "The AI key is never included.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = if (settings.lastBackupAt > 0L) "Last backup: ${whenText(settings.lastBackupAt)} (${settings.lastBackupNote})" else "No backup made yet.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Text("Include photos, documents and recordings", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                androidx.compose.material3.Switch(checked = includeFiles, onCheckedChange = { includeFiles = it })
+            }
+            AppTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password (optional)") },
+                supportingText = {
+                    Text(
+                        if (encrypted) "The backup is sealed with AES-256. Without this password it cannot be opened, and it cannot be recovered."
+                        else "Leave empty for a plain zip anyone with the file can open.",
+                    )
+                },
+                singleLine = true,
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -74,7 +116,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
             ) {
                 PillButton(
                     text = "Back up",
-                    onClick = { backupLauncher.launch("Absencium-backup-${LocalDate.now()}.zip") },
+                    onClick = { backupLauncher.launch("Absencium-backup-${LocalDate.now()}.${if (encrypted) "absbak" else "zip"}") },
                     loading = storage.busy,
                 )
                 PillButton(
@@ -87,27 +129,60 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
         }
         val message = storage.message
         if (message != null) MessageCard(message)
+        val preview = storage.preview
         if (storage.restoreStaged) {
             AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true) {
                 Text("Restore ready", style = MaterialTheme.typography.titleMedium)
+                if (preview != null) {
+                    val counts = preview.counts.entries.filter { it.value > 0 }.joinToString(", ") { "${it.value} ${it.key}" }
+                    Text(
+                        text = buildString {
+                            if (preview.createdAt > 0L) append("Made ${whenText(preview.createdAt)}. ")
+                            if (counts.isNotEmpty()) append("Contains $counts. ")
+                            append(if (preview.includesAttachments) "Includes ${preview.attachmentFiles} files." else "Database and settings only; your current photos and files are kept.")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
                 Text(
-                    text = "The backup is applied when Absencium starts again. Restart it now to apply it. " +
-                        "Your current data is kept as a safety copy.",
+                    text = "The backup is applied when Absencium starts again. Your current data is kept as a safety copy.",
                     style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
                 val context = LocalContext.current
-                PillButton(
-                    text = "Restart app",
-                    onClick = {
-                        DebugLogger.i("Backup", "Restarting the app so the staged restore can be applied")
-                        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                        if (launch != null) {
-                            context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-                        }
-                        exitProcess(0)
-                    },
-                    modifier = Modifier.padding(top = 12.dp),
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
+                    PillButton(
+                        text = "Restart app",
+                        onClick = {
+                            DebugLogger.i("Backup", "Restarting the app so the staged restore can be applied")
+                            val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                            if (launch != null) {
+                                context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                            }
+                            exitProcess(0)
+                        },
+                    )
+                    PillButton(text = "Discard", tonal = true, onClick = { storageViewModel.discardStagedRestore() })
+                }
+            }
+        }
+
+        SectionTitle("Local snapshots")
+        SwitchCard(
+            title = "Daily snapshot",
+            subtitle = "Keeps the 3 newest copies of your database and settings on this phone, at most one a day. Photos are not copied.",
+            checked = settings.autoSnapshots,
+            onCheckedChange = { settingsViewModel.setAutoSnapshots(it) },
+        )
+        PillButton(text = "Save a snapshot now", tonal = true, onClick = { storageViewModel.createSnapshotNow() }, enabled = !storage.busy)
+        storage.snapshots.forEach { snap ->
+            AppCard(modifier = Modifier.fillMaxWidth()) {
+                Text(whenText(snap.createdAt), style = MaterialTheme.typography.titleSmall)
+                Text("${snap.sizeBytes / 1024} KB", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                    PillButton(text = "Restore", compact = true, tonal = true, enabled = !storage.busy, onClick = { pendingSnapshot = snap })
+                    PillButton(text = "Delete", compact = true, tonal = true, onClick = { storageViewModel.deleteSnapshot(snap) })
+                }
             }
         }
 
@@ -123,7 +198,8 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
             title = { Text("Restore from a backup?") },
             text = {
                 Text(
-                    "Restoring replaces everything in the database with the contents of the backup. " +
+                    "The backup is checked first (every file against its checksum) and nothing changes until you restart. " +
+                        "Restoring then replaces your database, and your photos if the backup has them. " +
                         "Your current data is kept as a safety copy, but only one copy is kept.",
                 )
             },
@@ -138,6 +214,56 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
             dismissButton = {
                 TextButton(onClick = { confirmRestore = false }) { Text("Cancel") }
             },
+        )
+    }
+
+    if (storage.needsPassword) {
+        AlertDialog(
+            onDismissRequest = { restorePassword = ""; storageViewModel.cancelPassword() },
+            shape = RoundedCornerShape(28.dp),
+            title = { Text("Password for this backup") },
+            text = {
+                Column {
+                    if (storage.passwordWasWrong) {
+                        Text("That did not open it: the password is wrong, or the file is damaged.", color = MaterialTheme.colorScheme.error)
+                    }
+                    AppTextField(
+                        value = restorePassword,
+                        onValueChange = { restorePassword = it },
+                        label = { Text("Password") },
+                        singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = restorePassword.isNotEmpty(),
+                    onClick = {
+                        val typed = restorePassword
+                        restorePassword = ""
+                        storageViewModel.submitPassword(typed)
+                    },
+                ) { Text("Open") }
+            },
+            dismissButton = {
+                TextButton(onClick = { restorePassword = ""; storageViewModel.cancelPassword() }) { Text("Cancel") }
+            },
+        )
+    }
+
+    pendingSnapshot?.let { snap ->
+        AlertDialog(
+            onDismissRequest = { pendingSnapshot = null },
+            shape = RoundedCornerShape(28.dp),
+            title = { Text("Restore this snapshot?") },
+            text = { Text("Your database goes back to how it was on ${whenText(snap.createdAt)}. Nothing changes until you restart.") },
+            confirmButton = {
+                TextButton(onClick = { pendingSnapshot = null; storageViewModel.restoreSnapshot(snap) }) { Text("Restore") }
+            },
+            dismissButton = { TextButton(onClick = { pendingSnapshot = null }) { Text("Cancel") } },
         )
     }
 }

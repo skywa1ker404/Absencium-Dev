@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import skywa1ker404.absencium.data.ai.AiClient
-import skywa1ker404.absencium.data.backup.DatabaseBackup
+import skywa1ker404.absencium.data.backup.BackupManager
 import skywa1ker404.absencium.data.calendar.CalendarRepository
 import skywa1ker404.absencium.data.db.AbsenciumDatabase
 import skywa1ker404.absencium.data.security.ApiKeyVault
@@ -18,6 +18,8 @@ import skywa1ker404.absencium.data.storage.AttachmentStore
 import skywa1ker404.absencium.data.storage.NotesStorage
 import skywa1ker404.absencium.data.storage.NotesStorageSettings
 import skywa1ker404.absencium.data.subjects.SubjectRepository
+import skywa1ker404.absencium.data.trash.TrashRepository
+import skywa1ker404.absencium.data.trash.UndoBus
 import skywa1ker404.absencium.data.vault.VaultRepository
 
 /**
@@ -44,10 +46,12 @@ class AppContainer(context: Context) {
     val notesStorage = NotesStorage(appContext, notesStorageSettings)
     val apiKeyVault = ApiKeyVault(appContext)
     val attachmentStore = AttachmentStore(appContext)
-    val databaseBackup = DatabaseBackup(appContext)
+    val backupManager = BackupManager(appContext)
     val aiClient = AiClient(apiKeyVault)
     val calendarRepository: CalendarRepository by lazy { CalendarRepository(database, settingsRepository.settings) }
     val vaultRepository: VaultRepository by lazy { VaultRepository(database) }
+    val trashRepository: TrashRepository by lazy { TrashRepository(database, attachmentStore) }
+    val undoBus = UndoBus()
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.subjectDao(), database.subjectCascadeDao()) }
 }
 

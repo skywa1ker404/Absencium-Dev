@@ -40,7 +40,12 @@ class SubjectRepository(private val dao: SubjectDao, private val cascade: Subjec
             "delete ${subject.name}",
             "\"${subject.name}\" still has attendance, exams, notes or other records, so it cannot be deleted. " +
                 "Mark it inactive instead.",
-        ) { dao.delete(subject) }
+        ) {
+            // Anything of this subject that is in the Trash would block the delete, so it goes first, but only when the
+            // delete can succeed (nothing live is left), so a refused delete never costs anyone their Trash.
+            if (cascade.entryCount(subject.id) == 0) cascade.purgeTrashedFor(subject.id)
+            dao.delete(subject)
+        }
 
     /** How many attendance records, exams, lectures, notes and guides are filed under [subject]. */
     suspend fun entryCount(subject: SubjectEntity): Int = cascade.entryCount(subject.id)

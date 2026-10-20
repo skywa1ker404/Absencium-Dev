@@ -121,7 +121,10 @@ class CalendarRepository(
         return added to skipped
     }
 
-    suspend fun deleteHoliday(holiday: HolidayEntity) = database.holidayDao().delete(holiday)
+    /** Moves the holiday to the Trash. */
+    suspend fun deleteHoliday(holiday: HolidayEntity) = database.holidayDao().softDelete(holiday.id, System.currentTimeMillis())
+
+    suspend fun restoreHoliday(holiday: HolidayEntity) = database.holidayDao().restore(holiday.id)
 
     suspend fun addExam(
         subjectId: Long,
@@ -145,7 +148,10 @@ class CalendarRepository(
         )
     }
 
-    suspend fun deleteExam(exam: ExamEntity) = database.examDao().delete(exam)
+    /** Moves the exam to the Trash. */
+    suspend fun deleteExam(exam: ExamEntity) = database.examDao().softDelete(exam.id, System.currentTimeMillis())
+
+    suspend fun restoreExam(exam: ExamEntity) = database.examDao().restore(exam.id)
 
     suspend fun updateExam(exam: ExamEntity) = database.examDao().update(exam)
 
@@ -180,5 +186,8 @@ class CalendarRepository(
         )
     }
 
-    suspend fun deleteSlot(slot: TimetableEntity) = database.timetableDao().delete(slot)
+    /** Moves the lecture to the Trash. */
+    suspend fun deleteSlot(slot: TimetableEntity) = database.timetableDao().softDelete(slot.id, System.currentTimeMillis())
+
+    suspend fun restoreSlot(slot: TimetableEntity) = database.timetableDao().restore(slot.id)
 }

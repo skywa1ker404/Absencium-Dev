@@ -108,4 +108,6 @@ dependencies {
     implementation(libs.compose.destinations.core)
     ksp(libs.compose.destinations.ksp)
     implementation(libs.filekit.dialogs.compose)
+
+    testImplementation(libs.junit)
 }

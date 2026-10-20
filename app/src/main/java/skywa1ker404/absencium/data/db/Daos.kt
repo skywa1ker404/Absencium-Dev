@@ -74,11 +74,26 @@ interface HolidayDao {
     @Delete
     suspend fun delete(holiday: HolidayEntity)
 
-    @Query("SELECT * FROM Holidays_Table ORDER BY date")
+    @Query("SELECT * FROM Holidays_Table WHERE deleted_at IS NULL ORDER BY date")
     fun observeAll(): Flow<List<HolidayEntity>>
 
-    @Query("SELECT * FROM Holidays_Table WHERE date = :date LIMIT 1")
+    @Query("SELECT * FROM Holidays_Table WHERE date = :date AND deleted_at IS NULL LIMIT 1")
     suspend fun getForDate(date: LocalDate): HolidayEntity?
+
+    @Query("UPDATE Holidays_Table SET deleted_at = :at WHERE id = :id")
+    suspend fun softDelete(id: Long, at: Long)
+
+    @Query("UPDATE Holidays_Table SET deleted_at = NULL WHERE id = :id")
+    suspend fun restore(id: Long)
+
+    @Query("SELECT * FROM Holidays_Table WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC")
+    fun observeTrashed(): Flow<List<HolidayEntity>>
+
+    @Query("DELETE FROM Holidays_Table WHERE id = :id AND deleted_at IS NOT NULL")
+    suspend fun purge(id: Long)
+
+    @Query("DELETE FROM Holidays_Table WHERE deleted_at IS NOT NULL AND deleted_at < :before")
+    suspend fun purgeBefore(before: Long): Int
 }
 
 @Dao
@@ -92,17 +107,32 @@ interface ExamDao {
     @Delete
     suspend fun delete(exam: ExamEntity)
 
-    @Query("SELECT * FROM Exams_Table ORDER BY date, id")
+    @Query("SELECT * FROM Exams_Table WHERE deleted_at IS NULL ORDER BY date, id")
     fun observeAll(): Flow<List<ExamEntity>>
 
-    @Query("SELECT * FROM Exams_Table WHERE date >= :from ORDER BY date, id")
+    @Query("SELECT * FROM Exams_Table WHERE date >= :from AND deleted_at IS NULL ORDER BY date, id")
     fun observeUpcoming(from: LocalDate): Flow<List<ExamEntity>>
 
-    @Query("SELECT * FROM Exams_Table WHERE date BETWEEN :start AND :end ORDER BY date, id")
+    @Query("SELECT * FROM Exams_Table WHERE date BETWEEN :start AND :end AND deleted_at IS NULL ORDER BY date, id")
     fun observeBetween(start: LocalDate, end: LocalDate): Flow<List<ExamEntity>>
 
-    @Query("SELECT * FROM Exams_Table WHERE id = :id")
+    @Query("SELECT * FROM Exams_Table WHERE id = :id AND deleted_at IS NULL")
     suspend fun getById(id: Long): ExamEntity?
+
+    @Query("UPDATE Exams_Table SET deleted_at = :at WHERE id = :id")
+    suspend fun softDelete(id: Long, at: Long)
+
+    @Query("UPDATE Exams_Table SET deleted_at = NULL WHERE id = :id")
+    suspend fun restore(id: Long)
+
+    @Query("SELECT * FROM Exams_Table WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC")
+    fun observeTrashed(): Flow<List<ExamEntity>>
+
+    @Query("DELETE FROM Exams_Table WHERE id = :id AND deleted_at IS NOT NULL")
+    suspend fun purge(id: Long)
+
+    @Query("DELETE FROM Exams_Table WHERE deleted_at IS NOT NULL AND deleted_at < :before")
+    suspend fun purgeBefore(before: Long): Int
 }
 
 @Dao
@@ -116,11 +146,26 @@ interface TimetableDao {
     @Delete
     suspend fun delete(slot: TimetableEntity)
 
-    @Query("SELECT * FROM Timetable_Table WHERE day_of_week = :day ORDER BY start_time")
+    @Query("SELECT * FROM Timetable_Table WHERE day_of_week = :day AND deleted_at IS NULL ORDER BY start_time")
     fun observeForDay(day: DayOfWeek): Flow<List<TimetableEntity>>
 
-    @Query("SELECT * FROM Timetable_Table ORDER BY start_time")
+    @Query("SELECT * FROM Timetable_Table WHERE deleted_at IS NULL ORDER BY start_time")
     fun observeAll(): Flow<List<TimetableEntity>>
+
+    @Query("UPDATE Timetable_Table SET deleted_at = :at WHERE id = :id")
+    suspend fun softDelete(id: Long, at: Long)
+
+    @Query("UPDATE Timetable_Table SET deleted_at = NULL WHERE id = :id")
+    suspend fun restore(id: Long)
+
+    @Query("SELECT * FROM Timetable_Table WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC")
+    fun observeTrashed(): Flow<List<TimetableEntity>>
+
+    @Query("DELETE FROM Timetable_Table WHERE id = :id AND deleted_at IS NOT NULL")
+    suspend fun purge(id: Long)
+
+    @Query("DELETE FROM Timetable_Table WHERE deleted_at IS NOT NULL AND deleted_at < :before")
+    suspend fun purgeBefore(before: Long): Int
 }
 
 @Dao
@@ -134,14 +179,30 @@ interface NoteDao {
     @Delete
     suspend fun delete(note: NoteEntity)
 
-    @Query("SELECT * FROM Notes_Table WHERE subject_id = :subjectId AND status = :status ORDER BY created_date DESC")
+    @Query("SELECT * FROM Notes_Table WHERE subject_id = :subjectId AND status = :status AND deleted_at IS NULL ORDER BY created_date DESC")
     fun observeBySubject(subjectId: Long, status: NoteStatus): Flow<List<NoteEntity>>
 
-    @Query("SELECT * FROM Notes_Table ORDER BY created_date DESC")
+    @Query("SELECT * FROM Notes_Table WHERE deleted_at IS NULL ORDER BY created_date DESC")
     fun observeAll(): Flow<List<NoteEntity>>
 
-    @Query("SELECT * FROM Notes_Table WHERE id = :id")
+    @Query("SELECT * FROM Notes_Table WHERE id = :id AND deleted_at IS NULL")
     suspend fun getById(id: Long): NoteEntity?
+
+    /** Any note, in the Trash or not, for restoring and purging. */
+    @Query("SELECT * FROM Notes_Table WHERE id = :id")
+    suspend fun getAnyById(id: Long): NoteEntity?
+
+    @Query("UPDATE Notes_Table SET deleted_at = :at WHERE id = :id")
+    suspend fun softDelete(id: Long, at: Long)
+
+    @Query("UPDATE Notes_Table SET deleted_at = NULL WHERE id = :id")
+    suspend fun restore(id: Long)
+
+    @Query("SELECT * FROM Notes_Table WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC")
+    fun observeTrashed(): Flow<List<NoteEntity>>
+
+    @Query("SELECT id FROM Notes_Table WHERE deleted_at IS NOT NULL AND deleted_at < :before")
+    suspend fun trashedIdsBefore(before: Long): List<Long>
 }
 
 @Dao
@@ -284,9 +345,9 @@ interface RecallAttemptDao {
 abstract class SubjectCascadeDao {
     @Query(
         "SELECT (SELECT COUNT(*) FROM Attendance_Table WHERE subject_id = :id) + " +
-            "(SELECT COUNT(*) FROM Exams_Table WHERE subject_id = :id) + " +
-            "(SELECT COUNT(*) FROM Timetable_Table WHERE subject_id = :id) + " +
-            "(SELECT COUNT(*) FROM Notes_Table WHERE subject_id = :id) + " +
+            "(SELECT COUNT(*) FROM Exams_Table WHERE subject_id = :id AND deleted_at IS NULL) + " +
+            "(SELECT COUNT(*) FROM Timetable_Table WHERE subject_id = :id AND deleted_at IS NULL) + " +
+            "(SELECT COUNT(*) FROM Notes_Table WHERE subject_id = :id AND deleted_at IS NULL) + " +
             "(SELECT COUNT(*) FROM Guides_Table WHERE subject_id = :id)",
     )
     abstract suspend fun entryCount(id: Long): Int
@@ -308,6 +369,23 @@ abstract class SubjectCascadeDao {
 
     @Query("DELETE FROM Subjects_Table WHERE id = :id")
     abstract suspend fun deleteSubject(id: Long)
+
+    /** Rows of this subject that are in the Trash. They still point at it, so they go before the subject can. */
+    @Query("DELETE FROM Exams_Table WHERE subject_id = :id AND deleted_at IS NOT NULL")
+    abstract suspend fun purgeTrashedExams(id: Long)
+
+    @Query("DELETE FROM Timetable_Table WHERE subject_id = :id AND deleted_at IS NOT NULL")
+    abstract suspend fun purgeTrashedTimetable(id: Long)
+
+    @Query("DELETE FROM Notes_Table WHERE subject_id = :id AND deleted_at IS NOT NULL")
+    abstract suspend fun purgeTrashedNotes(id: Long)
+
+    @Transaction
+    open suspend fun purgeTrashedFor(id: Long) {
+        purgeTrashedExams(id)
+        purgeTrashedTimetable(id)
+        purgeTrashedNotes(id)
+    }
 
     @Transaction
     open suspend fun deleteWithEntries(id: Long) {
