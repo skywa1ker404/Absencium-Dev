@@ -92,7 +92,7 @@ Last updated: 2026-10-18 (unified plan). Stable-repo secrets and variable: Anaki
 | - | --- | --- |
 | 1f.1 | Settings, Appearance: "Glossy glass" switch, shown only while Liquid Glass is on, **off by default**; adds a shine band and a glint to glass cards and buttons (not to the pill or floating bars) | DONE (CI green `1d33a15`, not device-tested) |
 
-## Step 1g. Popups, date picker and chips (4 tasks)
+## Step 1g. Popups, date picker, chips and glass lag (7 tasks)
 
 | # | Task | Status |
 | - | --- | --- |
@@ -100,6 +100,9 @@ Last updated: 2026-10-18 (unified plan). Stable-repo secrets and variable: Anaki
 | 1g.2 | Year list of the date picker had no background (Add Entry for the calendar and for notes): container is now opaque | DONE (CI green `a38c782`, not device-tested) |
 | 1g.3 | Lag in popups in Liquid Glass (Add Entry, AI import confirmation list): the glass pane is now its own layer under the content so scrolling, toggling and typing do not redo the blur. Cause is reasoned from the code, not measured | DONE (CI green `a38c782`, not device-tested) |
 | 1g.4 | "College Holiday" chip wrapped onto two lines: chips wrap as a row and labels stay on one line | DONE (CI green `a38c782`, not device-tested) |
+| 1g.5 | Liquid Glass lag everywhere: cards (`glassSurface`) no longer blur. They only ever sampled the smooth wallpaper, so the blur was invisible but cost a blur pass per card per frame; the glass look, sheen and vibrancy are kept. The floating pill, bars and popups keep their real glass. Cause is reasoned from the code, **not measured** | DONE (CI green `795afcc`, not device-tested) |
+| 1g.6 | Present/Absent switch: the translucent selection that showed behind the animation and vanished afterwards came from the highlight being a backdrop-sampling glass control inside a fading, scaling layer. It is now a flat tinted fill with the same sheen. Reasoned from the code, since the recording cannot be seen | DONE (CI green `795afcc`, not device-tested) |
+| 1g.7 | Lag in the AI model selector list in Liquid Glass: its rows are plain fills; the card around it was the blurred part, so 1g.5 should cover it. Not separately changed or measured. If it still lags, the next step is to make the list lazy (it composes up to 40 rows at once) | DONE with 1g.5, **needs a device check** |
 
 ## Step 2. Open bugs and checks on what already compiled (7 tasks)
 
@@ -108,12 +111,12 @@ Bugs come before features. Everything marked DONE above compiled on CI but has n
 | # | Task | Status |
 | - | --- | --- |
 | 2.1 | Device check of the CI-green changes: pill drag to the last tab (1e.2), licences screen and scrollbar drag, API style chips, No colour preset, glossy glass | pending |
-| 2.2 | **Bug:** Present / Absent Today buttons: animations misbehave (needs your screen recording or exact steps before I change it) | pending |
+| 2.2 | **Bug:** Present / Absent Today buttons: the ghost selection behind the animation is fixed in 1g.6 (owner described it on 2026-10-19). Double taps are also ignored for 450 ms (2.7) | DONE (CI green `795afcc`, not device-tested) |
 | 2.3 | ~~Navigation pill label clipping~~ the owner prefers the current pill look (1e.1); re-open only if the clipping is seen again after the drag fix | pending |
 | 2.4 | ~~Garbled text under the glass navigation bar~~ withdrawn the same way; the title-area and veil changes of 1d.1 / 1d.3 were reverted | superseded |
 | 2.5 | Lag with a lot of text or many entries on screens other than the licences screen, subject folders and search (for example typing in a very long note): measure on the device first, then fix the measured cause | pending |
-| 2.6 | Prevent stale saves overwriting newer edits, make the save-status indicator accurate, predictable draft creation and deletion (data-loss class, from the reliability list) | pending |
-| 2.7 | Rapid-tap guard: prevent duplicate actions from double taps on save, delete, mark present/absent | pending |
+| 2.6 | Prevent stale saves overwriting newer edits, make the save-status indicator accurate, predictable draft creation and deletion (data-loss class, from the reliability list) | **partly done** (CI green `795afcc`, not device-tested): saves of notes now run one at a time in request order, and saving a note that was deleted while its editor was open updates the Trash row instead of inserting a duplicate; drafts are deleted at once with their files, other entries go to the Trash. **Not done:** the save-status indicator and a check for a note changed elsewhere |
+| 2.7 | Rapid-tap guard: prevent duplicate actions from double taps on save, delete, mark present/absent | **partly done** (CI green `795afcc`, not device-tested): every `PillButton` and both halves of the Present/Absent switch ignore a second tap within 450 ms. **Not done:** other clickable rows and icon buttons that save or delete |
 
 **Tests:** Manual device script; a regression test for each fixed bug where logic is involved. · **Effort:** S to M
 
@@ -130,21 +133,21 @@ Nothing is copied or added until this report is approved. It decides which prove
 
 **Tests:** Every claim cites a file or commit; anything only read from a README is labelled as such. · **Effort:** L (research only) · **Gate:** Anakin approves the report
 
-## Step 4. Data foundation: one Room migration and one export format (9 tasks)
+## Step 4. Data foundation: one Room migration and one export format (9 tasks, 5 done, 4 partly)
 
 Almost every later step (undo, backup, sync, sharing, widgets) needs stable ids, change times, tombstones and a versioned export. Doing it once now means the later steps add code instead of rewriting it.
 
 | # | Task | Status |
 | - | --- | --- |
-| 4.1 | Room version 2 as a real `Migration` with an exported schema (never destructive): stable `uuid` per syncable row, `updatedAt` revision, `deletedAt` tombstone, plus the `teacher` column the timetable needs. Later versions add columns the same way | pending |
-| 4.2 | Trash and undo: deleted rows are tombstoned, shown in a Trash screen, restorable, purged after a set time; the undo toast of the timetable work uses it | pending |
-| 4.3 | Versioned export format: manifest (format version, app version, schema version, created, counts, SHA-256 per file), the database, attachments, settings without secrets; import validates manifest and hashes first | pending |
-| 4.4 | Backup and restore on top of it: attachments included, restore validation, duplicate detection, interrupted-import recovery, low-storage check, backup status shown in Settings | pending |
-| 4.5 | Optional password encryption of backups (AES-256-GCM, key derived with a reviewed library, no hand-written crypto) with a threat model written in `docs/PRIVACY.md` | pending |
-| 4.6 | Rolling local snapshots (3) built on the same export code | pending |
-| 4.7 | Seams for later steps, written as interfaces with one local implementation: a `Transport` (sends or receives an export or a change set), a change-set builder fed by `updatedAt`/tombstones, and a scoped read-only repository view. No server, no networking code yet | pending |
-| 4.8 | Test infrastructure: Room migration tests, export/import round-trip tests, preference-recovery test; CI runs them | pending |
-| 4.9 | Safe preference recovery (corrupt DataStore falls back to defaults) and preserve data when subjects are renamed or moved | pending |
+| 4.1 | Room version 2 as a real `Migration` with an exported schema (never destructive): stable `uuid` per syncable row, `updatedAt` revision, `deletedAt` tombstone, plus the `teacher` column the timetable needs. Later versions add columns the same way | DONE (CI green `795afcc`, not device-tested). The migration SQL was run in SQLite on a copy of the v1 schema and its result is identical to the v2 schema Room exported (columns, types, defaults, indices, foreign keys). `updated_at` is also kept current by database triggers. **Not run on a phone**, and there is no instrumented migration test yet (see 4.8) |
+| 4.2 | Trash and undo: deleted rows are tombstoned, shown in a Trash screen, restorable, purged after a set time; the undo toast of the timetable work uses it | DONE for notes, exams, holidays and lectures (CI green `795afcc`, not device-tested): Trash screen in Settings, 30-day purge at start-up, undo bar. Subjects and attendance entries are **not** trashed (deleted at once) |
+| 4.3 | Versioned export format: manifest (format version, app version, schema version, created, counts, SHA-256 per file), the database, attachments, settings without secrets; import validates manifest and hashes first | DONE (CI green `795afcc`, not device-tested). Manifest rules are covered by JVM unit tests that CI runs; the manifest JSON reader/writer uses `org.json` and is **not** unit-tested |
+| 4.4 | Backup and restore on top of it: attachments included, restore validation, duplicate detection, interrupted-import recovery, low-storage check, backup status shown in Settings | DONE (CI green `795afcc`, not device-tested): staged restore with rollback, "same as current" detection, low-storage check, last-backup line, restore preview. **Not run end to end on a phone**; there is no automated export-wipe-import test (it needs Android) |
+| 4.5 | Optional password encryption of backups (AES-256-GCM, key derived with a reviewed library, no hand-written crypto) with a threat model written in `docs/PRIVACY.md` | DONE with a deviation (CI green `795afcc`, not device-tested): PBKDF2-SHA256 and AES-256-GCM come from the Android platform, not a separate library, and the 64 KiB chunk framing around them is our own code. That framing is unit-tested but **not independently reviewed**; the limits are written in `docs/PRIVACY.md` |
+| 4.6 | Rolling local snapshots (3) built on the same export code | DONE (CI green `795afcc`, not device-tested): daily snapshot of database and settings (no photos), 3 kept, create/restore/delete in Storage & Data |
+| 4.7 | Seams for later steps, written as interfaces with one local implementation: a `Transport` (sends or receives an export or a change set), a change-set builder fed by `updatedAt`/tombstones, and a scoped read-only repository view. No server, no networking code yet | **partly done** (CI green `795afcc`, not device-tested): `Transport` with a local-folder implementation, the `ChangeSet` model and `ChangeSetBuilder` interface, and `ReadOnlyScope` exist. **Not done:** the Room-backed change-set builder and a scoped read-only view of the repositories (left for Steps 17 and 18, where their real use shapes them) |
+| 4.8 | Test infrastructure: Room migration tests, export/import round-trip tests, preference-recovery test; CI runs them | **partly done** (CI green `795afcc`, not device-tested): JUnit 4 added; JVM tests for the encryption (round trip, wrong password, bit flips, truncation, reordering), manifest rules, Trash retention and the local transport run in `testDebugUnitTest` on CI. CI's log is not readable from here, so the test count is not confirmed beyond the step passing. **Not done:** Room migration test (needs an instrumented runner), full export/import round trip, preference-recovery test |
+| 4.9 | Safe preference recovery (corrupt DataStore falls back to defaults) and preserve data when subjects are renamed or moved | **partly done** (CI green `795afcc`, not device-tested): a corrupt DataStore file is replaced with defaults and logged. Rename/move safety is **not verified**: rows refer to subjects by id, so a rename should keep them, but no test or check was done |
 
 **Tests:** Migration test from the exported v1 schema; round-trip test (export, wipe, import, compare); a tampered manifest is rejected. · **Effort:** L
 
