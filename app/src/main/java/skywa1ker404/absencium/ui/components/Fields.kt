@@ -154,6 +154,38 @@ fun AppTextField(
     )
 }
 
+/** The same field for text whose selection the caller controls (the note editor's formatting toolbar moves the selection). */
+@Composable
+fun AppTextField(
+    value: androidx.compose.ui.text.input.TextFieldValue,
+    onValueChange: (androidx.compose.ui.text.input.TextFieldValue) -> Unit,
+    modifier: Modifier = Modifier,
+    label: @Composable (() -> Unit)? = null,
+    placeholder: @Composable (() -> Unit)? = null,
+    singleLine: Boolean = false,
+    minLines: Int = 1,
+    shape: Shape = FieldShape,
+) {
+    val colors = MaterialTheme.colorScheme
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        textStyle = MaterialTheme.typography.bodyLarge,
+        label = label,
+        placeholder = placeholder,
+        singleLine = singleLine,
+        minLines = minLines,
+        shape = shape,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = colors.primary,
+            unfocusedBorderColor = colors.outlineVariant,
+            focusedContainerColor = colors.surfaceContainerLow,
+            unfocusedContainerColor = colors.surfaceContainerLow,
+        ),
+    )
+}
+
 /** The one corner shape of every text field and dropdown. */
 val FieldShape: Shape = RoundedCornerShape(20.dp)
 

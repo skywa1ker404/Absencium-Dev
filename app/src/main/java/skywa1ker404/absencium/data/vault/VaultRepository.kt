@@ -49,7 +49,7 @@ class VaultRepository(private val database: AbsenciumDatabase) {
      * Saves a note and returns its id. An [id] of 0, or one that no longer exists, inserts a new
      * note; otherwise the existing row is updated, so saving the same draft twice never makes a copy.
      */
-    suspend fun saveNote(id: Long, subjectId: Long, title: String, body: String, status: NoteStatus): Long = saveLock.withLock {
+    suspend fun saveNote(id: Long, subjectId: Long, title: String, body: String, status: NoteStatus, tags: String? = null): Long = saveLock.withLock {
         val dao = database.noteDao()
         // A note deleted while its editor was open still exists in the Trash. Saving writes to that row (it stays in the
         // Trash with the new text) rather than inserting a second copy next to it.
@@ -61,6 +61,7 @@ class VaultRepository(private val database: AbsenciumDatabase) {
                     title = title,
                     bodyText = body,
                     status = status,
+                    tags = tags.orEmpty(),
                     updatedAt = System.currentTimeMillis(),
                 ),
             )
@@ -71,6 +72,7 @@ class VaultRepository(private val database: AbsenciumDatabase) {
                     title = title,
                     bodyText = body,
                     status = status,
+                    tags = tags ?: existing.tags,
                     updatedAt = System.currentTimeMillis(),
                 ),
             )

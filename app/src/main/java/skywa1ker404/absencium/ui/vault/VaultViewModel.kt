@@ -68,9 +68,9 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
         }
 
     /** Saves a note and returns its id, or null if saving failed (the reason is logged and shown). */
-    suspend fun saveNote(id: Long, subjectId: Long, title: String, body: String, status: NoteStatus): Long? =
+    suspend fun saveNote(id: Long, subjectId: Long, title: String, body: String, status: NoteStatus, tags: String? = null): Long? =
         try {
-            repository.saveNote(id, subjectId, title, body, status)
+            repository.saveNote(id, subjectId, title, body, status, tags)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -80,8 +80,8 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
         }
 
     /** Saves from a screen that is being closed, so the write must outlive the screen. */
-    fun saveInBackground(id: Long, subjectId: Long, title: String, body: String, status: NoteStatus) =
-        perform("save the note") { repository.saveNote(id, subjectId, title, body, status) }
+    fun saveInBackground(id: Long, subjectId: Long, title: String, body: String, status: NoteStatus, tags: String? = null) =
+        perform("save the note") { repository.saveNote(id, subjectId, title, body, status, tags) }
 
     fun setNoteStatus(note: NoteEntity, status: NoteStatus) = perform("update the note") {
         repository.setNoteStatus(note, status)
