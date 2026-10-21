@@ -55,6 +55,7 @@ import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenD
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SubjectFolderScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.TrashScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.data.db.ExamEntity
 import skywa1ker404.absencium.data.db.HolidayEntity
@@ -269,6 +270,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                                     onOpenFolder = { navigator.navigate(SubjectFolderScreenDestination(subjectId = it)) },
                                     onManageSubjects = { navigator.navigate(SubjectsScreenDestination) },
                                     onOpenDrafts = { showDrafts = true },
+                                    onOpenTrash = { navigator.navigate(TrashScreenDestination) },
                                 )
                             }
                         }

@@ -61,7 +61,7 @@ DONE: Room v2 migration with stable ids and tombstones (4.1), Trash and undo for
 | 10.16 | Syllabus tree per subject (unit, chapter, topic, subtopic, status, progress); AI import; AI-generate notes for a topic; main Vault FAB "Syllabus" for all subjects; needs DB v3 | pending |
 | 10.17 | Study material tab: PYQ, answer book, guide | pending |
 | 10.18 | Link notes, PYQs, materials to a syllabus node via "Uncategorized"; profile summary card with the Step 14 profile overhaul | pending |
-| 10.19 | Vault page: "Drafts" text becomes a trash icon opening the Trash | pending |
+| 10.19 | Vault page: "Drafts" text becomes a trash icon opening the Trash | WRITTEN, CI not run |
 | 10.20 | Remove the glossy-glass option (supersedes old 1f.1) | WRITTEN, CI not run |
 
 ### Step 14. Settings, privacy, accessibility, polish (pending)

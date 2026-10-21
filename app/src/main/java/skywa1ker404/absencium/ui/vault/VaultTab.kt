@@ -7,7 +7,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -68,6 +68,7 @@ fun VaultTab(
     onOpenFolder: (Long) -> Unit,
     onManageSubjects: () -> Unit,
     onOpenDrafts: () -> Unit,
+    onOpenTrash: () -> Unit,
 ) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
@@ -151,8 +152,8 @@ fun VaultTab(
                             color = colors.onSurfaceVariant,
                         )
                     }
-                    TextButton(onClick = onOpenDrafts) {
-                        Text(if (data.drafts.isEmpty()) "Drafts" else "Drafts (${data.drafts.size})")
+                    IconButton(onClick = onOpenTrash) {
+                        Icon(AppIcons.Delete, contentDescription = "Open Trash")
                     }
                 }
             }
