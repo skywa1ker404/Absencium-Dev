@@ -160,4 +160,70 @@ object MarkdownEdit {
         lines[line] = m.groupValues[1] + (if (m.groupValues[2] == " ") "[x]" else "[ ]") + m.groupValues[3]
         return lines.joinToString("\n")
     }
+
+    private val colorOpen = Regex("\\{color:[0-9A-Fa-f]{6}\\|$")
+    private val sizeOpen = Regex("\\{size:\\d{1,2}\\|$")
+    private val alignTag = Regex("^\\{align:(center|end)\\}")
+
+    /**
+     * Gives the selection a colour (`{color:RRGGBB|text|}`), replacing a colour it already has; null removes it. With only a
+     * cursor it inserts the placeholder in that colour.
+     */
+    fun setColor(text: String, start: Int, end: Int, rgb: Int?, placeholder: String = "text"): Edited =
+        setTag(text, start, end, colorOpen, rgb?.let { "{color:%06X|".format(it and 0xFFFFFF) }, placeholder)
+
+    /** Same for the font size in sp (8 to 64); null removes it. */
+    fun setSize(text: String, start: Int, end: Int, sp: Int?, placeholder: String = "text"): Edited =
+        setTag(text, start, end, sizeOpen, sp?.coerceIn(8, 64)?.let { "{size:$it|" }, placeholder)
+
+    private fun setTag(text: String, start: Int, end: Int, existing: Regex, open: String?, placeholder: String): Edited {
+        val (s, e) = clamp(text, start, end)
+        val before = text.substring(maxOf(0, s - 16), s)
+        val old = existing.find(before)
+        if (old != null && text.startsWith("|}", e)) {
+            val tagStart = s - old.value.length
+            val body = text.substring(s, e)
+            return if (open == null) {
+                Edited(text.substring(0, tagStart) + body + text.substring(e + 2), tagStart, tagStart + body.length)
+            } else {
+                Edited(text.substring(0, tagStart) + open + body + text.substring(e), tagStart + open.length, tagStart + open.length + body.length)
+            }
+        }
+        if (open == null) return Edited(text, s, e)
+        val body = if (s == e) placeholder else text.substring(s, e)
+        val out = text.substring(0, s) + open + body + "|}" + text.substring(e)
+        return Edited(out, s + open.length, s + open.length + body.length)
+    }
+
+    /** Aligns every line the selection touches: start (no tag), centre or end. */
+    fun setAlign(text: String, start: Int, end: Int, align: Align): Edited = mapLines(text, start, end) { lines ->
+        lines.map { line ->
+            val bare = line.replace(alignTag, "")
+            when {
+                bare.isBlank() -> line
+                align == Align.CENTER -> "{align:center}$bare"
+                align == Align.END -> "{align:end}$bare"
+                else -> bare
+            }
+        }
+    }
+
+    private val letterPrefix = Regex("^(\\s*)[a-z]\\) ")
+
+    /** A lettered list: `a) `, `b) `... Choosing it again on a lettered selection removes it. */
+    fun lettered(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
+        val all = lines.filter { it.isNotBlank() }.all { letterPrefix.containsMatchIn(it) }
+        var n = 0
+        lines.map { line ->
+            when {
+                line.isBlank() -> line
+                all -> line.replace(letterPrefix) { it.groupValues[1] }
+                else -> {
+                    val letter = 'a' + (n % 26)
+                    n++
+                    "$letter) " + line.replace(bulletPrefix) { it.groupValues[1] }.replace(checkPrefix) { it.groupValues[1] }.replace(numberPrefix) { it.groupValues[1] }
+                }
+            }
+        }
+    }
 }

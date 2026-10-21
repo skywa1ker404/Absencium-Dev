@@ -1,6 +1,14 @@
 package skywa1ker404.absencium.ui.vault
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +58,7 @@ import skywa1ker404.absencium.ui.components.AppTextField
 import skywa1ker404.absencium.ui.components.ExpressiveChip
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.PillButton
+import skywa1ker404.absencium.ui.vault.markdown.Align
 import skywa1ker404.absencium.ui.vault.markdown.Block
 import skywa1ker404.absencium.ui.vault.markdown.MarkdownParse
 import skywa1ker404.absencium.ui.vault.markdown.NoteTags
@@ -95,14 +104,24 @@ private fun spansToText(spans: List<Span>, onLink: (String) -> Unit, strikeAll: 
             if (link != null) {
                 withLink(LinkAnnotation.Clickable(tag = "note", styles = linkStyle) { onLink(link) }) { append(span.text) }
             } else {
-                val decoration = if (span.strike || strikeAll) TextDecoration.LineThrough else null
+                val lines = buildList {
+                    if (span.strike || strikeAll) add(TextDecoration.LineThrough)
+                    if (span.underline) add(TextDecoration.Underline)
+                }
+                val decoration = if (lines.isEmpty()) null else TextDecoration.combine(lines)
                 withStyle(
                     SpanStyle(
                         fontWeight = if (span.bold) FontWeight.Bold else null,
                         fontStyle = if (span.italic) FontStyle.Italic else null,
                         textDecoration = decoration,
                         fontFamily = if (span.code) FontFamily.Monospace else null,
-                        background = if (span.code) colors.surfaceContainerHighest else Color.Unspecified,
+                        background = when {
+                            span.highlight -> Color(0xFFFFE066).copy(alpha = 0.55f)
+                            span.code -> colors.surfaceContainerHighest
+                            else -> Color.Unspecified
+                        },
+                        color = span.color?.let { Color(0xFF000000.toInt() or it) } ?: Color.Unspecified,
+                        fontSize = span.sizeSp?.sp ?: TextUnit.Unspecified,
                     ),
                 ) { append(span.text) }
             }
@@ -120,6 +139,8 @@ fun MarkdownPreview(
     onToggleCheck: (line: Int) -> Unit,
     onOpenLink: (title: String) -> Unit,
     modifier: Modifier = Modifier,
+    /** Draws a picture, doodle or recording block; the editor supplies it because it knows where the files are. */
+    embed: @Composable (Block.Embed) -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     val blocks = remember(text) { MarkdownParse.blocks(text) }
@@ -135,9 +156,19 @@ fun MarkdownPreview(
                         3 -> MaterialTheme.typography.titleMedium
                         else -> MaterialTheme.typography.titleSmall
                     },
-                    modifier = Modifier.padding(top = 6.dp),
+                    textAlign = block.align.toTextAlign(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                 )
-                is Block.Paragraph -> Text(spansToText(block.spans, onOpenLink), style = MaterialTheme.typography.bodyLarge)
+                is Block.Paragraph -> Text(
+                    spansToText(block.spans, onOpenLink),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = block.align.toTextAlign(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                is Block.Embed -> Box(modifier = Modifier.fillMaxWidth(), contentAlignment = block.align.toBoxAlignment()) {
+                    Box(modifier = Modifier.fillMaxWidth(block.widthPercent / 100f)) { embed(block) }
+                }
+                is Block.Table -> PreviewTable(block, onOpenLink)
                 is Block.Bullet -> Row(modifier = Modifier.padding(start = (block.indent * 6).dp)) {
                     Text("•  ", style = MaterialTheme.typography.bodyLarge)
                     Text(spansToText(block.spans, onOpenLink), style = MaterialTheme.typography.bodyLarge)
@@ -182,6 +213,48 @@ fun MarkdownPreview(
                     Text(block.text, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
                 }
                 Block.Rule -> HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            }
+        }
+    }
+}
+
+private fun Align.toTextAlign(): TextAlign = when (this) {
+    Align.START -> TextAlign.Start
+    Align.CENTER -> TextAlign.Center
+    Align.END -> TextAlign.End
+}
+
+private fun Align.toBoxAlignment(): Alignment = when (this) {
+    Align.START -> Alignment.CenterStart
+    Align.CENTER -> Alignment.Center
+    Align.END -> Alignment.CenterEnd
+}
+
+/** A table drawn as equal-width cells with a thin line around each; the first row is bold when the table has a header. */
+@Composable
+private fun PreviewTable(table: Block.Table, onOpenLink: (String) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val columns = table.rows.maxOfOrNull { it.size } ?: 0
+    Column(modifier = Modifier.fillMaxWidth().border(1.dp, colors.outlineVariant, RoundedCornerShape(8.dp)).clip(RoundedCornerShape(8.dp))) {
+        table.rows.forEachIndexed { r, row ->
+            Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                for (c in 0 until columns) {
+                    val cell = row.getOrNull(c).orEmpty()
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .border(0.5.dp, colors.outlineVariant)
+                            .background(if (table.hasHeader && r == 0) colors.surfaceContainerHigh else Color.Transparent)
+                            .padding(8.dp),
+                    ) {
+                        Text(
+                            spansToText(cell, onOpenLink),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (table.hasHeader && r == 0) FontWeight.SemiBold else null,
+                        )
+                    }
+                }
             }
         }
     }
