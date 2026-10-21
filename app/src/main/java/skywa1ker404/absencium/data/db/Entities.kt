@@ -21,7 +21,10 @@ enum class NoteStatus { ACTIVE, FINISHED, DRAFT }
 /** How loudly an exam or holiday is surfaced. High is the exam alert, Low is a plain holiday. */
 enum class Priority { HIGH, NORMAL, LOW }
 
-enum class GuideType { QP, SYLLABUS, ANSWER_BANK }
+enum class GuideType { QP, SYLLABUS, ANSWER_BANK, GUIDE }
+
+/** How far a syllabus unit, chapter or topic has been studied. */
+enum class SyllabusStatus { NOT_STARTED, IN_PROGRESS, COMPLETED }
 
 /** What a vault entry was created from. Every entry can hold text and attachments whatever its kind. */
 enum class NoteKind { TEXT, PICTURES, DOCUMENT, AUDIO, HOMEWORK, AI_NOTES }
@@ -185,6 +188,8 @@ data class NoteEntity(
     @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
     /** Epoch milliseconds when the row was moved to the Trash, or null while it is live. */
     @ColumnInfo(name = "deleted_at") val deletedAt: Long? = null,
+    /** The syllabus unit, chapter or topic this note belongs to, or null while it is "Uncategorized". */
+    @ColumnInfo(name = "syllabus_node_id") val syllabusNodeId: Long? = null,
 )
 
 /** A photo, document, recording or sketch that belongs to an entry. The file lives in the app's own storage. */
@@ -241,6 +246,45 @@ data class GuideEntity(
     /** Stable identity that survives export, import and (later) sync; the numeric id is local to one database. */
     @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
     /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
+    @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
+    /** The syllabus unit, chapter or topic this material belongs to, or null while it is "Uncategorized". */
+    @ColumnInfo(name = "syllabus_node_id") val syllabusNodeId: Long? = null,
+)
+
+/**
+ * One node of a subject's syllabus tree: a unit, chapter, topic or subtopic (its depth says which). [parentId] is null for
+ * a top-level unit. Deleting a subject or a parent removes the nodes below it; notes and materials that pointed at a
+ * removed node are set back to "Uncategorized" by the repository.
+ */
+@Entity(
+    tableName = "Syllabus_Nodes_Table",
+    foreignKeys = [
+        ForeignKey(
+            entity = SubjectEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["subject_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = SyllabusNodeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["parent_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("subject_id"), Index("parent_id"), Index(value = ["uuid"], unique = true)],
+)
+data class SyllabusNodeEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "subject_id") val subjectId: Long,
+    @ColumnInfo(name = "parent_id") val parentId: Long? = null,
+    val title: String,
+    /** Objective or content text of the node. */
+    val details: String? = null,
+    @ColumnInfo(defaultValue = "'NOT_STARTED'") val status: SyllabusStatus = SyllabusStatus.NOT_STARTED,
+    /** Order among its siblings. */
+    @ColumnInfo(defaultValue = "0") val position: Int = 0,
+    @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
     @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
 )
 

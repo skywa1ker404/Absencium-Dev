@@ -195,6 +195,12 @@ interface NoteDao {
     @Query("UPDATE Notes_Table SET deleted_at = :at WHERE id = :id")
     suspend fun softDelete(id: Long, at: Long)
 
+    @Query("UPDATE Notes_Table SET syllabus_node_id = :nodeId WHERE id = :id")
+    suspend fun setSyllabusNode(id: Long, nodeId: Long?)
+
+    @Query("UPDATE Notes_Table SET syllabus_node_id = NULL WHERE syllabus_node_id IN (:nodeIds)")
+    suspend fun clearSyllabusNodes(nodeIds: List<Long>)
+
     @Query("UPDATE Notes_Table SET deleted_at = NULL WHERE id = :id")
     suspend fun restore(id: Long)
 
@@ -256,6 +262,36 @@ interface GuideDao {
 
     @Query("SELECT * FROM Guides_Table ORDER BY file_name COLLATE NOCASE")
     fun observeAll(): Flow<List<GuideEntity>>
+
+    @Query("UPDATE Guides_Table SET syllabus_node_id = :nodeId WHERE id = :id")
+    suspend fun setSyllabusNode(id: Long, nodeId: Long?)
+
+    @Query("UPDATE Guides_Table SET syllabus_node_id = NULL WHERE syllabus_node_id IN (:nodeIds)")
+    suspend fun clearSyllabusNodes(nodeIds: List<Long>)
+}
+
+@Dao
+interface SyllabusDao {
+    @Insert
+    suspend fun insert(node: SyllabusNodeEntity): Long
+
+    @Insert
+    suspend fun insertAll(nodes: List<SyllabusNodeEntity>): List<Long>
+
+    @Update
+    suspend fun update(node: SyllabusNodeEntity)
+
+    @Query("DELETE FROM Syllabus_Nodes_Table WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM Syllabus_Nodes_Table WHERE subject_id = :subjectId ORDER BY position, id")
+    fun observeBySubject(subjectId: Long): Flow<List<SyllabusNodeEntity>>
+
+    @Query("SELECT * FROM Syllabus_Nodes_Table ORDER BY subject_id, position, id")
+    fun observeAll(): Flow<List<SyllabusNodeEntity>>
+
+    @Query("SELECT * FROM Syllabus_Nodes_Table WHERE id = :id")
+    suspend fun getById(id: Long): SyllabusNodeEntity?
 }
 
 @Dao

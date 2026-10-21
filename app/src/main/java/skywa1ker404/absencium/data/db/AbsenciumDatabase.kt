@@ -31,8 +31,9 @@ import skywa1ker404.absencium.logging.DebugLogger
         MomentumLogEntity::class,
         RecallAttemptEntity::class,
         AttachmentEntity::class,
+        SyllabusNodeEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -54,6 +55,7 @@ abstract class AbsenciumDatabase : RoomDatabase() {
     abstract fun subjectCascadeDao(): SubjectCascadeDao
     abstract fun attachmentDao(): AttachmentDao
     abstract fun entryDao(): EntryDao
+    abstract fun syllabusDao(): SyllabusDao
 
     companion object {
         const val DATABASE_NAME = "Absencium.db"
@@ -62,7 +64,7 @@ abstract class AbsenciumDatabase : RoomDatabase() {
         // Absencium's schema history: version 1 is the first released schema. Every change after it needs a version bump
         // and a Migration added to the list below, never a destructive reset. The schema JSON of each version is exported
         // to app/schemas and checked by CI, so an edit without a version bump fails the build.
-        private val MIGRATIONS: Array<Migration> = arrayOf(Migration2)
+        private val MIGRATIONS: Array<Migration> = arrayOf(Migration2, Migration3)
 
         @Volatile
         private var instance: AbsenciumDatabase? = null
@@ -111,6 +113,9 @@ abstract class AbsenciumDatabase : RoomDatabase() {
             "Timetable_Table", "Notes_Table", "Attachments_Table", "Guides_Table",
         )
 
+        /** Tables that got `uuid` and `updated_at` in version 3 (not in version 2, so Migration2 must not touch them). */
+        val TOUCHED_TABLES_V3 = listOf("Syllabus_Nodes_Table")
+
         /** Tables whose rows can be moved to the Trash (`deleted_at`). */
         val TRASHABLE_TABLES = listOf("Holidays_Table", "Exams_Table", "Timetable_Table", "Notes_Table")
     }
@@ -150,6 +155,30 @@ internal object Migration2 : Migration(1, 2) {
 }
 
 /**
+ * Version 3: the syllabus tree and the link from notes and study material to a syllabus node. Only adds a table and two
+ * nullable columns, so existing rows keep all their data. The table text matches what Room expects for the entity.
+ */
+internal object Migration3 : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        for (sql in statements()) db.execSQL(sql)
+    }
+
+    fun statements(): List<String> = listOf(
+        "CREATE TABLE IF NOT EXISTS `Syllabus_Nodes_Table` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+            "`subject_id` INTEGER NOT NULL, `parent_id` INTEGER, `title` TEXT NOT NULL, `details` TEXT, " +
+            "`status` TEXT NOT NULL DEFAULT 'NOT_STARTED', `position` INTEGER NOT NULL DEFAULT 0, " +
+            "`uuid` TEXT NOT NULL DEFAULT '', `updated_at` INTEGER NOT NULL DEFAULT 0, " +
+            "FOREIGN KEY(`subject_id`) REFERENCES `Subjects_Table`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , " +
+            "FOREIGN KEY(`parent_id`) REFERENCES `Syllabus_Nodes_Table`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "CREATE INDEX IF NOT EXISTS `index_Syllabus_Nodes_Table_subject_id` ON `Syllabus_Nodes_Table` (`subject_id`)",
+        "CREATE INDEX IF NOT EXISTS `index_Syllabus_Nodes_Table_parent_id` ON `Syllabus_Nodes_Table` (`parent_id`)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS `index_Syllabus_Nodes_Table_uuid` ON `Syllabus_Nodes_Table` (`uuid`)",
+        "ALTER TABLE `Notes_Table` ADD COLUMN `syllabus_node_id` INTEGER",
+        "ALTER TABLE `Guides_Table` ADD COLUMN `syllabus_node_id` INTEGER",
+    )
+}
+
+/**
  * Keeps `updated_at` current without every write having to remember it: after any update that did not itself change
  * `updated_at`, the row gets the current time. Created on every open (idempotent), so a restored database has them too.
  * SQLite does not run a trigger from its own update unless recursive triggers are on, which they are not.
@@ -160,7 +189,7 @@ internal object TouchTriggers : RoomDatabase.Callback() {
         for (sql in statements()) db.execSQL(sql)
     }
 
-    fun statements(): List<String> = AbsenciumDatabase.TOUCHED_TABLES.map { table ->
+    fun statements(): List<String> = (AbsenciumDatabase.TOUCHED_TABLES + AbsenciumDatabase.TOUCHED_TABLES_V3).map { table ->
         "CREATE TRIGGER IF NOT EXISTS `touch_$table` AFTER UPDATE ON `$table` FOR EACH ROW " +
             "WHEN NEW.`updated_at` = OLD.`updated_at` BEGIN " +
             "UPDATE `$table` SET `updated_at` = CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) " +

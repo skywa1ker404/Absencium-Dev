@@ -5,7 +5,7 @@
 - [x] OCR library chosen and licence checked (Tesseract4Android, Apache-2.0)
 - [x] Glossy-glass option removed from code and Settings (written, **CI not run**)
 - [x] Vault page: "Drafts" text button becomes a trash icon that opens the Trash (10.19) (written, **CI not run**; Drafts stays in the pull-down and the FAB menu)
-- [ ] Database v3: syllabus nodes, note and material links, `GUIDE` type (10.16 to 10.18)
+- [x] Database v3: syllabus nodes table, note and material links, `GUIDE` type (written, **CI not run**; migration SQL to be checked against the CI-made `3.json`)
 - [ ] Block document model and extended inline syntax, with unit tests (10.11)
 - [ ] New editor shell: tap to edit, ✓ to preview, no Edit/Preview chips, Aa tabs with Templates, Notes info popup (10.8 to 10.13)
 

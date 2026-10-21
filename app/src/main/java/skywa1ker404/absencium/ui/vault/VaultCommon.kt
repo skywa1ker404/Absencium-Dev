@@ -30,6 +30,7 @@ fun GuideType.label(): String = when (this) {
     GuideType.QP -> "Question paper"
     GuideType.SYLLABUS -> "Syllabus"
     GuideType.ANSWER_BANK -> "Answer bank"
+    GuideType.GUIDE -> "Guide"
 }
 
 /** Opens a stored guide in a PDF viewer. Returns null on success, or a message if it could not be opened. */
