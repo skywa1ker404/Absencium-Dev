@@ -90,7 +90,7 @@ Last updated: 2026-10-18 (unified plan). Stable-repo secrets and variable: Anaki
 
 | # | Task | Status |
 | - | --- | --- |
-| 1f.1 | Settings, Appearance: "Glossy glass" switch, shown only while Liquid Glass is on, **off by default**; adds a shine band and a glint to glass cards and buttons (not to the pill or floating bars) | DONE (CI green `1d33a15`, not device-tested) |
+| 1f.1 | ~~Settings, Appearance: "Glossy glass" switch, shown only while Liquid Glass is on, **off by default**; adds a shine band and a glint to glass cards and buttons (not to the pill or floating bars)~~ **superseded: the option is removed (10.20)** | DONE (CI green `1d33a15`), removal pending |
 
 ## Step 1g. Popups, date picker, chips and glass lag (7 tasks)
 
@@ -237,19 +237,32 @@ Needs the notification groundwork of Step 5 and the attendance logic of Step 7.
 
 **Tests:** Import a real .ics with repeats and zones; search a database of thousands of rows without a visible stall. · **Effort:** L
 
-## Step 10. Vault, editor and file handling (7 tasks)
+## Step 10. Vault, editor and file handling (20 tasks)
 
 The editor and file tools come before study tools, widgets and sharing because those all read notes and attachments.
 
 | # | Task | Status |
 | - | --- | --- |
-| 10.1 | Text Notes editor with a floating Markdown toolbar, templates, tags with autocomplete, related-note links, reliable autosave with an accurate indicator | pending |
-| 10.2 | Vault as a file explorer (breadcrumbs, badges, long-press multi-select, batch actions), drafts folded in; duplicate filenames, deleted subjects, empty folders, large images, inaccessible files and low storage handled | pending |
-| 10.3 | Local OCR (Tesseract with downloadable language packs, separate from AI), PDF text extraction, EXIF scrubbing on export; blurry and rotated image handling, unsupported-language message, editable OCR preview | pending |
+| 10.1 | Text Notes editor with a floating Markdown toolbar, templates, tags with autocomplete, related-note links, reliable autosave with an accurate indicator | first version DONE (CI green `24af814`, not device-tested); **superseded in layout by 10.8 to 10.14** (the Edit/Preview buttons go; the Markdown engine, tags, links, templates and save indicator are kept and moved into the new editor) |
+| 10.2 | Vault as a file explorer (breadcrumbs, badges, long-press multi-select, batch actions), drafts folded in; duplicate filenames, deleted subjects, empty folders, large images, inaccessible files and low storage handled | first version DONE (CI green `24af814`, not device-tested): breadcrumbs, badges, long-press multi-select with Finish/Move/Delete/Share, drafts in the folder, empty-folder text. Not done: large-image and inaccessible-file handling. **The folder page is redesigned by 10.15**, which replaces this layout |
+| 10.3 | Local OCR (Tesseract with downloadable language packs, separate from AI), PDF text extraction, EXIF scrubbing on export; blurry and rotated image handling, unsupported-language message, editable OCR preview | **blocked on a dependency check**: the Tesseract Android library's Maven coordinates and licence could not be verified from this workspace (Maven Central and GitHub fetches are refused). Needs you to confirm the library, or paste its repository and POM links. EXIF scrubbing on export does not need it and is planned with 10.11 |
 | 10.4 | "Extract Text" popup (With AI or Locally); finish the Add Entry actions (Document or file, Audio note, Solve homework, Generate AI notes); link missed classes to notes and attachments | pending |
 | 10.5 | Timetable OCR into the editable import preview of Step 6 | pending |
-| 10.6 | Note export and share: PDF, Markdown, ZIP, supported document formats, through Android's Sharesheet with a `FileProvider`. Written as a small reusable `ShareService` so Step 17 extends it instead of replacing it. Consider PDF viewing and basic annotation afterwards | pending |
-| 10.7 | Audio memos with timestamps (from the master specification) | pending |
+| 10.6 | Note export and share: PDF, Markdown, ZIP, supported document formats, through Android's Sharesheet with a `FileProvider`. Written as a small reusable `ShareService` so Step 17 extends it instead of replacing it. Consider PDF viewing and basic annotation afterwards | DONE for PDF, Markdown, text and ZIP (CI green `24af814`, not device-tested); the PDF draws text only (images arrive with 10.11). Unsupported-format sharing, PDF viewing and annotation not done |
+| 10.7 | Audio memos with timestamps (from the master specification) | in progress: recorder and timestamp helpers written; the inline audio block of 10.11 is its UI |
+| 10.8 | **Editor modes (owner spec 2026-10-21).** No Edit and Preview buttons. Tapping the note area starts editing; the check mark in the top bar saves and shows the preview; opening a note from a subject's note list opens it in the preview. Edit bar: back, undo, redo, check mark. Preview bar: page adjustment, more menu | pending |
+| 10.9 | Header under the title: date, character count and a category picker that says "Uncategorized" until the note is linked to a syllabus topic, chapter or unit (needs 10.16) | pending |
+| 10.10 | Bottom toolbar in the reference order: AI, Aa, align and lists, checklist, images, plus. The Aa panel has the tabs Text style, Symbol, Divider and **Templates**; align and lists gives left, centre and right with bullets, numbers and letters; images gives Images or videos, Photo and Scan document; plus gives Doodle, Table, Recording (to text) and Audio. Text formatting: bold, italic, underline, strike, highlight, font size, font colour. Selecting text shows AI creation, Cut, Copy, Select all, Share. Existing Markdown, tags, links and templates are kept | pending |
+| 10.11 | Notes are made of blocks: text, images, tables, doodles, audio. Each non-text block can be moved, resized and aligned, and the text before and after it stays in order around it (inserting at the cursor splits the text). Image menu: Large image mode, Copy, Share, Save, Delete, plus Crop and Rotate (the existing crop editor). PDF export draws the images; ZIP export strips photo metadata (EXIF) | pending |
+| 10.12 | Doodle canvas: pens, eraser, colour grid and spectrum, size and opacity, undo and redo, artboard reference lines (none, ruled, grid); a doodle stays editable | pending |
+| 10.13 | More menu: Notes info (a popup with dates, characters, words, subject, category, tags, files and size), Delete (to the Trash), Share, Export. Page adjustment sheet: paper style, paper texture, page margin. Reminder, Lock and Generate widget are added only when those features exist (Steps 8, 14, 13); no dead buttons | pending |
+| 10.14 | AI in the editor: the AI button opens a prompt bar where you type your own instruction and send; AI creation actions (Summary, Polish, Shorten, Extend, Continue writing, Revise grammar, Extract to-dos, Translate and the like); the three-dot menu of the AI panel opens the AI history. Needs the AI settings to be set up; works with the providers already in the app | pending |
+| 10.15 | **Subject folder redesign (owner spec 2026-10-21).** Header shows the subject name with an arrowhead that opens a sidebar: All notes (every kind: absent, normal and others), Absent notes (ordered by which to write next, with finished ones marked), and a filter by syllabus topic, chapter or unit. A sort menu with list and card view. The + button on All opens the editor at once; on Absent it opens the date selector and then the editor. Search and + sit where the main page has them. Bottom: the same pill as the main menu (same animation and theme) with three tabs: Notes, Syllabus (this subject), Study material. The AI button sits to the right of the pill when AI is set up | pending |
+| 10.16 | **Syllabus (moved into 1.0 by the owner; was 12.3).** Per subject a tree: unit, chapter, topic, subtopic, with status (not started, in progress, completed) and progress. Import with AI from a photo, PDF or text, and ask AI to generate notes for a topic. A main Syllabus button on the Vault page's + menu shows every subject (reference layout from the owner, in the app's theme). Needs database version 3 | pending |
+| 10.17 | Study material tab per subject: PYQ, answer book, guide (extends the existing Guides and Question Banks) | pending |
+| 10.18 | Everything connects: notes, PYQs and study material can be linked to a syllabus topic, chapter or unit (the Uncategorized picker); the folder sidebar filters by it; a syllabus summary card in the profile (with the profile overhaul in Step 14) | pending |
+| 10.19 | Vault page: the "Drafts" text button becomes a trash icon that opens the Trash | pending |
+| 10.20 | Remove the "Glossy glass" option from Liquid Glass settings (supersedes 1f.1) | pending |
 
 **Tests:** Large-image and low-storage runs, a note with 50 k characters, share to two apps and to a missing app. · **Effort:** XL
 
@@ -277,7 +290,7 @@ Builds on the existing providers, model picker and key vault; adds to them rathe
 | - | --- | --- |
 | 12.1 | Study timer that survives backgrounding, screen lock and process death, one notification, no duplicates | deferred to 1.x |
 | 12.2 | Daily Recall and spaced repetition (7-day loop, sticky lock, repeat badge) as specified; flashcards; Emergency Cram Mode before exams | deferred to 1.x |
-| 12.3 | Semester-linked exam preparation and syllabus tracking; optional AI-generated study material | deferred to 1.x |
+| 12.3 | Semester-linked exam preparation and syllabus tracking; optional AI-generated study material | syllabus tracking **moved into 1.0 as 10.16 to 10.18**; semester-linked exam preparation stays deferred to 1.x |
 | 12.4 | Retrospective study category log and Momentum tracker (optional, off by default) | deferred to 1.x |
 | 12.5 | Gradebook and GPA | deferred to 1.x (owner decision 2026-10-18) |
 | 12.6 | ~~Optional GPS attendance assistance (marks present after 5 minutes in a classroom area)~~ **excluded**: manual attendance is enough and it avoids location permission | excluded |
@@ -416,3 +429,11 @@ The repository should not grow documents for every list you send. After you appr
 1. Approval of the audit report once it is written (Step 3).
 2. Whether Google Drive can be a sync target (Step 18.2), decided when that step starts.
 3. Approval of the cleanup table above, file by file.
+
+## Step 19. Liquid Glass overhaul (future, not now)
+
+Owner request 2026-10-21: later, make every Liquid Glass element look like the reference glass kit the owner supplied (translucent panes with soft edge light, pill buttons, glass toggles and search fields), **without the glow**, still following the app's theme, animations, Liquid Glass options and Performance mode. Not started on purpose; the lag fixes of Step 1g come first.
+
+| # | Task | Status |
+| - | --- | --- |
+| 19.1 | Restyle buttons, cards, toggles, search fields and the navigation pill after the reference kit, no glow, all existing quality and Performance modes kept | deferred |
