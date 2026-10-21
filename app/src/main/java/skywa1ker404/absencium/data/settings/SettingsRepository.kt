@@ -73,7 +73,6 @@ class SettingsRepository(context: Context) {
     suspend fun setLiquidGlass(value: Boolean) = write(Keys.LIQUID_GLASS, value)
 
     suspend fun setFrostedOverlays(value: Boolean) = write(Keys.FROSTED_OVERLAYS, value)
-    suspend fun setGlassGloss(value: Boolean) = write(Keys.GLASS_GLOSS, value)
 
     suspend fun setGlassBlur(dp: Int) = write(
         Keys.GLASS_BLUR,
@@ -180,7 +179,6 @@ class SettingsRepository(context: Context) {
         val LIQUID_GLASS = booleanPreferencesKey("liquid_glass")
         val GLASS_BLUR = intPreferencesKey("glass_blur_dp")
         val FROSTED_OVERLAYS = booleanPreferencesKey("frosted_overlays")
-        val GLASS_GLOSS = booleanPreferencesKey("glass_gloss")
         val VISUAL_QUALITY = stringPreferencesKey("visual_quality")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
         val FOCUS_GRACE_MINUTES = intPreferencesKey("focus_grace_minutes")
@@ -204,7 +202,7 @@ class SettingsRepository(context: Context) {
 
         // The keys a restore may set, by type. A key not listed here is never imported.
         val BOOLEANS = setOf(
-            ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, GLASS_GLOSS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
+            ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
             MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY, AUTO_SNAPSHOTS,
         ).map { it.name }.toSet()
         val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES).map { it.name }.toSet()
@@ -231,7 +229,6 @@ class SettingsRepository(context: Context) {
             liquidGlass = this[Keys.LIQUID_GLASS] ?: (this[Keys.COLOR_ENGINE] == "LIQUID_GLASS"),
             themePreset = enumOrDefault(this[Keys.THEME_PRESET], defaults.themePreset),
             frostedOverlays = this[Keys.FROSTED_OVERLAYS] ?: defaults.frostedOverlays,
-            glassGloss = this[Keys.GLASS_GLOSS] ?: defaults.glassGloss,
             glassBlurDp = this[Keys.GLASS_BLUR] ?: defaults.glassBlurDp,
             visualQuality = visualQualityFrom(this[Keys.VISUAL_QUALITY]),
             attendanceThresholdPercent = this[Keys.ATTENDANCE_THRESHOLD] ?: defaults.attendanceThresholdPercent,

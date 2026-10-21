@@ -103,9 +103,6 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
     // at the top-left corner, gone by the lower right.
     val sheenStrong = Color.White.copy(alpha = if (isDark) 0.11f else 0.30f)
     val sheenSoft = Color.White.copy(alpha = if (isDark) 0.03f else 0.08f)
-    val gloss = skywa1ker404.absencium.ui.theme.LocalGlassGloss.current
-    val glossTop = Color.White.copy(alpha = if (isDark) 0.20f else 0.38f)
-    val glossGlint = Color.White.copy(alpha = if (isDark) 0.10f else 0.22f)
     // Drawn flat, with no backdrop sampling at all. A card only ever sampled the smooth GlassWallpaper, so the sampled copy
     // looked the same as the tint laid straight over the real wallpaper, but it cost an offscreen effect pass per card on
     // every scroll frame (and a very tall card, like the model list, cost a very tall one). The edge light is a thin gradient
@@ -125,25 +122,6 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
                     end = Offset(size.width, size.height),
                 ),
             )
-            if (gloss) {
-                // Glossy: a bright band along the top that fades out by the middle, and a narrow glint across the pane.
-                drawRect(
-                    Brush.verticalGradient(
-                        0f to glossTop,
-                        0.22f to glossTop.copy(alpha = glossTop.alpha * 0.35f),
-                        0.5f to Color.Transparent,
-                    ),
-                )
-                drawRect(
-                    Brush.linearGradient(
-                        0.28f to Color.Transparent,
-                        0.36f to glossGlint,
-                        0.44f to Color.Transparent,
-                        start = Offset.Zero,
-                        end = Offset(size.width, size.height),
-                    ),
-                )
-            }
         }
         .border(
             1.dp,

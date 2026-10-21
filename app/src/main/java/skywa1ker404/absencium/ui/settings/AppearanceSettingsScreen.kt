@@ -59,14 +59,6 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
             GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
                 GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
             }
-            GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
-                SwitchCard(
-                    title = "Glossy glass",
-                    subtitle = "Adds a shine along the top of glass cards and buttons, and a glint across them. Off by default.",
-                    checked = settings.glassGloss,
-                    onCheckedChange = viewModel::setGlassGloss,
-                )
-            }
         }
     }
 }
