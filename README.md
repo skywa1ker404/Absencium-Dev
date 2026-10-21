@@ -19,7 +19,7 @@ The stable repository's README is staged in [`release/stable/README.md`](release
 | Unit tests | none exist yet (`testDebugUnitTest` runs with nothing to test) |
 | Device testing | **not yet done**; CI compiling a change does not mean it works on a phone |
 | Open-source licence audit | **not cleared**: the source-licence scanner could not be run; see [`docs/LICENSE_AUDIT.md`](docs/LICENSE_AUDIT.md) |
-| Plan and progress | [`TODOList.md`](TODOList.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+| Plan and progress | [`TODOList.md`](TODOList.md) and [`CURRENT.md`](CURRENT.md) |
 
 ## Getting a Dev APK
 

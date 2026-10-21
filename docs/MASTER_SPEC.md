@@ -1,6 +1,6 @@
 # Master technical specification (as received 2026-10-16)
 
-Saved verbatim from the maintainer's `Gemini_promt_3.txt`. The plan that maps it to the code is [ROADMAP.md](ROADMAP.md).
+Saved verbatim from the maintainer's `Gemini_promt_3.txt`. The plan that maps it to the code is [TODOList.md](../TODOList.md).
 
 ---
 

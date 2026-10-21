@@ -37,7 +37,7 @@ if [ -f "$target/README.md" ]; then
     if [ -e "$rel" ] && [ ! -e "$target/$rel" ]; then mkdir -p "$target/$(dirname "$rel")"; cp -r "$rel" "$target/$rel"; fi
   done
 fi
-echo "Exported to $target. Not copied on purpose: app/signing/, dev workflows, the Dev README, TODOList, ROADMAP, MASTER_SPEC, LICENSE_AUDIT, docs/art, caches, logs."
+echo "Exported to $target. Not copied on purpose: app/signing/, dev workflows, the Dev README, TODOList, CURRENT, MASTER_SPEC, LICENSE_AUDIT, docs/art, caches, logs."
 echo "Check links and assets:"
 rc=0
 python3 scripts/check_links.py "$target" || rc=1
