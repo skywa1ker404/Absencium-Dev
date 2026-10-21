@@ -12,6 +12,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -88,6 +89,8 @@ fun AppCard(
     highlighted: Boolean = false,
     /** A tinted tile colour (for example a theme container). Defaults to the plain card surface. */
     container: Color? = null,
+    /** A long press, for selecting the card. A card with only this still shows the press animation. */
+    onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val q = LocalQuality.current
@@ -111,8 +114,13 @@ fun AppCard(
         animationSpec = q.spring(),
         label = "cardColor",
     )
-    val clickModifier = if (onClick != null) {
-        Modifier.clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
+    val clickModifier = if (onClick != null || onLongClick != null) {
+        Modifier.combinedClickable(
+            interactionSource = interaction,
+            indication = LocalIndication.current,
+            onClick = { onClick?.invoke() },
+            onLongClick = onLongClick,
+        )
     } else {
         Modifier
     }

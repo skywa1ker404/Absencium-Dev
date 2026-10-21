@@ -40,6 +40,7 @@ import kotlinx.coroutines.withContext
 import skywa1ker404.absencium.data.db.AttachmentKind
 import skywa1ker404.absencium.data.db.NoteEntity
 import skywa1ker404.absencium.data.db.NoteStatus
+import skywa1ker404.absencium.data.share.ShareFormat
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.AppTextField
 import skywa1ker404.absencium.ui.components.ExpressiveChip
@@ -102,6 +103,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
     var preview by remember(note.id) { mutableStateOf(false) }
     var showLinkPicker by remember { mutableStateOf(false) }
     var showTemplates by remember { mutableStateOf(false) }
+    var showShare by remember { mutableStateOf(false) }
     var linkProblem by remember { mutableStateOf<String?>(null) }
     // Set once the note is deleted or filed, so closing the screen does not save it again.
     var skipFlush by remember(note.id) { mutableStateOf(false) }
@@ -313,6 +315,20 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
             )
         }
         PillButton(text = "Delete", tonal = true, onClick = { confirmDelete = true })
+    }
+    PillButton(text = "Share or export", tonal = true, onClick = { showShare = true })
+    ShareHost(viewModel)
+    if (showShare) {
+        ShareFormatDialog(
+            formats = listOf(ShareFormat.PDF, ShareFormat.MARKDOWN, ShareFormat.TEXT, ShareFormat.ZIP),
+            onPick = { format ->
+                showShare = false
+                // What is on screen, even if the automatic save has not run yet.
+                val current = note.copy(title = cleanTitle(title), bodyText = body.text, tags = NoteTags.join(tags))
+                viewModel.share(listOf(current), format)
+            },
+            onDismiss = { showShare = false },
+        )
     }
 
     if (showLinkPicker) {

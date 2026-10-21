@@ -2,4 +2,5 @@
 <paths>
     <external-files-path name="notes_external" path="." />
     <files-path name="notes_internal" path="." />
+    <cache-path name="share_exports" path="share_exports/" />
 </paths>

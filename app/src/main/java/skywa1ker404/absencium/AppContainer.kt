@@ -46,6 +46,7 @@ class AppContainer(context: Context) {
     val notesStorage = NotesStorage(appContext, notesStorageSettings)
     val apiKeyVault = ApiKeyVault(appContext)
     val attachmentStore = AttachmentStore(appContext)
+    val shareService: skywa1ker404.absencium.data.share.ShareService by lazy { skywa1ker404.absencium.data.share.ShareService(appContext) }
     val backupManager = BackupManager(appContext)
     val aiClient = AiClient(apiKeyVault)
     val calendarRepository: CalendarRepository by lazy { CalendarRepository(database, settingsRepository.settings) }

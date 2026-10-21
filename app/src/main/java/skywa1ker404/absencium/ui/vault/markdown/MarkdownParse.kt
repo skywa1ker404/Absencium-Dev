@@ -33,7 +33,18 @@ object MarkdownParse {
     private val check = Regex("^(\\s*)[-*+] \\[([ xX])\\] ?(.*)$")
     private val bullet = Regex("^(\\s*)[-*+] +(.*)$")
     private val numbered = Regex("^(\\s*)(\\d{1,9})[.)] +(.*)$")
-    private val rule = Regex("^\\s*([-*_])(\\s*\\1){2,}\\s*$")
+    /** Three or more of the same `-`, `*` or `_`, with spaces allowed between. A loop, not a regex: a repeated regex group recurses and overflows on a very long line. */
+    private fun isRule(line: String): Boolean {
+        var mark = ' '
+        var count = 0
+        for (ch in line) {
+            if (ch.isWhitespace()) continue
+            if (ch != '-' && ch != '*' && ch != '_') return false
+            if (mark == ' ') mark = ch else if (ch != mark) return false
+            count++
+        }
+        return count >= 3
+    }
 
     fun blocks(text: String): List<Block> {
         val out = mutableListOf<Block>()
@@ -62,7 +73,7 @@ object MarkdownParse {
                     out += Block.Code(code.toString())
                 }
                 line.isBlank() -> flush()
-                rule.matches(line) -> { flush(); out += Block.Rule }
+                isRule(line) -> { flush(); out += Block.Rule }
                 heading.matches(line) -> {
                     flush()
                     val m = heading.find(line)!!

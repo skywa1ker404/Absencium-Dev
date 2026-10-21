@@ -9,6 +9,8 @@ import skywa1ker404.absencium.data.db.AttachmentKind
 import skywa1ker404.absencium.data.db.GuideEntity
 import skywa1ker404.absencium.data.db.GuideType
 import skywa1ker404.absencium.data.db.NoteEntity
+import skywa1ker404.absencium.data.share.PreparedShare
+import skywa1ker404.absencium.data.share.ShareFormat
 import skywa1ker404.absencium.data.db.NoteStatus
 import skywa1ker404.absencium.data.db.SubjectEntity
 import skywa1ker404.absencium.data.storage.NotesStorage
@@ -102,6 +104,59 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
         } else {
             container.undoBus.offer("Entry moved to the Trash") { repository.restoreNote(note.id) }
         }
+    }
+
+    private val _pendingShare = MutableStateFlow<PreparedShare?>(null)
+
+    /** A finished export waiting to be handed to the Sharesheet; the screen opens it and calls [openShare]. */
+    val pendingShare: StateFlow<PreparedShare?> = _pendingShare.asStateFlow()
+
+    /** Builds a file from [notes] in [format] (several notes, or a ZIP, make a ZIP). The result appears in [pendingShare]. */
+    fun share(notes: List<NoteEntity>, format: ShareFormat) {
+        viewModelScope.launch {
+            val snapshot = data.value
+            val result = container.shareService.prepare(notes, { id -> snapshot?.attachmentsOf(id).orEmpty() }, format)
+            result.onSuccess { _pendingShare.value = it }
+                .onFailure { _message.value = it.message ?: "The export could not be prepared." }
+        }
+    }
+
+    /** Opens the Sharesheet for [share] and clears it. A problem, or photos that were left out, is shown as the message. */
+    fun openShare(share: PreparedShare) {
+        _pendingShare.value = null
+        val problem = container.shareService.share(share)
+        if (problem != null) _message.value = problem else if (share.note != null) _message.value = share.note
+    }
+
+    /** Several entries at once (the Vault's multi-select). One undo brings all of them back. */
+    fun deleteNotes(notes: List<NoteEntity>) = perform("delete the entries") {
+        val trashed = mutableListOf<Long>()
+        for (note in notes) {
+            val files = repository.attachmentsFor(note.id).map { it.filePath }
+            if (repository.deleteNote(note)) {
+                withContext(Dispatchers.IO) {
+                    files.forEach {
+                        container.attachmentStore.delete(it)
+                        ImageTools.forget(it)
+                    }
+                }
+            } else {
+                trashed += note.id
+            }
+        }
+        if (trashed.isNotEmpty()) {
+            val text = if (trashed.size == 1) "Entry moved to the Trash" else "${trashed.size} entries moved to the Trash"
+            container.undoBus.offer(text) { trashed.forEach { repository.restoreNote(it) } }
+        }
+    }
+
+    fun setNotesStatus(notes: List<NoteEntity>, status: NoteStatus) = perform("update the entries") {
+        notes.forEach { repository.setNoteStatus(it, status) }
+    }
+
+    /** Moves entries to another subject. Their photos follow, because they belong to the entry. */
+    fun moveNotes(notes: List<NoteEntity>, subjectId: Long) = perform("move the entries") {
+        notes.forEach { repository.saveNote(it.id, subjectId, it.title, it.bodyText, it.status) }
     }
 
     /** Adds photos picked in the editor to an existing entry. */

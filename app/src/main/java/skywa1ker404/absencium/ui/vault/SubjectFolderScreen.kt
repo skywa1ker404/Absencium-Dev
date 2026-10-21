@@ -1,7 +1,11 @@
 package skywa1ker404.absencium.ui.vault
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,6 +37,7 @@ import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenD
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.data.db.GuideEntity
 import skywa1ker404.absencium.data.db.NoteStatus
+import skywa1ker404.absencium.data.share.ShareFormat
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.vault.entry.AddEntryPopup
 import skywa1ker404.absencium.ui.components.HintText
@@ -53,6 +58,10 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     var finishedOpen by rememberSaveable { mutableStateOf(false) }
     var addEntry by remember { mutableStateOf(false) }
     var guideToDelete by remember { mutableStateOf<GuideEntity?>(null) }
+    var selectedIds by remember { mutableStateOf(setOf<Long>()) }
+    var confirmBatchDelete by remember { mutableStateOf(false) }
+    var showMove by remember { mutableStateOf(false) }
+    var showShare by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
 
     val loaded = data
@@ -71,6 +80,15 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         val active = remember(loaded, subjectId) { loaded.notesOf(subjectId, NoteStatus.ACTIVE) }
         val finished = remember(loaded, subjectId) { loaded.notesOf(subjectId, NoteStatus.FINISHED) }
         val guides = remember(loaded, subjectId) { loaded.guides.filter { it.subjectId == subjectId } }
+        val drafts = remember(loaded, subjectId) { loaded.notesOf(subjectId, NoteStatus.DRAFT) }
+        // Selected notes that still exist (one may have been deleted or moved elsewhere while selected).
+        val everyNote = active + finished
+        val selected = everyNote.filter { it.id in selectedIds }
+        val selecting = selectedIds.isNotEmpty()
+        fun toggle(id: Long) {
+            selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+        }
+        BackHandler(enabled = selecting) { selectedIds = emptySet() }
         val listState = rememberLazyListState()
 
         LazyColumn(
@@ -86,19 +104,73 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     }
                 }
             }
+            item(key = "crumbs") {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Vault",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = colors.primary,
+                        modifier = Modifier.clickable { navigator.navigateUp() },
+                    )
+                    Text("\u203a", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                    Text(subject.name, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, maxLines = 1)
+                }
+            }
             item(key = "new") {
-                PillButton(
-                    text = "New entry in this folder",
-                    onClick = { addEntry = true },
-                )
+                if (selecting) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("${selected.size} selected", style = MaterialTheme.typography.titleMedium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val allFinished = selected.isNotEmpty() && selected.all { it.status == NoteStatus.FINISHED }
+                            PillButton(
+                                text = if (allFinished) "Reopen" else "Finish",
+                                compact = true,
+                                onClick = {
+                                    viewModel.setNotesStatus(selected, if (allFinished) NoteStatus.ACTIVE else NoteStatus.FINISHED)
+                                    selectedIds = emptySet()
+                                },
+                            )
+                            PillButton(text = "Share", compact = true, tonal = true, onClick = { showShare = true })
+                            PillButton(text = "Move", compact = true, tonal = true, onClick = { showMove = true })
+                            PillButton(text = "Delete", compact = true, tonal = true, onClick = { confirmBatchDelete = true })
+                            PillButton(text = "Cancel", compact = true, tonal = true, onClick = { selectedIds = emptySet() })
+                        }
+                    }
+                } else {
+                    PillButton(
+                        text = "New entry in this folder",
+                        onClick = { addEntry = true },
+                    )
+                }
             }
 
+            if (drafts.isNotEmpty()) {
+                item(key = "drafts-title") { SectionTitle("Drafts") }
+                items(drafts, key = { "draft-${it.id}" }) { draft ->
+                    NoteCard(
+                        draft,
+                        photoCount = loaded.attachmentsOf(draft.id).size,
+                        onClick = { navigator.navigate(NewEntryScreenDestination(subjectId = subjectId, draftId = draft.id)) },
+                    )
+                }
+            }
             item(key = "notes-title") { SectionTitle("Notes") }
             if (active.isEmpty()) {
-                item(key = "notes-empty") { HintText("No notes yet. Notes you mark as finished move to the archive below.") }
+                item(key = "notes-empty") {
+                    HintText(
+                        if (finished.isEmpty() && drafts.isEmpty()) "This folder is empty. Add an entry above, or press and hold a note later to select several."
+                        else "No notes here right now. Notes you mark as finished move to the archive below.",
+                    )
+                }
             }
             items(active, key = { "note-${it.id}" }) { note ->
-                NoteCard(note, onClick = { navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) })
+                NoteCard(
+                    note,
+                    photoCount = loaded.attachmentsOf(note.id).size,
+                    selected = note.id in selectedIds,
+                    onLongClick = { toggle(note.id) },
+                    onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
+                )
             }
 
             item(key = "finished-title") { SectionTitle("Finished / Written Notes") }
@@ -123,7 +195,13 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             }
             if (finishedOpen) {
                 items(finished, key = { "done-${it.id}" }) { note ->
-                    NoteCard(note, onClick = { navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) })
+                    NoteCard(
+                        note,
+                        photoCount = loaded.attachmentsOf(note.id).size,
+                        selected = note.id in selectedIds,
+                        onLongClick = { toggle(note.id) },
+                        onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
+                    )
                 }
             }
 
@@ -141,6 +219,67 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 )
             }
         }
+    }
+
+    ShareHost(viewModel)
+    if (showShare) {
+        val toShare = remember(selectedIds, data) { (data?.notes.orEmpty()).filter { it.id in selectedIds } }
+        ShareFormatDialog(
+            // One entry can be a PDF, Markdown or text file; several always travel as a ZIP.
+            formats = if (toShare.size == 1) listOf(ShareFormat.PDF, ShareFormat.MARKDOWN, ShareFormat.TEXT, ShareFormat.ZIP)
+            else listOf(ShareFormat.MARKDOWN, ShareFormat.ZIP),
+            onPick = { format ->
+                showShare = false
+                viewModel.share(toShare, format)
+                selectedIds = emptySet()
+            },
+            onDismiss = { showShare = false },
+        )
+    }
+    if (confirmBatchDelete) {
+        val victims = remember(selectedIds, data) { (data?.notes.orEmpty()).filter { it.id in selectedIds } }
+        AlertDialog(
+            onDismissRequest = { confirmBatchDelete = false },
+            title = { Text("Delete ${victims.size} ${if (victims.size == 1) "entry" else "entries"}?") },
+            text = { Text("They move to the Trash and can be restored from Settings, Trash, for 30 days. Drafts are deleted for good.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteNotes(victims)
+                    selectedIds = emptySet()
+                    confirmBatchDelete = false
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { confirmBatchDelete = false }) { Text("Keep") } },
+        )
+    }
+    if (showMove) {
+        val targets = (data?.subjects.orEmpty()).filter { it.id != subjectId && it.isActive }
+        val moving = remember(selectedIds, data) { (data?.notes.orEmpty()).filter { it.id in selectedIds } }
+        AlertDialog(
+            onDismissRequest = { showMove = false },
+            title = { Text("Move to which subject?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (targets.isEmpty()) HintText("There is no other active subject to move to.")
+                    targets.forEach { target ->
+                        Text(
+                            text = target.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.moveNotes(moving, target.id)
+                                    selectedIds = emptySet()
+                                    showMove = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { showMove = false }) { Text("Cancel") } },
+        )
     }
 
     val pending = guideToDelete

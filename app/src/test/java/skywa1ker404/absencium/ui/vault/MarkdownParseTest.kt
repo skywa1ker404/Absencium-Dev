@@ -64,6 +64,24 @@ class MarkdownParseTest {
         assertTrue("took $ms ms", ms < 3000)
     }
 
+    @Test fun longLinesOfOtherMarkersAreFastAndDoNotOverflow() {
+        for (unit in listOf("x**", "a*b", "[[", "`a", "~~x", "- ", "1. ", "# ")) {
+            val text = unit.repeat(20_000)
+            val start = System.nanoTime()
+            MarkdownParse.blocks(text)
+            val ms = (System.nanoTime() - start) / 1_000_000
+            assertTrue("'$unit' took $ms ms", ms < 3000)
+        }
+    }
+
+    @Test fun ruleLinesAreRecognised() {
+        for (line in listOf("---", "***", "___", "- - -", "  ***  ")) {
+            assertTrue("'$line'", MarkdownParse.blocks(line).single() is Block.Rule)
+        }
+        assertTrue(MarkdownParse.blocks("--").single() is Block.Paragraph)
+        assertTrue(MarkdownParse.blocks("-*-").single() !is Block.Rule)
+    }
+
     @Test fun fiftyThousandCharactersParse() {
         val text = (1..2000).joinToString("\n") { "Line $it with **bold** and a [[Link $it]] and some more words here" }
         assertTrue(text.length > 50_000)

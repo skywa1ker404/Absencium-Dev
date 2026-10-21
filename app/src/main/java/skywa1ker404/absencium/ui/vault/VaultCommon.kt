@@ -66,11 +66,30 @@ fun formatNoteDate(epochMs: Long): String = DateText.format(Date(epochMs))
 fun NoteEntity.snippet(): String =
     bodyText.trim().replace(Regex("\\s+"), " ").take(90)
 
+/** "2 photos, #maths #exam": what an entry carries, shown under its title so a folder can be scanned without opening anything. */
+fun noteBadges(note: NoteEntity, photoCount: Int): String {
+    val parts = mutableListOf<String>()
+    if (photoCount > 0) parts += if (photoCount == 1) "1 photo" else "$photoCount photos"
+    val tags = skywa1ker404.absencium.ui.vault.markdown.NoteTags.parse(note.tags)
+    if (tags.isNotEmpty()) parts += tags.take(3).joinToString(" ") { "#$it" } + if (tags.size > 3) " +${tags.size - 3}" else ""
+    return parts.joinToString("  \u00b7  ")
+}
+
 @Composable
-fun NoteCard(note: NoteEntity, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun NoteCard(
+    note: NoteEntity,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    photoCount: Int = 0,
+    selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+) {
     val colors = MaterialTheme.colorScheme
-    AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
-        Text(note.title, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+    AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick, highlighted = selected) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (selected) Text("\u2713", style = MaterialTheme.typography.titleMedium, color = colors.primary)
+            Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+        }
         val preview = note.snippet()
         if (preview.isNotEmpty()) {
             Text(
@@ -79,6 +98,10 @@ fun NoteCard(note: NoteEntity, onClick: () -> Unit, modifier: Modifier = Modifie
                 color = colors.onSurfaceVariant,
                 maxLines = 2,
             )
+        }
+        val badges = noteBadges(note, photoCount)
+        if (badges.isNotEmpty()) {
+            Text(text = badges, style = MaterialTheme.typography.labelSmall, color = colors.primary, maxLines = 1)
         }
         Text(
             text = formatNoteDate(note.createdDate),
