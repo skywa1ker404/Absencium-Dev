@@ -303,7 +303,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             onDismiss = { addEntry = false },
             onSaved = { id ->
                 addEntry = false
-                navigator.navigate(NoteEditorScreenDestination(noteId = id))
+                navigator.navigate(NoteEditorScreenDestination(noteId = id, startInEdit = true))
             },
             onOpenAiSettings = {
                 addEntry = false

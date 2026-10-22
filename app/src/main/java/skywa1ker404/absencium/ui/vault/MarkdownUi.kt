@@ -145,7 +145,7 @@ fun MarkdownPreview(
     val colors = MaterialTheme.colorScheme
     val blocks = remember(text) { MarkdownParse.blocks(text) }
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (blocks.isEmpty()) HintText("Nothing to show yet. Write something in Edit.")
+        if (blocks.isEmpty()) HintText("Tap here to start writing.")
         blocks.forEach { block ->
             when (block) {
                 is Block.Heading -> Text(

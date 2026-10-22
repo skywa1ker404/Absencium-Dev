@@ -162,6 +162,8 @@ fun ScreenScaffold(
     modifier: Modifier = Modifier,
     bottomBar: @Composable () -> Unit = {},
     scrollable: Boolean = true,
+    /** Replaces the standard title bar (the note editor draws its own, with different buttons in edit and preview). */
+    customTopBar: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val glass = LocalGlassEnabled.current
@@ -173,7 +175,7 @@ fun ScreenScaffold(
             modifier = modifier,
             containerColor = colors.background,
             topBar = {
-                TopAppBar(
+                if (customTopBar != null) customTopBar() else TopAppBar(
                     title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
                     navigationIcon = {
                         if (onBack != null) {

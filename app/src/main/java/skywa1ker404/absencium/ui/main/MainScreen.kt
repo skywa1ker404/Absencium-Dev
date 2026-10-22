@@ -458,7 +458,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     onDismiss = { addEntry = null },
                     onSaved = { id ->
                         addEntry = null
-                        navigator.navigate(NoteEditorScreenDestination(noteId = id))
+                        navigator.navigate(NoteEditorScreenDestination(noteId = id, startInEdit = true))
                     },
                     onOpenAiSettings = { addEntry = null; navigator.navigate(AiSettingsScreenDestination) },
                     initialSubjectId = request.subjectId,
