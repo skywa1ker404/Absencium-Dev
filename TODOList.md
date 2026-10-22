@@ -1,443 +1,97 @@
-Absencium: plan and status
+# Absencium: plan and status
 
 **What we are building.** Absencium is an offline-first Android study companion (Kotlin, Jetpack Compose, Material 3 Expressive, Room, minSdk 26). It tracks attendance, timetable, exams, holidays, tasks and reminders, and keeps notes and study material in a Vault of subject folders. A block-based note editor and a per-subject syllabus tree link notes, past papers and guides to topics. Optional AI (your own API keys) helps with extraction and notes. Everything works without a network; sync and sharing come after 1.0. Built only by GitHub Actions in `skywa1ker404/Absencium-Dev`; the stable `Absencium` repo stays empty until you approve 1.0.0. GPL-3.0.
 
-# Absencium TODO list
+**Status words.** DONE = compiled and unit-tested on CI (commit given), **not tried on a device**. WRITTEN = in the working tree, CI has not run. Nothing is marked DONE otherwise. Current work is in [`CURRENT.md`](CURRENT.md).
 
-Single source of truth for what is done, in progress, pending and planned. **Every specification given so far is merged here** (the master specification, the earlier roadmap, the improvements and features list of 2026-10-18, the Sharing and Sharewave specification, the sync-mode idea and the repository audit request). New requirements are added to the step they belong to, not as a new document; a requirement that changes is struck through and its replacement follows it. `docs/ROADMAP.md` explains *why* the steps are in this order; this file says *what* and *how far along*. Updated after each set of features, not after every edit.
+**Rules.** Bug fixes first. Replaced requirements are ~~struck through~~. Docs-only commits use `[skip ci]`. Dev work and CI stay in `Absencium-Dev`. No secrets read or printed; no releases, repos, force-pushes or key changes without you.
 
-**Status words.** DONE means it compiled on CI (and is named with the commit). WAITING FOR CI means it is written and pushed but CI has not confirmed it. Nothing is marked DONE that has not compiled. Nothing here has been tested on a device.
+Updated: 2026-10-21.
 
-**Rules this list follows**
-- Bug fixes come before new features.
-- A specification that was replaced is ~~struck through~~ and the new one follows it immediately.
-- Steps are in implementation order; each heading shows how many tasks the step holds.
-- Development, CI, testing and reports happen in `skywa1ker404/Absencium-Dev`. `skywa1ker404/Absencium` stays empty until a stable 1.0.0 is recommended, tested and explicitly approved by Anakin.
+## Done (Steps 0 to 1g, all CI green, not device-tested)
+Dev/stable application IDs and signing split, CI builds artifacts only (manual dev-release workflow), APK verifier, identity guard; first bug fixes (calendar month/year popups, app date chooser, About link); licence clean-up (icons replaced by Material paths, original art, Monokai preset and unofficial YouTube captions removed, in-app licences screen, upgrade key removed from the tree); pill fixes (look kept, light-bending lens kept, last-tab drag shake, clipping); Liquid Glass tuning; lag fixes (flat glass cards, popup glass layer, lazy bounded model list, tap guard, Present/Absent ghost = ripple removed). Details live in git history.
 
-Last updated: 2026-10-18 (unified plan). Stable-repo secrets and variable: Anakin reports they are set in `Absencium` settings (not verifiable from here; no values were read).
+## Plan to 1.0.0 (Steps 2 to 10 and 14 to 16, in order, bug fixes first)
 
----
+### Step 2. Open bugs
+- 2.1 Device check of everything CI-green so far (pill drag, licences screen, lag fixes, ghost fix): **pending, needs you**
+- 2.2 Present/Absent ghost: DONE (`795afcc`)
+- 2.5 Lag on other screens: pending; the frame monitor writes slow frames to debug.log as evidence
+- 2.6 Stale saves and accurate save indicator: partly DONE (`795afcc`) · 2.7 Double-tap guard: partly DONE (`795afcc`)
 
-## Step 0. Build, signing and release separation (6 tasks)
+### Step 3. Repository audit (no code)
+Draft in `docs/FEATURE_AUDIT.md`; **waiting for your approval**. Repos whose licences do not fit GPL-3.0 stay "idea only".
 
+### Step 4. Data foundation (mostly done, `795afcc`)
+DONE: Room v2 migration with stable ids and tombstones (4.1), Trash and undo for notes, exams, holidays, lectures (4.2), versioned manifest export (4.3), backup and staged restore with rollback (4.4), optional password encryption, PBKDF2 + AES-256-GCM (4.5), 3 daily snapshots (4.6). Partly: Transport and scoped-view seams (4.7), test setup (4.8), preference recovery (4.9).
+
+### Step 5. Android integration base (pending)
+5.1 per-app language · 5.2 strings to resources, RTL · 5.3 one clock/time-zone provider · 5.4 insets, Predictive Back · 5.5 process-death recovery · 5.6 notification groundwork (channels, POST_NOTIFICATIONS, inexact alarms by default, reboot rescheduling) · 5.7 permission-denial pattern · 5.8 HEX palette · 5.9 reduced motion and haptics.
+
+### Step 6. Timetable overhaul (pending)
+6.1 teacher field · 6.2 start time wheel picker · 6.3 optional duration · 6.4 subject dropdown · 6.5 add-lecture popup with day button · 6.6 pen/delete icons · 6.7 delete confirm + Undo toast · 6.8 swipe to delete · 6.9 import timetable (popup style) · 6.10 AI scan options (room, teacher, gaps) · 6.11 A/B weeks, replacement classes · 6.12 docs.
+
+### Step 7. Attendance correctness (pending)
+7.1 no divide-by-zero, rounding · 7.2 present, absent, cancelled, extra, bunked · 7.3 weighted lectures · 7.4 safe-absence projections · 7.5 semesters and archive · 7.6 fill past attendance backwards · 7.7 undo and corrections · 7.8 what-if planner · 7.9 profile and log cards · 7.10 next-class reminder (after Step 8). Unit tests for every formula.
+
+### Step 8. Reminders, tasks, Quiet Mode (pending)
+8.1 tasks and reminders · 8.2 reboot/time-zone-safe scheduling · 8.3 Quiet Mode · 8.4 per-Android-version notification actions (Android 16 progress notifications where supported, with fallback; Android 17 details unverified) · 8.6 "Next up" opens lecture details · 8.5 Eisenhower view and Deadline Radar: 1.x.
+
+### Step 9. Calendar, search, navigation (pending)
+9.1 calendar views · 9.2 To-Do entry icon · 9.3 ICS import/export · 9.4 search categories · 9.5 `InlineDropdown` everywhere, empty states · 9.6 AI adds calendar entries from media.
+
+### Step 10. Vault, editor, files (in progress)
 | # | Task | Status |
 | - | --- | --- |
-| 0.1 | Dev application ID `skywa1ker404.absencium.dev`, stable ID `skywa1ker404.absencium`, chosen by `absenciumChannel` | DONE (CI green `6834a09`, not device-tested) |
-| 0.2 | Dev signs with the public throwaway key `app/signing/absencium-dev.jks`; stable signs only from the four `ABSENCIUM_*` secrets | DONE (CI green `6834a09`, not device-tested) |
-| 0.3 | ~~CI publishes a `build-N` prerelease on every push~~ CI builds, tests and uploads APK artifacts only; releases come from the manual `dev-release.yml` | DONE (CI green `6834a09`, not device-tested) |
-| 0.4 | APK verification script (`verify_apk.sh`: ID, certificate, ABIs, SHA-256) | DONE (CI green `6834a09`, not device-tested) |
-| 0.5 | Stable repo templates in `release/stable/` and `scripts/export_stable.sh` with a link check | written, export dry run pending |
-| 0.6 | **Bug:** the "Identity and secret guard" matched its own pattern list in `android.yml` and failed `assemble-debug`. Fixed by excluding `.github` and `release` from the scan; error comment no longer empty | DONE (CI green `6834a09`, not device-tested) |
-
-## Step 1. Reported bugs and small UX fixes (8 tasks)
-
-| # | Task | Status |
-| - | --- | --- |
-| 1.1 | Default Theme description no longer says "Everforest" | DONE (CI green `6834a09`, not device-tested) |
-| 1.2 | ~~Default colour engine: Monet~~ the app starts on the Default Theme; it can still be changed in onboarding | DONE (CI green `6834a09`, not device-tested) |
-| 1.3 | ~~Restore card: "Close app"~~ "Restart app" relaunches Absencium so the staged restore is applied | DONE (CI green `6834a09`, not device-tested) |
-| 1.4 | Liquid Glass options greyed out and not tappable in Performance mode (onboarding tile and panel, Appearance settings switch, blur slider, "Apply frosted glass on other elements") | DONE (CI green `6834a09`, not device-tested) |
-| 1.5 | Calendar month forward/back: short fade-through (90 ms out, 210 ms in) while the card animates its height | DONE (CI green `6834a09`, not device-tested) |
-| 1.6 | Tap "Month Year" in the calendar header: centred popup with year arrows and a month grid | DONE (CI green `6834a09`, not device-tested) |
-| 1.7 | ~~Plain platform date dialogs~~ date chooser is an app popup that follows "Apply frosted glass on other elements" (used by the holiday/exam editor and Add Entry custom date) | DONE (CI green `6834a09`, not device-tested) |
-| 1.8 | About: website link https://skywa1ker404.github.io/apps/absencium/ | DONE (CI green `6834a09`, not device-tested) |
-
-## Step 1b. Licence review fixes before GPL-3.0 approval (8 tasks)
-
-| # | Task | Status |
-| - | --- | --- |
-| 1b.1 | 16 untraceable icons replaced with Google's Material path data (Apache-2.0); Draft uses `edit_note` | DONE (CI green `8099a04`, not device-tested) |
-| 1b.2 | ~~AI-generated `hero.png` and `showcase.png`~~ original illustrations (`docs/art/`, rendered by `render.py`), labelled as illustrations | written, images checked by eye; no code involved |
-| 1b.3 | ~~Obtainium's badge image~~ plain text badge drawn for the project | written |
-| 1b.4 | ~~Monokai Pro preset~~ removed (21 presets); stored selection falls back to the default preset | DONE (CI green `8099a04`, not device-tested) |
-| 1b.5 | ~~YouTube captions: unofficial endpoint opt-in switch~~ superseded by 1c.1 | DONE (CI green `8099a04`, not device-tested) |
-| 1b.6 | Third-party notices, README licence paragraph, `LICENSE_AUDIT.md` updated; notices no longer link dev-only files | written |
-| 1b.7 | Stable export dry run: file set builds, link check passes except `LICENSE` (expected) | DONE for the file set; stable `README.md` drafted (see Step 16) |
-| 1b.8 | Decisions needed from Anakin: authorship wording, logo ownership, keep or drop the captions switch, old keys | OPEN |
-
-## Step 1c. Resolved audit decisions (8 tasks)
-
-| # | Task | Status |
-| - | --- | --- |
-| 1c.1 | YouTube option (b): unofficial caption fetch and its setting removed; Gemini link reading kept; paste-the-transcript box for other providers; tile and screen renamed "YouTube Video Notes" | DONE (CI green `b6c0288`, not device-tested) |
-| 1c.2 | Authorship sentence added to the README FAQ and licence section (not a substitute for the GPL text) | written |
-| 1c.3 | `absencium-upgrade.jks` removed from the tree, `.gitignore` blocks keystores, passwords out of the docs, migration plan for friends' APKs in `docs/SIGNING.md`; history not rewritten | DONE (CI green `b6c0288`, not device-tested) |
-| 1c.4 | Stable CI guard: commits must be authored by skywa1ker404 (staged in `release/stable`, not published) | written, runs only after publishing |
-| 1c.5 | Logo provenance recorded (GPT, by the owner's account); OpenAI terms read. ~~Original replacement proposed~~ Owner decided to keep the current logo | DONE (documents) |
-| 1c.6 | ~~Contributor sentence only explained~~ Contributor-licence sentence applied to `CONTRIBUTION.md` | DONE (text; CI green `af7303a`) |
-| 1c.8 | In-app "Open-source licences" screen (About, Legal) with notices copied into assets; CI checks the copies match `docs/` | DONE (CI green `af7303a`; not opened on a device) |
-| 1c.7 | `LICENSE_AUDIT.md` and notices updated; source scanner could not run (no PyPI), so verification is incomplete | DONE (documents) |
-
-## Step 1d. Reported on-device issues and release docs (7 tasks)
-
-| # | Task | Status |
-| - | --- | --- |
-| 1d.1 | Navigation pill: page text no longer shows garbled through the pill and the selection bead (denser veil, light 4 dp softening); the bead's lens refraction is kept; label fades in only when fully open | DONE (CI green `525d03b`, not device-tested) |
-| 1d.2 | AI & Integrations: API style chips wrap instead of squeezing "Google Gemini" into single letters | DONE (CI green `525d03b`, not device-tested) |
-| 1d.3 | Page headers: title area nearly opaque so scrolled text cannot bleed through it | DONE (CI green `525d03b`, not device-tested) |
-| 1d.4 | Long lists: licences screen and subject folders are lazy lists with a scrollbar on the licences screen; search waits for a typing pause and scores only the first 20,000 characters of a note; model filter remembered. Other screens with long text not yet profiled | DONE for these screens (CI green `525d03b`); lag on other screens (for example very long notes) **still open, not measured** |
-| 1d.5 | "No colour" preset (neutral greys), listed first and offered only while Liquid Glass is on; with glass off it falls back to the default theme | DONE (CI green `525d03b`, not device-tested) |
-| 1d.6 | Stable export now includes `LICENSE`, the stable README and the images it links; link check skips the bundled notice copies; export fails on a broken link or a keystore | DONE in a temporary directory (not CI) |
-| 1d.7 | Dev README, stable README (`release/stable/README.md`) and `release/stable/release-notes/v1.0.0.md` drafted from source-checked facts; the release notes still need the certificate fingerprint pasted in | written, awaiting Anakin's review |
-
-## Step 1e. Pill drag, title and scrollbar corrections (5 tasks)
-
-| # | Task | Status |
-| - | --- | --- |
-| 1e.1 | Pill look restored exactly as before step 1d (veil, lens bead, label fade, header fades); the 1d.1 and 1d.3 changes are withdrawn at the owner's request | DONE (CI green `14c41fd`, not device-tested) |
-| 1e.2 | **Bug:** dragging the selection pill to the last tab made it shake. Cause (worked out from the geometry, not measured on a device): the pill is centred and narrows as the last tab opens, so its left edge moves under the finger, and the drag position was measured from that edge; near the end the highlight's on-screen position even runs backwards for a few pixels. Fix: measure from the pill's centre and place the finger between each tab's resting spot, which only rises | DONE (CI green `14c41fd`); **needs your device check** |
-| 1e.3 | Licences scrollbar can be dragged (28 dp strip at the right edge) | DONE (CI green `14c41fd`, not device-tested) |
-| 1e.4 | Liquid Glass look: soft sheen on glass cards and a fourth colour plus a light streak in the glass wallpaper, after the reference pictures; the pill and floating bars are untouched | DONE (CI green `14c41fd`, not device-tested) |
-| 1e.5 | Docs-only push test: a documentation-only commit (this file) pushed without `[skip ci]` to see whether CI stays idle | DONE: CI stayed idle for docs-only commit `8068ba0`; the next code push `14c41fd` started a run |
-
-## Step 1f. Optional glossy glass (1 task)
-
-| # | Task | Status |
-| - | --- | --- |
-| 1f.1 | ~~Settings, Appearance: "Glossy glass" switch, shown only while Liquid Glass is on, **off by default**; adds a shine band and a glint to glass cards and buttons (not to the pill or floating bars)~~ **superseded: the option is removed (10.20)** | DONE (CI green `1d33a15`), removal pending |
-
-## Step 1g. Popups, date picker, chips and glass lag (7 tasks)
-
-| # | Task | Status |
-| - | --- | --- |
-| 1g.1 | Search and + button square artefact: the slide-away no longer fades (a fade made the glass blur show as a pale square) | DONE (CI green `2fb6710`, not device-tested) |
-| 1g.2 | Year list of the date picker had no background (Add Entry for the calendar and for notes): container is now opaque | DONE (CI green `a38c782`, not device-tested) |
-| 1g.3 | Lag in popups in Liquid Glass (Add Entry, AI import confirmation list): the glass pane is now its own layer under the content so scrolling, toggling and typing do not redo the blur. Cause is reasoned from the code, not measured | DONE (CI green `a38c782`, not device-tested) |
-| 1g.4 | "College Holiday" chip wrapped onto two lines: chips wrap as a row and labels stay on one line | DONE (CI green `a38c782`, not device-tested) |
-| 1g.5 | Liquid Glass lag everywhere: cards (`glassSurface`) no longer blur. They only ever sampled the smooth wallpaper, so the blur was invisible but cost a blur pass per card per frame; the glass look, sheen and vibrancy are kept. The floating pill, bars and popups keep their real glass. Cause is reasoned from the code, **not measured** | DONE (CI green `795afcc`, not device-tested) |
-| 1g.6 | Present/Absent switch: the translucent selection that showed behind the animation and vanished afterwards came from the highlight being a backdrop-sampling glass control inside a fading, scaling layer. It is now a flat tinted fill with the same sheen. Reasoned from the code, since the recording cannot be seen | DONE (CI green `795afcc`, not device-tested) |
-| 1g.7 | Lag in the AI model selector list in Liquid Glass: its rows are plain fills; the card around it was the blurred part, so 1g.5 should cover it. Not separately changed or measured. If it still lags, the next step is to make the list lazy (it composes up to 40 rows at once) | DONE with 1g.5, **needs a device check** |
-
-## Step 2. Open bugs and checks on what already compiled (7 tasks)
-
-Bugs come before features. Everything marked DONE above compiled on CI but has not been tried on a phone.
-
-| # | Task | Status |
-| - | --- | --- |
-| 2.1 | Device check of the CI-green changes: pill drag to the last tab (1e.2), licences screen and scrollbar drag, API style chips, No colour preset, glossy glass | pending |
-| 2.2 | **Bug:** Present / Absent Today buttons: the ghost selection behind the animation is fixed in 1g.6 (owner described it on 2026-10-19). Double taps are also ignored for 450 ms (2.7) | DONE (CI green `795afcc`, not device-tested) |
-| 2.3 | ~~Navigation pill label clipping~~ the owner prefers the current pill look (1e.1); re-open only if the clipping is seen again after the drag fix | pending |
-| 2.4 | ~~Garbled text under the glass navigation bar~~ withdrawn the same way; the title-area and veil changes of 1d.1 / 1d.3 were reverted | superseded |
-| 2.5 | Lag with a lot of text or many entries on screens other than the licences screen, subject folders and search (for example typing in a very long note): measure on the device first, then fix the measured cause | pending |
-| 2.6 | Prevent stale saves overwriting newer edits, make the save-status indicator accurate, predictable draft creation and deletion (data-loss class, from the reliability list) | **partly done** (CI green `795afcc`, not device-tested): saves of notes now run one at a time in request order, and saving a note that was deleted while its editor was open updates the Trash row instead of inserting a duplicate; drafts are deleted at once with their files, other entries go to the Trash. **Not done:** the save-status indicator and a check for a note changed elsewhere |
-| 2.7 | Rapid-tap guard: prevent duplicate actions from double taps on save, delete, mark present/absent | **partly done** (CI green `795afcc`, not device-tested): every `PillButton` and both halves of the Present/Absent switch ignore a second tap within 450 ms. **Not done:** other clickable rows and icon buttons that save or delete |
-
-**Tests:** Manual device script; a regression test for each fixed bug where logic is involved. · **Effort:** S to M
-
-## Step 3. Audit of the candidate repositories (audit only, no code) (4 tasks)
-
-Nothing is copied or added until this report is approved. It decides which proven designs to follow and which licences rule code reuse out.
-
-| # | Task | Status |
-| - | --- | --- |
-| 3.1 | Inspect Absencium-Dev first (source, this file, `docs/MASTER_SPEC.md`, `docs/ROADMAP.md`, `docs/SPECIFICATION.md`) and list existing, partial, planned and missing features | pending |
-| 3.2 | **Draft written** (licences read from each repo's own file; features traced to source paths; dependencies, bundled assets and file headers not audited, ScanCode not run). Audit 16 repositories: ImageToolbox, June, Kori, Reef, Tomato, FaceDown, Self-Attendance, baca., LastChat, Damier, bubble-notice-android, WikiReader, yearly-progress, Keshu, Etar Calendar, Agora. For each: README, source, actual LICENSE files (check version differences), dependencies, assets, the inspected commit, unresolved uncertainties. Special licence checks: Yearly Progress AGPL/GPL discrepancy, Damier Commons Clause, Reef additional terms, Kori licence, FaceDown and Self-Attendance reuse permission. No code with unclear permission is copied; AGPL code is not assumed to become GPL-only | pending |
-| 3.3 | Comparison matrix (repository, verified licence, feature, existing equivalent, benefit, difficulty, risks, recommendation) and a recommended / deferred list per area (Vault, AI Hub, Attendance, Reminders, Tasks, Calendar, focus tools, widgets) | draft in `docs/FEATURE_AUDIT.md` (feature table and recommendations); awaiting your review |
-| 3.4 | Save the report as `docs/FEATURE_AUDIT.md`, update the steps below only where it changes them, and wait for approval | draft saved; **waiting for your approval** |
-
-**Tests:** Every claim cites a file or commit; anything only read from a README is labelled as such. · **Effort:** L (research only) · **Gate:** Anakin approves the report
-
-## Step 4. Data foundation: one Room migration and one export format (9 tasks, 5 done, 4 partly)
-
-Almost every later step (undo, backup, sync, sharing, widgets) needs stable ids, change times, tombstones and a versioned export. Doing it once now means the later steps add code instead of rewriting it.
-
-| # | Task | Status |
-| - | --- | --- |
-| 4.1 | Room version 2 as a real `Migration` with an exported schema (never destructive): stable `uuid` per syncable row, `updatedAt` revision, `deletedAt` tombstone, plus the `teacher` column the timetable needs. Later versions add columns the same way | DONE (CI green `795afcc`, not device-tested). The migration SQL was run in SQLite on a copy of the v1 schema and its result is identical to the v2 schema Room exported (columns, types, defaults, indices, foreign keys). `updated_at` is also kept current by database triggers. **Not run on a phone**, and there is no instrumented migration test yet (see 4.8) |
-| 4.2 | Trash and undo: deleted rows are tombstoned, shown in a Trash screen, restorable, purged after a set time; the undo toast of the timetable work uses it | DONE for notes, exams, holidays and lectures (CI green `795afcc`, not device-tested): Trash screen in Settings, 30-day purge at start-up, undo bar. Subjects and attendance entries are **not** trashed (deleted at once) |
-| 4.3 | Versioned export format: manifest (format version, app version, schema version, created, counts, SHA-256 per file), the database, attachments, settings without secrets; import validates manifest and hashes first | DONE (CI green `795afcc`, not device-tested). Manifest rules are covered by JVM unit tests that CI runs; the manifest JSON reader/writer uses `org.json` and is **not** unit-tested |
-| 4.4 | Backup and restore on top of it: attachments included, restore validation, duplicate detection, interrupted-import recovery, low-storage check, backup status shown in Settings | DONE (CI green `795afcc`, not device-tested): staged restore with rollback, "same as current" detection, low-storage check, last-backup line, restore preview. **Not run end to end on a phone**; there is no automated export-wipe-import test (it needs Android) |
-| 4.5 | Optional password encryption of backups (AES-256-GCM, key derived with a reviewed library, no hand-written crypto) with a threat model written in `docs/PRIVACY.md` | DONE with a deviation (CI green `795afcc`, not device-tested): PBKDF2-SHA256 and AES-256-GCM come from the Android platform, not a separate library, and the 64 KiB chunk framing around them is our own code. That framing is unit-tested but **not independently reviewed**; the limits are written in `docs/PRIVACY.md` |
-| 4.6 | Rolling local snapshots (3) built on the same export code | DONE (CI green `795afcc`, not device-tested): daily snapshot of database and settings (no photos), 3 kept, create/restore/delete in Storage & Data |
-| 4.7 | Seams for later steps, written as interfaces with one local implementation: a `Transport` (sends or receives an export or a change set), a change-set builder fed by `updatedAt`/tombstones, and a scoped read-only repository view. No server, no networking code yet | **partly done** (CI green `795afcc`, not device-tested): `Transport` with a local-folder implementation, the `ChangeSet` model and `ChangeSetBuilder` interface, and `ReadOnlyScope` exist. **Not done:** the Room-backed change-set builder and a scoped read-only view of the repositories (left for Steps 17 and 18, where their real use shapes them) |
-| 4.8 | Test infrastructure: Room migration tests, export/import round-trip tests, preference-recovery test; CI runs them | **partly done** (CI green `795afcc`, not device-tested): JUnit 4 added; JVM tests for the encryption (round trip, wrong password, bit flips, truncation, reordering), manifest rules, Trash retention and the local transport run in `testDebugUnitTest` on CI. CI's log is not readable from here, so the test count is not confirmed beyond the step passing. **Not done:** Room migration test (needs an instrumented runner), full export/import round trip, preference-recovery test |
-| 4.9 | Safe preference recovery (corrupt DataStore falls back to defaults) and preserve data when subjects are renamed or moved | **partly done** (CI green `795afcc`, not device-tested): a corrupt DataStore file is replaced with defaults and logged. Rename/move safety is **not verified**: rows refer to subjects by id, so a rename should keep them, but no test or check was done |
-
-**Tests:** Migration test from the exported v1 schema; round-trip test (export, wipe, import, compare); a tampered manifest is rejected. · **Effort:** L
-
-## Step 5. Android integration base (9 tasks)
-
-Notifications, locale, time zones and process-death recovery are needed by reminders, widgets and translations, so they come before them.
-
-| # | Task | Status |
-| - | --- | --- |
-| 5.1 | Per-app language: system language by default, in-app selector (`LocaleConfig`), English fallback, locale-aware dates, times, numbers and decimals, 12/24-hour follows the system, configurable week start, correct weekday and month names | pending |
-| 5.2 | Move every hard-coded string into resources (new screens use resources from this step on); RTL layout check; Unicode and emoji safe text handling | pending |
-| 5.3 | One clock / time-zone provider used everywhere (reminders, events, midnight and month/year boundaries, leap day) | pending |
-| 5.4 | Edge-to-edge insets, camera cut-out and gesture navigation, Predictive Back, reliable system Back, unsaved-change confirmation, keyboard-aware layouts | pending |
-| 5.5 | Screen-state restoration and process-death recovery for forms, editors and the timer | pending |
-| 5.6 | Notification groundwork: channels per purpose, POST_NOTIFICATIONS handling with a denied-permission explanation, exact-alarm decision (inexact by default, exact only when the user opts in), reboot rescheduling receiver, per-API feature table in `docs/ROADMAP.md` | pending |
-| 5.7 | Permission-denial handling pattern (one reusable explainer) and graceful revoked-storage handling | pending |
-| 5.8 | Custom HEX palette creation that respects Performance mode and reduced motion; all existing themes preserved | pending |
-| 5.9 | Reduced-motion setting wired into every spring and transition; optional subtle haptics setting; respect system refresh rate, battery saver and thermal state (no forced refresh rate) | pending |
-
-**Tests:** Switch language, theme, font size, display size and 12/24 h on a device; rotate; kill the process mid-edit; deny each permission. · **Effort:** L
-
-## Step 6. Timetable overhaul (12 tasks)
-
-Unchanged from the earlier plan; it needs the migration of Step 4 (teacher column).
-
-| # | Task | Status |
-| - | --- | --- |
-| 6.1 | Teacher (optional) when adding or editing a lecture | pending |
-| 6.2 | ~~Start time as a text field~~ Start time is a button that opens a frosted wheel picker (HH : MM, AM/PM for 12 h, 1–24 for 24 h, infinite scroll, minutes 0–59). Required | pending |
-| 6.3 | ~~End time~~ Lecture duration is an optional button, shown only after a start time is chosen; wheel of 0–12 h and 0–59 min, default 0:00, no AM/PM; both buttons re-open to edit | pending |
-| 6.4 | Subject chosen from a dropdown, ~~horizontal chips~~ | pending |
-| 6.5 | "Add a lecture on Monday" becomes a button that opens a popup with a day button (phone's first day by default) and a dropdown (Mon–Fri or Mon–Sun by the app setting) | pending |
-| 6.6 | Edit (pen) and delete icons on entries, ~~"Edit" / "Remove" text~~ | pending |
-| 6.7 | Delete asks for confirmation, then a toast "Entry deleted" with Undo for about 4–5 s (uses the Trash of Step 4) | pending |
-| 6.8 | Swipe an entry left to delete | pending |
-| 6.9 | "Import Lecture Timetable" with the same popup style as the other two imports | pending |
-| 6.10 | After AI scanning: tick options for room number, teacher name, and time gaps between classes as duration (yes/no) | pending |
-| 6.11 | A/B (alternating) schedules, replacement classes and reliable schedule changes | pending |
-| 6.12 | Docs and changelog for the above | pending |
-
-**Tests:** Add, edit, delete, undo and swipe on a device; A/B week switch across a month boundary. · **Effort:** L
-
-## Step 7. Attendance and academic correctness (10 tasks)
-
-These are the numbers students rely on, so they are fixed and tested before new features read them.
-
-| # | Task | Status |
-| - | --- | --- |
-| 7.1 | Zero classes never divides by zero; correct rounding; recalculation after every edit; configurable institutional target (default 60–85 % slider already exists) and a per-subject override | pending |
-| 7.2 | Statuses: present, absent, cancelled, extra class and bunked, counted correctly; holidays and cancelled classes excluded; weekends, custom holidays, unexpected closures and duplicate holidays handled | pending |
-| 7.3 | Weighted lectures and practicals; optional attendance units (class duration divided by a chosen time increment) | pending |
-| 7.4 | Safe-absence projections and bunk buffer per subject, with per-subject history; cancelled and bunked counts in analytics | pending |
-| 7.5 | Semester dates (optional, track by semester), archive manager, historical comparison, semester-end projection | pending |
-| 7.6 | Past attendance: type how many days you were present since a date and it fills backwards from yesterday using the weekly timetable (with a preview before saving) | pending |
-| 7.7 | Undo and historical corrections that keep old records; correct month/year boundaries and leap years | pending |
-| 7.8 | Cross-feature what-if planning (absences, extra classes, exams) built on the same calculator, not a second one | pending |
-| 7.9 | Profile and attendance logs: circular progress cards, Home cards and the clover button open the log popup; drag up about 85 % for full screen | pending |
-| 7.10 | Minutes-before reminder for the next class (setting) once Step 8 lands | pending |
-
-**Tests:** Unit tests for every formula (zero, rounding, holidays, leap day, midnight); the existing records must give the same percentages before and after. · **Effort:** L
-
-## Step 8. Reminders, tasks and Quiet Mode (6 tasks)
-
-Needs the notification groundwork of Step 5 and the attendance logic of Step 7.
-
-| # | Task | Status |
-| - | --- | --- |
-| 8.1 | Tasks and reminders with smart filters, recurring items, snooze, quick actions, past-deadline handling, duplicate-notification prevention, quiet hours, notification preferences | pending |
-| 8.2 | Reboot-, time-zone- and update-safe scheduling (re-registers after boot, time change and app update); battery-conscious, no polling | pending |
-| 8.3 | Quiet Mode: one-tap on, essential notifications you choose, a visible indicator, optional automatic exit; shares its settings, timer and statistics with Focus Guard and the study timer instead of copying them | pending |
-| 8.4 | Notification actions per Android version: classic actions everywhere; newer features (Android 16 progress / Live Updates and anything newer) only where the version supports them, with a fallback; confirm Android 17 specifics against developer.android.com before building | pending |
-| 8.5 | Eisenhower task view and Deadline Radar | deferred to 1.x (owner decision 2026-10-18) |
-| 8.6 | "Next up" opens the lecture details; the next lectures are an expandable dropdown there | pending |
-
-**Tests:** Reboot, force-stop, time-zone change, denied permission, airplane mode, DST-free and midnight cases; no duplicate notifications. · **Effort:** L
-
-## Step 9. Calendar, search and navigation (6 tasks)
-
-| # | Task | Status |
-| - | --- | --- |
-| 9.1 | Calendar views (list/grid, schedule, day, 3-day, week, month), today's entry first, optional auto-delete of past entries, tap for details, long-press menu, week-start preference | pending |
-| 9.2 | Top-left tick icon in a non-pointy Material 3 Expressive polygon opens the To-Do list; Today icon; search icon; three-dot menu with a sidebar for view modes and categories | pending |
-| 9.3 | ICS import and export with preview, duplicate detection, conflict handling, time-zone-safe scheduling | pending |
-| 9.4 | Main search popup with a horizontally scrolling category row (All, Notes, Calendar, later AI Chat); language-aware search; filters; responsive on large databases | pending |
-| 9.5 | Replace the remaining custom dropdowns with `InlineDropdown`; consistent empty states, loading states and error messages | pending |
-| 9.6 | AI can add day-by-day calendar entries from uploaded media | pending |
-
-**Tests:** Import a real .ics with repeats and zones; search a database of thousands of rows without a visible stall. · **Effort:** L
-
-## Step 10. Vault, editor and file handling (20 tasks)
-
-The editor and file tools come before study tools, widgets and sharing because those all read notes and attachments.
-
-| # | Task | Status |
-| - | --- | --- |
-| 10.1 | Text Notes editor with a floating Markdown toolbar, templates, tags with autocomplete, related-note links, reliable autosave with an accurate indicator | first version DONE (CI green `24af814`, not device-tested); **superseded in layout by 10.8 to 10.14** (the Edit/Preview buttons go; the Markdown engine, tags, links, templates and save indicator are kept and moved into the new editor) |
-| 10.2 | Vault as a file explorer (breadcrumbs, badges, long-press multi-select, batch actions), drafts folded in; duplicate filenames, deleted subjects, empty folders, large images, inaccessible files and low storage handled | first version DONE (CI green `24af814`, not device-tested): breadcrumbs, badges, long-press multi-select with Finish/Move/Delete/Share, drafts in the folder, empty-folder text. Not done: large-image and inaccessible-file handling. **The folder page is redesigned by 10.15**, which replaces this layout |
-| 10.3 | Local OCR (Tesseract with downloadable language packs, separate from AI), PDF text extraction, EXIF scrubbing on export; blurry and rotated image handling, unsupported-language message, editable OCR preview | **unblocked 2026-10-21**: you named tesseract-ocr/tesseract (Apache-2.0, verified on its GitHub page). That is the C++ engine, so the app uses the Android wrapper Tesseract4Android (adaptech-cz, Apache-2.0, minSdk 21, bundles Tesseract 5.5.1 and Leptonica; coordinates `cz.adaptech.tesseract4android:tesseract4android:4.9.0` from JitPack, read from its README). To do at build time: confirm CI can resolve it from JitPack, check the bundled Leptonica, libjpeg and libpng licences, and add all of them to `docs/DEPENDENCY_LICENSES.md`. Language data files are downloaded by the user, not bundled. EXIF scrubbing on export does not need it and is planned with 10.11 |
-| 10.4 | "Extract Text" popup (With AI or Locally); finish the Add Entry actions (Document or file, Audio note, Solve homework, Generate AI notes); link missed classes to notes and attachments | pending |
-| 10.5 | Timetable OCR into the editable import preview of Step 6 | pending |
-| 10.6 | Note export and share: PDF, Markdown, ZIP, supported document formats, through Android's Sharesheet with a `FileProvider`. Written as a small reusable `ShareService` so Step 17 extends it instead of replacing it. Consider PDF viewing and basic annotation afterwards | DONE for PDF, Markdown, text and ZIP (CI green `24af814`, not device-tested); the PDF draws text only (images arrive with 10.11). Unsupported-format sharing, PDF viewing and annotation not done |
-| 10.7 | Audio memos with timestamps (from the master specification) | in progress: recorder and timestamp helpers written; the inline audio block of 10.11 is its UI |
-| 10.8 | **Editor modes (owner spec 2026-10-21).** No Edit and Preview buttons. Tapping the note area starts editing; the check mark in the top bar saves and shows the preview; opening a note from a subject's note list opens it in the preview. Edit bar: back, undo, redo, check mark. Preview bar: page adjustment, more menu | pending |
-| 10.9 | Header under the title: date, character count and a category picker that says "Uncategorized" until the note is linked to a syllabus topic, chapter or unit (needs 10.16) | pending |
-| 10.10 | Bottom toolbar in the reference order: AI, Aa, align and lists, checklist, images, plus. The Aa panel has the tabs Text style, Symbol, Divider and **Templates**; align and lists gives left, centre and right with bullets, numbers and letters; images gives Images or videos, Photo and Scan document; plus gives Doodle, Table, Recording (to text) and Audio. Text formatting: bold, italic, underline, strike, highlight, font size, font colour. Selecting text shows AI creation, Cut, Copy, Select all, Share. Existing Markdown, tags, links and templates are kept | pending |
-| 10.11 | Notes are made of blocks: text, images, tables, doodles, audio. Each non-text block can be moved, resized and aligned, and the text before and after it stays in order around it (inserting at the cursor splits the text). Image menu: Large image mode, Copy, Share, Save, Delete, plus Crop and Rotate (the existing crop editor). PDF export draws the images; ZIP export strips photo metadata (EXIF) | pending |
-| 10.12 | Doodle canvas: pens, eraser, colour grid and spectrum, size and opacity, undo and redo, artboard reference lines (none, ruled, grid); a doodle stays editable | pending |
-| 10.13 | More menu: Notes info (a popup with dates, characters, words, subject, category, tags, files and size), Delete (to the Trash), Share, Export. Page adjustment sheet: paper style, paper texture, page margin. Reminder, Lock and Generate widget are added only when those features exist (Steps 8, 14, 13); no dead buttons | pending |
-| 10.14 | AI in the editor: the AI button opens a prompt bar where you type your own instruction and send; AI creation actions (Summary, Polish, Shorten, Extend, Continue writing, Revise grammar, Extract to-dos, Translate and the like); the three-dot menu of the AI panel opens the AI history. Needs the AI settings to be set up; works with the providers already in the app | pending |
-| 10.15 | **Subject folder redesign (owner spec 2026-10-21).** Header shows the subject name with an arrowhead that opens a sidebar: All notes (every kind: absent, normal and others), Absent notes (ordered by which to write next, with finished ones marked), and a filter by syllabus topic, chapter or unit. A sort menu with list and card view. The + button on All opens the editor at once; on Absent it opens the date selector and then the editor. Search and + sit where the main page has them. Bottom: the same pill as the main menu (same animation and theme) with three tabs: Notes, Syllabus (this subject), Study material. The AI button sits to the right of the pill when AI is set up | pending |
-| 10.16 | **Syllabus (moved into 1.0 by the owner; was 12.3).** Per subject a tree: unit, chapter, topic, subtopic, with status (not started, in progress, completed) and progress. Import with AI from a photo, PDF or text, and ask AI to generate notes for a topic. A main Syllabus button on the Vault page's + menu shows every subject (reference layout from the owner, in the app's theme). Needs database version 3 | pending |
-| 10.17 | Study material tab per subject: PYQ, answer book, guide (extends the existing Guides and Question Banks) | pending |
-| 10.18 | Everything connects: notes, PYQs and study material can be linked to a syllabus topic, chapter or unit (the Uncategorized picker); the folder sidebar filters by it; a syllabus summary card in the profile (with the profile overhaul in Step 14) | pending |
-| 10.19 | Vault page: the "Drafts" text button becomes a trash icon that opens the Trash | pending |
-| 10.20 | Remove the "Glossy glass" option from Liquid Glass settings (supersedes 1f.1) | pending |
-
-**Tests:** Large-image and low-storage runs, a note with 50 k characters, share to two apps and to a missing app. · **Effort:** XL
-
-## Step 11. AI Hub and AI settings (5 tasks)
-
-**Deferred to 1.x by the owner (2026-10-18), except any dependency the approved core scope needs.**
-
-Builds on the existing providers, model picker and key vault; adds to them rather than replacing them.
-
-| # | Task | Status |
-| - | --- | --- |
-| 11.1 | Several API keys per provider with a setup guide dropdown | deferred to 1.x |
-| 11.2 | Show Gemini as recommended (can read YouTube links) and OpenRouter as recommended for its free/paid listing; look up and verify free models of the other providers before showing a recommended all-rounder for each; for Gemini recommend the Flash-Lite 3.5 model if the fetched model list contains it (otherwise the nearest Flash-Lite entry that list does contain); the name always comes from the fetched list, never typed from memory; other providers under an "Other models" dropdown; guide for getting the chosen provider's key | deferred to 1.x |
-| 11.3 | Clear explanation of what data is sent to an AI provider; AI failures never block local features; AI stays optional and off by default | deferred to 1.x |
-| 11.4 | Ask AI inside notes with query history and jump-to-source (from the master specification); voice prompt on long-press of the AI icon; optional AI Memory (off by default) | deferred to 1.x |
-| 11.5 | Design reference from the repository audit (Agora, LastChat) for conversation management, context handling and tool calling, decided after the audit | deferred to 1.x |
-
-**Tests:** Provider list fetched offline and online; a failing key leaves notes untouched. · **Effort:** L
-
-## Step 12. Study and focus tools (6 tasks)
-
-**Deferred to 1.x by the owner (2026-10-18), except any dependency the approved core scope needs.**
-
-| # | Task | Status |
-| - | --- | --- |
-| 12.1 | Study timer that survives backgrounding, screen lock and process death, one notification, no duplicates | deferred to 1.x |
-| 12.2 | Daily Recall and spaced repetition (7-day loop, sticky lock, repeat badge) as specified; flashcards; Emergency Cram Mode before exams | deferred to 1.x |
-| 12.3 | Semester-linked exam preparation and syllabus tracking; optional AI-generated study material | syllabus tracking **moved into 1.0 as 10.16 to 10.18**; semester-linked exam preparation stays deferred to 1.x |
-| 12.4 | Retrospective study category log and Momentum tracker (optional, off by default) | deferred to 1.x |
-| 12.5 | Gradebook and GPA | deferred to 1.x (owner decision 2026-10-18) |
-| 12.6 | ~~Optional GPS attendance assistance (marks present after 5 minutes in a classroom area)~~ **excluded**: manual attendance is enough and it avoids location permission | excluded |
-
-**Tests:** Timer survives a force-stop; recall questions respect the lock; spaced dates correct across time-zone change. · **Effort:** L
-
-## Step 13. Widgets, shortcuts and quick actions (3 tasks)
-
-**Deferred to 1.x by the owner (2026-10-18), except any dependency the approved core scope needs.**
-
-Needs attendance, tasks and the timer to exist.
-
-| # | Task | Status |
-| - | --- | --- |
-| 13.1 | Home-screen widgets: 1x1 quick capture, then 1x2 up to 4x4 (attendance, next up, deadlines); theme-aware, resizable, refresh and stale-data handling. The widget framework (Jetpack Glance or RemoteViews) is chosen after weighing APK size | deferred to 1.x |
-| 13.2 | Launcher shortcuts, Quick Settings tile, Quick Add, notification actions | deferred to 1.x |
-| 13.3 | Customizable, smart dashboard summaries and start-screen choice | deferred to 1.x |
-
-**Tests:** Widget on a real launcher at several sizes; after reboot; with the app force-stopped. · **Effort:** L
-
-## Step 14. Settings, privacy, accessibility and polish (6 tasks)
-
-The consistency sweep that needs most features in place.
-
-| # | Task | Status |
-| - | --- | --- |
-| 14.1 | Privacy controls and a privacy dashboard, optional app lock (BiometricPrompt), no sensitive data in logs, size-limited rotating debug log, redacted diagnostics export | pending |
-| 14.2 | About: Report a bug and Request a feature buttons that open a prefilled GitHub issue (explained to the owner step by step), "Buy Me a Chai" card (https://www.buymeachai.in/skywa1ker404, the only support link), review prompt | pending |
-| 14.3 | Tapping the version number 7 times opens a safe, lightweight debug page in release builds that shows nothing private | pending |
-| 14.4 | Accessibility: font scaling without clipped text, TalkBack labels, contrast in every theme, status never by colour alone, accessible charts, focus order, display-size changes, comfortable touch targets | pending |
-| 14.5 | Consistency sweep: icons, spacing, typography, shapes, long text and filenames, loading and empty states, undo for deletions, confirmation for destructive actions; permissions onboarding that is short and never overwhelming | pending |
-| 14.6 | Outdated docs refresh: `IDENTITY.md`, changelog file and in-app changelog, README, intro text | pending |
-
-**Tests:** TalkBack pass, largest font, largest display size, every theme. · **Effort:** L
-
-## Step 15. Performance and stability pass (3 tasks)
-
-| # | Task | Status |
-| - | --- | --- |
-| 15.1 | Startup and navigation with no lag: measure cold start and screen transitions on a device, fix measured causes only | pending |
-| 15.2 | Avoid database queries during recomposition; efficient image loading; large imports and exports off the main thread; leak and low-RAM checks; no continuous polling | pending |
-| 15.3 | Decide with the owner whether a Baseline Profile is worth its build cost | pending |
-
-**Tests:** Cold start time before/after; 10 000-row database; memory profile. · **Effort:** M
-
-## Step 16. Final testing and the stable 1.0.0 release (9 tasks)
-
-**Approved scope (2026-10-18): 1.0.0 is Steps 2 to 10 and 14 to 16, in order, bug fixes first.** The AI Hub, study tools and widgets (Steps 11 to 13) follow as 1.x. Nothing is published until device testing and release checks pass and you approve.
-
-| # | Task | Status |
-| - | --- | --- |
-| 16.1 | Regression tests and the full device test list: fresh install, upgrade with data, permission denial, force-stop, reboot, backup and restore, airplane mode, language and theme switching, font and display size, 12/24 h, create/edit/save/discard/delete/restore, midnight, month/year and leap day, rapid taps, nearly full storage, interrupted backup or import, migrations | pending |
-| 16.2 | Dev CI green on both jobs and the APK report checked | pending |
-| 16.3 | Signing: stable key and the four secrets are set (reported by Anakin); the stable certificate SHA-256 is in `release/stable/release-notes/v1.0.0.md`. Not verifiable from here | owner reports done |
-| 16.4 | Dev README, stable README and `release-notes/v1.0.0.md` reviewed by Anakin (drafted) | drafted |
-| 16.5 | Run `scripts/export_stable.sh` into a temporary folder and check every link and asset (passed once, repeat before release) | pending |
-| 16.6 | Licence audit: ScanCode run by Anakin, licence assets inside the APK checked by Anakin, remaining items in `docs/LICENSE_AUDIT.md` cleared | pending |
-| 16.7 | ~~Add the GPL-3.0 LICENSE (needs approval)~~ added by Anakin (commit 3adf0bb); its SHA-256 matches gnu.org's gpl-3.0.txt | done by owner |
-| 16.8 | On approval only: publish to `Absencium`, run the stable workflow, publish the verified release, update `data/projects.json` in `skywa1ker404.github.io` (text only) | pending |
-| 16.9 | After approval: clear files that are no longer used (see "Cleanup proposal" below) | needs approval |
-
-**Tests:** The release checklist above, on a real phone, from the signed APK. · **Effort:** M · **Gate:** Anakin's explicit approval
-
-## Step 17. Sharing and Sharewave (after the stable release) (6 tasks)
-
-Approved placement: after the stable release; sync stays later still. Needs the export format, scoped repository view and Transport seam of Step 4 and the `ShareService` of Step 10, so it adds code rather than rewriting.
-
-| # | Task | Status |
-| - | --- | --- |
-| 17.1 | Audit the repository, current sharing code and permissions, then report the plan, risks, compatibility limits and required permissions before significant changes | pending |
-| 17.2 | Android Sharesheet: `ACTION_SEND` / `ACTION_SEND_MULTIPLE` for notes, text, images, PDFs, documents, selected files, exported timetables and folder archives; correct MIME types; `FileProvider` content URIs; URI permissions, temporary files, missing apps, unsupported formats and errors handled; the native Sharesheet stays the universal fallback; no assumption that other apps expose chats or contacts | pending |
-| 17.3 | Sharewave research and prototype on real devices: discovery (BLE or local network), pairing (QR and manual fallback), transfer over Wi-Fi Direct, local Wi-Fi or hotspot; Google Nearby Connections only as an optional transport; document Android-version permissions (location only if a mechanism truly needs it) and manufacturer limits before choosing | pending |
-| 17.4 | Quick Send: entries, notes, images, files and folders with structure and metadata; recipient must accept; progress, cancel, retry, recovery; authenticated pairing and encrypted transfer; filename, size, type and path validation; never overwrite silently, never execute received files | pending |
-| 17.5 | Shared Vault Access: owner exposes only selected folders or entries for a limited time; recipient browses, previews, caches, downloads or imports with conflict handling; active-session list with devices, paths, permissions, status and expiry; manual revoke and automatic expiry (copies already taken stay); live access needs the owner's device | pending |
-| 17.6 | Security, compatibility, accessibility and failure-path tests (interrupted transfer, low storage, denied permission, corrupted data, expired or revoked session); update specs, roadmap, README and user docs | pending |
-
-**Tests:** Two or more real phones from different makers; transfer with Wi-Fi off and airplane mode on; tampered and oversized files rejected. · **Effort:** XL · **Gate:** Anakin approves the plan and the transport choice
-
-## Step 18. Optional cloud: sync and routine backup (after Step 17, off by default) (6 tasks)
-
-Approved shape (2026-10-18): both features are **disabled by default and make no network request without explicit user consent**. ~~Sync mode with a home server, Route A snapshots or Route B own server, optional Drive transport~~ replaced by:
-
-| # | Task | Status |
-| - | --- | --- |
-| 18.1 | **Sync, Route A first:** user-provided WebDAV or Nextcloud server (self-hosted, free or paid) with encrypted snapshots, an offline queue that holds changes until a connection and consent exist, and a conflict-resolution screen (per row: keep mine, keep theirs, keep both); built on the Step 4 export, `updatedAt` and tombstones through the `Transport` seam | pending |
-| 18.2 | Google Drive as an additional sync target only if it can be done within Google's Terms and API policy (decided when this step starts; Drive scope `drive.appdata`; needs an OAuth client and the final signing certificate that only the owner can create) | needs decision |
-| 18.3 | **Routine encrypted backup and restore: Google Drive only**, subject to Google API policy approval; scheduled backup off by default, Wi-Fi only, retention, disconnect and delete-remote controls. The manual local backup file of Step 4 stays as it is | pending |
-| 18.4 | Consent gate shared by both: a clear first-use explanation of what leaves the device, nothing sent before it, a visible status, and a master off switch; no background work while off | pending |
-| 18.5 | Greyed-out AI sync and backup items while a sync mode is active; docs for connecting a WebDAV or Nextcloud server | pending |
-| 18.6 | Route B (own server in Docker with a change-feed API) remains a later option; not started | deferred |
-
-**Tests:** Two devices converging after offline edits; server unreachable; wrong credentials; clock skew; no network traffic while both are off (checked with a proxy). · **Effort:** XL · **Gate:** Anakin approves
-
----
-
-## Cleanup proposal (nothing is deleted without your approval)
-
-The repository should not grow documents for every list you send. After you approve this file as the single plan:
-
-| File | Proposal |
-| --- | --- |
-| `docs/SPECIFICATION.md` | still the master specification copy; keep until its content is folded into the steps above, then remove |
-| `docs/MASTER_SPEC.md` | the 711-line original text; keep as the reference for the database, sync and Drive details until Steps 4 and 18 are built, then archive |
-| `docs/ROADMAP.md` | kept, short: explains the order and the technical routes |
-| `docs/CHNAGELOG.md` | contains only "working on it" and its name is misspelt; replace by `CHANGELOG.md` when the changelog is refreshed |
-| `docs/LICENSE_AUDIT.md` | keep until the audit is cleared, then fold into `THIRD_PARTY_LICENSES.md` |
-| `docs/IDENTITY.md`, `docs/SIGNING.md`, `docs/CONTRIBUTION.md`, `docs/THIRD_PARTY_LICENSES.md`, `docs/DEPENDENCY_LICENSES.md`, `docs/licenses/`, `docs/art/` | keep |
-
-## Known bugs
-- No unit tests exist yet; `testDebugUnitTest` runs with nothing to test (fixed by the test infrastructure of Step 4).
-- Everything is compile-verified only; device behaviour is unknown until you test.
-
-## Decisions recorded (2026-10-18)
-1. 1.0.0 is Steps 2 to 10 and 14 to 16, in order, bug fixes first. Nothing is published until device testing and release checks pass and Anakin approves.
-2. Steps 11 to 13 (AI Hub, study tools, widgets) move to 1.x, except dependencies the core needs.
-3. Gradebook / GPA, Eisenhower view and Deadline Radar: 1.x. GPS attendance: excluded.
-4. Sync: Route A first (user-provided WebDAV or Nextcloud, encrypted snapshots, offline queue, conflict screen); Google Drive for routine backup and restore only, and as a sync target only if Google's terms allow. Both off by default, no network without consent. Route B later.
-5. Sharing (Step 17) after the stable release; sync later still.
-6. Minimum Android stays API 26 unless the repository audit finds a compelling reason. Monet and Liquid Glass are greyed out with "Not supported by your Android version" below Android 12.
-7. Android 16 notification features are used where the version supports them, with fallbacks. Gemini's recommended model is Flash-Lite 3.5 taken from the fetched model list.
-8. The repository audit report (`docs/FEATURE_AUDIT.md`) must be approved before any code or dependency from those repositories is used.
-9. Cleanup is approved only after Anakin has seen the file-by-file changes; reference documents stay until their content is merged.
-
-## Cleanup proposal (nothing is deleted without your approval)
-
-| File | Proposal |
-| --- | --- |
-| `docs/SPECIFICATION.md` | master specification copy; keep until its content is folded into the steps above, then remove |
-| `docs/MASTER_SPEC.md` | the 711-line original text; keep as reference for database, sync and Drive details until Steps 4 and 18 are built, then archive |
-| `docs/ROADMAP.md` | kept, short: explains the order and the technical routes |
-| `docs/CHNAGELOG.md` | contains only "working on it" and its name is misspelt; replace by `CHANGELOG.md` when the changelog is refreshed |
-| `docs/LICENSE_AUDIT.md` | keep until the audit is cleared, then fold into `THIRD_PARTY_LICENSES.md` |
-| `docs/IDENTITY.md`, `docs/SIGNING.md`, `docs/CONTRIBUTION.md`, `docs/THIRD_PARTY_LICENSES.md`, `docs/DEPENDENCY_LICENSES.md`, `docs/licenses/`, `docs/art/` | keep |
-
-## Open decisions for Anakin
-1. Approval of the audit report once it is written (Step 3).
-2. Whether Google Drive can be a sync target (Step 18.2), decided when that step starts.
-3. Approval of the cleanup table above, file by file.
-
-## Step 19. Liquid Glass overhaul (future, not now)
-
-Owner request 2026-10-21: later, make every Liquid Glass element look like the reference glass kit the owner supplied (translucent panes with soft edge light, pill buttons, glass toggles and search fields), **without the glow**, still following the app's theme, animations, Liquid Glass options and Performance mode. Not started on purpose; the lag fixes of Step 1g come first.
-
-| # | Task | Status |
-| - | --- | --- |
-| 19.1 | Restyle buttons, cards, toggles, search fields and the navigation pill after the reference kit, no glow, all existing quality and Performance modes kept | deferred |
+| 10.1 | Markdown editor, templates, tags, `[[note]]` links, save indicator | first version DONE (`24af814`); layout replaced by 10.8 to 10.14, engine kept |
+| 10.2 | Vault explorer: breadcrumbs, badges, multi-select, batch actions | first version DONE (`24af814`); layout replaced by 10.15; large-image and unreadable-file handling not done |
+| 10.3 | Local OCR with Tesseract4Android (Apache-2.0, `cz.adaptech.tesseract4android:tesseract4android:4.9.0` via JitPack); PDF text; blurry/rotated images; downloadable language data | unblocked; to do: confirm CI resolves JitPack, check bundled Leptonica/libjpeg/libpng licences, update `DEPENDENCY_LICENSES.md` |
+| 10.4 | "Extract Text" popup (AI or local); finish Add Entry actions (Document, Audio, Homework, AI notes) | pending |
+| 10.5 | Timetable OCR into the Step 6 import preview | pending |
+| 10.6 | Export and share: PDF, Markdown, text, ZIP via Sharesheet and `ShareService` | DONE (`24af814`); PDF has no images yet |
+| 10.7 | Audio memos with timestamps | recorder and timestamp helpers DONE (CI green `17b801c`); UI comes with 10.11 |
+| 10.8 | Editor modes: no Edit/Preview buttons; tap the note to edit, ✓ to preview; opening from a folder = preview. Edit bar: back, undo, redo, ✓. Preview bar: page adjustment, ⋮ | pending |
+| 10.9 | Header: date, character count, category picker ("Uncategorized" until linked, needs 10.16) | pending |
+| 10.10 | Bottom toolbar: AI, Aa, align/lists, checklist, images, +. Aa tabs: Text style, Symbol, Divider, **Templates**. Bold, italic, underline, strike, highlight, size, colour. Selection popup (AI, Cut, Copy, Select all, Share). Images: Images/videos, Photo, Scan. +: Doodle, Table, Recording, Audio | pending |
+| 10.11 | Block document: text, images, tables, doodles, audio; movable, resizable, aligned, text flows around them. Image menu: Large mode, Copy, Share, Save, Delete, Crop, Rotate. PDF export draws images; ZIP export strips EXIF | pending |
+| 10.12 | Doodle canvas: pens, eraser, colour grid/spectrum, size, opacity, undo/redo, artboard lines; stays editable | pending |
+| 10.13 | ⋮ menu: Notes info popup, Delete (to Trash), Share, Export. Page adjustment: paper style, texture, margin. Reminder, Lock, Widget only once those features exist | pending |
+| 10.14 | Editor AI: prompt bar with send; AI actions (summary, polish, shorten, extend, continue, grammar, to-dos, translate); ⋮ opens AI history | pending |
+| 10.15 | Subject folder redesign: title = subject name with arrowhead sidebar (All notes, Absent notes by write-next order, filter by unit/chapter/topic); list/card view in sort menu; FAB: All opens editor, Absent opens date picker then editor; search and FAB in main-menu positions; bottom pill (same style) with Notes, Syllabus, Study material; AI button right of the pill | pending |
+| 10.16 | Syllabus tree per subject (unit, chapter, topic, subtopic, status, progress); AI import; AI-generate notes for a topic; main Vault FAB "Syllabus" for all subjects; needs DB v3 | pending |
+| 10.17 | Study material tab: PYQ, answer book, guide | pending |
+| 10.18 | Link notes, PYQs, materials to a syllabus node via "Uncategorized"; profile summary card with the Step 14 profile overhaul | pending |
+| 10.19 | Vault page: "Drafts" text becomes a trash icon opening the Trash (drafts stay in the pull-down and + menu) | DONE (CI green `23fcd73`, not device-tested) |
+| 10.20 | Remove the glossy-glass option (supersedes old 1f.1) | DONE (CI green `8960989`, not device-tested) |
+| 10.21 | Database v3: syllabus nodes table, note and guide links, Guide type | DONE (CI green `23fcd73`); migration SQL still to be checked against the CI-made `3.json` (not generated yet) |
+| 10.22 | Note document model: underline, highlight, colour, size, alignment, lettered lists, embed and table blocks, edit helpers, tests | WRITTEN, CI running (`1f609eb`; `0eecce3` failed on a syntax slip, fixed) |
+
+### Step 14. Settings, privacy, accessibility, polish (pending)
+14.1 privacy dashboard, optional app lock · 14.2 report-a-bug / request-a-feature buttons · 14.3 hidden debug page · 14.4 accessibility (font scale, TalkBack, contrast) · 14.5 consistency sweep · 14.6 refresh outdated docs, changelog (`CHNAGELOG.md` is misspelt and empty).
+
+### Step 15. Performance (pending)
+15.1 measure startup and navigation on a device, fix only measured causes · 15.2 no queries during recomposition, large imports · 15.3 decide on a Baseline Profile.
+
+### Step 16. Final testing and stable 1.0.0
+16.1 regression and device test list · 16.2 CI green on both jobs · 16.3 signing key and four secrets (owner reports set) · 16.4 READMEs and release notes (drafted) · 16.5 `scripts/export_stable.sh` dry run · 16.6 licence audit (ScanCode by you) · 16.7 GPL-3.0 LICENSE (done by you) · 16.8 publish to `Absencium` **only on your approval** · 16.9 cleanup of unused files **only after you approve a file-by-file list**.
+
+1.0 means: done, used on a real phone for a few weeks, verified signing key, release built from a tag, privacy docs matching the app, your explicit approval.
+
+## After 1.0
+- **1.x:** Step 11 AI Hub (several keys, provider guidance, ask-AI history), Step 12 study tools (timer, recall, gradebook/GPA, semester exam prep), Step 13 widgets and shortcuts. GPS attendance: excluded.
+- **Step 17 Sharing and Sharewave:** Sharesheet, nearby transfer, Quick Send, Shared Vault. Extends `ShareService`, the export format and the scoped read-only view.
+- **Step 18 Optional cloud (off by default, no network without consent):** sync via your own WebDAV/Nextcloud first (encrypted snapshots, offline queue, conflict screen); Google Drive backup later, only within Google's policy (needs an OAuth client and the final signing certificate from you). Own-server option deferred.
+- **Step 19 Liquid Glass overhaul (future):** restyle after the reference glass kit, no glow, keeping themes, animations, quality options and Performance mode.
+
+## Decisions
+1. 1.0.0 = Steps 2 to 10 and 14 to 16; syllabus tracking moved into 1.0 (10.16 to 10.18).
+2. minSdk 26. Monet and Liquid Glass (Android 12) are greyed out below with "Not supported by your Android version".
+3. Support link: https://www.buymeachai.in/skywa1ker404. Everything added must be GPL-3.0 compatible.
+4. Why this order: Step 4 builds stable ids, one export format and the seams (`Transport`, scoped view, `ShareService`) so sharing, sync and widgets later need no rewrite; reminders need Step 5 notifications and Step 7 attendance; the timetable needs the Step 4 teacher column; performance is measured after features exist.
+5. Application ID changed from `com.absencium.app`; no upgrade path (see `docs/SIGNING.md`).
+
+## Waiting on you
+Device test of Step 2.1 (and debug.log frame lines if lag remains) · approve `docs/FEATURE_AUDIT.md` · run ScanCode · approve cleanup list · Google Drive as sync target (decided at Step 18) · authorship wording and old-key questions from the licence review.
+
+## Known gaps
+No device testing yet. PDF export has no images; EXIF scrubbing not implemented; local OCR not started.

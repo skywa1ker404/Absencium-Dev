@@ -3,10 +3,10 @@
 **Batch C1, in progress** (one CI run at the end; nothing runs locally)
 - [x] Plan and specification recorded in `TODOList.md`
 - [x] OCR library chosen and licence checked (Tesseract4Android, Apache-2.0)
-- [x] Glossy-glass option removed from code and Settings (written, **CI not run**)
+- [x] Glossy-glass option removed from code and Settings (CI green `8960989`)
 - [x] Vault page: "Drafts" text button becomes a trash icon that opens the Trash (10.19) (written, **CI not run**; Drafts stays in the pull-down and the FAB menu)
-- [x] Database v3: syllabus nodes table, note and material links, `GUIDE` type (written, **CI not run**; migration SQL to be checked against the CI-made `3.json`)
-- [ ] Block document model and extended inline syntax, with unit tests (10.11)
+- [x] Database v3: syllabus nodes table, note and material links, `GUIDE` type (CI green `23fcd73`; migration SQL still to be checked against `3.json`)
+- [x] Block document model and extended inline syntax, with unit tests (10.22; written, CI running on `1f609eb`)
 - [ ] New editor shell: tap to edit, ✓ to preview, no Edit/Preview chips, Aa tabs with Templates, Notes info popup (10.8 to 10.13)
 
 **Next batches:** C2 embedded blocks, image menu, audio · C3 doodle canvas · C4 folder page and 3-tab pill · C5 syllabus and linking · C6 editor AI and Add Entry actions. Then Step 5, then the missing-features audit.
