@@ -224,7 +224,7 @@ private fun Align.toTextAlign(): TextAlign = when (this) {
     Align.END -> TextAlign.End
 }
 
-private fun Align.toBoxAlignment(): Alignment = when (this) {
+internal fun Align.toBoxAlignment(): Alignment = when (this) {
     Align.START -> Alignment.CenterStart
     Align.CENTER -> Alignment.Center
     Align.END -> Alignment.CenterEnd
@@ -232,7 +232,7 @@ private fun Align.toBoxAlignment(): Alignment = when (this) {
 
 /** A table drawn as equal-width cells with a thin line around each; the first row is bold when the table has a header. */
 @Composable
-private fun PreviewTable(table: Block.Table, onOpenLink: (String) -> Unit) {
+internal fun PreviewTable(table: Block.Table, onOpenLink: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
     val columns = table.rows.maxOfOrNull { it.size } ?: 0
     Column(modifier = Modifier.fillMaxWidth().border(1.dp, colors.outlineVariant, RoundedCornerShape(8.dp)).clip(RoundedCornerShape(8.dp))) {
@@ -254,57 +254,6 @@ private fun PreviewTable(table: Block.Table, onOpenLink: (String) -> Unit) {
                             fontWeight = if (table.hasHeader && r == 0) FontWeight.SemiBold else null,
                         )
                     }
-                }
-            }
-        }
-    }
-}
-
-/** The tags of a note as removable chips, a field to add one, and suggestions from the tags used on other notes. */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun TagEditor(
-    tags: List<String>,
-    otherNotesTags: List<String>,
-    onChange: (List<String>) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var typed by remember { mutableStateOf("") }
-    fun commit() {
-        val next = NoteTags.add(tags, typed)
-        if (next !== tags) onChange(next)
-        typed = ""
-    }
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (tags.isNotEmpty()) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                tags.forEach { tag ->
-                    ExpressiveChip(
-                        selected = true,
-                        onClick = { onChange(tags.filterNot { it == tag }) },
-                        label = { Text("#$tag  ×") },
-                    )
-                }
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AppTextField(
-                value = typed,
-                onValueChange = { typed = it.take(NoteTags.MAX_LENGTH) },
-                label = { Text("Add a tag") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { commit() }),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.weight(1f),
-            )
-            PillButton(text = "Add", compact = true, tonal = true, enabled = typed.isNotBlank(), onClick = { commit() })
-        }
-        val suggestions = remember(typed, otherNotesTags, tags) { NoteTags.suggestions(typed, otherNotesTags, tags) }
-        if (suggestions.isNotEmpty()) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                suggestions.forEach { tag ->
-                    ExpressiveChip(selected = false, onClick = { onChange(NoteTags.add(tags, tag)); typed = "" }, label = { Text("#$tag") })
                 }
             }
         }

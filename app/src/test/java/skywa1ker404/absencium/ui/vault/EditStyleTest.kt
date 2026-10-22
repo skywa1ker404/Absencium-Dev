@@ -27,7 +27,24 @@ class EditStyleTest {
         assertEquals(2, EditStyle.ranges(h).first { it.kind == EditKind.HEADING }.arg)
         assertEquals(listOf("- [ ] "), kinds("- [ ] todo", EditKind.MARKER))
         assertEquals(listOf("{align:center}", "- "), kinds("{align:center}- x", EditKind.MARKER))
-        assertEquals(listOf("b) "), kinds("b) item", EditKind.MARKER))
+        // Numbers and letters stay visible as typed.
+        assertTrue(kinds("b) item", EditKind.MARKER).isEmpty())
+        assertTrue(kinds("12. item", EditKind.MARKER).isEmpty())
+    }
+
+    @Test fun markerMeaningsForTheLivePage() {
+        fun arg(text: String) = EditStyle.ranges(text).first { it.kind == EditKind.MARKER }.arg
+        assertEquals(1, arg("- bullet"))
+        assertEquals(2, arg("- [ ] todo"))
+        assertEquals(3, arg("- [x] done"))
+        assertEquals(4, arg("> quote"))
+        assertEquals(5, arg("---"))
+        assertEquals(5, arg("* * *"))
+        assertEquals(6, arg("# head"))
+        assertEquals(listOf("done"), kinds("- [x] done", EditKind.CHECKED))
+        assertEquals(listOf("quote"), kinds("> quote", EditKind.QUOTE))
+        assertEquals(listOf("centred"), kinds("{align:center}centred", EditKind.ALIGN))
+        assertEquals(2, EditStyle.ranges("{align:end}x").first { it.kind == EditKind.ALIGN }.arg)
     }
 
     @Test fun colourSizeUnderlineHighlightAndLinks() {

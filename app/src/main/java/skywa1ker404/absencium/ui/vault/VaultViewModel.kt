@@ -160,8 +160,10 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** Adds photos picked in the editor to an existing entry. */
-    fun addPhotos(noteId: Long, uris: List<Uri>) = perform("add the photos") {
+    /** Adds photos to a note. [onAdded] gets the new attachment ids, in order, so the editor can put them on the page. */
+    fun addPhotos(noteId: Long, uris: List<Uri>, onAdded: (List<Long>) -> Unit = {}) = perform("add the photos") {
         var skipped = 0
+        val added = ArrayList<Long>()
         for (uri in uris) {
             val stored = container.attachmentStore.import(uri)
             if (stored == null || !stored.mimeType.startsWith("image/")) {
@@ -169,7 +171,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
                 skipped++
                 continue
             }
-            repository.addAttachment(
+            added += repository.addAttachment(
                 AttachmentEntity(
                     noteId = noteId,
                     kind = AttachmentKind.IMAGE,
@@ -180,10 +182,50 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
                 ),
             )
         }
+        if (added.isNotEmpty()) onAdded(added)
         if (skipped > 0) _message.value = "$skipped ${if (skipped == 1) "file was" else "files were"} not a readable photo."
     }
 
     /** Removes a photo (or other attachment) from an entry and deletes its file. */
+    /** A fresh file for the crop editor to write into. */
+    fun newPictureFile(): java.io.File = container.attachmentStore.newFile("jpg")
+
+    /** Swaps a picture for its edited (cropped, turned) version; the old file is deleted once the new one is recorded. */
+    fun replaceAttachmentFile(attachment: AttachmentEntity, file: java.io.File) = perform("save the edited picture") {
+        repository.updateAttachment(attachment.copy(filePath = file.absolutePath, mimeType = "image/jpeg", sizeBytes = file.length()))
+        withContext(Dispatchers.IO) { container.attachmentStore.delete(attachment.filePath) }
+        ImageTools.forget(attachment.filePath)
+    }
+
+    /**
+     * Saves a doodle as a PNG attachment of the note. A new doodle gets a new attachment; an edited one rewrites its own file.
+     * [onSaved] gets the attachment id.
+     */
+    fun saveDoodle(noteId: Long, existing: AttachmentEntity?, bitmap: android.graphics.Bitmap, onSaved: (Long) -> Unit) = perform("save the doodle") {
+        val id = withContext(Dispatchers.IO) {
+            val file = container.attachmentStore.newFile("png")
+            file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+            if (existing == null) {
+                repository.addAttachment(
+                    AttachmentEntity(
+                        noteId = noteId,
+                        kind = AttachmentKind.SKETCH,
+                        filePath = file.absolutePath,
+                        displayName = "Doodle.png",
+                        mimeType = "image/png",
+                        sizeBytes = file.length(),
+                    ),
+                )
+            } else {
+                repository.updateAttachment(existing.copy(filePath = file.absolutePath, mimeType = "image/png", sizeBytes = file.length()))
+                container.attachmentStore.delete(existing.filePath)
+                ImageTools.forget(existing.filePath)
+                existing.id
+            }
+        }
+        onSaved(id)
+    }
+
     fun deleteAttachment(attachment: AttachmentEntity) = perform("remove the attachment") {
         repository.deleteAttachment(attachment)
         withContext(Dispatchers.IO) { container.attachmentStore.delete(attachment.filePath) }

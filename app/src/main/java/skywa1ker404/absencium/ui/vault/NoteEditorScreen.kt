@@ -10,6 +10,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +29,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
@@ -51,25 +54,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -79,6 +76,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import skywa1ker404.absencium.data.db.AttachmentEntity
 import skywa1ker404.absencium.data.db.AttachmentKind
 import skywa1ker404.absencium.data.db.NoteEntity
 import skywa1ker404.absencium.data.db.NoteStatus
@@ -89,16 +87,19 @@ import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.ScreenScaffold
 import skywa1ker404.absencium.ui.containerViewModel
 import skywa1ker404.absencium.ui.icons.AppIcons
+import skywa1ker404.absencium.ui.vault.entry.PhotoCropDialog
 import skywa1ker404.absencium.ui.vault.entry.PhotoPreviewDialog
 import skywa1ker404.absencium.ui.vault.entry.PhotoThumb
 import skywa1ker404.absencium.ui.vault.markdown.EditHistory
-import skywa1ker404.absencium.ui.vault.markdown.EditKind
-import skywa1ker404.absencium.ui.vault.markdown.EditStyle
 import skywa1ker404.absencium.ui.vault.markdown.Edited
+import skywa1ker404.absencium.ui.vault.markdown.EditKind
+import skywa1ker404.absencium.ui.vault.markdown.EmbedKind
+import skywa1ker404.absencium.ui.vault.markdown.LiveFormat
 import skywa1ker404.absencium.ui.vault.markdown.MarkdownEdit
 import skywa1ker404.absencium.ui.vault.markdown.NoteBlocks
-import skywa1ker404.absencium.ui.vault.markdown.NoteTags
+import skywa1ker404.absencium.ui.vault.markdown.NoteDoc
 import skywa1ker404.absencium.ui.vault.markdown.NoteTemplate
+import skywa1ker404.absencium.ui.vault.markdown.PartKind
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -109,9 +110,10 @@ private const val UNTITLED = "Untitled note"
 private enum class SaveState { SAVED, UNSAVED, SAVING, FAILED }
 
 /**
- * A saved note. It opens as a formatted page; tapping the page starts editing and the check mark in the top bar goes back to
- * the page. A note that was just created opens straight into editing ([startInEdit]). Changes are saved a moment after typing
- * stops, and again when the screen closes.
+ * A saved note. The page is always editable and always shows the note as it will look: headings, lists, colours, pictures,
+ * doodles and tables appear as they are, and the formatting characters stay out of sight. Changes are saved a moment after
+ * typing stops, and again when the screen closes. [startInEdit] is kept for the callers that open a new note; the page is the
+ * same either way.
  */
 @Destination<RootGraph>
 @Composable
@@ -136,52 +138,28 @@ fun NoteEditorScreen(noteId: Long, navigator: DestinationsNavigator, startInEdit
     }
 }
 
-/** The note text as it is drawn while editing: formatting characters dimmed, the text they style shown styled. */
-private fun buildEditText(text: String, marker: Color, link: Color, codeBackground: Color): AnnotatedString = buildAnnotatedString {
-    append(text)
-    for (r in EditStyle.ranges(text)) {
-        if (r.end <= r.start || r.end > text.length) continue
-        val style = when (r.kind) {
-            EditKind.MARKER -> SpanStyle(color = marker)
-            EditKind.BOLD -> SpanStyle(fontWeight = FontWeight.Bold)
-            EditKind.ITALIC -> SpanStyle(fontStyle = FontStyle.Italic)
-            EditKind.STRIKE -> SpanStyle(textDecoration = TextDecoration.LineThrough)
-            EditKind.UNDERLINE -> SpanStyle(textDecoration = TextDecoration.Underline)
-            EditKind.HIGHLIGHT -> SpanStyle(background = Color(0xFFFFE066).copy(alpha = 0.55f))
-            EditKind.COLOR -> SpanStyle(color = Color(0xFF000000.toInt() or r.arg))
-            EditKind.SIZE -> SpanStyle(fontSize = r.arg.sp)
-            EditKind.HEADING -> SpanStyle(
-                fontWeight = FontWeight.Bold,
-                fontSize = when (r.arg) { 1 -> 28.sp; 2 -> 24.sp; 3 -> 20.sp; else -> 18.sp },
-            )
-            EditKind.CODE -> SpanStyle(fontFamily = FontFamily.Monospace, background = codeBackground)
-            EditKind.LINK -> SpanStyle(color = link, textDecoration = TextDecoration.Underline)
-        }
-        addStyle(style, r.start, r.end)
-    }
-}
-
-private fun editTransformation(source: String, styled: AnnotatedString) = VisualTransformation { shown ->
-    if (shown.text == source) TransformedText(styled, OffsetMapping.Identity) else TransformedText(shown, OffsetMapping.Identity)
-}
+private val usedEmbeds = Regex("\\{\\{(?:image|doodle):(\\d{1,18})")
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: DestinationsNavigator, startInEdit: Boolean, message: String?) {
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
-    val focusManager = LocalFocusManager.current
-    val bodyFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
     val titleFocus = remember { FocusRequester() }
+    val focusers = remember(note.id) { HashMap<Int, FocusRequester>() }
+    fun focuserFor(i: Int) = focusers.getOrPut(i) { FocusRequester() }
+
     var title by remember(note.id) { mutableStateOf(note.title) }
-    var body by remember(note.id) { mutableStateOf(TextFieldValue(note.bodyText)) }
-    var tags by remember(note.id) { mutableStateOf(NoteTags.parse(note.tags)) }
+    var text by remember(note.id) { mutableStateOf(note.bodyText) }
+    var selStart by remember(note.id) { mutableIntStateOf(note.bodyText.length) }
+    var selEnd by remember(note.id) { mutableIntStateOf(note.bodyText.length) }
+    var focusPart by remember(note.id) { mutableIntStateOf(-1) }
+    var focusValue by remember(note.id) { mutableStateOf(TextFieldValue("")) }
     var savedTitle by remember(note.id) { mutableStateOf(note.title) }
     var savedBody by remember(note.id) { mutableStateOf(note.bodyText) }
-    var savedTags by remember(note.id) { mutableStateOf(NoteTags.join(NoteTags.parse(note.tags))) }
     var saveState by remember(note.id) { mutableStateOf(SaveState.SAVED) }
     var status by remember(note.id) { mutableStateOf(note.status) }
-    var editing by remember(note.id) { mutableStateOf(startInEdit || note.bodyText.isBlank()) }
     var panel by remember(note.id) { mutableStateOf(EditorPanel.NONE) }
     var lastPanel by remember { mutableStateOf(EditorPanel.TEXT) }
     var menuOpen by remember { mutableStateOf(false) }
@@ -196,25 +174,22 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
     var historyVersion by remember(note.id) { mutableIntStateOf(0) }
 
     val latestTitle by rememberUpdatedState(title)
-    val latestBody by rememberUpdatedState(body.text)
-    val latestTags by rememberUpdatedState(NoteTags.join(tags))
+    val latestBody by rememberUpdatedState(text)
     val latestStatus by rememberUpdatedState(status)
 
     fun cleanTitle(value: String) = value.trim().ifEmpty { UNTITLED }
 
-    fun isDirty() = title != savedTitle || body.text != savedBody || NoteTags.join(tags) != savedTags
+    fun isDirty() = title != savedTitle || text != savedBody
 
     /** Writes what is on screen now. The save runs to the end even if the screen moves on, and the state says what happened. */
     suspend fun saveNow() {
         val t = title
-        val b = body.text
-        val g = NoteTags.join(tags)
+        val b = text
         saveState = SaveState.SAVING
-        val id = withContext(NonCancellable) { viewModel.saveNote(note.id, note.subjectId, cleanTitle(t), b, status, g) }
+        val id = withContext(NonCancellable) { viewModel.saveNote(note.id, note.subjectId, cleanTitle(t), b, status, note.tags) }
         if (id != null) {
             savedTitle = t
             savedBody = b
-            savedTags = g
             // Typing may have continued during the save; then it is not saved yet, and the next pass writes it.
             saveState = if (isDirty()) SaveState.UNSAVED else SaveState.SAVED
         } else {
@@ -222,7 +197,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         }
     }
 
-    LaunchedEffect(title, body.text, tags) {
+    LaunchedEffect(title, text) {
         if (isDirty()) {
             saveState = SaveState.UNSAVED
             delay(600)
@@ -231,63 +206,81 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
     }
     DisposableEffect(note.id) {
         onDispose {
-            val dirty = latestTitle != savedTitle || latestBody != savedBody || latestTags != savedTags
+            val dirty = latestTitle != savedTitle || latestBody != savedBody
             if (!skipFlush && dirty) {
-                viewModel.saveInBackground(note.id, note.subjectId, cleanTitle(latestTitle), latestBody, latestStatus, latestTags)
+                viewModel.saveInBackground(note.id, note.subjectId, cleanTitle(latestTitle), latestBody, latestStatus, note.tags)
             }
         }
     }
 
     val vault by viewModel.data.collectAsStateWithLifecycle()
     val otherNotes = remember(vault, note.id) { vault?.notes.orEmpty().filter { it.id != note.id } }
+    val attachments = vault?.attachmentsOf(note.id).orEmpty()
 
-    // Typing records history (bursts merge); a toolbar action always starts a new step.
-    fun change(next: TextFieldValue, force: Boolean = false) {
-        if (next.text != body.text) {
-            history.record(Edited(body.text, body.selection.min, body.selection.max), System.currentTimeMillis(), force)
-            historyVersion++
-        }
-        body = next
+    val parts = remember(text) { NoteDoc.split(text) }
+
+    /** Puts the cursor (and the keyboard focus target) in the text part that holds [start]; the fields redraw from [text]. */
+    fun refocus(next: String, start: Int, end: Int) {
+        val ps = NoteDoc.split(next)
+        val i = NoteDoc.nearestText(ps, NoteDoc.partIndexAt(ps, start))
+        val p = ps[i]
+        val shift = if (p.synthetic) 1 else 0
+        val ls = (start - p.start - shift).coerceIn(0, p.text.length)
+        val le = (end - p.start - shift).coerceIn(ls, p.text.length)
+        focusPart = i
+        focusValue = TextFieldValue(p.text, TextRange(ls, le))
     }
 
-    fun apply(edit: Edited) = change(TextFieldValue(edit.text, TextRange(edit.start, edit.end)), force = true)
+    /** Replaces the note text. Typing records history (bursts merge); a toolbar action always starts a new step. */
+    fun commit(next: String, start: Int = selStart, end: Int = selEnd, force: Boolean = true) {
+        if (next != text) {
+            history.record(Edited(text, selStart, selEnd), System.currentTimeMillis(), force)
+            historyVersion++
+        }
+        text = next
+        selStart = start.coerceIn(0, next.length)
+        selEnd = end.coerceIn(selStart, next.length)
+        refocus(next, selStart, selEnd)
+    }
+
+    fun apply(edit: Edited) = commit(edit.text, edit.start, edit.end, force = true)
 
     fun undo() {
-        history.undo(Edited(body.text, body.selection.min, body.selection.max))?.let {
-            body = TextFieldValue(it.text, TextRange(it.start, it.end))
+        history.undo(Edited(text, selStart, selEnd))?.let {
+            text = it.text
+            selStart = it.start.coerceIn(0, it.text.length)
+            selEnd = it.end.coerceIn(selStart, it.text.length)
+            refocus(text, selStart, selEnd)
             historyVersion++
         }
     }
 
     fun redo() {
-        history.redo(Edited(body.text, body.selection.min, body.selection.max))?.let {
-            body = TextFieldValue(it.text, TextRange(it.start, it.end))
+        history.redo(Edited(text, selStart, selEnd))?.let {
+            text = it.text
+            selStart = it.start.coerceIn(0, it.text.length)
+            selEnd = it.end.coerceIn(selStart, it.text.length)
+            refocus(text, selStart, selEnd)
             historyVersion++
         }
     }
 
-    fun enterEdit() {
-        if (!editing) {
-            body = body.copy(selection = TextRange(body.text.length))
-            editing = true
-        }
+    fun hideKeyboard() {
+        keyboard?.hide()
     }
 
-    fun leaveEdit() {
-        panel = EditorPanel.NONE
-        editing = false
-    }
-
-    LaunchedEffect(editing) {
-        if (editing) {
-            delay(60)
-            runCatching { bodyFocus.requestFocus() }
-        } else {
-            focusManager.clearFocus()
+    LaunchedEffect(note.id) {
+        // A new, empty note opens with the cursor ready; an older one opens as a page to read.
+        if (startInEdit || note.bodyText.isBlank()) {
+            delay(80)
+            val ps = NoteDoc.split(text)
+            val i = if (note.bodyText.isBlank()) 0 else NoteDoc.nearestText(ps, ps.lastIndex)
+            refocus(text, ps[i].end, ps[i].end)
+            runCatching { focuserFor(i).requestFocus() }
         }
     }
     if (panel != EditorPanel.NONE) lastPanel = panel
-    BackHandler(enabled = editing && panel != EditorPanel.NONE) { panel = EditorPanel.NONE }
+    BackHandler(enabled = panel != EditorPanel.NONE) { panel = EditorPanel.NONE }
 
     fun openLink(linkTitle: String) {
         val target = otherNotes.firstOrNull { it.title.trim().equals(linkTitle.trim(), ignoreCase = true) }
@@ -300,31 +293,42 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
     }
 
     fun insertTemplate(template: NoteTemplate) {
-        val text = body.text
         if (text.isBlank()) {
             apply(Edited(template.body, template.body.length, template.body.length))
         } else {
-            val at = body.selection.max
+            val at = selEnd
             val lead = if (at == 0 || text[at - 1] == '\n') "" else "\n"
             apply(MarkdownEdit.insert(text, at, at, lead + template.body))
         }
     }
 
-    val photos = vault?.attachmentsOf(note.id).orEmpty().filter { it.kind == AttachmentKind.IMAGE }
-    var previewIndex by remember { mutableStateOf<Int?>(null) }
+    /** Puts [token] lines on the page at the cursor. */
+    fun insertBlock(token: String) = apply(NoteBlocks.insertEmbed(text, selEnd, token))
+
+    var viewing by remember { mutableStateOf<AttachmentEntity?>(null) }
+    var cropping by remember { mutableStateOf<AttachmentEntity?>(null) }
+    var doodling by remember { mutableStateOf(false) }
+    var doodleTarget by remember { mutableStateOf<AttachmentEntity?>(null) }
+    var tableStart by remember { mutableStateOf<Int?>(null) }
+
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-        viewModel.addPhotos(note.id, uris)
+        if (uris.isNotEmpty()) {
+            viewModel.addPhotos(note.id, uris) { ids ->
+                insertBlock(ids.joinToString("\n") { NoteBlocks.token(EmbedKind.IMAGE, it, 100) })
+            }
+        }
     }
 
     val saveText = when (saveState) {
         SaveState.SAVED -> "Saved"
-        SaveState.UNSAVED -> "Not saved yet…"
+        SaveState.UNSAVED -> "Not saved yet"
         SaveState.SAVING -> "Saving…"
-        SaveState.FAILED -> "Could not save. Your text is still here. Tap to try again."
+        SaveState.FAILED -> "Could not save. Tap to try again"
     }
     val dateText = remember(note.createdDate) {
         DateTimeFormatter.ofPattern("d MMM yyyy").format(Instant.ofEpochMilli(note.createdDate).atZone(ZoneId.systemDefault()))
     }
+    val palette = LivePalette(accent = colors.primary, muted = colors.onSurfaceVariant, codeBackground = colors.surfaceContainerHighest)
 
     ScreenScaffold(
         title = "Note",
@@ -343,90 +347,88 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                         ),
                     )
                     .statusBarsPadding()
-                    .height(56.dp)
+                    .height(48.dp)
                     .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = { navigator.navigateUp() }) { Icon(AppIcons.ArrowBack, contentDescription = "Back") }
                 Spacer(modifier = Modifier.weight(1f))
-                if (editing) {
-                    IconButton(onClick = { undo() }, enabled = history.canUndo) { Icon(AppIcons.Undo, contentDescription = "Undo") }
-                    IconButton(onClick = { redo() }, enabled = history.canRedo) { Icon(AppIcons.Redo, contentDescription = "Redo") }
-                    IconButton(onClick = { leaveEdit() }) { Icon(AppIcons.Check, contentDescription = "Done editing") }
-                } else {
-                    Box {
-                        IconButton(onClick = { menuOpen = true }) { Icon(AppIcons.MoreVert, contentDescription = "More") }
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(text = { Text("Notes info") }, onClick = { menuOpen = false; showInfo = true })
-                            DropdownMenuItem(text = { Text("Add photos") }, onClick = { menuOpen = false; photoPicker.launch("image/*") })
-                            DropdownMenuItem(text = { Text("Share or export") }, onClick = { menuOpen = false; showShare = true })
-                            DropdownMenuItem(
-                                text = { Text(if (status == NoteStatus.FINISHED) "Reopen" else "Mark as finished") },
-                                onClick = {
-                                    menuOpen = false
-                                    skipFlush = true
-                                    val next = if (status == NoteStatus.FINISHED) NoteStatus.ACTIVE else NoteStatus.FINISHED
-                                    scope.launch {
-                                        // Finished notes move to the subject's Finished / Written Notes archive.
-                                        viewModel.saveNote(note.id, note.subjectId, cleanTitle(title), body.text, next, NoteTags.join(tags))
-                                        navigator.navigateUp()
-                                    }
-                                },
-                            )
-                            DropdownMenuItem(text = { Text("Delete") }, onClick = { menuOpen = false; confirmDelete = true })
-                        }
+                IconButton(onClick = { undo() }, enabled = history.canUndo) { Icon(AppIcons.Undo, contentDescription = "Undo") }
+                IconButton(onClick = { redo() }, enabled = history.canRedo) { Icon(AppIcons.Redo, contentDescription = "Redo") }
+                Box {
+                    IconButton(onClick = { menuOpen = true }) { Icon(AppIcons.MoreVert, contentDescription = "More") }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(text = { Text("Notes info") }, onClick = { menuOpen = false; showInfo = true })
+                        DropdownMenuItem(text = { Text("Share or export") }, onClick = { menuOpen = false; showShare = true })
+                        DropdownMenuItem(
+                            text = { Text(if (status == NoteStatus.FINISHED) "Reopen" else "Mark as finished") },
+                            onClick = {
+                                menuOpen = false
+                                skipFlush = true
+                                val next = if (status == NoteStatus.FINISHED) NoteStatus.ACTIVE else NoteStatus.FINISHED
+                                scope.launch {
+                                    // Finished notes move to the subject's Finished / Written Notes archive.
+                                    viewModel.saveNote(note.id, note.subjectId, cleanTitle(title), text, next, note.tags)
+                                    navigator.navigateUp()
+                                }
+                            },
+                        )
+                        DropdownMenuItem(text = { Text("Delete") }, onClick = { menuOpen = false; confirmDelete = true })
                     }
                 }
             }
         },
         bottomBar = {
-            if (editing) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .imePadding()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                AnimatedVisibility(
+                    visible = panel != EditorPanel.NONE,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
                 ) {
-                    AnimatedVisibility(
-                        visible = panel != EditorPanel.NONE,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically(),
-                    ) {
-                        val s = body.selection.min
-                        val e = body.selection.max
-                        when (lastPanel) {
-                            EditorPanel.TEXT, EditorPanel.NONE -> TextPanel(
-                                onWrap = { marker, placeholder -> apply(MarkdownEdit.toggleWrap(body.text, s, e, marker, placeholder)) },
-                                onHeading = { apply(MarkdownEdit.heading(body.text, s, e, it)) },
-                                onColor = { apply(MarkdownEdit.setColor(body.text, s, e, it)) },
-                                onSize = { apply(MarkdownEdit.setSize(body.text, s, e, it)) },
-                                onInsert = { apply(MarkdownEdit.insert(body.text, s, e, it)) },
-                                onDivider = { apply(NoteBlocks.insertEmbed(body.text, e, it)) },
-                                onTemplate = { insertTemplate(it) },
-                            )
-                            EditorPanel.LISTS -> ListsPanel(
-                                onAlign = { apply(MarkdownEdit.setAlign(body.text, s, e, it)) },
-                                onBullet = { apply(MarkdownEdit.bullet(body.text, s, e)) },
-                                onNumbered = { apply(MarkdownEdit.numbered(body.text, s, e)) },
-                                onLettered = { apply(MarkdownEdit.lettered(body.text, s, e)) },
-                                onQuote = { apply(MarkdownEdit.quote(body.text, s, e)) },
-                            )
-                            EditorPanel.ADD -> AddPanel(
-                                onTable = { panel = EditorPanel.NONE; apply(NoteBlocks.insertEmbed(body.text, e, NoteBlocks.newTable(3, 3))) },
-                                onLinkNote = { panel = EditorPanel.NONE; showLinkPicker = true },
-                                onCodeBlock = { panel = EditorPanel.NONE; apply(MarkdownEdit.codeBlock(body.text, s, e)) },
-                            )
-                        }
+                    val s = selStart
+                    val e = selEnd
+                    when (lastPanel) {
+                        EditorPanel.TEXT, EditorPanel.NONE -> TextPanel(
+                            onWrap = { marker, placeholder -> apply(MarkdownEdit.toggleWrap(text, s, e, marker, placeholder)) },
+                            onHeading = { apply(MarkdownEdit.heading(text, s, e, it)) },
+                            onColor = { apply(MarkdownEdit.setColor(text, s, e, it)) },
+                            onSize = { apply(MarkdownEdit.setSize(text, s, e, it)) },
+                            onInsert = { apply(MarkdownEdit.insert(text, s, e, it)) },
+                            onDivider = { apply(NoteBlocks.insertEmbed(text, e, it)) },
+                            onTemplate = { insertTemplate(it) },
+                            onUse = ::hideKeyboard,
+                        )
+                        EditorPanel.LISTS -> ListsPanel(
+                            onAlign = { apply(MarkdownEdit.setAlign(text, s, e, it)) },
+                            onBullet = { apply(MarkdownEdit.bullet(text, s, e)) },
+                            onNumbered = { apply(MarkdownEdit.numbered(text, s, e)) },
+                            onLettered = { apply(MarkdownEdit.lettered(text, s, e)) },
+                            onQuote = { apply(MarkdownEdit.quote(text, s, e)) },
+                            onUse = ::hideKeyboard,
+                        )
+                        EditorPanel.ADD -> AddPanel(
+                            onTable = { panel = EditorPanel.NONE; insertBlock(NoteBlocks.newTable(3, 3)) },
+                            onDoodle = { panel = EditorPanel.NONE; doodleTarget = null; doodling = true },
+                            onLinkNote = { panel = EditorPanel.NONE; showLinkPicker = true },
+                            onCodeBlock = { panel = EditorPanel.NONE; apply(MarkdownEdit.codeBlock(text, s, e)) },
+                            onUse = ::hideKeyboard,
+                        )
                     }
-                    EditorToolbar(
-                        panel = panel,
-                        onPanel = { panel = it },
-                        onCheck = { apply(MarkdownEdit.checklist(body.text, body.selection.min, body.selection.max)) },
-                        onImage = { photoPicker.launch("image/*") },
-                    )
                 }
+                EditorToolbar(
+                    panel = panel,
+                    onPanel = { panel = it },
+                    onCheck = { apply(MarkdownEdit.checklist(text, selStart, selEnd)) },
+                    onImage = { photoPicker.launch("image/*") },
+                    onUse = ::hideKeyboard,
+                )
             }
         },
     ) {
@@ -436,91 +438,146 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
             }
         }
 
-        // Title: a text field while editing, plain text on the page.
-        if (editing) {
-            BasicTextField(
-                value = title,
-                onValueChange = { title = it },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.headlineMedium.copy(color = colors.onSurface, fontWeight = FontWeight.Bold),
-                cursorBrush = SolidColor(colors.primary),
-                modifier = Modifier.fillMaxWidth().focusRequester(titleFocus),
-                decorationBox = { inner ->
-                    Box {
-                        if (title.isEmpty()) Text("Title", style = MaterialTheme.typography.headlineMedium, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
-                        inner()
-                    }
-                },
-            )
-        } else {
-            Text(
-                text = title.ifBlank { UNTITLED },
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (title.isBlank()) colors.onSurfaceVariant else colors.onSurface,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { enterEdit() },
-            )
-        }
+        BasicTextField(
+            value = title,
+            onValueChange = { title = it.replace("\n", " ") },
+            singleLine = true,
+            textStyle = MaterialTheme.typography.titleLarge.copy(color = colors.onSurface, fontWeight = FontWeight.Bold),
+            cursorBrush = SolidColor(colors.primary),
+            modifier = Modifier.fillMaxWidth().focusRequester(titleFocus),
+            decorationBox = { inner ->
+                Box {
+                    if (title.isEmpty()) Text("Title", style = MaterialTheme.typography.titleLarge, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
+                    inner()
+                }
+            },
+        )
 
-        // Date, size and where the note belongs (a syllabus topic once the syllabus exists), and the save state.
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "$dateText  |  ${"%,d".format(body.text.length)} characters  |  Uncategorized",
-                style = MaterialTheme.typography.labelLarge,
-                color = colors.onSurfaceVariant,
-            )
-        }
+        // Date, size, where the note belongs, and the save state, in one small line.
         Text(
-            text = saveText,
-            style = MaterialTheme.typography.labelMedium,
+            text = "$dateText  |  ${"%,d".format(text.length)} characters  |  Uncategorized  |  $saveText",
+            style = MaterialTheme.typography.labelSmall,
             color = if (saveState == SaveState.FAILED) colors.error else colors.onSurfaceVariant,
             modifier = if (saveState == SaveState.FAILED) Modifier.clickable { scope.launch { saveNow() } } else Modifier,
         )
 
-        TagEditor(
-            tags = tags,
-            otherNotesTags = otherNotes.map { it.tags },
-            onChange = { tags = it },
-        )
-
-        if (editing) {
-            val marker = colors.onSurfaceVariant.copy(alpha = 0.45f)
-            val link = colors.primary
-            val codeBackground = colors.surfaceContainerHighest
-            val source = body.text
-            val styled = remember(source, marker, link, codeBackground) { buildEditText(source, marker, link, codeBackground) }
-            val transformation = remember(source, styled) { editTransformation(source, styled) }
-            BasicTextField(
-                value = body,
-                onValueChange = { change(it) },
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface, lineHeight = TextUnit.Unspecified),
-                cursorBrush = SolidColor(colors.primary),
-                visualTransformation = transformation,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 320.dp).focusRequester(bodyFocus),
-                decorationBox = { inner ->
-                    Box {
-                        if (body.text.isEmpty()) Text("Start writing…", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
-                        inner()
+        // The page: text parts are live text fields, pictures, doodles and tables are blocks between them.
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            parts.forEachIndexed { i, part ->
+                when (part.kind) {
+                    PartKind.TEXT -> {
+                        val plan = remember(part.text) { LiveFormat.plan(part.text) }
+                        val styled = remember(plan, palette.accent, palette.muted, palette.codeBackground) { buildLiveText(plan, palette) }
+                        val transformation = remember(plan, styled) { liveTransformation(plan, styled) }
+                        var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+                        val value = if (i == focusPart && focusValue.text == part.text) focusValue else TextFieldValue(part.text)
+                        BasicTextField(
+                            value = value,
+                            onValueChange = { nv ->
+                                if (nv.text != part.text) {
+                                    val next = NoteDoc.replacePart(text, parts, i, nv.text)
+                                    history.record(Edited(text, selStart, selEnd), System.currentTimeMillis(), false)
+                                    historyVersion++
+                                    text = next
+                                }
+                                focusPart = i
+                                focusValue = nv
+                                selStart = NoteDoc.globalOffset(parts, i, nv.selection.min)
+                                selEnd = NoteDoc.globalOffset(parts, i, nv.selection.max)
+                            },
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface, lineHeight = TextUnit.Unspecified),
+                            cursorBrush = SolidColor(colors.primary),
+                            visualTransformation = transformation,
+                            onTextLayout = { layout = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = if (parts.size == 1) 240.dp else 24.dp)
+                                .focusRequester(focuserFor(i))
+                                .onFocusChanged {
+                                    if (it.isFocused && focusPart != i) {
+                                        focusPart = i
+                                        focusValue = TextFieldValue(part.text, TextRange(0))
+                                        selStart = NoteDoc.globalOffset(parts, i, 0)
+                                        selEnd = selStart
+                                    }
+                                }
+                                .pointerInput(plan) {
+                                    // A tap on a check box flips it; a tap on a [[link]] opens that note. Everything else is left to the field.
+                                    awaitEachGesture {
+                                        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                                        val up = waitForUpOrCancellation(PointerEventPass.Initial) ?: return@awaitEachGesture
+                                        if (up.uptimeMillis - down.uptimeMillis > 350) return@awaitEachGesture
+                                        val result = layout ?: return@awaitEachGesture
+                                        val at = result.getOffsetForPosition(up.position).coerceIn(0, plan.visible.length)
+                                        val check = plan.styles.firstOrNull { it.kind == EditKind.MARKER && (it.arg == 2 || it.arg == 3) && at >= it.start && at < it.end }
+                                        if (check != null) {
+                                            val line = plan.visible.substring(0, at).count { it == '\n' }
+                                            commit(NoteDoc.replacePart(text, parts, i, MarkdownEdit.toggleCheckboxLine(part.text, line)), selStart, selEnd, force = true)
+                                            return@awaitEachGesture
+                                        }
+                                        val link = plan.styles.firstOrNull { it.kind == EditKind.LINK && at > it.start && at < it.end }
+                                        if (link != null) openLink(plan.visible.substring(link.start, link.end))
+                                    }
+                                },
+                            decorationBox = { inner ->
+                                Box {
+                                    if (text.isEmpty() && i == 0) Text("Start writing…", style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
+                                    inner()
+                                }
+                            },
+                        )
                     }
-                },
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 320.dp)
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { enterEdit() },
-            ) {
-                MarkdownPreview(
-                    text = body.text,
-                    onToggleCheck = { line -> body = body.copy(text = MarkdownEdit.toggleCheckboxLine(body.text, line)) },
-                    onOpenLink = { openLink(it) },
-                )
+
+                    PartKind.EMBED -> {
+                        val ref = EmbedRef.parse(part.text)
+                        if (ref != null) {
+                            val attachment = attachments.firstOrNull { it.id == ref.id }
+                            EmbedBlock(
+                                ref = ref,
+                                attachment = attachment,
+                                version = 0,
+                                actions = EmbedActions(
+                                    onResize = { w, a -> commit(NoteBlocks.resize(text, part.line, w, a)) },
+                                    onMove = { d -> commit(NoteBlocks.move(text, part.line, d).first) },
+                                    onRemove = { commit(NoteBlocks.remove(text, part.line)) },
+                                    onView = { viewing = attachment },
+                                    onCrop = { cropping = attachment },
+                                    onDraw = { doodleTarget = attachment; doodling = true },
+                                ),
+                            )
+                        }
+                    }
+
+                    PartKind.TABLE -> TableBlock(part.text) { tableStart = part.start }
+                }
+                // Between two blocks there is no line to type on; a thin strip adds one.
+                val next = parts.getOrNull(i + 1)
+                if (part.kind != PartKind.TEXT && next != null && next.kind != PartKind.TEXT) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(18.dp)
+                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                                commit(text.substring(0, part.end) + "\n" + text.substring(part.end), part.end + 1, part.end + 1)
+                            },
+                    )
+                }
             }
-            linkProblem?.let { HintText(it) }
         }
+        linkProblem?.let { HintText(it) }
+
+        // Tapping the empty space under the page puts the cursor at the end.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 96.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                    val ps = NoteDoc.split(text)
+                    val i = NoteDoc.nearestText(ps, ps.lastIndex)
+                    refocus(text, ps[i].end + if (ps[i].synthetic) 1 else 0, ps[i].end + if (ps[i].synthetic) 1 else 0)
+                    runCatching { focuserFor(i).requestFocus() }
+                },
+        )
 
         // Notes that link here.
         val mentionedIn = remember(otherNotes, note.title) {
@@ -539,27 +596,75 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
             }
         }
 
-        if (photos.isNotEmpty()) {
-            Text("Photos", style = MaterialTheme.typography.titleMedium)
+        // Photos that belong to the note but are not on the page (for example those added when the note was made).
+        val onPage = remember(text) { usedEmbeds.findAll(text).mapNotNull { it.groupValues[1].toLongOrNull() }.toSet() }
+        val loose = attachments.filter { (it.kind == AttachmentKind.IMAGE || it.kind == AttachmentKind.SKETCH) && it.id !in onPage }
+        if (loose.isNotEmpty()) {
+            Text("Not on the page yet. Tap a picture to put it at the cursor.", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                itemsIndexed(photos, key = { _, p -> p.id }) { index, photo ->
+                items(loose, key = { it.id }) { photo ->
                     PhotoThumb(
                         path = photo.filePath,
-                        onClick = { previewIndex = index },
+                        onClick = {
+                            val kind = if (photo.kind == AttachmentKind.SKETCH) EmbedKind.DOODLE else EmbedKind.IMAGE
+                            insertBlock(NoteBlocks.token(kind, photo.id, 100))
+                        },
                         onRemove = { viewModel.deleteAttachment(photo) },
                     )
                 }
             }
         }
-        // Room for the toolbar and keyboard so the last line is never hidden behind them.
-        if (editing) Spacer(modifier = Modifier.height(24.dp))
 
-        previewIndex?.let { index ->
-            PhotoPreviewDialog(
-                paths = photos.map { it.filePath },
-                startIndex = index.coerceIn(0, (photos.size - 1).coerceAtLeast(0)),
-                onBack = { previewIndex = null },
+        viewing?.let { a ->
+            PhotoPreviewDialog(paths = listOf(a.filePath), startIndex = 0, onBack = { viewing = null })
+        }
+
+        cropping?.let { a ->
+            PhotoCropDialog(
+                path = a.filePath,
+                newFile = viewModel::newPictureFile,
+                onCancel = { cropping = null },
+                onDone = { file ->
+                    viewModel.replaceAttachmentFile(a, file)
+                    cropping = null
+                },
             )
+        }
+
+        if (doodling) {
+            val target = doodleTarget
+            DoodleDialog(
+                existingPath = target?.filePath,
+                onCancel = { doodling = false; doodleTarget = null },
+                onDone = { bitmap ->
+                    doodling = false
+                    doodleTarget = null
+                    viewModel.saveDoodle(note.id, target, bitmap) { id ->
+                        if (target == null) insertBlock(NoteBlocks.token(EmbedKind.DOODLE, id, 100))
+                    }
+                },
+            )
+        }
+
+        tableStart?.let { start ->
+            val part = parts.firstOrNull { it.kind == PartKind.TABLE && it.start == start }
+            if (part == null) {
+                tableStart = null
+            } else {
+                TableEditorDialog(
+                    text = part.text,
+                    onCancel = { tableStart = null },
+                    onDone = { built ->
+                        tableStart = null
+                        commit(text.substring(0, part.start) + built + text.substring(part.end))
+                    },
+                    onDeleteTable = {
+                        tableStart = null
+                        val cut = (part.end + 1).coerceAtMost(text.length)
+                        commit(text.substring(0, part.start) + text.substring(cut))
+                    },
+                )
+            }
         }
 
         ShareHost(viewModel)
@@ -569,7 +674,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                 onPick = { format ->
                     showShare = false
                     // What is on screen, even if the automatic save has not run yet.
-                    val current = note.copy(title = cleanTitle(title), bodyText = body.text, tags = NoteTags.join(tags))
+                    val current = note.copy(title = cleanTitle(title), bodyText = text)
                     viewModel.share(listOf(current), format)
                 },
                 onDismiss = { showShare = false },
@@ -581,7 +686,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                 notes = otherNotes,
                 onPick = { picked ->
                     showLinkPicker = false
-                    apply(MarkdownEdit.insert(body.text, body.selection.min, body.selection.max, "[[$picked]]"))
+                    apply(MarkdownEdit.insert(text, selStart, selEnd, "[[$picked]]"))
                 },
                 onDismiss = { showLinkPicker = false },
             )
@@ -589,7 +694,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
 
         if (showInfo) {
             val subjectName = vault?.subjects.orEmpty().firstOrNull { it.id == note.subjectId }?.name ?: "Unknown"
-            val words = body.text.split(Regex("\\s+")).count { it.isNotEmpty() }
+            val words = text.split(Regex("\\s+")).count { it.isNotEmpty() }
             val edited = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm").format(Instant.ofEpochMilli(maxOf(note.updatedAt, note.createdDate)).atZone(ZoneId.systemDefault()))
             AlertDialog(
                 onDismissRequest = { showInfo = false },
@@ -601,11 +706,10 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                         InfoLine("Category", "Uncategorized")
                         InfoLine("Created", dateText)
                         InfoLine("Last edited", edited)
-                        InfoLine("Characters", "%,d".format(body.text.length))
+                        InfoLine("Characters", "%,d".format(text.length))
                         InfoLine("Words", "%,d".format(words))
                         InfoLine("Status", status.name.lowercase().replaceFirstChar { it.uppercase() })
-                        InfoLine("Tags", if (tags.isEmpty()) "None" else tags.joinToString(", ") { "#$it" })
-                        InfoLine("Photos", photos.size.toString())
+                        InfoLine("Pictures", attachments.count { it.kind == AttachmentKind.IMAGE || it.kind == AttachmentKind.SKETCH }.toString())
                     }
                 },
                 confirmButton = { TextButton(onClick = { showInfo = false }) { Text("Close") } },
@@ -616,7 +720,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
             AlertDialog(
                 onDismissRequest = { confirmDelete = false },
                 title = { Text("Delete this note?") },
-                text = { Text("${cleanTitle(title)} moves to the Trash. You can restore it from Settings, Trash, for 30 days.") },
+                text = { Text("${cleanTitle(title)} moves to the Trash in the Vault. You can restore it from there for 30 days.") },
                 confirmButton = {
                     TextButton(onClick = {
                         skipFlush = true

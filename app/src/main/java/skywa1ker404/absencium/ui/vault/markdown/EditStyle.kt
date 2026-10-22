@@ -1,9 +1,13 @@
 package skywa1ker404.absencium.ui.vault.markdown
 
 /** How a stretch of the note is drawn while it is being edited. The text itself is never changed, only coloured and sized. */
-enum class EditKind { MARKER, BOLD, ITALIC, STRIKE, UNDERLINE, HIGHLIGHT, COLOR, SIZE, HEADING, CODE, LINK }
+enum class EditKind { MARKER, BOLD, ITALIC, STRIKE, UNDERLINE, HIGHLIGHT, COLOR, SIZE, HEADING, CODE, LINK, ALIGN, CHECKED, QUOTE }
 
-/** [arg] is the heading level, the colour (0xRRGGBB) or the size in sp, depending on [kind]. [end] is exclusive. */
+/**
+ * [arg] depends on [kind]: the heading level, the colour (0xRRGGBB), the size in sp, the alignment (1 centre, 2 end), or for a
+ * [EditKind.MARKER] what the marker turns into on the live page: 0 nothing (hidden), 1 a bullet, 2 an empty check box, 3 a
+ * ticked check box, 4 a quote bar, 5 a divider line, 6 nothing but at the start of a line (a heading or alignment tag). [end] is exclusive.
+ */
 data class EditRange(val start: Int, val end: Int, val kind: EditKind, val arg: Int = 0)
 
 /**
@@ -45,26 +49,61 @@ object EditStyle {
         return out
     }
 
+    /** Three or more of the same `-`, `*` or `_`, spaces allowed between. A loop, so a very long line cannot overflow the stack. */
+    private fun isRule(text: String, from: Int, to: Int): Boolean {
+        var mark = ' '
+        var count = 0
+        for (i in from until to) {
+            val ch = text[i]
+            if (ch.isWhitespace()) continue
+            if (ch != '-' && ch != '*' && ch != '_') return false
+            if (mark == ' ') mark = ch else if (ch != mark) return false
+            count++
+        }
+        return count >= 3
+    }
+
     private fun styleLine(text: String, from: Int, to: Int, out: MutableList<EditRange>) {
         var bodyStart = from
         if (text.startsWith("{align:", from)) {
             val close = text.indexOf('}', from)
             if (close in from until to) {
-                out += EditRange(from, close + 1, EditKind.MARKER)
+                val name = text.substring(from + 7, close)
+                out += EditRange(from, close + 1, EditKind.MARKER, 6)
                 bodyStart = close + 1
+                if (name == "center" || name == "end") out += EditRange(bodyStart, to, EditKind.ALIGN, if (name == "center") 1 else 2)
             }
+        }
+        if (isRule(text, bodyStart, to)) {
+            out += EditRange(bodyStart, to, EditKind.MARKER, 5)
+            return
         }
         var level = 0
         while (bodyStart + level < to && level < 6 && text[bodyStart + level] == '#') level++
         if (level in 1..6 && bodyStart + level < to && text[bodyStart + level] == ' ') {
-            out += EditRange(bodyStart, bodyStart + level + 1, EditKind.MARKER)
+            out += EditRange(bodyStart, bodyStart + level + 1, EditKind.MARKER, 6)
             out += EditRange(bodyStart + level + 1, to, EditKind.HEADING, level)
         } else {
             val m = listPrefix.find(text.substring(bodyStart, minOf(to, bodyStart + 24)))
-            if (m != null) out += EditRange(bodyStart, bodyStart + m.value.length, EditKind.MARKER)
-        }
-        if (text.substring(bodyStart, minOf(to, bodyStart + 16)).trimStart().startsWith("|")) {
-            for (i in bodyStart until to) if (text[i] == '|') out += EditRange(i, i + 1, EditKind.MARKER)
+            if (m != null) {
+                val prefix = m.value.trimStart()
+                val markerStart = bodyStart + (m.value.length - prefix.length)
+                val markerEnd = bodyStart + m.value.length
+                when {
+                    prefix.startsWith("- [ ]") || prefix.startsWith("* [ ]") || prefix.startsWith("+ [ ]") ->
+                        out += EditRange(markerStart, markerEnd, EditKind.MARKER, 2)
+                    prefix.length > 4 && prefix[1] == ' ' && prefix[2] == '[' && prefix[4] == ']' -> {
+                        out += EditRange(markerStart, markerEnd, EditKind.MARKER, 3)
+                        out += EditRange(markerEnd, to, EditKind.CHECKED)
+                    }
+                    prefix.startsWith(">") -> {
+                        out += EditRange(markerStart, markerEnd, EditKind.MARKER, 4)
+                        out += EditRange(markerEnd, to, EditKind.QUOTE)
+                    }
+                    prefix[0] == '-' || prefix[0] == '*' || prefix[0] == '+' -> out += EditRange(markerStart, markerEnd, EditKind.MARKER, 1)
+                    // Numbers and letters stay visible as typed.
+                }
+            }
         }
         inline(text, bodyStart, to, out)
     }

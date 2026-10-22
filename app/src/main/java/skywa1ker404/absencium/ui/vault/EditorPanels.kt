@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.vault
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,10 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import skywa1ker404.absencium.ui.components.ExpressiveChip
+import androidx.compose.ui.unit.sp
 import skywa1ker404.absencium.ui.components.floatingGlass
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.theme.LocalBackdrop
@@ -44,17 +46,17 @@ import skywa1ker404.absencium.ui.vault.markdown.NoteTemplates
 /** Which panel is open above the editor's bottom toolbar. */
 enum class EditorPanel { NONE, TEXT, LISTS, ADD }
 
-private enum class TextTab(val label: String) {
-    STYLE("Text style"),
-    SYMBOL("Symbol"),
-    DIVIDER("Divider"),
-    TEMPLATES("Templates"),
+private enum class TextTab(val icon: () -> ImageVector, val description: String) {
+    STYLE({ AppIcons.FormatSize }, "Text style"),
+    SYMBOL({ AppIcons.Functions }, "Symbols"),
+    DIVIDER({ AppIcons.HorizontalRule }, "Dividers"),
+    TEMPLATES({ AppIcons.Description }, "Templates"),
 }
 
 private val Palette = listOf(0xE53935, 0xFB8C00, 0xFDD835, 0x43A047, 0x00ACC1, 0x1E88E5, 0x8E24AA, 0x757575)
 private const val SYMBOLS = "• ◦ ★ ☆ ✓ ✗ → ← ↑ ↓ ↔ ⇒ ± × ÷ ≈ ≠ ≤ ≥ ∑ √ π ∞ ° ² ³ ½ ¼ ¾ © ® ™ § ¶ † ‡ € £ ¥ ₹"
 
-/** A frosted card in the glass style of the floating bars, used for every panel and the toolbar. */
+/** A frosted card in the glass style of the floating bars, used for every panel. */
 @Composable
 private fun GlassCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Box(
@@ -64,10 +66,43 @@ private fun GlassCard(modifier: Modifier = Modifier, content: @Composable () -> 
     ) { content() }
 }
 
-/** The row of buttons at the bottom of the editor: text, lists, checklist, pictures and more. */
+/** One round tool button: an icon, or a short glyph where no icon says it better (H1, a size sample). [label] is read out by TalkBack. */
 @Composable
-fun EditorToolbar(panel: EditorPanel, onPanel: (EditorPanel) -> Unit, onCheck: () -> Unit, onImage: () -> Unit, modifier: Modifier = Modifier) {
+private fun Tool(
+    label: String,
+    onClick: () -> Unit,
+    selected: Boolean = false,
+    icon: ImageVector? = null,
+    glyph: String? = null,
+    glyphSize: Int = 16,
+    glyphWeight: FontWeight = FontWeight.SemiBold,
+) {
     val colors = MaterialTheme.colorScheme
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(if (selected) colors.primaryContainer else Color.Transparent)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        val tint = if (selected) colors.onPrimaryContainer else colors.onSurface
+        if (icon != null) Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
+        if (glyph != null) Text(glyph, fontSize = glyphSize.sp, fontWeight = glyphWeight, color = tint)
+    }
+}
+
+/** The row of buttons at the bottom of the editor: text, lists, checklist, pictures and more. [onUse] runs first on every tap (it puts the keyboard away). */
+@Composable
+fun EditorToolbar(
+    panel: EditorPanel,
+    onPanel: (EditorPanel) -> Unit,
+    onCheck: () -> Unit,
+    onImage: () -> Unit,
+    onUse: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -78,19 +113,11 @@ fun EditorToolbar(panel: EditorPanel, onPanel: (EditorPanel) -> Unit, onCheck: (
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val on = colors.primary
-            val off = colors.onSurface
-            IconButton(onClick = { onPanel(if (panel == EditorPanel.TEXT) EditorPanel.NONE else EditorPanel.TEXT) }) {
-                Text("Aa", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (panel == EditorPanel.TEXT) on else off)
-            }
-            IconButton(onClick = { onPanel(if (panel == EditorPanel.LISTS) EditorPanel.NONE else EditorPanel.LISTS) }) {
-                Icon(AppIcons.AlignLeft, contentDescription = "Align and lists", tint = if (panel == EditorPanel.LISTS) on else off)
-            }
-            IconButton(onClick = onCheck) { Icon(AppIcons.CheckBox, contentDescription = "Checklist", tint = off) }
-            IconButton(onClick = onImage) { Icon(AppIcons.Image, contentDescription = "Add pictures", tint = off) }
-            IconButton(onClick = { onPanel(if (panel == EditorPanel.ADD) EditorPanel.NONE else EditorPanel.ADD) }) {
-                Icon(AppIcons.Add, contentDescription = "More to add", tint = if (panel == EditorPanel.ADD) on else off)
-            }
+            Tool("Text style", { onUse(); onPanel(if (panel == EditorPanel.TEXT) EditorPanel.NONE else EditorPanel.TEXT) }, panel == EditorPanel.TEXT, icon = AppIcons.FormatSize)
+            Tool("Alignment and lists", { onUse(); onPanel(if (panel == EditorPanel.LISTS) EditorPanel.NONE else EditorPanel.LISTS) }, panel == EditorPanel.LISTS, icon = AppIcons.ListBulleted)
+            Tool("Checklist", { onUse(); onCheck() }, icon = AppIcons.CheckBox)
+            Tool("Add pictures", { onUse(); onImage() }, icon = AppIcons.Image)
+            Tool("Add more", { onUse(); onPanel(if (panel == EditorPanel.ADD) EditorPanel.NONE else EditorPanel.ADD) }, panel == EditorPanel.ADD, icon = AppIcons.Add)
         }
     }
 }
@@ -106,49 +133,57 @@ fun TextPanel(
     onInsert: (String) -> Unit,
     onDivider: (String) -> Unit,
     onTemplate: (NoteTemplate) -> Unit,
+    onUse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var tab by rememberSaveable { mutableStateOf(TextTab.STYLE) }
     GlassCard(modifier) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                TextTab.entries.forEach { t ->
-                    ExpressiveChip(selected = tab == t, onClick = { tab = t }, label = { Text(t.label, maxLines = 1) })
-                }
+        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                TextTab.entries.forEach { t -> Tool(t.description, { onUse(); tab = t }, tab == t, icon = t.icon()) }
             }
-            Column(modifier = Modifier.heightIn(max = 240.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(modifier = Modifier.heightIn(max = 230.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 when (tab) {
                     TextTab.STYLE -> {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            ExpressiveChip(selected = false, onClick = { onWrap("**", "bold") }, label = { Text("B", fontWeight = FontWeight.Bold) })
-                            ExpressiveChip(selected = false, onClick = { onWrap("*", "italic") }, label = { Text("I", fontStyle = androidx.compose.ui.text.font.FontStyle.Italic) })
-                            ExpressiveChip(selected = false, onClick = { onWrap("++", "text") }, label = { Text("U", textDecoration = TextDecoration.Underline) })
-                            ExpressiveChip(selected = false, onClick = { onWrap("~~", "text") }, label = { Text("S", textDecoration = TextDecoration.LineThrough) })
-                            ExpressiveChip(selected = false, onClick = { onWrap("==", "text") }, label = { Text("Highlight") })
-                            ExpressiveChip(selected = false, onClick = { onWrap("`", "code") }, label = { Text("Code") })
+                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Tool("Bold", { onUse(); onWrap("**", "bold") }, icon = AppIcons.FormatBold)
+                            Tool("Italic", { onUse(); onWrap("*", "italic") }, icon = AppIcons.FormatItalic)
+                            Tool("Underline", { onUse(); onWrap("++", "text") }, icon = AppIcons.FormatUnderlined)
+                            Tool("Strikethrough", { onUse(); onWrap("~~", "text") }, icon = AppIcons.FormatStrikethrough)
+                            Tool("Highlight", { onUse(); onWrap("==", "text") }, icon = AppIcons.Highlight)
+                            Tool("Code", { onUse(); onWrap("`", "code") }, icon = AppIcons.Code)
                         }
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            ExpressiveChip(selected = false, onClick = { onHeading(1) }, label = { Text("Title") })
-                            ExpressiveChip(selected = false, onClick = { onHeading(2) }, label = { Text("Heading") })
-                            ExpressiveChip(selected = false, onClick = { onHeading(3) }, label = { Text("Subheading") })
+                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Tool("Title", { onUse(); onHeading(1) }, glyph = "H1", glyphSize = 17)
+                            Tool("Heading", { onUse(); onHeading(2) }, glyph = "H2", glyphSize = 16)
+                            Tool("Subheading", { onUse(); onHeading(3) }, glyph = "H3", glyphSize = 15)
+                            Tool("Small text", { onUse(); onSize(12) }, glyph = "A", glyphSize = 12, glyphWeight = FontWeight.Normal)
+                            Tool("Normal text size", { onUse(); onSize(null) }, glyph = "A", glyphSize = 17, glyphWeight = FontWeight.Normal)
+                            Tool("Large text", { onUse(); onSize(22) }, glyph = "A", glyphSize = 22, glyphWeight = FontWeight.Normal)
+                            Tool("Huge text", { onUse(); onSize(30) }, glyph = "A", glyphSize = 28, glyphWeight = FontWeight.Normal)
                         }
-                        Text("Size", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            ExpressiveChip(selected = false, onClick = { onSize(12) }, label = { Text("Small") })
-                            ExpressiveChip(selected = false, onClick = { onSize(null) }, label = { Text("Normal") })
-                            ExpressiveChip(selected = false, onClick = { onSize(22) }, label = { Text("Large") })
-                            ExpressiveChip(selected = false, onClick = { onSize(30) }, label = { Text("Huge") })
-                        }
-                        Text("Colour", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            ExpressiveChip(selected = false, onClick = { onColor(null) }, label = { Text("None") })
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 6.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .clip(CircleShape)
+                                    .border(1.5.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                                    .clickable { onUse(); onColor(null) }
+                                    .semantics { contentDescription = "Default text colour" },
+                                contentAlignment = Alignment.Center,
+                            ) { Icon(AppIcons.Close, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                             Palette.forEach { rgb ->
                                 Box(
                                     modifier = Modifier
                                         .size(30.dp)
                                         .clip(CircleShape)
                                         .background(Color(0xFF000000.toInt() or rgb))
-                                        .clickable { onColor(rgb) },
+                                        .clickable { onUse(); onColor(rgb) }
+                                        .semantics { contentDescription = "Text colour" },
                                 )
                             }
                         }
@@ -160,23 +195,30 @@ fun TextPanel(
                                     .size(40.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                    .clickable { onInsert(symbol) },
+                                    .clickable { onUse(); onInsert(symbol) },
                                 contentAlignment = Alignment.Center,
                             ) { Text(symbol, style = MaterialTheme.typography.titleMedium) }
                         }
                     }
-                    TextTab.DIVIDER -> FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        ExpressiveChip(selected = false, onClick = { onDivider("---") }, label = { Text("Line") })
-                        ExpressiveChip(selected = false, onClick = { onDivider("{align:center}· · ·") }, label = { Text("· · ·") })
-                        ExpressiveChip(selected = false, onClick = { onDivider("{align:center}✦ ✦ ✦") }, label = { Text("✦ ✦ ✦") })
-                        ExpressiveChip(selected = false, onClick = { onDivider("{align:center}— — —") }, label = { Text("— — —") })
+                    TextTab.DIVIDER -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf("---" to "────────", "{align:center}· · ·" to "· · ·", "{align:center}✦ ✦ ✦" to "✦ ✦ ✦", "{align:center}— — —" to "— — —").forEach { (source, sample) ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                    .clickable { onUse(); onDivider(source) }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center,
+                            ) { Text(sample, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        }
                     }
                     TextTab.TEMPLATES -> NoteTemplates.all.forEach { template ->
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(14.dp))
-                                .clickable { onTemplate(template) }
+                                .clickable { onUse(); onTemplate(template) }
                                 .padding(horizontal = 14.dp, vertical = 10.dp),
                         ) {
                             Text(template.name, style = MaterialTheme.typography.titleSmall)
@@ -190,7 +232,6 @@ fun TextPanel(
 }
 
 /** Alignment and list styles for the lines the cursor or selection touches. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ListsPanel(
     onAlign: (Align) -> Unit,
@@ -198,38 +239,42 @@ fun ListsPanel(
     onNumbered: () -> Unit,
     onLettered: () -> Unit,
     onQuote: () -> Unit,
+    onUse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     GlassCard(modifier) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ExpressiveChip(selected = false, onClick = { onAlign(Align.START) }, label = { Text("Left") })
-                ExpressiveChip(selected = false, onClick = { onAlign(Align.CENTER) }, label = { Text("Centre") })
-                ExpressiveChip(selected = false, onClick = { onAlign(Align.END) }, label = { Text("Right") })
+        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Tool("Align left", { onUse(); onAlign(Align.START) }, icon = AppIcons.AlignLeft)
+                Tool("Align centre", { onUse(); onAlign(Align.CENTER) }, icon = AppIcons.FormatAlignCenter)
+                Tool("Align right", { onUse(); onAlign(Align.END) }, icon = AppIcons.FormatAlignRight)
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ExpressiveChip(selected = false, onClick = onBullet, label = { Text("Bullets") })
-                ExpressiveChip(selected = false, onClick = onNumbered, label = { Text("Numbers") })
-                ExpressiveChip(selected = false, onClick = onLettered, label = { Text("Letters") })
-                ExpressiveChip(selected = false, onClick = onQuote, label = { Text("Quote") })
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Tool("Bulleted list", { onUse(); onBullet() }, icon = AppIcons.ListBulleted)
+                Tool("Numbered list", { onUse(); onNumbered() }, icon = AppIcons.FormatListNumbered)
+                Tool("Lettered list", { onUse(); onLettered() }, glyph = "a)", glyphSize = 17)
+                Tool("Quote", { onUse(); onQuote() }, icon = AppIcons.FormatQuote)
             }
         }
     }
 }
 
-/** Things that can be added to the note. Only what works today is listed; doodles and recordings arrive with their own steps. */
-@OptIn(ExperimentalLayoutApi::class)
+/** Things that can be added to the note. Only what works today is listed; recordings arrive with their own step. */
 @Composable
-fun AddPanel(onTable: () -> Unit, onLinkNote: () -> Unit, onCodeBlock: () -> Unit, modifier: Modifier = Modifier) {
+fun AddPanel(
+    onTable: () -> Unit,
+    onDoodle: () -> Unit,
+    onLinkNote: () -> Unit,
+    onCodeBlock: () -> Unit,
+    onUse: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     GlassCard(modifier) {
-        FlowRow(
-            modifier = Modifier.padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            ExpressiveChip(selected = false, onClick = onTable, label = { Text("Table") })
-            ExpressiveChip(selected = false, onClick = onLinkNote, label = { Text("Link a note") })
-            ExpressiveChip(selected = false, onClick = onCodeBlock, label = { Text("Code block") })
+        Row(modifier = Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Tool("Table", { onUse(); onTable() }, icon = AppIcons.Table)
+            Tool("Doodle", { onUse(); onDoodle() }, icon = AppIcons.Brush)
+            Tool("Link a note", { onUse(); onLinkNote() }, icon = AppIcons.Link)
+            Tool("Code block", { onUse(); onCodeBlock() }, icon = AppIcons.Code)
         }
     }
 }

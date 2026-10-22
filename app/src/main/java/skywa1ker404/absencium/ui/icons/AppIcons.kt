@@ -261,6 +261,79 @@ object AppIcons {
         )
     }
 
+    val FormatBold: ImageVector by lazy {
+        glyph(
+            "FormatBold",
+            "M15.6,10.79c0.97,-0.67 1.65,-1.77 1.65,-2.79 0,-2.26 -1.75,-4 -4,-4H7v14h7.04c2.09,0 3.71,-1.7 3.71,-3.79 0,-1.52 -0.86,-2.82 -2.15,-3.42zM10,6.5h3c0.83,0 1.5,0.67 1.5,1.5s-0.67,1.5 -1.5,1.5h-3v-3zM13.5,15.5H10v-3h3.5c0.83,0 1.5,0.67 1.5,1.5s-0.67,1.5 -1.5,1.5z",
+        )
+    }
+
+    val FormatItalic: ImageVector by lazy { glyph("FormatItalic", "M10,4v3h2.21l-3.42,8H6v3h8v-3h-2.21l3.42,-8H18V4z") }
+
+    val FormatUnderlined: ImageVector by lazy {
+        glyph("FormatUnderlined", "M12,17c3.31,0 6,-2.69 6,-6V3h-2.5v8c0,1.93 -1.57,3.5 -3.5,3.5S8.5,12.93 8.5,11V3H6v8c0,3.31 2.69,6 6,6zM5,19v2h14v-2H5z")
+    }
+
+    val FormatStrikethrough: ImageVector by lazy { glyph("FormatStrikethrough", "M10,19h4v-3h-4v3zM5,4v3h5v3h4V7h5V4H5zM3,14h18v-2H3v2z") }
+
+    val FormatAlignCenter: ImageVector by lazy {
+        glyph("FormatAlignCenter", "M7,15v2h10v-2H7zM3,21h18v-2H3v2zM3,13h18v-2H3v2zM7,7v2h10V7H7zM3,3v2h18V3H3z")
+    }
+
+    val FormatAlignRight: ImageVector by lazy {
+        glyph("FormatAlignRight", "M3,21h18v-2H3v2zM9,17h12v-2H9v2zM3,13h18v-2H3v2zM9,9h12V7H9v2zM3,3v2h18V3H3z")
+    }
+
+    val FormatListNumbered: ImageVector by lazy {
+        glyph(
+            "FormatListNumbered",
+            "M2,17h2v0.5H3v1h1v0.5H2v1h3v-4H2v1zM3,8h1V4H2v1h1v3zM2,11h1.8L2,13.1v0.9h3v-1H3.2L5,10.9V10H2v1zM7,5v2h14V5H7zM7,19h14v-2H7v2zM7,13h14v-2H7v2z",
+        )
+    }
+
+    val FormatQuote: ImageVector by lazy { glyph("FormatQuote", "M6,17h3l2,-4V7H5v6h3zM14,17h3l2,-4V7h-6v6h3z") }
+
+    val Code: ImageVector by lazy {
+        glyph("Code", "M9.4,16.6L4.8,12l4.6,-4.6L8,6l-6,6 6,6 1.4,-1.4zM14.6,16.6l4.6,-4.6 -4.6,-4.6L16,6l6,6 -6,6 -1.4,-1.4z")
+    }
+
+    val Title: ImageVector by lazy { glyph("Title", "M5,4v3h5.5v12h3V7H19V4z") }
+
+    val FormatSize: ImageVector by lazy { glyph("FormatSize", "M9,4v3h5v12h3V7h5V4H9zM3,12h3v7h3v-7h3V9H3v3z") }
+
+    val FormatColorText: ImageVector by lazy {
+        glyph(
+            "FormatColorText",
+            "M2,20h20v4H2v-4zM5.49,17h2.42l1.27,-3.58h5.65L16.09,17h2.42L13.25,3h-2.5L5.49,17zM9.91,11.39l2.03,-5.79h0.12l2.03,5.79H9.91z",
+        )
+    }
+
+    val Link: ImageVector by lazy {
+        glyph(
+            "Link",
+            "M3.9,12c0,-1.71 1.39,-3.1 3.1,-3.1h4V7H7c-2.76,0 -5,2.24 -5,5s2.24,5 5,5h4v-1.9H7c-1.71,0 -3.1,-1.39 -3.1,-3.1zM8,13h8v-2H8v2zM17,7h-4v1.9h4c1.71,0 3.1,1.39 3.1,3.1s-1.39,3.1 -3.1,3.1h-4V17h4c2.76,0 5,-2.24 5,-5s-2.24,-5 -5,-5z",
+        )
+    }
+
+    val HorizontalRule: ImageVector by lazy { glyph("HorizontalRule", "M4,11h16v2H4z") }
+
+    val Functions: ImageVector by lazy { glyph("Functions", "M18,4H6v2l6.5,6L6,18v2h12v-3h-7l5,-5 -5,-5h7z") }
+
+    // A marker pen: the pencil above a bar of colour.
+    val Highlight: ImageVector by lazy {
+        glyph(
+            "Highlight",
+            "M3,13.25V17h3.75L17.81,5.94l-3.75,-3.75L3,13.25zM20.71,3.04c0.39,-0.39 0.39,-1.02 0,-1.41l-0.34,-0.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83zM2,20h20v3H2z",
+        )
+    }
+
+    val Brush: ImageVector by lazy {
+        glyph(
+            "Brush",
+            "M7,14c-1.66,0 -3,1.34 -3,3 0,1.31 -1.16,2 -2,2 0.92,1.22 2.49,2 4,2 2.21,0 4,-1.79 4,-4 0,-1.66 -1.34,-3 -3,-3zM20.71,4.63l-1.34,-1.34c-0.39,-0.39 -1.02,-0.39 -1.41,0L9,12.25 11.75,15l8.96,-8.96c0.39,-0.39 0.39,-1.02 0,-1.41z",
+        )
+    }
+
     val Table: ImageVector by lazy {
         glyph(
             "Table",
