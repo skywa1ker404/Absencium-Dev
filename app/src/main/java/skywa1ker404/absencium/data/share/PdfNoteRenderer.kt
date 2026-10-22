@@ -19,7 +19,7 @@ import java.io.OutputStream
 /**
  * Draws a note onto A4 pages with the platform's own [PdfDocument]: no library, nothing leaves the phone. Text is real text
  * (selectable, searchable in a viewer), wrapped to the page, and a paragraph that does not fit is continued on the next page
- * line by line instead of being cut. Images are not drawn into the PDF.
+ * line by line instead of being cut. Pictures, doodles and recordings are marked by a short label; drawing them comes with the picture blocks.
  */
 object PdfNoteRenderer {
     private const val PAGE_W = 595
@@ -42,6 +42,13 @@ object PdfNoteRenderer {
                     is Block.Quote -> pager.text(styled(block.spans, italic = true), 12f, 18, 8f)
                     is Block.Code -> pager.text(SpannableStringBuilder(block.text).also { it.setSpan(TypefaceSpan("monospace"), 0, it.length, 0) }, 10.5f, 8, 8f)
                     Block.Rule -> pager.rule()
+                    is Block.Embed -> pager.text(
+                        SpannableStringBuilder("[${block.kind.name.lowercase().replaceFirstChar { it.uppercase() }}]").also { it.setSpan(StyleSpan(Typeface.ITALIC), 0, it.length, 0) },
+                        11f, 0, 8f,
+                    )
+                    is Block.Table -> for (row in block.rows) {
+                        pager.text(styled(row.flatMapIndexed { i, cell -> if (i == 0) cell else listOf(Span("   |   ")) + cell }, bold = block.hasHeader && row === block.rows.first()), 12f, 0, 3f)
+                    }
                 }
             }
             pager.finish()
@@ -72,7 +79,9 @@ object PdfNoteRenderer {
             if (style != Typeface.NORMAL) sb.setSpan(StyleSpan(style), start, end, 0)
             if (span.code) sb.setSpan(TypefaceSpan("monospace"), start, end, 0)
             if (span.strike) sb.setSpan(StrikethroughSpan(), start, end, 0)
-            if (span.link != null) sb.setSpan(UnderlineSpan(), start, end, 0)
+            if (span.link != null || span.underline) sb.setSpan(UnderlineSpan(), start, end, 0)
+            if (span.highlight) sb.setSpan(android.text.style.BackgroundColorSpan(0xFFFFE066.toInt()), start, end, 0)
+            span.color?.let { sb.setSpan(android.text.style.ForegroundColorSpan(0xFF000000.toInt() or it), start, end, 0) }
         }
         return sb
     }

@@ -124,7 +124,6 @@ object MarkdownParse {
                     out += Block.Table(start, header, body.map { row -> row.map { inline(it) } })
                 }
                 line.trimStart().startsWith("```") -> {
-                line.trimStart().startsWith("```") -> {
                     flush()
                     val code = StringBuilder()
                     i++
