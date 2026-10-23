@@ -114,6 +114,9 @@ fun AddEntryPopup(
 
     val subject = subjects.firstOrNull { it.id == state.subjectId }
     var pickingDate by remember { mutableStateOf(false) }
+    val documentPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        viewModel.addDocuments(uris, subject?.name.orEmpty(), onSaved)
+    }
 
     fun close() {
         viewModel.cancel()
@@ -124,7 +127,7 @@ fun AddEntryPopup(
         when (state.stage) {
             EntryStage.SUBJECT -> close()
             EntryStage.ACTIONS -> viewModel.toStage(EntryStage.SUBJECT)
-            EntryStage.PICTURES, EntryStage.YOUTUBE -> viewModel.toStage(EntryStage.ACTIONS)
+            EntryStage.PICTURES, EntryStage.YOUTUBE, EntryStage.AUDIO, EntryStage.SOLVE, EntryStage.GENERATE -> viewModel.toStage(EntryStage.ACTIONS)
         }
     }
 
@@ -157,12 +160,35 @@ fun AddEntryPopup(
                                 onPictures = { viewModel.openPictures(camera = false) },
                                 onCamera = { viewModel.openPictures(camera = true) },
                                 onYouTube = viewModel::openYouTube,
-                                onComingSoon = { name -> viewModel.showMessage("$name arrives in the next update.") },
+                                onTextNote = { viewModel.createTextNote(subject?.name.orEmpty(), onSaved) },
+                                onDocuments = { documentPicker.launch(arrayOf("*/*")) },
+                                onAudio = viewModel::openAudio,
+                                onSolve = viewModel::openSolve,
+                                onGenerate = viewModel::openGenerate,
                                 message = state.message,
                             )
 
                             EntryStage.YOUTUBE -> YouTubeStage(
                                 viewModel = viewModel,
+                                onBack = { back() },
+                                onSaved = onSaved,
+                                onOpenAiSettings = {
+                                    close()
+                                    onOpenAiSettings()
+                                },
+                            )
+
+                            EntryStage.AUDIO -> AudioStage(
+                                viewModel = viewModel,
+                                subjectName = subject?.name.orEmpty(),
+                                onBack = { back() },
+                                onSaved = onSaved,
+                            )
+
+                            EntryStage.SOLVE, EntryStage.GENERATE -> AiTaskStage(
+                                viewModel = viewModel,
+                                solve = stage == EntryStage.SOLVE,
+                                subjectName = subject?.name.orEmpty(),
                                 onBack = { back() },
                                 onSaved = onSaved,
                                 onOpenAiSettings = {
@@ -322,7 +348,11 @@ private fun ActionsStage(
     onPictures: () -> Unit,
     onCamera: () -> Unit,
     onYouTube: () -> Unit,
-    onComingSoon: (String) -> Unit,
+    onTextNote: () -> Unit,
+    onDocuments: () -> Unit,
+    onAudio: () -> Unit,
+    onSolve: () -> Unit,
+    onGenerate: () -> Unit,
     message: String?,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -342,16 +372,16 @@ private fun ActionsStage(
         // Seven buttons in a bento layout: one wide, then pairs. Each has its own corner shape that softens when pressed.
         ActionTile("Upload a Pic", AppIcons.Image, colors.primaryContainer, colors.onPrimaryContainer, 0, onPictures, Modifier.fillMaxWidth(), 84.dp)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionTile("Text Notes", AppIcons.Edit, colors.secondaryContainer, colors.onSecondaryContainer, 1, { onComingSoon("Text Notes") }, Modifier.weight(1f), 104.dp)
-            ActionTile("Document / File", AppIcons.Description, colors.tertiaryContainer, colors.onTertiaryContainer, 2, { onComingSoon("Document / File") }, Modifier.weight(1f), 104.dp)
+            ActionTile("Text Notes", AppIcons.Edit, colors.secondaryContainer, colors.onSecondaryContainer, 1, onTextNote, Modifier.weight(1f), 104.dp)
+            ActionTile("Document / File", AppIcons.Description, colors.tertiaryContainer, colors.onTertiaryContainer, 2, onDocuments, Modifier.weight(1f), 104.dp)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionTile("Audio Note", AppIcons.Mic, colors.tertiaryContainer, colors.onTertiaryContainer, 3, { onComingSoon("Audio Note") }, Modifier.weight(1f), 104.dp)
+            ActionTile("Audio Note", AppIcons.Mic, colors.tertiaryContainer, colors.onTertiaryContainer, 3, onAudio, Modifier.weight(1f), 104.dp)
             ActionTile("Camera", AppIcons.PhotoCamera, colors.secondaryContainer, colors.onSecondaryContainer, 0, onCamera, Modifier.weight(1f), 104.dp)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionTile("Solve Homework", AppIcons.School, colors.primaryContainer, colors.onPrimaryContainer, 2, { onComingSoon("Solve Homework") }, Modifier.weight(1f), 104.dp)
-            ActionTile("Generate AI Notes", AppIcons.AutoAwesome, colors.secondaryContainer, colors.onSecondaryContainer, 1, { onComingSoon("Generate AI Notes") }, Modifier.weight(1f), 104.dp)
+            ActionTile("Solve Homework", AppIcons.School, colors.primaryContainer, colors.onPrimaryContainer, 2, onSolve, Modifier.weight(1f), 104.dp)
+            ActionTile("Generate AI Notes", AppIcons.AutoAwesome, colors.secondaryContainer, colors.onSecondaryContainer, 1, onGenerate, Modifier.weight(1f), 104.dp)
         }
         ActionTile("YouTube Video Notes", AppIcons.PlayCircle, colors.tertiaryContainer, colors.onTertiaryContainer, 3, onYouTube, Modifier.fillMaxWidth(), 84.dp)
         if (message != null) {

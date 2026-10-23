@@ -37,7 +37,6 @@ sealed interface StageResult {
 
 data class ExportResult(val databaseBytes: Long, val attachmentFiles: Int, val encrypted: Boolean, val includesAttachments: Boolean)
 
-data class SnapshotInfo(val file: File, val createdAt: Long, val sizeBytes: Long)
 
 /**
  * Backup and restore as one versioned package: a zip with `database/Absencium.db`, the vault's attachment files,
@@ -301,55 +300,6 @@ class BackupManager(context: Context) {
     }
 
     // ------------------------------------------------------------------------------------------
-    // Rolling local snapshots
-    // ------------------------------------------------------------------------------------------
-
-    private val snapshotDir: File get() = File(appContext.filesDir, SNAPSHOT_DIR)
-
-    /** The newest snapshots first. */
-    fun snapshots(): List<SnapshotInfo> =
-        snapshotDir.listFiles()
-            ?.filter { it.isFile && it.name.startsWith("snapshot-") && it.name.endsWith(".zip") }
-            ?.mapNotNull { f ->
-                val stamp = f.name.removePrefix("snapshot-").removeSuffix(".zip").toLongOrNull() ?: return@mapNotNull null
-                SnapshotInfo(f, stamp, f.length())
-            }
-            ?.sortedByDescending { it.createdAt }
-            .orEmpty()
-
-    /**
-     * Saves a snapshot of the database and settings (not the attachment files, which do not change once written) and keeps
-     * only the newest [KEEP_SNAPSHOTS]. Returns null if there was not enough free storage.
-     */
-    fun createSnapshot(settingsJson: String): SnapshotInfo? {
-        if (appContext.filesDir.usableSpace < dbFile.length() * 3 + MIN_FREE_BYTES) {
-            DebugLogger.w(TAG, "Snapshot skipped: low storage")
-            return null
-        }
-        snapshotDir.mkdirs()
-        val stamp = System.currentTimeMillis()
-        val target = File(snapshotDir, "snapshot-$stamp.zip")
-        val partial = File(snapshotDir, "snapshot-$stamp.partial")
-        try {
-            partial.outputStream().use { export(it, null, includeAttachments = false, settingsJson = settingsJson) }
-            if (!partial.renameTo(target)) return null
-        } catch (e: Exception) {
-            DebugLogger.e(TAG, "Snapshot failed", e)
-            partial.delete()
-            return null
-        }
-        snapshots().drop(KEEP_SNAPSHOTS).forEach { it.file.delete() }
-        return SnapshotInfo(target, stamp, target.length())
-    }
-
-    fun deleteSnapshot(snapshot: SnapshotInfo) {
-        snapshot.file.delete()
-    }
-
-    fun stageSnapshot(snapshot: SnapshotInfo): StageResult =
-        snapshot.file.inputStream().use { stage(it, null, snapshot.sizeBytes) }
-
-    // ------------------------------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------------------------------
 
@@ -450,8 +400,6 @@ class BackupManager(context: Context) {
         private const val ATTACHMENTS_RESTORE = "vault_attachments.restore"
         private const val SETTINGS_RESTORE = "settings.restore"
         private const val ATTACHMENTS_BAK = "vault_attachments.bak"
-        private const val SNAPSHOT_DIR = "snapshots"
-        private const val KEEP_SNAPSHOTS = 3
         private const val MAX_SMALL_ENTRY = 1024 * 1024
         private const val MIN_FREE_BYTES = 32L * 1024 * 1024
         private val SQLITE_HEADER = "SQLite format 3\u0000".toByteArray(Charsets.US_ASCII)

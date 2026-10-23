@@ -138,6 +138,7 @@ fun NoteEditorScreen(noteId: Long, navigator: DestinationsNavigator, startInEdit
     }
 }
 
+private val usedAudio = Regex("\\{\\{audio:(\\d{1,18})")
 private val usedEmbeds = Regex("\\{\\{(?:image|doodle):(\\d{1,18})")
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -598,6 +599,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
 
         // Photos that belong to the note but are not on the page (for example those added when the note was made).
         val onPage = remember(text) { usedEmbeds.findAll(text).mapNotNull { it.groupValues[1].toLongOrNull() }.toSet() }
+        val onPageAudio = remember(text) { usedAudio.findAll(text).mapNotNull { it.groupValues[1].toLongOrNull() }.toSet() }
         val loose = attachments.filter { (it.kind == AttachmentKind.IMAGE || it.kind == AttachmentKind.SKETCH) && it.id !in onPage }
         if (loose.isNotEmpty()) {
             Text("Not on the page yet. Tap a picture to put it at the cursor.", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
@@ -611,6 +613,27 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                         },
                         onRemove = { viewModel.deleteAttachment(photo) },
                     )
+                }
+            }
+        }
+
+        // Recordings that are not on the page yet, and files attached to the note.
+        val looseAudio = attachments.filter { it.kind == AttachmentKind.AUDIO && it.id !in onPageAudio }
+        if (looseAudio.isNotEmpty()) {
+            Text("Recordings. Tap to put one on the page.", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                looseAudio.forEach { a ->
+                    ExpressiveChip(selected = false, onClick = { insertBlock(NoteBlocks.token(EmbedKind.AUDIO, a.id, 100)) }, label = { Text(a.displayName) })
+                }
+            }
+        }
+        val files = attachments.filter { it.kind == AttachmentKind.DOCUMENT }
+        if (files.isNotEmpty()) {
+            Text("Files", style = MaterialTheme.typography.titleMedium)
+            val context = androidx.compose.ui.platform.LocalContext.current
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                files.forEach { f ->
+                    ExpressiveChip(selected = false, onClick = { linkProblem = openAttachment(context, f) }, label = { Text(f.displayName) })
                 }
             }
         }

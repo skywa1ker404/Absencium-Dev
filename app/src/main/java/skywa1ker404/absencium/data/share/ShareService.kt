@@ -65,7 +65,14 @@ class ShareService(private val context: Context) {
                 displayName = ExportNames.fileName(note.title, format.extension)
                 file = File(dir, displayName)
                 when (format) {
-                    ShareFormat.PDF -> file.outputStream().use { PdfNoteRenderer.render(note.title, MarkdownParse.blocks(note.bodyText), it) }
+                    ShareFormat.PDF -> {
+                        val attachments = attachmentsOf(note.id)
+                        file.outputStream().use {
+                            PdfNoteRenderer.render(note.title, MarkdownParse.blocks(note.bodyText), it) { embed ->
+                                attachments.firstOrNull { a -> a.id == embed.id }?.let { a -> skywa1ker404.absencium.ui.vault.entry.ImageTools.decode(a.filePath, 1600) }
+                            }
+                        }
+                    }
                     ShareFormat.MARKDOWN -> file.writeText(ExportNames.markdown(note.title, note.tags, note.bodyText))
                     ShareFormat.TEXT -> file.writeText(ExportNames.plainText(note.title, note.tags, note.bodyText))
                     ShareFormat.ZIP -> error("handled above")

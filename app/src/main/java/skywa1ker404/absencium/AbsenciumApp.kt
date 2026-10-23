@@ -2,7 +2,6 @@ package skywa1ker404.absencium
 
 import android.app.Application
 import skywa1ker404.absencium.data.backup.BackupManager
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import skywa1ker404.absencium.data.db.AbsenciumDatabase
 import skywa1ker404.absencium.logging.DebugLogger
@@ -31,19 +30,13 @@ class AbsenciumApp : Application() {
         }
     }
 
-    /** Things that can wait for the database to be open: settings from a restore, the Trash clean-up, the daily snapshot. */
+    /** Things that can wait for the database to be open: settings from a restore, the Trash clean-up. */
     private fun runStartupMaintenance() {
         try {
             container.backupManager.takeStagedSettings()?.let {
                 runBlocking { container.settingsRepository.importJson(it) }
             }
             runBlocking { container.trashRepository.purgeExpired() }
-            val settings = runBlocking { container.settingsRepository.settings.first() }
-            val newest = container.backupManager.snapshots().firstOrNull()?.createdAt ?: 0L
-            if (settings.autoSnapshots && System.currentTimeMillis() - newest > SNAPSHOT_INTERVAL_MS) {
-                val settingsJson = runBlocking { container.settingsRepository.exportJson() }
-                container.backupManager.createSnapshot(settingsJson)
-            }
         } catch (e: Exception) {
             DebugLogger.e("Startup", "Maintenance at startup failed", e)
         }
@@ -57,9 +50,5 @@ class AbsenciumApp : Application() {
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         DebugLogger.w("Memory", "onTrimMemory level=$level")
-    }
-
-    private companion object {
-        const val SNAPSHOT_INTERVAL_MS = 24L * 60 * 60 * 1000
     }
 }

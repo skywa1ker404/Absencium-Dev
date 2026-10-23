@@ -27,7 +27,6 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.logging.DebugLogger
 import skywa1ker404.absencium.ui.StorageViewModel
-import skywa1ker404.absencium.data.backup.SnapshotInfo
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.AppTextField
 import skywa1ker404.absencium.ui.components.SwitchCard
@@ -58,7 +57,6 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
     var password by remember { mutableStateOf("") }
     var includeFiles by remember { mutableStateOf(true) }
     var restorePassword by remember { mutableStateOf("") }
-    var pendingSnapshot by remember { mutableStateOf<SnapshotInfo?>(null) }
 
     val encrypted = password.isNotEmpty()
     val backupLauncher = rememberLauncherForActivityResult(
@@ -167,25 +165,6 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        SectionTitle("Local snapshots")
-        SwitchCard(
-            title = "Daily snapshot",
-            subtitle = "Keeps the 3 newest copies of your database and settings on this phone, at most one a day. Photos are not copied.",
-            checked = settings.autoSnapshots,
-            onCheckedChange = { settingsViewModel.setAutoSnapshots(it) },
-        )
-        PillButton(text = "Save a snapshot now", tonal = true, onClick = { storageViewModel.createSnapshotNow() }, enabled = !storage.busy)
-        storage.snapshots.forEach { snap ->
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                Text(whenText(snap.createdAt), style = MaterialTheme.typography.titleSmall)
-                Text("${snap.sizeBytes / 1024} KB", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                    PillButton(text = "Restore", compact = true, tonal = true, enabled = !storage.busy, onClick = { pendingSnapshot = snap })
-                    PillButton(text = "Delete", compact = true, tonal = true, onClick = { storageViewModel.deleteSnapshot(snap) })
-                }
-            }
-        }
-
         SectionTitle("Optional tools")
         HintText("Both are off by default.")
         StorageModuleToggles(settings, settingsViewModel)
@@ -265,16 +244,4 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
         )
     }
 
-    pendingSnapshot?.let { snap ->
-        AlertDialog(
-            onDismissRequest = { pendingSnapshot = null },
-            shape = RoundedCornerShape(28.dp),
-            title = { Text("Restore this snapshot?") },
-            text = { Text("Warning: this erases the data you have now. Your database goes back to how it was on ${whenText(snap.createdAt)}, so anything added since is lost. Nothing changes until you restart, and one safety copy of the current data is kept.") },
-            confirmButton = {
-                TextButton(onClick = { pendingSnapshot = null; storageViewModel.restoreSnapshot(snap) }) { Text("Erase and restore") }
-            },
-            dismissButton = { TextButton(onClick = { pendingSnapshot = null }) { Text("Cancel") } },
-        )
-    }
 }

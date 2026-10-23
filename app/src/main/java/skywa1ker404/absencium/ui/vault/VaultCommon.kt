@@ -59,6 +59,26 @@ fun openGuide(context: Context, guide: GuideEntity): String? {
     }
 }
 
+/** Opens a file attached to a note in another app. Returns null on success, or a message if it could not be opened. */
+fun openAttachment(context: Context, attachment: skywa1ker404.absencium.data.db.AttachmentEntity): String? {
+    val file = File(attachment.filePath)
+    if (!file.isFile) return "The file ${attachment.displayName} is no longer stored."
+    val uri = try {
+        FileProvider.getUriForFile(context, "${context.packageName}.files", file)
+    } catch (e: IllegalArgumentException) {
+        return "This file cannot be shared with another app."
+    }
+    val intent = Intent(Intent.ACTION_VIEW)
+        .setDataAndType(uri, attachment.mimeType.ifBlank { "*/*" })
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    return try {
+        context.startActivity(intent)
+        null
+    } catch (e: ActivityNotFoundException) {
+        "No app on this phone can open ${attachment.displayName}."
+    }
+}
+
 private val DateText: DateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM)
 
 fun formatNoteDate(epochMs: Long): String = DateText.format(Date(epochMs))

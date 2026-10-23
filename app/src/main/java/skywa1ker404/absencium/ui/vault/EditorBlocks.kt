@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import android.media.MediaPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,6 +28,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -97,13 +99,42 @@ fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actio
     ) {
         Box(modifier = Modifier.fillMaxWidth(percent / 100f)) {
             if (ref.kind == EmbedKind.AUDIO) {
+                var player by remember { mutableStateOf<MediaPlayer?>(null) }
+                var playing by remember { mutableStateOf(false) }
+                DisposableEffect(attachment?.filePath) { onDispose { runCatching { player?.release() }; player = null } }
+                val seconds = (attachment?.durationMs ?: 0L) / 1000
                 Row(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHighest).padding(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colors.surfaceContainerHighest)
+                        .clickable(enabled = attachment != null) {
+                            if (playing) {
+                                runCatching { player?.release() }
+                                player = null
+                                playing = false
+                            } else {
+                                val file = attachment?.filePath ?: return@clickable
+                                player = runCatching {
+                                    MediaPlayer().apply {
+                                        setDataSource(file)
+                                        prepare()
+                                        setOnCompletionListener { mp -> runCatching { mp.release() }; player = null; playing = false }
+                                        start()
+                                    }
+                                }.getOrNull()
+                                playing = player != null
+                            }
+                        }
+                        .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Icon(AppIcons.Mic, contentDescription = null)
-                    Text("Recording", style = MaterialTheme.typography.bodyMedium)
+                    Icon(if (playing) AppIcons.Close else AppIcons.PlayCircle, contentDescription = if (playing) "Stop" else "Play the recording")
+                    Text(
+                        if (attachment == null) "Recording not found" else "Recording  %d:%02d".format(seconds / 60, seconds % 60),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             } else {
                 val bitmap by rememberPhoto(attachment?.filePath ?: "", 1600, version)
@@ -159,6 +190,7 @@ fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actio
                     )
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false; selected = false }) {
+                    @Composable
                     fun item(label: String, onClick: () -> Unit) =
                         DropdownMenuItem(text = { Text(label) }, onClick = { menuOpen = false; selected = false; onClick() })
                     item("View full screen") { actions.onView() }

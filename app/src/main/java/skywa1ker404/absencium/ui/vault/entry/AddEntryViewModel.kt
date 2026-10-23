@@ -8,6 +8,7 @@ import skywa1ker404.absencium.data.db.AttachmentKind
 import skywa1ker404.absencium.data.db.AttendanceEntity
 import skywa1ker404.absencium.data.db.AttendanceStatus
 import skywa1ker404.absencium.data.db.NoteKind
+import skywa1ker404.absencium.data.db.NoteStatus
 import skywa1ker404.absencium.data.db.SubjectEntity
 import skywa1ker404.absencium.logging.DebugLogger
 import kotlinx.coroutines.CancellationException
@@ -38,7 +39,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
 /** The steps of the Add Entry popup. */
-enum class EntryStage { SUBJECT, ACTIONS, PICTURES, YOUTUBE }
+enum class EntryStage { SUBJECT, ACTIONS, PICTURES, YOUTUBE, AUDIO, SOLVE, GENERATE }
 
 /** Whether the AI is writing notes from the video. */
 enum class YouTubeStep { IDLE, NOTES }
@@ -74,6 +75,15 @@ data class AddEntryState(
     val extractSetupMissing: Boolean = false,
     /** Text the user accepted; saved as the entry's text together with the photos. */
     val acceptedText: String? = null,
+    /** The question or topic typed for Solve Homework and Generate AI Notes, and whether the AI is working on it. */
+    val aiPrompt: String = "",
+    val aiRunning: Boolean = false,
+    val aiError: String? = null,
+    val aiSetupMissing2: Boolean = false,
+    /** Audio Note: a recording in progress or waiting to be saved. */
+    val recording: Boolean = false,
+    val recordedPath: String? = null,
+    val recordedMs: Long = 0L,
 )
 
 /** Where the photo text extraction is: nothing yet, running, or waiting for the user to keep or cancel the result. */
@@ -119,6 +129,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         detailsJob?.cancel()
         pipelineJob?.cancel()
         extractJob?.cancel()
+        aiJob?.cancel()
+        discardRecording()
         discardPictures(_state.value.pictures)
         cameraFile?.let { store.delete(it.absolutePath) }
         cameraFile = null
@@ -437,6 +449,220 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             "in Markdown: a two or three line summary, a heading for each topic with short bullet points, key terms with one-line " +
             "definitions, and five review questions at the end. Use only what is in the video."
 
+    // ---- Text note, documents, audio, homework, generated notes ----
+
+    private var aiJob: Job? = null
+    private val recorder by lazy { skywa1ker404.absencium.data.audio.AudioRecorder(container.appContext) }
+    private var recordingFile: File? = null
+
+    /** An empty text note in the chosen subject, opened straight into the editor. */
+    fun createTextNote(subjectName: String, onSaved: (Long) -> Unit) {
+        val current = _state.value
+        if (current.busy || current.subjectId == 0L) return
+        _state.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            try {
+                val id = container.vaultRepository.createEntry(current.subjectId, "$subjectName notes", NoteKind.TEXT, "", current.date, emptyList())
+                current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
+                _state.value = AddEntryState()
+                onSaved(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLogger.e("Vault", "Could not create the text note", e)
+                _state.update { it.copy(busy = false, message = "Could not create the note: ${e.message ?: e.javaClass.simpleName}") }
+            }
+        }
+    }
+
+    /** Saves the chosen files (PDF, Word, anything) as one entry. */
+    fun addDocuments(uris: List<Uri>, subjectName: String, onSaved: (Long) -> Unit) {
+        val current = _state.value
+        if (uris.isEmpty() || current.busy || current.subjectId == 0L) return
+        _state.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            try {
+                val now = System.currentTimeMillis()
+                val attachments = ArrayList<AttachmentEntity>()
+                for ((index, uri) in uris.withIndex()) {
+                    val stored = store.import(uri) ?: continue
+                    attachments += AttachmentEntity(
+                        noteId = 0L,
+                        kind = if (stored.mimeType.startsWith("image/")) AttachmentKind.IMAGE else AttachmentKind.DOCUMENT,
+                        filePath = stored.path,
+                        displayName = stored.displayName,
+                        mimeType = stored.mimeType,
+                        sizeBytes = stored.sizeBytes,
+                        createdAt = now + index,
+                    )
+                }
+                if (attachments.isEmpty()) {
+                    _state.update { it.copy(busy = false, message = "None of the files could be read.") }
+                    return@launch
+                }
+                val title = if (attachments.size == 1) attachments[0].displayName.substringBeforeLast('.').ifBlank { "$subjectName file" } else "$subjectName files"
+                val id = container.vaultRepository.createEntry(current.subjectId, title, NoteKind.DOCUMENT, "", current.date, attachments)
+                current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
+                _state.value = AddEntryState()
+                onSaved(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLogger.e("Vault", "Could not save the files", e)
+                _state.update { it.copy(busy = false, message = "Could not save the files: ${e.message ?: e.javaClass.simpleName}") }
+            }
+        }
+    }
+
+    // Audio
+
+    fun openAudio() = _state.update { it.copy(stage = EntryStage.AUDIO, message = null) }
+
+    fun startRecording() {
+        if (_state.value.recording) return
+        _state.value.recordedPath?.let { store.delete(it) }
+        val file = store.newFile("m4a")
+        val problem = recorder.start(file)
+        if (problem != null) {
+            _state.update { it.copy(message = problem, recordedPath = null, recordedMs = 0L) }
+            return
+        }
+        recordingFile = file
+        _state.update { it.copy(recording = true, recordedPath = null, recordedMs = 0L, message = null) }
+    }
+
+    fun stopRecording() {
+        val file = recordingFile ?: return
+        val length = recorder.stop(file)
+        recordingFile = null
+        _state.update {
+            if (length == null) it.copy(recording = false, recordedPath = null, recordedMs = 0L, message = "That recording was too short to keep.")
+            else it.copy(recording = false, recordedPath = file.absolutePath, recordedMs = length)
+        }
+    }
+
+    fun recordingElapsed(): Long = recorder.elapsedMs()
+
+    fun discardRecording() {
+        recordingFile?.let { recorder.abort(it) }
+        recordingFile = null
+        _state.value.recordedPath?.let { store.delete(it) }
+        _state.update { it.copy(recording = false, recordedPath = null, recordedMs = 0L) }
+    }
+
+    fun micDenied() = _state.update { it.copy(message = "Allow the microphone in Android settings to record.") }
+
+    /** Saves the recording as an entry whose page shows the recording. */
+    fun saveRecording(subjectName: String, onSaved: (Long) -> Unit) {
+        val current = _state.value
+        val path = current.recordedPath ?: return
+        if (current.busy || current.subjectId == 0L) return
+        _state.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            try {
+                val file = File(path)
+                val title = current.title.trim().ifEmpty { "$subjectName recording" }
+                val id = container.vaultRepository.createEntry(
+                    current.subjectId, title, NoteKind.AUDIO, "", current.date,
+                    listOf(
+                        AttachmentEntity(
+                            noteId = 0L, kind = AttachmentKind.AUDIO, filePath = path, displayName = "Recording.m4a",
+                            mimeType = "audio/mp4", sizeBytes = file.length(), durationMs = current.recordedMs,
+                        ),
+                    ),
+                )
+                val audio = container.vaultRepository.attachmentsFor(id).firstOrNull { it.kind == AttachmentKind.AUDIO }
+                if (audio != null) {
+                    container.vaultRepository.saveNote(id, current.subjectId, title, "{{audio:${audio.id}|100|center}}\n", NoteStatus.ACTIVE)
+                }
+                current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
+                _state.value = AddEntryState()
+                onSaved(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLogger.e("Vault", "Could not save the recording", e)
+                _state.update { it.copy(busy = false, message = "Could not save the recording: ${e.message ?: e.javaClass.simpleName}") }
+            }
+        }
+    }
+
+    // Solve Homework and Generate AI Notes
+
+    fun openSolve() = _state.update { it.copy(stage = EntryStage.SOLVE, message = null, aiError = null, aiSetupMissing2 = false) }
+
+    fun openGenerate() = _state.update { it.copy(stage = EntryStage.GENERATE, message = null, aiError = null, aiSetupMissing2 = false) }
+
+    fun setAiPrompt(text: String) = _state.update { it.copy(aiPrompt = text) }
+
+    fun dismissAiSetup2() = _state.update { it.copy(aiSetupMissing2 = false) }
+
+    /**
+     * Sends the typed question (and, for homework, the chosen photos) to the AI and saves the answer as a new entry; the
+     * photos stay with the entry. Without a saved AI connection the setup prompt shows instead.
+     */
+    fun runAiTask(solve: Boolean, subjectName: String, onSaved: (Long) -> Unit) {
+        val current = _state.value
+        if (current.aiRunning || current.subjectId == 0L) return
+        val prompt = current.aiPrompt.trim()
+        if (prompt.isEmpty() && !(solve && current.pictures.isNotEmpty())) {
+            _state.update { it.copy(aiError = if (solve) "Type the question or add a photo of it." else "Type what the notes should be about.") }
+            return
+        }
+        val settings = container.settingsState.value ?: return
+        if (!aiReady(settings, container.apiKeyVault.hasKey())) {
+            _state.update { it.copy(aiSetupMissing2 = true, aiError = null) }
+            return
+        }
+        _state.update { it.copy(aiRunning = true, aiError = null, aiSetupMissing2 = false) }
+        aiJob = viewModelScope.launch {
+            try {
+                val connection = AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
+                val images = if (solve) withContext(Dispatchers.IO) {
+                    current.pictures.take(MAX_EXTRACT_PHOTOS).mapNotNull { picture ->
+                        val bitmap = ImageTools.decode(picture.path, EXTRACT_EDGE) ?: return@mapNotNull null
+                        val bytes = java.io.ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray()
+                        AiImage("image/jpeg", android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
+                    }
+                } else emptyList()
+                val ask = if (solve) {
+                    "You are a patient tutor. Solve the homework in ${if (images.isEmpty()) "the question below" else "the attached photo(s)"}" +
+                        (if (images.isNotEmpty() && prompt.isNotEmpty()) " and the note below" else "") + ". " +
+                        "Write the answer in Markdown: the question, the working step by step, then the final answer in bold. " +
+                        "Explain each step briefly so a student can follow it." + (if (prompt.isNotEmpty()) "\n\n$prompt" else "")
+                } else {
+                    "You are a study assistant. Write clear, well-structured study notes in Markdown about: $prompt\n" +
+                        "Start with a two or three line summary, then a heading for each topic with short bullet points, key terms with " +
+                        "one-line definitions, and five review questions at the end. Be accurate; if you are unsure of something, say so."
+                }
+                val reply = container.aiClient.generate(connection, ask, images)
+                if (reply.isBlank()) throw AiException("The model sent back an empty answer.")
+                val title = (if (solve) "Homework: " else "") + (prompt.lineSequence().firstOrNull { it.isNotBlank() }?.take(60) ?: "$subjectName homework")
+                val attachments = if (solve) current.pictures.map {
+                    AttachmentEntity(noteId = 0L, kind = AttachmentKind.IMAGE, filePath = it.path, displayName = it.name, mimeType = it.mimeType, sizeBytes = it.sizeBytes)
+                } else emptyList()
+                val id = container.vaultRepository.createEntry(
+                    current.subjectId, title, if (solve) NoteKind.HOMEWORK else NoteKind.AI_NOTES, reply.trim(), current.date, attachments,
+                )
+                current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
+                _state.value = AddEntryState()
+                onSaved(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: AiException) {
+                _state.update { it.copy(aiRunning = false, aiError = e.message) }
+            } catch (e: Exception) {
+                DebugLogger.e("Vault", "The AI task failed", e)
+                _state.update { it.copy(aiRunning = false, aiError = "Something went wrong: ${e.message ?: e.javaClass.simpleName}") }
+            }
+        }
+    }
+
+    fun cancelAiTask() {
+        aiJob?.cancel()
+        _state.update { it.copy(aiRunning = false) }
+    }
+
     private fun discardPictures(pictures: List<PendingPicture>) {
         pictures.forEach {
             store.delete(it.path)
@@ -453,6 +679,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
     override fun onCleared() {
         // The popup was torn down without a save or a cancel (the process is ending); nothing else holds these files.
+        recordingFile?.let { recorder.abort(it) }
+        _state.value.recordedPath?.let { store.delete(it) }
         discardPictures(_state.value.pictures)
     }
 }

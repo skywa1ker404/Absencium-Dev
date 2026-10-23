@@ -112,7 +112,6 @@ class SettingsRepository(context: Context) {
 
     suspend fun setSundayHoliday(value: Boolean) = write(Keys.SUNDAY_HOLIDAY, value)
 
-    suspend fun setAutoSnapshots(value: Boolean) = write(Keys.AUTO_SNAPSHOTS, value)
 
     suspend fun setLastBackup(at: Long, note: String) {
         dataStore.edit {
@@ -193,7 +192,6 @@ class SettingsRepository(context: Context) {
         val LOW_STORAGE_COMPRESSOR_ENABLED = booleanPreferencesKey("low_storage_compressor_enabled")
         val SATURDAY_HOLIDAY = booleanPreferencesKey("saturday_holiday")
         val SUNDAY_HOLIDAY = booleanPreferencesKey("sunday_holiday")
-        val AUTO_SNAPSHOTS = booleanPreferencesKey("auto_snapshots")
         val LAST_BACKUP_AT = longPreferencesKey("last_backup_at")
         val LAST_BACKUP_NOTE = stringPreferencesKey("last_backup_note")
 
@@ -203,7 +201,7 @@ class SettingsRepository(context: Context) {
         // The keys a restore may set, by type. A key not listed here is never imported.
         val BOOLEANS = setOf(
             ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
-            MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY, AUTO_SNAPSHOTS,
+            MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY,
         ).map { it.name }.toSet()
         val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES).map { it.name }.toSet()
         val STRINGS = setOf(
@@ -245,7 +243,6 @@ class SettingsRepository(context: Context) {
                 this[Keys.LOW_STORAGE_COMPRESSOR_ENABLED] ?: defaults.lowStorageCompressorEnabled,
             saturdayHoliday = this[Keys.SATURDAY_HOLIDAY] ?: defaults.saturdayHoliday,
             sundayHoliday = this[Keys.SUNDAY_HOLIDAY] ?: defaults.sundayHoliday,
-            autoSnapshots = this[Keys.AUTO_SNAPSHOTS] ?: defaults.autoSnapshots,
             lastBackupAt = this[Keys.LAST_BACKUP_AT] ?: defaults.lastBackupAt,
             lastBackupNote = this[Keys.LAST_BACKUP_NOTE] ?: defaults.lastBackupNote,
         )

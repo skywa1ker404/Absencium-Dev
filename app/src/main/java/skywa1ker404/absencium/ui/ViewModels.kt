@@ -10,7 +10,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import skywa1ker404.absencium.AppContainer
 import skywa1ker404.absencium.appContainer
 import skywa1ker404.absencium.data.backup.BackupSummary
-import skywa1ker404.absencium.data.backup.SnapshotInfo
 import skywa1ker404.absencium.data.backup.StageResult
 import skywa1ker404.absencium.data.db.SubjectEntity
 import skywa1ker404.absencium.data.storage.NotesStorageMode
@@ -52,7 +51,6 @@ data class StorageUiState(
     val passwordWasWrong: Boolean = false,
     /** What the staged backup contains, shown next to the Restart button. */
     val preview: BackupSummary? = null,
-    val snapshots: List<SnapshotInfo> = emptyList(),
 )
 
 class StorageViewModel(private val container: AppContainer) : ViewModel() {
@@ -74,8 +72,7 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
             val (mode, path) = withContext(Dispatchers.IO) {
                 container.notesStorageSettings.selectedMode() to container.notesStorage.rootFolder()?.displayPath
             }
-            val snapshots = withContext(Dispatchers.IO) { backups.snapshots() }
-            _state.update { it.copy(mode = mode, path = path, snapshots = snapshots) }
+            _state.update { it.copy(mode = mode, path = path) }
         }
     }
 
@@ -142,25 +139,6 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
     fun submitPassword(password: String) {
         val uri = pendingRestore ?: return
         restoreFrom(uri, password)
-    }
-
-    fun createSnapshotNow() {
-        runBusy("Snapshot") {
-            val made = backups.createSnapshot(container.settingsRepository.exportJson())
-            refresh()
-            if (made == null) "Could not save a snapshot (is there enough free storage?)." else "Snapshot saved."
-        }
-    }
-
-    fun restoreSnapshot(snapshot: SnapshotInfo) {
-        runBusy("Restore") { finishStage(backups.stageSnapshot(snapshot)) {} }
-    }
-
-    fun deleteSnapshot(snapshot: SnapshotInfo) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) { backups.deleteSnapshot(snapshot) }
-            refresh()
-        }
     }
 
     fun discardStagedRestore() {
