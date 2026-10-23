@@ -187,6 +187,32 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** Removes a photo (or other attachment) from an entry and deletes its file. */
+    /** What came back from an AI request made in the editor: the text, or an error, or that no AI is set up yet. */
+    data class AiOutcome(val text: String? = null, val error: String? = null, val setupMissing: Boolean = false)
+
+    /** Sends [request] to the AI the user set up and gives the answer to [onResult] on the main thread. Returns the job so it can be cancelled. */
+    fun askAi(request: String, onResult: (AiOutcome) -> Unit): kotlinx.coroutines.Job {
+        val settings = container.settingsState.value
+        if (settings == null || !skywa1ker404.absencium.ui.settings.aiReady(settings, container.apiKeyVault.hasKey())) {
+            onResult(AiOutcome(setupMissing = true))
+            return viewModelScope.launch { }
+        }
+        return viewModelScope.launch {
+            try {
+                val connection = skywa1ker404.absencium.data.ai.AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
+                val reply = container.aiClient.generate(connection, request)
+                onResult(if (reply.isBlank()) AiOutcome(error = "The model sent back an empty answer.") else AiOutcome(text = reply.trim()))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: skywa1ker404.absencium.data.ai.AiException) {
+                onResult(AiOutcome(error = e.message ?: "The AI request failed."))
+            } catch (e: Exception) {
+                DebugLogger.e("Vault", "The AI request failed", e)
+                onResult(AiOutcome(error = "Something went wrong: ${e.message ?: e.javaClass.simpleName}"))
+            }
+        }
+    }
+
     /** A fresh file for the crop editor to write into. */
     fun newPictureFile(): java.io.File = container.attachmentStore.newFile("jpg")
 

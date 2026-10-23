@@ -340,4 +340,36 @@ object AppIcons {
             "M10,10.02h5V21h-5zM17,21h3c1.1,0 2,-0.9 2,-2v-9h-5v11zM20,3L5,3c-1.1,0 -2,0.9 -2,2v3h19L22,5c0,-1.1 -0.9,-2 -2,-2zM3,19c0,1.1 0.9,2 2,2h3L8,10L3,10v9z",
         )
     }
+
+    // The AI panel's icons are drawn for this app from plain shapes (bars, arrows, a star, a bulb).
+
+    /** Lines getting shorter: a summary. */
+    val Summarize: ImageVector by lazy { glyph("Summarize", "M4,5h16v2H4zM4,10h16v2H4zM4,15h11v2H4zM4,20h6v2H4z") }
+
+    /** Two arrows pressing in on a line: shorter text. */
+    val Shorten: ImageVector by lazy { glyph("Shorten", "M4,11h16v2H4zM12,10L8,6h3V3h2v3h3zM12,14l4,4h-3v3h-2v-3H8z") }
+
+    /** Two arrows moving apart from a line: longer text. */
+    val Expand: ImageVector by lazy { glyph("Expand", "M4,11h16v2H4zM12,2l4,4h-3v3h-2V6H8zM12,22l-4,-4h3v-3h2v3h3z") }
+
+    /** A four-point star: polish. */
+    val Sparkle: ImageVector by lazy { glyph("Sparkle", "M12,2l2.4,7.6L22,12l-7.6,2.4L12,22l-2.4,-7.6L2,12l7.6,-2.4zM19,2l0.9,2.1L22,5l-2.1,0.9L19,8l-0.9,-2.1L16,5l2.1,-0.9z") }
+
+    /** A check mark over a line: grammar fixed. */
+    val Spellcheck: ImageVector by lazy { glyph("Spellcheck", "M8.6,14.2L4.7,10.3L3.3,11.7L8.6,17L20.7,4.9L19.3,3.5zM3,19h18v2H3z") }
+
+    /** A pen with a trailing line: carry on writing. */
+    val PenLine: ImageVector by lazy { glyph("PenLine", "M3,17l9.6,-9.6l3.6,3.6L6.6,20.6H3zM14,6l1.8,-1.8a1,1 0 0,1 1.4,0l2.6,2.6a1,1 0 0,1 0,1.4L18,10zM12,21h9v-2h-7z") }
+
+    /** A bulb: a simple explanation. */
+    val Lightbulb: ImageVector by lazy { glyph("Lightbulb", "M12,2a7,7 0 0,0 -4,12.7V17h8v-2.3A7,7 0 0,0 12,2zM9,19h6v2H9zM10,22h4v1h-4z") }
+
+    /** Squares with lines: a list of things to do. */
+    val Tasks: ImageVector by lazy { glyph("Tasks", "M4,4h5v5H4zM11,5.5h9v2h-9zM4,15h5v5H4zM11,16.5h9v2h-9z") }
+
+    /** A question mark: quiz questions. */
+    val Quiz: ImageVector by lazy { glyph("Quiz", "M12,3a5,5 0 0,0 -5,5h2.4a2.6,2.6 0 1,1 4.2,2.1c-1.6,1.2 -2.6,2 -2.6,4V15h2.4v-0.8c0,-1.2 0.7,-1.7 1.8,-2.6A5,5 0 0,0 12,3zM10.8,17.5h2.4v2.4h-2.4z") }
+
+    /** Two arrows going opposite ways: translation. */
+    val Translate: ImageVector by lazy { glyph("Translate", "M6,7h10V4l5,4.5L16,13v-3H6zM18,17H8v3l-5,-4.5L8,11v3h10z") }
 }

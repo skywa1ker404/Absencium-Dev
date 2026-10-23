@@ -89,10 +89,11 @@ object MarkdownEdit {
     }
 
     fun bullet(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val all = lines.filter { it.isNotBlank() }.all { bulletPrefix.containsMatchIn(it) }
+        val blankOnly = lines.all { it.isBlank() }
+        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { bulletPrefix.containsMatchIn(it) }
         lines.map { line ->
             when {
-                line.isBlank() -> line
+                line.isBlank() && !blankOnly -> line
                 all -> line.replace(bulletPrefix) { it.groupValues[1] }
                 else -> "- " + line.replace(checkPrefix) { it.groupValues[1] }.replace(numberPrefix) { it.groupValues[1] }.replace(bulletPrefix) { it.groupValues[1] }
             }
@@ -100,11 +101,12 @@ object MarkdownEdit {
     }
 
     fun numbered(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val all = lines.filter { it.isNotBlank() }.all { numberPrefix.containsMatchIn(it) }
+        val blankOnly = lines.all { it.isBlank() }
+        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { numberPrefix.containsMatchIn(it) }
         var n = 0
         lines.map { line ->
             when {
-                line.isBlank() -> line
+                line.isBlank() && !blankOnly -> line
                 all -> line.replace(numberPrefix) { it.groupValues[1] }
                 else -> { n++; "$n. " + line.replace(bulletPrefix) { it.groupValues[1] }.replace(checkPrefix) { it.groupValues[1] }.replace(numberPrefix) { it.groupValues[1] } }
             }
@@ -112,10 +114,11 @@ object MarkdownEdit {
     }
 
     fun checklist(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val all = lines.filter { it.isNotBlank() }.all { checkPrefix.containsMatchIn(it) }
+        val blankOnly = lines.all { it.isBlank() }
+        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { checkPrefix.containsMatchIn(it) }
         lines.map { line ->
             when {
-                line.isBlank() -> line
+                line.isBlank() && !blankOnly -> line
                 all -> line.replace(checkPrefix) { it.groupValues[1] }
                 else -> "- [ ] " + line.replace(checkPrefix) { it.groupValues[1] }.replace(bulletPrefix) { it.groupValues[1] }.replace(numberPrefix) { it.groupValues[1] }
             }
@@ -123,10 +126,11 @@ object MarkdownEdit {
     }
 
     fun quote(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val all = lines.filter { it.isNotBlank() }.all { quotePrefix.containsMatchIn(it) }
+        val blankOnly = lines.all { it.isBlank() }
+        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { quotePrefix.containsMatchIn(it) }
         lines.map { line ->
             when {
-                line.isBlank() -> line
+                line.isBlank() && !blankOnly -> line
                 all -> line.replace(quotePrefix, "")
                 else -> "> $line"
             }
@@ -197,10 +201,11 @@ object MarkdownEdit {
 
     /** Aligns every line the selection touches: start (no tag), centre or end. */
     fun setAlign(text: String, start: Int, end: Int, align: Align): Edited = mapLines(text, start, end) { lines ->
+        val blankOnly = lines.all { it.isBlank() }
         lines.map { line ->
             val bare = line.replace(alignTag, "")
             when {
-                bare.isBlank() -> line
+                bare.isBlank() && !blankOnly -> line
                 align == Align.CENTER -> "{align:center}$bare"
                 align == Align.END -> "{align:end}$bare"
                 else -> bare
@@ -212,11 +217,12 @@ object MarkdownEdit {
 
     /** A lettered list: `a) `, `b) `... Choosing it again on a lettered selection removes it. */
     fun lettered(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val all = lines.filter { it.isNotBlank() }.all { letterPrefix.containsMatchIn(it) }
+        val blankOnly = lines.all { it.isBlank() }
+        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { letterPrefix.containsMatchIn(it) }
         var n = 0
         lines.map { line ->
             when {
-                line.isBlank() -> line
+                line.isBlank() && !blankOnly -> line
                 all -> line.replace(letterPrefix) { it.groupValues[1] }
                 else -> {
                     val letter = 'a' + (n % 26)

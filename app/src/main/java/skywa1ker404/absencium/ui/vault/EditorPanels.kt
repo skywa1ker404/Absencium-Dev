@@ -1,7 +1,21 @@
 package skywa1ker404.absencium.ui.vault
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -44,7 +58,7 @@ import skywa1ker404.absencium.ui.vault.markdown.NoteTemplate
 import skywa1ker404.absencium.ui.vault.markdown.NoteTemplates
 
 /** Which panel is open above the editor's bottom toolbar. */
-enum class EditorPanel { NONE, TEXT, LISTS, ADD }
+enum class EditorPanel { NONE, AI, TEXT, LISTS, ADD }
 
 private enum class TextTab(val icon: () -> ImageVector, val description: String) {
     STYLE({ AppIcons.FormatSize }, "Text style"),
@@ -58,7 +72,7 @@ private const val SYMBOLS = "• ◦ ★ ☆ ✓ ✗ → ← ↑ ↓ ↔ ⇒ ± 
 
 /** A frosted card in the glass style of the floating bars, used for every panel. */
 @Composable
-private fun GlassCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+internal fun GlassCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -68,7 +82,7 @@ private fun GlassCard(modifier: Modifier = Modifier, content: @Composable () -> 
 
 /** One round tool button: an icon, or a short glyph where no icon says it better (H1, a size sample). [label] is read out by TalkBack. */
 @Composable
-private fun Tool(
+internal fun Tool(
     label: String,
     onClick: () -> Unit,
     selected: Boolean = false,
@@ -78,12 +92,18 @@ private fun Tool(
     glyphWeight: FontWeight = FontWeight.SemiBold,
 ) {
     val colors = MaterialTheme.colorScheme
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    // A small press and a soft colour change; quick enough to stay out of the way of typing.
+    val scale by animateFloatAsState(if (pressed) 0.9f else 1f, tween(90), label = "toolPress")
+    val fill by animateColorAsState(if (selected) colors.primaryContainer else Color.Transparent, tween(140), label = "toolFill")
     Box(
         modifier = Modifier
             .size(44.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
-            .background(if (selected) colors.primaryContainer else Color.Transparent)
-            .clickable(onClick = onClick)
+            .background(fill)
+            .clickable(interactionSource = source, indication = LocalIndication.current, onClick = onClick)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
@@ -113,6 +133,7 @@ fun EditorToolbar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            Tool("AI", { onUse(); onPanel(if (panel == EditorPanel.AI) EditorPanel.NONE else EditorPanel.AI) }, panel == EditorPanel.AI, icon = AppIcons.AutoAwesome)
             Tool("Text style", { onUse(); onPanel(if (panel == EditorPanel.TEXT) EditorPanel.NONE else EditorPanel.TEXT) }, panel == EditorPanel.TEXT, icon = AppIcons.FormatSize)
             Tool("Alignment and lists", { onUse(); onPanel(if (panel == EditorPanel.LISTS) EditorPanel.NONE else EditorPanel.LISTS) }, panel == EditorPanel.LISTS, icon = AppIcons.ListBulleted)
             Tool("Checklist", { onUse(); onCheck() }, icon = AppIcons.CheckBox)

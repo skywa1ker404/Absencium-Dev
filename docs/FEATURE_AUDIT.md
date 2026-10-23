@@ -47,7 +47,7 @@ Notes:
 | Class reminders with AlarmManager and notification actions (mark attended) | Self-Attendance `notification/TimetableAlarmScheduler.kt`, `ClassNotificationScheduler.kt` | None (Step 8) | High | Medium | Exact-alarm permission rules on 12/13/14 | **Ideas only** (no licence). Write our own. |
 | Offline PDF attendance report with `PdfDocument` | Self-Attendance `export/pdf/AttendancePdfGenerator.kt`, `PdfPageManager.kt` | None | Medium | Low-Medium | None technical | **Ideas only.** `PdfDocument` is a platform API, trivial to write ourselves. |
 | Smart bunk/attend-to-reach-target maths, unmarked-day automation | Self-Attendance README only (not traced to a file) | Partly (Step 7) | High | Low | Rounding rules | Ideas only |
-| WebDAV sync provider | June `core/.../data/sync/WebDAVProvider.kt`, `SyncVM.kt` | None (Step 18, Route A) | High | Medium-High | Conflict handling, credentials | **Compatible (GPL-3.0).** Candidate for adaptation after approval and after the `Transport` seam exists. |
+| WebDAV sync provider | June `core/.../data/sync/WebDAVProvider.kt`, `SyncVM.kt` | None (sync was removed from the plan on 2026-10-22) | High | Medium-High | Conflict handling, credentials | **Compatible (GPL-3.0).** Candidate for adaptation after approval and after the `Transport` seam exists. |
 | WebDAV backup with round-trip test | LastChat `androidTest/.../WebdavSyncBackupRoundTripTest.kt` | None | Medium | n/a | Licence problem | **Ideas only** (restricted licence). |
 | Biometric/PIN lock | June `MainActivity.kt` | None | Medium | Medium | Lockout recovery | Compatible; AndroidX `biometric` is Apache-2.0 and enough on its own. |
 | Network toggle (no external access unless on) | June README only | Planned (Step 14, off by default) | High (matches our consent rule) | Low | none | Idea |
@@ -71,7 +71,7 @@ Recommended for 1.0 (after approval, own implementation unless noted):
 4. Network off by default and consent screens: own implementation.
 
 Recommended for 1.x:
-5. WebDAV sync (Step 18): adapt from **June's** `WebDAVProvider` only after the `Transport` seam exists and the owner approves.
+5. WebDAV sync: dropped from the plan on 2026-10-22 (owner removed sync).
 6. Widgets: Glance, referencing **Keshu**.
 7. ICS export for exams and holidays.
 
@@ -94,4 +94,4 @@ Only those seen in these repos and relevant to the plan: Koin (June, Damier), Re
 1. Owner reviews this report.
 2. Approved items get a row in `docs/THIRD_PARTY_LICENSES.md` before any code lands.
 3. Reminders and notification work (Step 8) starts own-code, with version gates.
-4. Sync (Step 18) stays last.
+4. Sync: removed from the plan on 2026-10-22.

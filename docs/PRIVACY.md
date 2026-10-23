@@ -5,8 +5,7 @@ review, and nothing here has been device-tested.
 
 ## What stays on the phone
 
-Absencium is offline-first. It makes no network request unless the user turns on a feature that needs one (AI import, a
-future sync target). Those features are off by default and are never contacted without consent.
+Absencium is offline-first. It makes no network request unless the user turns on a feature that needs one (AI import, an AI request from Add Entry or the editor). Those features are off by default and are never contacted without consent.
 
 ## Backups
 
@@ -53,19 +52,19 @@ as `.bak`, and an interrupted swap is rolled back from them. Only one `.bak` gen
 
 Restoring settings accepts only a fixed list of known keys with the right type; unknown keys are ignored.
 
-## Local snapshots
-
-An optional daily copy of the database and settings (no photos), the newest three kept in the app's private storage. They are
-not encrypted: they have the same protection as the app's own database, i.e. Android's app sandbox. Anyone who can read the
-app's private storage (a rooted phone, an unencrypted adb backup, a device backup the user allows) can read them.
-
 ## Trash
 
 Deleted notes, exams, holidays and lectures are kept for 30 days, then removed for good (with a note's attachment files).
 Subjects and attendance entries are deleted immediately, not trashed. Deleting a subject removes its Trash entries too.
 
-## Sync and sharing (not built)
+## Sharing
 
-`Transport`, `ChangeSet` and `ReadOnlyScope` are interfaces only, with a local-folder transport. Nothing reaches a network.
-When sync arrives it will be off by default, send only encrypted blobs, and ask for consent before the first connection.
-Sharing will hand out a scoped read-only view that is empty unless the user fills it in.
+There is no sync, no cloud backup and no scheduled backup. Notes leave the phone only when the user exports or shares them
+(PDF, Markdown, text or ZIP through Android's share sheet) or makes a backup file. Peer-to-peer sharing is planned after
+1.0 and will ask first.
+
+## Recordings, pictures and files
+
+Recordings (microphone permission, asked when the first one is made), pictures, doodles and attached files are stored in the
+app's private storage and are only read by the app. Pictures sent to an AI (Solve Homework, text extraction) leave the
+phone to the provider the user set up.

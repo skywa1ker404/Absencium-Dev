@@ -3,7 +3,10 @@ package skywa1ker404.absencium.ui.vault
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -45,6 +48,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,6 +62,11 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -70,6 +79,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.NonCancellable
@@ -96,6 +106,7 @@ import skywa1ker404.absencium.ui.vault.markdown.EditKind
 import skywa1ker404.absencium.ui.vault.markdown.EmbedKind
 import skywa1ker404.absencium.ui.vault.markdown.LiveFormat
 import skywa1ker404.absencium.ui.vault.markdown.MarkdownEdit
+import skywa1ker404.absencium.ui.vault.markdown.MarkerHeal
 import skywa1ker404.absencium.ui.vault.markdown.NoteBlocks
 import skywa1ker404.absencium.ui.vault.markdown.NoteDoc
 import skywa1ker404.absencium.ui.vault.markdown.NoteTemplate
@@ -329,6 +340,64 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
     val dateText = remember(note.createdDate) {
         DateTimeFormatter.ofPattern("d MMM yyyy").format(Instant.ofEpochMilli(note.createdDate).atZone(ZoneId.systemDefault()))
     }
+    // ---- AI panel ----
+    var aiState by remember(note.id) { mutableStateOf(AiPanelState()) }
+    var aiPrompt by remember(note.id) { mutableStateOf("") }
+    val aiHistory = remember(note.id) { mutableStateListOf<AiHistoryItem>() }
+    var aiJob by remember(note.id) { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    // The selection the request was made for (null = the whole note), so the answer lands where the text was.
+    var aiRange by remember(note.id) { mutableStateOf<Pair<Int, Int>?>(null) }
+    val hasSelection = selStart != selEnd
+    val sourceText = if (hasSelection) text.substring(selStart.coerceIn(0, text.length), selEnd.coerceIn(0, text.length)) else text
+
+    fun startAi(title: String, request: String, replaces: Boolean) {
+        aiRange = if (hasSelection) selStart to selEnd else null
+        aiState = aiState.copy(running = true, result = null, error = null, setupMissing = false)
+        aiJob = viewModel.askAi(request) { out ->
+            aiState = aiState.copy(running = false, result = out.text, resultReplaces = replaces, error = out.error, setupMissing = out.setupMissing)
+            out.text?.let {
+                aiHistory += AiHistoryItem(title, it, replaces)
+                while (aiHistory.size > 20) aiHistory.removeAt(0)
+            }
+        }
+    }
+
+    fun runAiAction(action: AiAction) {
+        val trimmed = sourceText.trim()
+        if (action.tooShort(trimmed.length)) {
+            aiState = aiState.copy(error = "${action.label} needs at least ${action.minChars} characters. Select some text or write a little more.", result = null, setupMissing = false)
+            return
+        }
+        startAi(action.label, action.request(AiAction.excerpt(sourceText, action == AiAction.CONTINUE)), action.replaces)
+    }
+
+    fun sendCustomAi() {
+        val ask = aiPrompt.trim()
+        if (ask.isEmpty() || aiState.running) return
+        // An instruction given with text selected edits that text; without a selection it writes new material below.
+        startAi(ask.take(40), AiAction.custom(ask, AiAction.excerpt(sourceText, false)), replaces = hasSelection)
+        aiPrompt = ""
+    }
+
+    fun applyAiResult(replace: Boolean) {
+        val result = aiState.result ?: return
+        val range = aiRange
+        if (replace) {
+            if (range != null) {
+                apply(MarkdownEdit.insert(text, range.first.coerceIn(0, text.length), range.second.coerceIn(0, text.length), result))
+            } else {
+                commit(result, result.length, result.length)
+            }
+        } else {
+            val at = (range?.second ?: text.length).coerceIn(0, text.length)
+            var lineEnd = at
+            while (lineEnd < text.length && text[lineEnd] != '\n') lineEnd++
+            val lead = if (text.isEmpty()) "" else "\n\n"
+            apply(MarkdownEdit.insert(text, lineEnd, lineEnd, lead + result))
+        }
+        aiState = aiState.copy(result = null, error = null)
+    }
+
     val palette = LivePalette(accent = colors.primary, muted = colors.onSurfaceVariant, codeBackground = colors.surfaceContainerHighest)
 
     ScreenScaffold(
@@ -395,7 +464,31 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                 ) {
                     val s = selStart
                     val e = selEnd
-                    when (lastPanel) {
+                    AnimatedContent(
+                        targetState = lastPanel,
+                        transitionSpec = { fadeIn(tween(130)).togetherWith(fadeOut(tween(80))) },
+                        label = "editorPanel",
+                    ) { shown ->
+                    when (shown) {
+                        EditorPanel.AI -> AiPanel(
+                            state = aiState.copy(
+                                scopeLabel = if (hasSelection) "the selected text" else "the whole note",
+                                sourceLength = sourceText.trim().length,
+                                canReplace = hasSelection || parts.all { it.kind == PartKind.TEXT },
+                            ),
+                            prompt = aiPrompt,
+                            onPrompt = { aiPrompt = it },
+                            onSend = { sendCustomAi() },
+                            history = aiHistory,
+                            onAction = { runAiAction(it) },
+                            onReplace = { applyAiResult(replace = true) },
+                            onInsert = { applyAiResult(replace = false) },
+                            onDiscard = { aiState = aiState.copy(result = null, error = null) },
+                            onCancel = { aiJob?.cancel(); aiState = aiState.copy(running = false) },
+                            onOpenHistory = { aiState = aiState.copy(result = it.result, resultReplaces = it.replaces, error = null) },
+                            onOpenSettings = { navigator.navigate(AiSettingsScreenDestination) },
+                            onUse = ::hideKeyboard,
+                        )
                         EditorPanel.TEXT, EditorPanel.NONE -> TextPanel(
                             onWrap = { marker, placeholder -> apply(MarkdownEdit.toggleWrap(text, s, e, marker, placeholder)) },
                             onHeading = { apply(MarkdownEdit.heading(text, s, e, it)) },
@@ -421,6 +514,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                             onCodeBlock = { panel = EditorPanel.NONE; apply(MarkdownEdit.codeBlock(text, s, e)) },
                             onUse = ::hideKeyboard,
                         )
+                    }
                     }
                 }
                 EditorToolbar(
@@ -471,20 +565,35 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                         val styled = remember(plan, palette.accent, palette.muted, palette.codeBackground) { buildLiveText(plan, palette) }
                         val transformation = remember(plan, styled) { liveTransformation(plan, styled) }
                         var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-                        val value = if (i == focusPart && focusValue.text == part.text) focusValue else TextFieldValue(part.text)
+                        val value = when {
+                            i != focusPart -> TextFieldValue(part.text)
+                            focusValue.text == part.text -> focusValue
+                            // Keep the cursor where it was instead of sending it to the start when the two texts briefly differ.
+                            else -> TextFieldValue(part.text, TextRange(focusValue.selection.start.coerceIn(0, part.text.length), focusValue.selection.end.coerceIn(0, part.text.length)))
+                        }
                         BasicTextField(
                             value = value,
-                            onValueChange = { nv ->
-                                if (nv.text != part.text) {
-                                    val next = NoteDoc.replacePart(text, parts, i, nv.text)
-                                    history.record(Edited(text, selStart, selEnd), System.currentTimeMillis(), false)
+                            onValueChange = { incoming ->
+                                // A keyboard can send two events for one key (the text, then the cursor). Always compare with the
+                                // note as it is now, never with what this field was drawn from, or the second event would be applied twice.
+                                val nowParts = NoteDoc.split(text)
+                                val oldPart = nowParts.getOrNull(i)?.text ?: part.text
+                                var nv = incoming
+                                if (nv.text != oldPart) {
+                                    // A backspace that cut into a hidden marker removes the whole marker, never half of it.
+                                    MarkerHeal.heal(oldPart, nv.text)?.let { nv = TextFieldValue(it.text, TextRange(it.cursor)) }
+                                    // A line break inside styled text must not split the style's markers across two lines.
+                                    MarkerHeal.keepStylesWhole(oldPart, incoming.text)?.let { nv = TextFieldValue(it.text, TextRange(it.cursor)) }
+                                    val before = Edited(text, selStart, selEnd)
+                                    text = NoteDoc.replacePart(text, nowParts, i, nv.text)
+                                    history.record(before, System.currentTimeMillis(), false)
                                     historyVersion++
-                                    text = next
                                 }
                                 focusPart = i
                                 focusValue = nv
-                                selStart = NoteDoc.globalOffset(parts, i, nv.selection.min)
-                                selEnd = NoteDoc.globalOffset(parts, i, nv.selection.max)
+                                val afterParts = NoteDoc.split(text)
+                                selStart = NoteDoc.globalOffset(afterParts, i, nv.selection.min.coerceAtMost(nv.text.length))
+                                selEnd = NoteDoc.globalOffset(afterParts, i, nv.selection.max.coerceAtMost(nv.text.length))
                             },
                             textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface, lineHeight = TextUnit.Unspecified),
                             cursorBrush = SolidColor(colors.primary),
@@ -494,6 +603,19 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                                 .fillMaxWidth()
                                 .heightIn(min = if (parts.size == 1) 240.dp else 24.dp)
                                 .focusRequester(focuserFor(i))
+                                .onPreviewKeyEvent { ev ->
+                                    // Backspace at the very start of a line that follows a picture, doodle, recording or table removes that block.
+                                    if (ev.type == KeyEventType.KeyDown && ev.key == Key.Backspace && value.selection.collapsed && value.selection.start == 0 && i > 0) {
+                                        val nowParts = NoteDoc.split(text)
+                                        val prev = nowParts.getOrNull(i - 1)
+                                        if (prev != null && prev.kind != PartKind.TEXT) {
+                                            val next = if (prev.kind == PartKind.EMBED) NoteBlocks.remove(text, prev.line)
+                                            else text.substring(0, prev.start) + text.substring((prev.end + 1).coerceAtMost(text.length))
+                                            commit(next, prev.start, prev.start)
+                                            true
+                                        } else false
+                                    } else false
+                                }
                                 .onFocusChanged {
                                     if (it.isFocused && focusPart != i) {
                                         focusPart = i

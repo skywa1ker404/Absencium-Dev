@@ -1,14 +1,15 @@
-# Current tasks (2026-10-21)
+# Current tasks (2026-10-23)
 
-**Batch C1, in progress** (one CI run at the end; nothing runs locally)
-- [x] Plan and specification recorded in `TODOList.md`
-- [x] OCR library chosen and licence checked (Tesseract4Android, Apache-2.0)
-- [x] Glossy-glass option removed from code and Settings (CI green `8960989`)
-- [x] Vault page: "Drafts" text button becomes a trash icon that opens the Trash (10.19) (written, **CI not run**; Drafts stays in the pull-down and the FAB menu)
-- [x] Database v3: syllabus nodes table, note and material links, `GUIDE` type (CI green `23fcd73`; migration SQL still to be checked against `3.json`)
-- [x] Block document model and extended inline syntax, with unit tests (10.22; written, CI running on `1f609eb`)
-- [ ] New editor shell: tap to edit, ✓ to preview, no Edit/Preview chips, Aa tabs with Templates, Notes info popup (10.8 to 10.13)
+**Batch C2, written and pushed, CI running on `4c773c8`** (nothing runs locally; CI is the only runner)
+- [x] Live editor: one always-editable page that looks like the preview; no tags; smaller header; icon-only toolbar; keyboard hides on every toolbar tap (CI failed once on `20011b9`, a missing `@Composable`, fixed in `4c773c8`)
+- [x] Pictures, doodles and tables as blocks (menu, resize handle, crop and rotate), doodle canvas, table editor
+- [x] Sync and daily snapshots removed everywhere (code, settings, tests, docs)
+- [x] Trash removed from Settings (Vault trash icon stays)
+- [x] Add Entry: Text Notes, Document / File, Audio Note (recorder, inline player), Solve Homework, Generate AI Notes
+- [x] PDF export follows the page: pictures, doodles, tables, alignment, colours, sizes (audio left out)
+- [x] Docs: long `TODOList.md` restored with the summary on top, privacy and audit docs updated
+- [ ] CI result for `4c773c8`
 
-**Next batches:** C2 embedded blocks, image menu, audio · C3 doodle canvas · C4 folder page and 3-tab pill · C5 syllabus and linking · C6 editor AI and Add Entry actions. Then Step 5, then the missing-features audit.
+**Next:** folder page redesign and 3-tab pill (10.15) · syllabus tree and AI (10.16) · study material tab (10.17) · linking via "Uncategorized" (10.18) · editor AI panel (10.14) · local OCR with Tesseract4Android and EXIF scrub (10.3) · page adjustment · ZIP export of pictures · then Step 5 and the missing-features audit.
 
-**Waiting on you:** device test of the CI-green fixes; audit approval; ScanCode run; cleanup approval.
+**Waiting on you:** device test of the CI-green builds (nothing here has run on a phone); audit approval; ScanCode run; cleanup approval.
