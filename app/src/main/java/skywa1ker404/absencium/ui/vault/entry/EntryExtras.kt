@@ -58,10 +58,10 @@ internal fun AudioStage(viewModel: AddEntryViewModel, subjectName: String, onBac
 
     Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SquareIconButton(AppIcons.ArrowBack, "Back") {
+            SquareIconButton(AppIcons.ArrowBack, "Back", onClick = {
                 viewModel.discardRecording()
                 onBack()
-            }
+            })
             Text("Audio Note", style = MaterialTheme.typography.titleLarge)
         }
         Column(
@@ -141,7 +141,9 @@ internal fun AiTaskStage(
 
     Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SquareIconButton(AppIcons.ArrowBack, "Back") { if (!state.aiRunning) onBack() }
+            SquareIconButton(AppIcons.ArrowBack, "Back", onClick = {
+                if (!state.aiRunning) onBack()
+            })
             Text(if (solve) "Solve Homework" else "Generate AI Notes", style = MaterialTheme.typography.titleLarge)
         }
         AppTextField(
