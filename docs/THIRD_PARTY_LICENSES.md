@@ -43,6 +43,18 @@ source is copied into this repository.
 Copyright 2021 Rafael Costa. Licensed under the Apache License, Version 2.0. Source:
 https://github.com/raamcosta/compose-destinations. Used as a binary dependency (library and KSP code generator).
 
+### Tesseract4Android (cz.adaptech.tesseract4android:tesseract4android)
+
+Copyright Adaptech s.r.o. and Robert Poesel. Licensed under the Apache License, Version 2.0. Source:
+https://github.com/adaptech-cz/Tesseract4Android. Used as a binary dependency for reading text from pictures on the
+phone, with no network. It bundles Tesseract (Apache-2.0, https://github.com/tesseract-ocr/tesseract), Leptonica
+(BSD 2-clause, http://www.leptonica.org), libjpeg-turbo and libpng; each carries its own licence, listed in the projects named.
+
+### Tesseract English language data (app/src/main/assets/tessdata/eng.traineddata)
+
+The "fast" English model from https://github.com/tesseract-ocr/tessdata_fast, copied unchanged. Licensed under the
+Apache License, Version 2.0 (its LICENSE file is that text). Used by the on-device text reader.
+
 ### MaterialKolor (com.materialkolor:material-kolor)
 
 Copyright (c) 2026 Jordon de Hoog. Licensed under the MIT License. Source: https://github.com/jordond/materialkolor.

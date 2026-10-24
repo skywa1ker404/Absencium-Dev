@@ -249,6 +249,48 @@ object AppIcons {
         glyph("Eraser", "M16.2,3.6L4,15.8a2,2 0,0 0,0 2.8l1.4,1.4h6l8.4,-8.4a2,2 0,0 0,0 -2.8L19,6.2a2,2 0,0 0,-2.8 -2.6zM9.5,18L6,14.5l5,-5L14.5,13z")
     }
 
+    val ArrowUp: ImageVector by lazy { glyph("ArrowUp", "M12,4l-7,7h5v9h4v-9h5z") }
+
+    val ArrowDown: ImageVector by lazy { glyph("ArrowDown", "M12,20l7,-7h-5V4h-4v9H5z") }
+
+    val Remove: ImageVector by lazy { glyph("Remove", "M5,11h14v2H5z") }
+
+    val Fullscreen: ImageVector by lazy {
+        glyph("Fullscreen", "M4,4h6v2H6v4H4V4zM14,4h6v6h-2V6h-4V4zM4,14h2v4h4v2H4v-6zM18,14h2v6h-6v-2h4v-4z")
+    }
+
+    val SizeSmall: ImageVector by lazy { glyph("SizeSmall", "M8,9h8v6H8zM9.5,10.5v3h5v-3z") }
+
+    val SizeMedium: ImageVector by lazy { glyph("SizeMedium", "M6,7h12v10H6zM7.5,8.5v7h9v-7z") }
+
+    val SizeLarge: ImageVector by lazy { glyph("SizeLarge", "M4,5h16v14H4zM5.5,6.5v11h13v-11z") }
+
+    val SizeFull: ImageVector by lazy { glyph("SizeFull", "M2,4h20v16H2zM3.5,5.5v13h17v-13z") }
+
+    val ExtractText: ImageVector by lazy {
+        glyph("ExtractText", "M3,3h5v2H5v3H3V3zM16,3h5v5h-2V5h-3V3zM3,16h2v3h3v2H3v-5zM19,16h2v5h-5v-2h3v-3zM7,9h10v2H7zM7,13h7v2H7z")
+    }
+
+    val Transcribe: ImageVector by lazy {
+        glyph("Transcribe", "M4,4h16v12H8l-4,4V4zM7,8h10v2H7zM7,12h7v2H7z")
+    }
+
+    val AddRow: ImageVector by lazy {
+        glyph("AddRow", "M3,3h18v9H3zM5,5v5h14V5zM11,14h2v3h3v2h-3v3h-2v-3H8v-2h3z")
+    }
+
+    val RemoveRow: ImageVector by lazy {
+        glyph("RemoveRow", "M3,3h18v9H3zM5,5v5h14V5zM8,15h8v2H8z")
+    }
+
+    val AddColumn: ImageVector by lazy {
+        glyph("AddColumn", "M3,3h9v18H3zM5,5v14h5V5zM14,11h3V8h2v3h3v2h-3v3h-2v-3h-3z")
+    }
+
+    val RemoveColumn: ImageVector by lazy {
+        glyph("RemoveColumn", "M3,3h9v18H3zM5,5v14h5V5zM14,11h8v2h-8z")
+    }
+
     val Mic: ImageVector by lazy {
         glyph(
             "Mic",

@@ -49,6 +49,17 @@ class AppContainer(context: Context) {
     val shareService: skywa1ker404.absencium.data.share.ShareService by lazy { skywa1ker404.absencium.data.share.ShareService(appContext) }
     val backupManager = BackupManager(appContext)
     val aiClient = AiClient(apiKeyVault)
+    /** Reads text out of pictures, PDFs, documents and recordings, with the user's AI or on the phone. */
+    val textExtractor: skywa1ker404.absencium.data.ocr.TextExtractor by lazy {
+        skywa1ker404.absencium.data.ocr.TextExtractor(aiClient, skywa1ker404.absencium.data.ocr.LocalOcr(appContext)) {
+            val s = settingsState.value
+            if (s != null && skywa1ker404.absencium.ui.settings.aiReady(s, apiKeyVault.hasKey())) {
+                skywa1ker404.absencium.data.ai.AiConnection(s.aiProvider, s.effectiveAiStyle, s.aiBaseUrl, s.aiModel)
+            } else {
+                null
+            }
+        }
+    }
     val calendarRepository: CalendarRepository by lazy { CalendarRepository(database, settingsRepository.settings) }
     val vaultRepository: VaultRepository by lazy { VaultRepository(database) }
     val trashRepository: TrashRepository by lazy { TrashRepository(database, attachmentStore) }

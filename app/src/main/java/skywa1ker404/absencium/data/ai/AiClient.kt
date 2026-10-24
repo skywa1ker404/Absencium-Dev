@@ -34,8 +34,14 @@ data class AiConnection(
     val model: String,
 )
 
-/** A base64 image (JPEG or PNG) sent along with a prompt. */
-class AiImage(val mimeType: String, val base64: String)
+/**
+ * A base64 file sent along with a prompt: a picture (JPEG or PNG), a PDF, or a recording. Not every provider takes every kind;
+ * the client says so in plain words when one cannot.
+ */
+class AiImage(val mimeType: String, val base64: String) {
+    val isPdf: Boolean get() = mimeType == "application/pdf"
+    val isAudio: Boolean get() = mimeType.startsWith("audio/")
+}
 
 /** Something went wrong talking to the provider; [message] is written for the user. */
 class AiException(message: String) : Exception(message)
@@ -86,10 +92,29 @@ class AiClient(private val keyVault: ApiKeyVault) {
                 ApiStyle.OPENAI_COMPATIBLE -> {
                     val content = JSONArray().put(JSONObject().put("type", "text").put("text", prompt))
                     images.forEach {
-                        content.put(
-                            JSONObject().put("type", "image_url")
-                                .put("image_url", JSONObject().put("url", "data:${it.mimeType};base64,${it.base64}")),
-                        )
+                        when {
+                            it.isPdf -> content.put(
+                                JSONObject().put("type", "file").put(
+                                    "file",
+                                    JSONObject().put("filename", "document.pdf").put("file_data", "data:application/pdf;base64,${it.base64}"),
+                                ),
+                            )
+                            it.isAudio -> {
+                                val format = when (it.mimeType) {
+                                    "audio/mpeg", "audio/mp3" -> "mp3"
+                                    "audio/wav", "audio/x-wav", "audio/wave" -> "wav"
+                                    else -> throw AiException(
+                                        "This kind of API only takes WAV or MP3 audio, and Absencium records M4A. " +
+                                            "Pick a Google Gemini model in Settings, AI & Integrations to turn recordings into text.",
+                                    )
+                                }
+                                content.put(JSONObject().put("type", "input_audio").put("input_audio", JSONObject().put("data", it.base64).put("format", format)))
+                            }
+                            else -> content.put(
+                                JSONObject().put("type", "image_url")
+                                    .put("image_url", JSONObject().put("url", "data:${it.mimeType};base64,${it.base64}")),
+                            )
+                        }
                     }
                     val body = JSONObject().put("model", model).put(
                         "messages",
@@ -102,8 +127,11 @@ class AiClient(private val keyVault: ApiKeyVault) {
                 ApiStyle.ANTHROPIC -> {
                     val content = JSONArray()
                     images.forEach {
+                        if (it.isAudio) {
+                            throw AiException("Claude models cannot listen to audio. Pick a Google Gemini model in Settings, AI & Integrations to turn recordings into text.")
+                        }
                         content.put(
-                            JSONObject().put("type", "image").put(
+                            JSONObject().put("type", if (it.isPdf) "document" else "image").put(
                                 "source",
                                 JSONObject().put("type", "base64").put("media_type", it.mimeType).put("data", it.base64),
                             ),
@@ -125,10 +153,12 @@ class AiClient(private val keyVault: ApiKeyVault) {
                         parts.put(JSONObject().put("file_data", JSONObject().put("file_uri", videoUrl)))
                     }
                     images.forEach {
+                        // Gemini lists AAC, MP3, WAV, OGG, FLAC and AIFF; an M4A recording is AAC audio in an MP4 wrapper.
+                        val mime = if (it.mimeType == "audio/mp4" || it.mimeType == "audio/x-m4a" || it.mimeType == "audio/m4a") "audio/aac" else it.mimeType
                         parts.put(
                             JSONObject().put(
                                 "inline_data",
-                                JSONObject().put("mime_type", it.mimeType).put("data", it.base64),
+                                JSONObject().put("mime_type", mime).put("data", it.base64),
                             ),
                         )
                     }
