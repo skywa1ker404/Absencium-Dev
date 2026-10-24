@@ -136,4 +136,39 @@ class NoteBlocksTest {
         MarkdownParse.blocks(long)
         assertTrue("took ${(System.nanoTime() - started) / 1_000_000} ms", (System.nanoTime() - started) / 1_000_000 < 3000)
     }
+
+    @Test fun aBlockCanBeDroppedBetweenTextLines() {
+        val text = "one\n{{image:1|100|center}}\ntwo\nthree"
+        // Drop the picture in front of line 3 ("three"): it ends up between "two" and "three" on line 2.
+        val (down, at) = NoteBlocks.moveToLine(text, 1, 1, 4)
+        assertEquals("one\ntwo\nthree\n{{image:1|100|center}}", down)
+        assertEquals(3, at)
+        val (up, atUp) = NoteBlocks.moveToLine(down, 3, 1, 0)
+        assertEquals("{{image:1|100|center}}\none\ntwo\nthree", up)
+        assertEquals(0, atUp)
+        // Dropping where it already is changes nothing.
+        assertEquals(text to 1, NoteBlocks.moveToLine(text, 1, 1, 1))
+        assertEquals(text to 1, NoteBlocks.moveToLine(text, 1, 1, 2))
+    }
+
+    @Test fun aWholeTableMovesAsOneBlock() {
+        val table = "| a | b |\n| --- | --- |\n| 1 | 2 |"
+        val text = "top\n$table\nbottom"
+        val count = NoteBlocks.tableLineCount(text, 1)
+        assertEquals(3, count)
+        val (moved, at) = NoteBlocks.moveToLine(text, 1, count, 5)
+        assertEquals("top\nbottom\n$table", moved)
+        assertEquals(2, at)
+    }
+
+    @Test fun tableRowsGrowAndOnlyEmptyRowsShrink() {
+        val table = "| a | b |\n| --- | --- |\n| 1 | 2 |"
+        val grown = NoteBlocks.setTableRows(table, 0, 4)
+        assertEquals(5, NoteBlocks.tableLineCount(grown, 0))   // header, separator, three body rows
+        // The two new rows are empty, so they can go again; the written row stays.
+        assertEquals(table, NoteBlocks.setTableRows(grown, 0, 2))
+        assertEquals(table, NoteBlocks.setTableRows(table, 0, 1))
+        // Nothing changes when there is nothing to remove.
+        assertEquals(table, NoteBlocks.setTableRows(table, 0, 2))
+    }
 }

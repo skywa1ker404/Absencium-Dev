@@ -6,6 +6,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.zIndex
+import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +43,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -69,35 +81,125 @@ data class EmbedRef(val kind: EmbedKind, val id: Long, val widthPercent: Int, va
     }
 }
 
-/** What can be done to a picture or doodle on the page. Each one changes the note text or the file; the page redraws from that. */
+/**
+ * What can be done to a picture or doodle on the page. Each one changes the note text or the file; the page redraws from that.
+ * [onDrop] gets where the block was let go after a hold-and-drag: the height on screen and how far across the page (0 to 1).
+ */
 class EmbedActions(
     val onResize: (widthPercent: Int, align: Align) -> Unit,
     val onMove: (direction: Int) -> Unit,
+    val onDrop: (rootY: Float, xFraction: Float) -> Unit,
     val onRemove: () -> Unit,
     val onView: () -> Unit,
     val onCrop: () -> Unit,
     val onDraw: () -> Unit,
 )
 
+/** A round handle on a corner of a selected block. Dragging it sideways resizes; [signX] is +1 for a right-hand corner, -1 for a left-hand one. */
+@Composable
+private fun BoxScope.CornerHandle(
+    position: Alignment,
+    signX: Int,
+    centred: Boolean,
+    rowWidth: Int,
+    currentPercent: () -> Int,
+    onPercent: (Int) -> Unit,
+    onEnd: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    Box(
+        modifier = Modifier
+            .align(position)
+            .padding(4.dp)
+            .size(26.dp)
+            .clip(CircleShape)
+            .background(colors.primary)
+            .border(2.dp, colors.surface, CircleShape)
+            .semantics { contentDescription = "Drag to resize" }
+            .pointerInput(rowWidth, centred) {
+                var moved = 0f
+                var start = 100
+                detectDragGestures(
+                    onDragStart = { moved = 0f; start = currentPercent() },
+                    onDragEnd = { onEnd() },
+                    onDragCancel = { onCancel() },
+                ) { change, amount ->
+                    change.consume()
+                    moved += amount.x
+                    // A centred block grows on both sides, so the edge under the finger moves half as far as the width changes.
+                    val growth = signX * moved * (if (centred) 2f else 1f)
+                    onPercent((start + growth / rowWidth.coerceAtLeast(1) * 100f).toInt().coerceIn(10, 100))
+                }
+            },
+    )
+}
+
 /**
- * A picture or doodle sitting on the page. Tapping it opens its menu; while it is selected a round handle at its corner
- * resizes it by dragging. Size and alignment are kept in the note line, so the page and the PDF show the same thing.
+ * A picture, doodle or recording sitting on the page. Tap it for its menu. Hold it and drag to move it anywhere in the note (let go
+ * over a line of text and it lands there; let go towards the left or right edge and it aligns that way). While it is selected,
+ * round handles on its corners resize it. Size and alignment are kept in the note line, so the page and the PDF show the same thing.
  */
 @Composable
-fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actions: EmbedActions) {
+fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actions: EmbedActions, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     var menuOpen by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf(false) }
     var rowWidth by remember { mutableIntStateOf(0) }
+    var rowLeft by remember { mutableFloatStateOf(0f) }
     var dragPercent by remember { mutableIntStateOf(-1) }
-    val density = LocalDensity.current
+    var drag by remember { mutableStateOf(Offset.Zero) }
+    var dragging by remember { mutableStateOf(false) }
+    var centre by remember { mutableStateOf(Offset.Zero) }
+    var dragStartCentre by remember { mutableStateOf(Offset.Zero) }
     val percent = if (dragPercent > 0) dragPercent else ref.widthPercent
+    val centred = ref.align == Align.CENTER
+
+    // A selected block lets go of its handles after a few quiet seconds.
+    LaunchedEffect(selected, menuOpen, dragPercent, dragging) {
+        if (selected && !menuOpen && dragPercent < 0 && !dragging) {
+            delay(5000)
+            selected = false
+        }
+    }
 
     Box(
-        modifier = Modifier.fillMaxWidth().onSizeChanged { rowWidth = it.width },
+        modifier = modifier
+            .fillMaxWidth()
+            .zIndex(if (dragging) 1f else 0f)
+            .onSizeChanged { rowWidth = it.width }
+            .onGloballyPositioned { rowLeft = it.positionInRoot().x }
+            .graphicsLayer {
+                translationX = drag.x
+                translationY = drag.y
+                val lift = if (dragging) 1.03f else 1f
+                scaleX = lift
+                scaleY = lift
+                alpha = if (dragging) 0.92f else 1f
+            },
         contentAlignment = when (ref.align) { Align.START -> Alignment.CenterStart; Align.CENTER -> Alignment.Center; Align.END -> Alignment.CenterEnd },
     ) {
-        Box(modifier = Modifier.fillMaxWidth(percent / 100f)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(percent / 100f)
+                .onGloballyPositioned { c ->
+                    val p = c.positionInRoot()
+                    centre = Offset(p.x + c.size.width / 2f, p.y + c.size.height / 2f)
+                }
+                .pointerInput(Unit) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { dragStartCentre = centre; dragging = true; selected = true },
+                        onDrag = { change, amount -> change.consume(); drag += amount },
+                        onDragEnd = {
+                            val landed = dragStartCentre + drag
+                            drag = Offset.Zero
+                            dragging = false
+                            actions.onDrop(landed.y, ((landed.x - rowLeft) / rowWidth.coerceAtLeast(1)).coerceIn(0f, 1f))
+                        },
+                        onDragCancel = { drag = Offset.Zero; dragging = false },
+                    )
+                },
+        ) {
             if (ref.kind == EmbedKind.AUDIO) {
                 var player by remember { mutableStateOf<MediaPlayer?>(null) }
                 var playing by remember { mutableStateOf(false) }
@@ -108,7 +210,16 @@ fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actio
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .background(colors.surfaceContainerHighest)
-                        .clickable(enabled = attachment != null) {
+                        .border(if (selected) 2.dp else 0.dp, colors.primary, RoundedCornerShape(16.dp))
+                        .clickable(enabled = attachment != null) { selected = true; menuOpen = true }
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Icon(
+                        if (playing) AppIcons.Stop else AppIcons.PlayCircle,
+                        contentDescription = if (playing) "Stop" else "Play the recording",
+                        modifier = Modifier.clip(CircleShape).clickable(enabled = attachment != null) {
                             if (playing) {
                                 runCatching { player?.release() }
                                 player = null
@@ -125,12 +236,8 @@ fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actio
                                 }.getOrNull()
                                 playing = player != null
                             }
-                        }
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Icon(if (playing) AppIcons.Close else AppIcons.PlayCircle, contentDescription = if (playing) "Stop" else "Play the recording")
+                        },
+                    )
                     Text(
                         if (attachment == null) "Recording not found" else "Recording  %d:%02d".format(seconds / 60, seconds % 60),
                         style = MaterialTheme.typography.bodyMedium,
@@ -159,43 +266,43 @@ fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actio
                         )
                     }
                 }
-                if (selected && attachment != null) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(6.dp)
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(colors.primary)
-                            .semantics { contentDescription = "Drag to resize" }
-                            .pointerInput(rowWidth, ref.widthPercent) {
-                                var start = ref.widthPercent
-                                var moved = 0f
-                                detectDragGestures(
-                                    onDragStart = { start = ref.widthPercent; moved = 0f },
-                                    onDragEnd = {
-                                        if (dragPercent > 0) actions.onResize(dragPercent, ref.align)
-                                        dragPercent = -1
-                                    },
-                                    onDragCancel = { dragPercent = -1 },
-                                ) { change, amount ->
-                                    change.consume()
-                                    moved += amount.x
-                                    val whole = rowWidth.coerceAtLeast(1)
-                                    // The handle sits on the picture's far edge: dragging towards the middle makes it smaller.
-                                    val sign = if (ref.align == Align.END) -1 else 1
-                                    dragPercent = (start + sign * moved / whole * 100f).toInt().coerceIn(10, 100)
-                                }
-                            },
+            }
+            if (selected && attachment != null && ref.kind != EmbedKind.AUDIO) {
+                // The corner on the anchored side stays put, so only the free corners are offered.
+                val showRight = ref.align != Align.END
+                val showLeft = ref.align != Align.START
+                fun handle(position: Alignment, signX: Int): @Composable BoxScope.() -> Unit = {
+                    CornerHandle(
+                        position = position,
+                        signX = signX,
+                        centred = centred,
+                        rowWidth = rowWidth,
+                        currentPercent = { ref.widthPercent },
+                        onPercent = { dragPercent = it },
+                        onEnd = {
+                            if (dragPercent > 0) actions.onResize(dragPercent, ref.align)
+                            dragPercent = -1
+                        },
+                        onCancel = { dragPercent = -1 },
                     )
                 }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false; selected = false }) {
-                    @Composable
-                    fun item(label: String, onClick: () -> Unit) =
-                        DropdownMenuItem(text = { Text(label) }, onClick = { menuOpen = false; selected = false; onClick() })
-                    item("View full screen") { actions.onView() }
-                    item("Move up") { actions.onMove(-1) }
-                    item("Move down") { actions.onMove(1) }
+                if (showRight) {
+                    handle(Alignment.TopEnd, 1)()
+                    handle(Alignment.BottomEnd, 1)()
+                }
+                if (showLeft) {
+                    handle(Alignment.TopStart, -1)()
+                    handle(Alignment.BottomStart, -1)()
+                }
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                @Composable
+                fun item(label: String, onClick: () -> Unit) =
+                    DropdownMenuItem(text = { Text(label) }, onClick = { menuOpen = false; selected = false; onClick() })
+                if (ref.kind != EmbedKind.AUDIO) item("View full screen") { actions.onView() }
+                item("Move up") { actions.onMove(-1) }
+                item("Move down") { actions.onMove(1) }
+                if (ref.kind != EmbedKind.AUDIO) {
                     item("Small") { actions.onResize(33, ref.align) }
                     item("Medium") { actions.onResize(60, ref.align) }
                     item("Large") { actions.onResize(85, ref.align) }
@@ -203,21 +310,128 @@ fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actio
                     item("Align left") { actions.onResize(ref.widthPercent, Align.START) }
                     item("Align centre") { actions.onResize(ref.widthPercent, Align.CENTER) }
                     item("Align right") { actions.onResize(ref.widthPercent, Align.END) }
-                    if (ref.kind == EmbedKind.IMAGE) item("Crop and rotate") { actions.onCrop() }
-                    if (ref.kind == EmbedKind.DOODLE) item("Draw on it") { actions.onDraw() }
-                    item("Remove") { actions.onRemove() }
                 }
+                if (ref.kind == EmbedKind.IMAGE) item("Edit: crop, rotate, flip") { actions.onCrop() }
+                if (ref.kind == EmbedKind.DOODLE) item("Draw on it") { actions.onDraw() }
+                item("Remove") { actions.onRemove() }
             }
         }
     }
 }
 
-/** A table on the page. Tapping it opens the table editor. */
+/** What can be done to a table on the page. */
+class TableActions(
+    val onEdit: () -> Unit,
+    /** Gives the table this many rows (the header counts as one); only empty rows are ever removed. */
+    val onSetRows: (Int) -> Unit,
+    val onAddColumn: () -> Unit,
+    val onRemoveColumn: () -> Unit,
+    val onMove: (direction: Int) -> Unit,
+    /** Where a hold-and-drag was let go: the height on screen. */
+    val onDrop: (rootY: Float) -> Unit,
+    val onRemove: () -> Unit,
+)
+
+/**
+ * A table on the page. Tap it for its menu (edit, add or remove rows and columns, move, remove). Hold it and drag to move it. The
+ * round handle at its bottom corner adds rows when dragged down and removes the empty rows at the bottom when dragged up.
+ */
 @Composable
-fun TableBlock(text: String, onEdit: () -> Unit) {
+fun TableBlock(text: String, actions: TableActions, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
     val block = remember(text) { skywa1ker404.absencium.ui.vault.markdown.MarkdownParse.blocks(text).firstOrNull() as? Block.Table }
-    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable(onClick = onEdit)) {
-        if (block != null) PreviewTable(block) { } else Text(text, style = MaterialTheme.typography.bodySmall)
+    val rowCount = remember(text) { TableGrid.parse(text).size }
+    val rowCountNow by rememberUpdatedState(rowCount)
+    var menuOpen by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf(false) }
+    var heightPx by remember { mutableIntStateOf(0) }
+    var drag by remember { mutableStateOf(Offset.Zero) }
+    var dragging by remember { mutableStateOf(false) }
+    var centreY by remember { mutableFloatStateOf(0f) }
+    var startCentreY by remember { mutableFloatStateOf(0f) }
+    val shape = RoundedCornerShape(8.dp)
+
+    LaunchedEffect(selected, menuOpen, dragging) {
+        if (selected && !menuOpen && !dragging) {
+            delay(5000)
+            selected = false
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .zIndex(if (dragging) 1f else 0f)
+            .graphicsLayer {
+                translationX = drag.x
+                translationY = drag.y
+                alpha = if (dragging) 0.92f else 1f
+            }
+            .onSizeChanged { heightPx = it.height }
+            .onGloballyPositioned { c -> centreY = c.positionInRoot().y + c.size.height / 2f }
+            .pointerInput(Unit) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { startCentreY = centreY; dragging = true; selected = true },
+                    onDrag = { change, amount -> change.consume(); drag += amount },
+                    onDragEnd = {
+                        val landed = startCentreY + drag.y
+                        drag = Offset.Zero
+                        dragging = false
+                        actions.onDrop(landed)
+                    },
+                    onDragCancel = { drag = Offset.Zero; dragging = false },
+                )
+            },
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .border(if (selected) 2.dp else 0.dp, colors.primary, shape)
+                .clickable { selected = true; menuOpen = true },
+        ) {
+            if (block != null) PreviewTable(block) { } else Text(text, style = MaterialTheme.typography.bodySmall)
+        }
+        if (selected) {
+            // Dragging the corner down by one row's height adds a row; up removes an empty bottom row.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(4.dp)
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(colors.primary)
+                    .border(2.dp, colors.surface, CircleShape)
+                    .semantics { contentDescription = "Drag down to add rows, up to remove empty rows" }
+                    .pointerInput(Unit) {
+                        var moved = 0f
+                        var start = 1
+                        detectDragGestures(
+                            onDragStart = { moved = 0f; start = rowCountNow },
+                            onDragEnd = { },
+                            onDragCancel = { },
+                        ) { change, amount ->
+                            change.consume()
+                            moved += amount.y
+                            val rowHeight = (heightPx.toFloat() / rowCountNow.coerceAtLeast(1)).coerceAtLeast(1f)
+                            actions.onSetRows((start + (moved / rowHeight).roundToInt()).coerceIn(1, 50))
+                        }
+                    },
+            )
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            @Composable
+            fun item(label: String, onClick: () -> Unit) =
+                DropdownMenuItem(text = { Text(label) }, onClick = { menuOpen = false; selected = false; onClick() })
+            item("Edit the table") { actions.onEdit() }
+            item("Add a row") { actions.onSetRows(rowCount + 1) }
+            item("Remove the last row if empty") { actions.onSetRows(rowCount - 1) }
+            item("Add a column") { actions.onAddColumn() }
+            item("Remove the last column") { actions.onRemoveColumn() }
+            item("Move up") { actions.onMove(-1) }
+            item("Move down") { actions.onMove(1) }
+            item("Remove the table") { actions.onRemove() }
+        }
     }
 }
 

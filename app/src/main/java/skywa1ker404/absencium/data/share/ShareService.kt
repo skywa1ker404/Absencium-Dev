@@ -144,7 +144,6 @@ class ShareService(private val context: Context) {
                 ExifInterface.TAG_GPS_PROCESSING_METHOD, ExifInterface.TAG_MAKE, ExifInterface.TAG_MODEL, ExifInterface.TAG_SOFTWARE,
                 ExifInterface.TAG_DATETIME, ExifInterface.TAG_DATETIME_ORIGINAL, ExifInterface.TAG_DATETIME_DIGITIZED, ExifInterface.TAG_ARTIST,
                 ExifInterface.TAG_COPYRIGHT, ExifInterface.TAG_IMAGE_DESCRIPTION, ExifInterface.TAG_USER_COMMENT, ExifInterface.TAG_MAKER_NOTE,
-                ExifInterface.TAG_CAMERA_OWNER_NAME, ExifInterface.TAG_BODY_SERIAL_NUMBER,
             ).forEach { exif.setAttribute(it, null) }
             exif.saveAttributes()
         } catch (e: Exception) {

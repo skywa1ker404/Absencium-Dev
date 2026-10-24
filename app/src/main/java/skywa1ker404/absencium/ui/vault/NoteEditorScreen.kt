@@ -49,6 +49,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -434,6 +437,47 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         aiState = aiState.copy(result = null, error = null)
     }
 
+    // Where each part of the page is on screen, so a block let go after a drag can find the line it landed on.
+    val partBounds = remember(note.id) { mutableStateMapOf<Int, Pair<Float, Float>>() }
+
+    /** Puts the block that starts at [part] (it covers [lineCount] lines) where it was let go, and aligns a picture by how far across it landed. */
+    fun dropBlock(part: skywa1ker404.absencium.ui.vault.markdown.DocPart, lineCount: Int, rootY: Float, xFraction: Float?, ref: EmbedRef?) {
+        val ps = NoteDoc.split(text)
+        var before = -1
+        for ((j, p) in ps.withIndex()) {
+            if (p.kind == part.kind && p.line == part.line) continue
+            val b = partBounds[j] ?: continue
+            if (rootY >= b.first && rootY <= b.second) {
+                val f = ((rootY - b.first) / (b.second - b.first).coerceAtLeast(1f)).coerceIn(0f, 1f)
+                before = when {
+                    p.kind == PartKind.TEXT -> {
+                        val n = p.text.split("\n").size
+                        p.line + (f * n).toInt().coerceIn(0, n)
+                    }
+                    f < 0.5f -> p.line
+                    p.kind == PartKind.TABLE -> p.line + NoteBlocks.tableLineCount(text, p.line)
+                    else -> p.line + 1
+                }
+                break
+            }
+        }
+        if (before < 0) {
+            val firstTop = partBounds[0]?.first ?: 0f
+            before = if (rootY < firstTop) 0 else text.split("\n").size
+        }
+        val (moved, at) = NoteBlocks.moveToLine(text, part.line, lineCount, before)
+        var next = moved
+        if (ref != null && xFraction != null && ref.widthPercent < 100) {
+            val align = when {
+                xFraction < 0.33f -> skywa1ker404.absencium.ui.vault.markdown.Align.START
+                xFraction > 0.66f -> skywa1ker404.absencium.ui.vault.markdown.Align.END
+                else -> skywa1ker404.absencium.ui.vault.markdown.Align.CENTER
+            }
+            next = NoteBlocks.resize(next, at, ref.widthPercent, align)
+        }
+        if (next != text) commit(next)
+    }
+
     val palette = LivePalette(accent = colors.primary, muted = colors.onSurfaceVariant, codeBackground = colors.surfaceContainerHighest)
 
     ScreenScaffold(
@@ -663,6 +707,10 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                                 .fillMaxWidth()
                                 .heightIn(min = if (parts.size == 1) 240.dp else 24.dp)
                                 .focusRequester(focuserFor(i))
+                                .onGloballyPositioned { c ->
+                                    val y = c.positionInRoot().y
+                                    partBounds[i] = y to y + c.size.height
+                                }
                                 .onPreviewKeyEvent { ev ->
                                     // Backspace at the very start of a line that follows a picture, doodle, recording or table removes that block.
                                     if (ev.type == KeyEventType.KeyDown && ev.key == Key.Backspace && value.selection.collapsed && value.selection.start == 0 && i > 0) {
@@ -722,6 +770,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                                 actions = EmbedActions(
                                     onResize = { w, a -> commit(NoteBlocks.resize(text, part.line, w, a)) },
                                     onMove = { d -> commit(NoteBlocks.move(text, part.line, d).first) },
+                                    onDrop = { y, xf -> dropBlock(part, 1, y, xf, ref) },
                                     onRemove = { commit(NoteBlocks.remove(text, part.line)) },
                                     onView = { viewing = attachment },
                                     onCrop = { cropping = attachment },
@@ -731,7 +780,34 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                         }
                     }
 
-                    PartKind.TABLE -> TableBlock(part.text) { tableStart = part.start }
+                    PartKind.TABLE -> {
+                        val tableLines = part.text.split("\n").size
+                        TableBlock(
+                            text = part.text,
+                            modifier = Modifier.onGloballyPositioned { c ->
+                                val y = c.positionInRoot().y
+                                partBounds[i] = y to y + c.size.height
+                            },
+                            actions = TableActions(
+                                onEdit = { tableStart = part.start },
+                                onSetRows = { rows -> commit(NoteBlocks.setTableRows(text, part.line, rows)) },
+                                onAddColumn = { commit(NoteBlocks.addColumn(text, part.line, 99)) },
+                                onRemoveColumn = {
+                                    val width = skywa1ker404.absencium.ui.vault.markdown.TableGrid.parse(part.text).maxOf { it.size }
+                                    commit(NoteBlocks.deleteColumn(text, part.line, width - 1))
+                                },
+                                onMove = { d ->
+                                    val before = if (d < 0) (part.line - 1).coerceAtLeast(0) else part.line + tableLines + 1
+                                    commit(NoteBlocks.moveToLine(text, part.line, tableLines, before).first)
+                                },
+                                onDrop = { y -> dropBlock(part, tableLines, y, null, null) },
+                                onRemove = {
+                                    val cut = (part.end + 1).coerceAtMost(text.length)
+                                    commit(text.substring(0, part.start) + text.substring(cut))
+                                },
+                            ),
+                        )
+                    }
                 }
                 // Between two blocks there is no line to type on; a thin strip adds one.
                 val next = parts.getOrNull(i + 1)

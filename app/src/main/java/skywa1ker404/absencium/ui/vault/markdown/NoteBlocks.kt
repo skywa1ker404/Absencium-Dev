@@ -60,6 +60,48 @@ object NoteBlocks {
         return lines.joinToString("\n") to j
     }
 
+    /**
+     * Takes the [count] lines that start at [line] (a picture line, or a whole table) and puts them in front of line [before]
+     * (numbered as in [text] now; the text's line count means "at the end"). Returns the new text and the line the block starts on.
+     */
+    fun moveToLine(text: String, line: Int, count: Int, before: Int): Pair<String, Int> {
+        val lines = linesOf(text)
+        if (count < 1 || line !in lines.indices || line + count > lines.size) return text to line
+        val target = before.coerceIn(0, lines.size)
+        if (target in line..(line + count)) return text to line
+        val block = ArrayList(lines.subList(line, line + count))
+        repeat(count) { lines.removeAt(line) }
+        val at = if (target > line) target - count else target
+        lines.addAll(at, block)
+        return lines.joinToString("\n") to at
+    }
+
+    /** How many lines the table that starts at [startLine] has, header and separator included; 0 when no table starts there. */
+    fun tableLineCount(text: String, startLine: Int): Int {
+        val lines = linesOf(text)
+        val t = locate(lines, startLine) ?: return 0
+        return t.to - t.from + 1
+    }
+
+    /**
+     * Gives the table that starts at [startLine] exactly [rows] rows (the header counts as one). Growing adds empty rows; shrinking
+     * only removes rows from the bottom that hold nothing, so written rows are never lost. Returns [text] when nothing changed.
+     */
+    fun setTableRows(text: String, startLine: Int, rows: Int): String = edit(text, startLine) { t ->
+        val target = rows.coerceIn(1, 50)
+        val width = t.cells.maxOfOrNull { it.size } ?: 1
+        var changed = false
+        while (t.cells.size < target) {
+            t.cells.add(MutableList(width) { "" })
+            changed = true
+        }
+        while (t.cells.size > target && t.cells.size > 1 && t.cells.last().all { it.isBlank() }) {
+            t.cells.removeAt(t.cells.size - 1)
+            changed = true
+        }
+        changed
+    }
+
     // ---- tables ----
 
     /** An empty table of [rows] by [columns] with a header row. */
