@@ -42,6 +42,48 @@ object ExportNames {
         append(body.trimEnd()).append('\n')
     }
 
+    private val embedLine = Regex("^\\{\\{(image|doodle|audio):(\\d{1,18})(?:\\|\\d{1,3})?(?:\\|(?:start|center|end))?\\}\\}$")
+    private val alignPrefix = Regex("^\\{align:(center|end)\\}")
+    private val colourSpan = Regex("\\{color:([0-9A-Fa-f]{6})\\|(.*?)\\|\\}")
+    private val sizeSpan = Regex("\\{size:(\\d{1,2})\\|(.*?)\\|\\}")
+    private val underlineSpan = Regex("\\+\\+(.+?)\\+\\+")
+    private val highlightSpan = Regex("==(.+?)==")
+    private val noteLink = Regex("\\[\\[(.+?)\\]\\]")
+
+    /**
+     * The note body in Markdown that other apps can read. Picture, doodle and recording lines become image and file links through
+     * [resolve] (null when the file is not part of this export; a short italic note stands in). Colours, sizes, underline, highlight
+     * and alignment, which Markdown has no marks for, become the small HTML tags most Markdown viewers understand. Pure.
+     */
+    fun portableMarkdown(body: String, resolve: (kind: String, id: Long) -> String?): String =
+        body.lines().joinToString("\n") { raw ->
+            val embed = embedLine.matchEntire(raw.trim())
+            if (embed != null) {
+                val kind = embed.groupValues[1]
+                val target = resolve(kind, embed.groupValues[2].toLong())
+                val label = when (kind) { "doodle" -> "Doodle"; "audio" -> "Recording"; else -> "Picture" }
+                return@joinToString when {
+                    target == null -> "*[$label not included in this file. Export as ZIP to include it.]*"
+                    kind == "audio" -> "[$label]($target)"
+                    else -> "![$label]($target)"
+                }
+            }
+            var line = raw
+            var align: String? = null
+            alignPrefix.find(line)?.let {
+                align = if (it.groupValues[1] == "end") "right" else "center"
+                line = line.removeRange(it.range)
+            }
+            line = line
+                .replace(colourSpan) { "<span style=\"color:#${it.groupValues[1]}\">${it.groupValues[2]}</span>" }
+                .replace(sizeSpan) { "<span style=\"font-size:${it.groupValues[1]}px\">${it.groupValues[2]}</span>" }
+                .replace(underlineSpan) { "<u>${it.groupValues[1]}</u>" }
+                .replace(highlightSpan) { "<mark>${it.groupValues[1]}</mark>" }
+                .replace(noteLink) { it.groupValues[1] }
+            val side = align
+            if (side != null && line.isNotBlank()) "<p align=\"$side\">$line</p>" else line
+        }
+
     /** The note as plain text: no Markdown marks are removed (they stay readable), only the heading and tags are added. */
     fun plainText(title: String, tags: String, body: String): String = markdown(title, tags, body)
 }

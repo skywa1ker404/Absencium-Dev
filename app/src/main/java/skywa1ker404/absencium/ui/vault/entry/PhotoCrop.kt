@@ -24,6 +24,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -347,36 +353,20 @@ fun PhotoCropDialog(
                     }
                 }
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PillButton(
-                        text = "Rotate left",
-                        compact = true,
-                        tonal = true,
-                        onClick = {
-                            transform = transform.copy(quarterTurns = (transform.quarterTurns + 3) % 4)
-                            crop = Rect.Zero
-                        },
-                    )
-                    PillButton(
-                        text = "Rotate right",
-                        compact = true,
-                        tonal = true,
-                        onClick = {
-                            transform = transform.copy(quarterTurns = (transform.quarterTurns + 1) % 4)
-                            crop = Rect.Zero
-                        },
-                    )
-                    PillButton(
-                        text = "Flip horizontal",
-                        compact = true,
-                        tonal = true,
-                        onClick = { transform = transform.copy(flipHorizontal = !transform.flipHorizontal) },
-                    )
-                    PillButton(
-                        text = "Flip vertical",
-                        compact = true,
-                        tonal = true,
-                        onClick = { transform = transform.copy(flipVertical = !transform.flipVertical) },
-                    )
+                    CropIcon("Rotate left", mirrored = true, icon = AppIcons.RotateRight) {
+                        transform = transform.copy(quarterTurns = (transform.quarterTurns + 3) % 4)
+                        crop = Rect.Zero
+                    }
+                    CropIcon("Rotate right", icon = AppIcons.RotateRight) {
+                        transform = transform.copy(quarterTurns = (transform.quarterTurns + 1) % 4)
+                        crop = Rect.Zero
+                    }
+                    CropIcon("Flip horizontal", icon = AppIcons.FlipHorizontal, selected = transform.flipHorizontal) {
+                        transform = transform.copy(flipHorizontal = !transform.flipHorizontal)
+                    }
+                    CropIcon("Flip vertical", icon = AppIcons.FlipVertical, selected = transform.flipVertical) {
+                        transform = transform.copy(flipVertical = !transform.flipVertical)
+                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -434,5 +424,26 @@ fun PhotoCropDialog(
                 }
             }
         }
+    }
+}
+
+/** A round icon button of the photo editor, light on its dark page. [mirrored] flips the icon sideways (rotate left). */
+@Composable
+private fun CropIcon(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, mirrored: Boolean = false, selected: Boolean = false, onClick: () -> Unit) {
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier
+            .size(46.dp)
+            .clip(androidx.compose.foundation.shape.CircleShape)
+            .background(if (selected) Color.White.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.12f))
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        androidx.compose.material3.Icon(
+            icon,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(24.dp).graphicsLayer { scaleX = if (mirrored) -1f else 1f },
+        )
     }
 }

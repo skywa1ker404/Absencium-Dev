@@ -58,7 +58,7 @@ import skywa1ker404.absencium.ui.vault.markdown.NoteTemplate
 import skywa1ker404.absencium.ui.vault.markdown.NoteTemplates
 
 /** Which panel is open above the editor's bottom toolbar. */
-enum class EditorPanel { NONE, AI, TEXT, LISTS, ADD }
+enum class EditorPanel { NONE, AI, TEXT, LISTS, MEDIA, ADD, RECORD }
 
 private enum class TextTab(val icon: () -> ImageVector, val description: String) {
     STYLE({ AppIcons.FormatSize }, "Text style"),
@@ -119,7 +119,6 @@ fun EditorToolbar(
     panel: EditorPanel,
     onPanel: (EditorPanel) -> Unit,
     onCheck: () -> Unit,
-    onImage: () -> Unit,
     onUse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -137,8 +136,8 @@ fun EditorToolbar(
             Tool("Text style", { onUse(); onPanel(if (panel == EditorPanel.TEXT) EditorPanel.NONE else EditorPanel.TEXT) }, panel == EditorPanel.TEXT, icon = AppIcons.FormatSize)
             Tool("Alignment and lists", { onUse(); onPanel(if (panel == EditorPanel.LISTS) EditorPanel.NONE else EditorPanel.LISTS) }, panel == EditorPanel.LISTS, icon = AppIcons.ListBulleted)
             Tool("Checklist", { onUse(); onCheck() }, icon = AppIcons.CheckBox)
-            Tool("Add pictures", { onUse(); onImage() }, icon = AppIcons.Image)
-            Tool("Add more", { onUse(); onPanel(if (panel == EditorPanel.ADD) EditorPanel.NONE else EditorPanel.ADD) }, panel == EditorPanel.ADD, icon = AppIcons.Add)
+            Tool("Media: pictures, camera, scanner", { onUse(); onPanel(if (panel == EditorPanel.MEDIA) EditorPanel.NONE else EditorPanel.MEDIA) }, panel == EditorPanel.MEDIA, icon = AppIcons.Image)
+            Tool("Add: doodle, table, recording", { onUse(); onPanel(if (panel == EditorPanel.ADD || panel == EditorPanel.RECORD) EditorPanel.NONE else EditorPanel.ADD) }, panel == EditorPanel.ADD || panel == EditorPanel.RECORD, icon = AppIcons.Add)
         }
     }
 }
@@ -280,22 +279,86 @@ fun ListsPanel(
     }
 }
 
-/** Things that can be added to the note. Only what works today is listed; recordings arrive with their own step. */
+/** Pictures: from the gallery, straight from the camera, or a camera shot of a page that opens the crop editor right away. */
+@Composable
+fun MediaPanel(
+    onGallery: () -> Unit,
+    onCamera: () -> Unit,
+    onScan: () -> Unit,
+    onUse: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    GlassCard(modifier) {
+        Row(modifier = Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Tool("Pictures from your phone", { onUse(); onGallery() }, icon = AppIcons.Image)
+            Tool("Camera", { onUse(); onCamera() }, icon = AppIcons.PhotoCamera)
+            Tool("Scan a document", { onUse(); onScan() }, icon = AppIcons.DocumentScanner)
+        }
+    }
+}
+
+/** Things that can be added to the note: a doodle, a table, a recording, audio files, a link to another note, a code block. */
 @Composable
 fun AddPanel(
     onTable: () -> Unit,
     onDoodle: () -> Unit,
+    onRecord: () -> Unit,
+    onAudioFiles: () -> Unit,
     onLinkNote: () -> Unit,
     onCodeBlock: () -> Unit,
     onUse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     GlassCard(modifier) {
-        Row(modifier = Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Tool("Doodle canvas", { onUse(); onDoodle() }, icon = AppIcons.Brush)
             Tool("Table", { onUse(); onTable() }, icon = AppIcons.Table)
-            Tool("Doodle", { onUse(); onDoodle() }, icon = AppIcons.Brush)
+            Tool("Record audio", { onUse(); onRecord() }, icon = AppIcons.Mic)
+            Tool("Audio files", { onUse(); onAudioFiles() }, icon = AppIcons.AudioFile)
             Tool("Link a note", { onUse(); onLinkNote() }, icon = AppIcons.Link)
             Tool("Code block", { onUse(); onCodeBlock() }, icon = AppIcons.Code)
+        }
+    }
+}
+
+/** The recorder inside the editor: record, stop, then add the take to the note or throw it away. */
+@Composable
+fun RecordPanel(
+    recording: Boolean,
+    takeReady: Boolean,
+    clockText: String,
+    onRecord: () -> Unit,
+    onStop: () -> Unit,
+    onAdd: () -> Unit,
+    onDiscard: () -> Unit,
+    onUse: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    GlassCard(modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(clockText, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            when {
+                recording -> Tool("Stop recording", { onStop() }, selected = true, icon = AppIcons.Stop)
+                takeReady -> {
+                    Tool("Throw this take away", { onUse(); onDiscard() }, icon = AppIcons.Delete)
+                    Tool("Record again", { onUse(); onRecord() }, icon = AppIcons.Mic)
+                    Tool("Add to the note", { onUse(); onAdd() }, selected = true, icon = AppIcons.Check)
+                }
+                else -> Tool("Start recording", { onUse(); onRecord() }, selected = true, icon = AppIcons.Mic)
+            }
+        }
+        if (!recording && !takeReady) {
+            Text(
+                "Tap the microphone to start. The recording appears in the note with a player.",
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
+            )
         }
     }
 }

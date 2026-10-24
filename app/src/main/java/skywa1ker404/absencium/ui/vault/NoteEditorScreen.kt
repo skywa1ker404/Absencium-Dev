@@ -331,6 +331,42 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         }
     }
 
+    // A photo taken for "Scan a document" opens the crop editor as soon as it is on the page.
+    var scanning by remember { mutableStateOf(false) }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+        val scan = scanning
+        scanning = false
+        viewModel.cameraFinished(note.id, taken) { photo ->
+            insertBlock(NoteBlocks.token(EmbedKind.IMAGE, photo.id, 100))
+            if (scan) cropping = photo
+        }
+    }
+    val audioPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        if (uris.isNotEmpty()) {
+            viewModel.addAudioFiles(note.id, uris) { ids ->
+                insertBlock(ids.joinToString("\n") { NoteBlocks.token(EmbedKind.AUDIO, it, 100) })
+            }
+        }
+    }
+    val recorderState by viewModel.recorderState.collectAsStateWithLifecycle()
+    var recordClock by remember { mutableStateOf(0L) }
+    LaunchedEffect(recorderState.recording) {
+        while (recorderState.recording) {
+            recordClock = viewModel.recordingElapsed()
+            delay(200)
+        }
+    }
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) viewModel.startRecording() else viewModel.micDenied()
+    }
+    val appContext = androidx.compose.ui.platform.LocalContext.current
+    fun startRecord() {
+        val allowed = androidx.core.content.ContextCompat.checkSelfPermission(appContext, android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (allowed) viewModel.startRecording() else micPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+    }
+    DisposableEffect(note.id) { onDispose { viewModel.discardRecording() } }
+
     val saveText = when (saveState) {
         SaveState.SAVED -> "Saved"
         SaveState.UNSAVED -> "Not saved yet"
@@ -507,9 +543,34 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                             onQuote = { apply(MarkdownEdit.quote(text, s, e)) },
                             onUse = ::hideKeyboard,
                         )
+                        EditorPanel.MEDIA -> MediaPanel(
+                            onGallery = { panel = EditorPanel.NONE; photoPicker.launch("image/*") },
+                            onCamera = { panel = EditorPanel.NONE; scanning = false; camera.launch(viewModel.prepareCameraFile()) },
+                            onScan = { panel = EditorPanel.NONE; scanning = true; camera.launch(viewModel.prepareCameraFile()) },
+                            onUse = ::hideKeyboard,
+                        )
+                        EditorPanel.RECORD -> RecordPanel(
+                            recording = recorderState.recording,
+                            takeReady = recorderState.takePath != null,
+                            clockText = run {
+                                val ms = if (recorderState.recording) recordClock else recorderState.takeMs
+                                val sec = ms / 1000
+                                "%d:%02d".format(sec / 60, sec % 60)
+                            },
+                            onRecord = { startRecord() },
+                            onStop = { viewModel.stopRecording() },
+                            onAdd = {
+                                panel = EditorPanel.NONE
+                                viewModel.addRecording(note.id) { id -> insertBlock(NoteBlocks.token(EmbedKind.AUDIO, id, 100)) }
+                            },
+                            onDiscard = { viewModel.discardRecording() },
+                            onUse = ::hideKeyboard,
+                        )
                         EditorPanel.ADD -> AddPanel(
                             onTable = { panel = EditorPanel.NONE; insertBlock(NoteBlocks.newTable(3, 3)) },
                             onDoodle = { panel = EditorPanel.NONE; doodleTarget = null; doodling = true },
+                            onRecord = { panel = EditorPanel.RECORD },
+                            onAudioFiles = { panel = EditorPanel.NONE; audioPicker.launch("audio/*") },
                             onLinkNote = { panel = EditorPanel.NONE; showLinkPicker = true },
                             onCodeBlock = { panel = EditorPanel.NONE; apply(MarkdownEdit.codeBlock(text, s, e)) },
                             onUse = ::hideKeyboard,
@@ -521,7 +582,6 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                     panel = panel,
                     onPanel = { panel = it },
                     onCheck = { apply(MarkdownEdit.checklist(text, selStart, selEnd)) },
-                    onImage = { photoPicker.launch("image/*") },
                     onUse = ::hideKeyboard,
                 )
             }

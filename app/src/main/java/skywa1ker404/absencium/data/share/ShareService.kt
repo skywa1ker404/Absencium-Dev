@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.media.ExifInterface
 import android.net.Uri
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +74,7 @@ class ShareService(private val context: Context) {
                             }
                         }
                     }
-                    ShareFormat.MARKDOWN -> file.writeText(ExportNames.markdown(note.title, note.tags, note.bodyText))
+                    ShareFormat.MARKDOWN -> file.writeText(ExportNames.markdown(note.title, note.tags, ExportNames.portableMarkdown(note.bodyText) { _, _ -> null }))
                     ShareFormat.TEXT -> file.writeText(ExportNames.plainText(note.title, note.tags, note.bodyText))
                     ShareFormat.ZIP -> error("handled above")
                 }
@@ -98,26 +99,65 @@ class ShareService(private val context: Context) {
         var skipped = 0
         ZipOutputStream(target.outputStream().buffered()).use { zip ->
             notes.forEachIndexed { index, note ->
+                val folder = names[index].removeSuffix(".md")
+                val media = if (includePhotos) attachmentsOf(note.id).filter { it.kind == AttachmentKind.IMAGE || it.kind == AttachmentKind.SKETCH || it.kind == AttachmentKind.AUDIO } else emptyList()
+                val mediaNames = ExportNames.unique(media.map { File(it.filePath).name })
+                val linkFor = media.mapIndexed { i, m -> m.id to "${folder.replace(" ", "%20")}/${mediaNames[i].replace(" ", "%20")}" }.toMap()
+                val body = ExportNames.portableMarkdown(note.bodyText) { _, id -> linkFor[id] }
                 zip.putNextEntry(ZipEntry(names[index]))
-                zip.write(ExportNames.markdown(note.title, note.tags, note.bodyText).toByteArray(Charsets.UTF_8))
+                zip.write(ExportNames.markdown(note.title, note.tags, body).toByteArray(Charsets.UTF_8))
                 zip.closeEntry()
-                if (includePhotos) {
-                    val folder = names[index].removeSuffix(".md")
-                    val photoNames = ExportNames.unique(attachmentsOf(note.id).filter { it.kind == AttachmentKind.IMAGE }.map { File(it.filePath).name })
-                    attachmentsOf(note.id).filter { it.kind == AttachmentKind.IMAGE }.forEachIndexed { i, photo ->
-                        val source = File(photo.filePath)
-                        if (!source.isFile) {
-                            skipped++
-                        } else {
-                            zip.putNextEntry(ZipEntry("$folder/${photoNames[i]}"))
-                            source.inputStream().use { it.copyTo(zip) }
+                media.forEachIndexed { i, item ->
+                    val source = File(item.filePath)
+                    if (!source.isFile) {
+                        skipped++
+                    } else {
+                        // A photo leaves without its hidden details (where it was taken, the camera, the time).
+                        val clean = if (item.kind == AttachmentKind.IMAGE) withoutExif(source) else source
+                        try {
+                            zip.putNextEntry(ZipEntry("$folder/${mediaNames[i]}"))
+                            clean.inputStream().use { it.copyTo(zip) }
                             zip.closeEntry()
+                        } finally {
+                            if (clean !== source) clean.delete()
                         }
                     }
                 }
             }
         }
         return skipped
+    }
+
+    /**
+     * A copy of [source] with the metadata that identifies a person or place removed (GPS position, camera make and model, dates,
+     * owner, serial number, comments, software). The turn of the picture is kept so it still shows upright. A file that is not a
+     * JPEG, or cannot be rewritten, is returned unchanged only when it holds no such metadata; otherwise it is re-encoded.
+     */
+    private fun withoutExif(source: File): File {
+        val copy = File(exportDir, "strip_${System.nanoTime()}_${source.name}")
+        source.copyTo(copy, overwrite = true)
+        try {
+            val exif = ExifInterface(copy.absolutePath)
+            listOf(
+                ExifInterface.TAG_GPS_LATITUDE, ExifInterface.TAG_GPS_LATITUDE_REF, ExifInterface.TAG_GPS_LONGITUDE, ExifInterface.TAG_GPS_LONGITUDE_REF,
+                ExifInterface.TAG_GPS_ALTITUDE, ExifInterface.TAG_GPS_ALTITUDE_REF, ExifInterface.TAG_GPS_TIMESTAMP, ExifInterface.TAG_GPS_DATESTAMP,
+                ExifInterface.TAG_GPS_PROCESSING_METHOD, ExifInterface.TAG_MAKE, ExifInterface.TAG_MODEL, ExifInterface.TAG_SOFTWARE,
+                ExifInterface.TAG_DATETIME, ExifInterface.TAG_DATETIME_ORIGINAL, ExifInterface.TAG_DATETIME_DIGITIZED, ExifInterface.TAG_ARTIST,
+                ExifInterface.TAG_COPYRIGHT, ExifInterface.TAG_IMAGE_DESCRIPTION, ExifInterface.TAG_USER_COMMENT, ExifInterface.TAG_MAKER_NOTE,
+                ExifInterface.TAG_CAMERA_OWNER_NAME, ExifInterface.TAG_BODY_SERIAL_NUMBER,
+            ).forEach { exif.setAttribute(it, null) }
+            exif.saveAttributes()
+        } catch (e: Exception) {
+            DebugLogger.w(TAG, "Could not strip the picture details; the picture is re-encoded instead")
+            runCatching {
+                val bitmap = android.graphics.BitmapFactory.decodeFile(source.absolutePath)
+                if (bitmap != null) {
+                    copy.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, it) }
+                    bitmap.recycle()
+                }
+            }
+        }
+        return copy
     }
 
     /** Removes exports from earlier shares; the receiving app has had its chance to read them. */

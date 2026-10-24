@@ -68,7 +68,7 @@ object MarkerHeal {
         if (delEnd <= delStart) return null
 
         val ranges = EditStyle.ranges(before)
-        val markers = ranges.filter { it.kind == EditKind.MARKER && (it.arg == 0 || it.arg == 6 || it.arg in 1..4) }
+        val markers = ranges.filter { it.kind == EditKind.MARKER && (it.arg in 0..6) }
         val cut = ArrayList<IntArray>()
         cut += intArrayOf(delStart, delEnd)
         var touched = false

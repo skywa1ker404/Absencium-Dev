@@ -213,6 +213,118 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    // ---- Camera, recording and audio files inside the editor ----
+
+    private var cameraFile: java.io.File? = null
+    private val recorder by lazy { skywa1ker404.absencium.data.audio.AudioRecorder(container.appContext) }
+    private var recordingFile: java.io.File? = null
+
+    /** What the editor's recorder is doing: idle, recording, or a finished take waiting to be added. */
+    data class RecorderState(val recording: Boolean = false, val takePath: String? = null, val takeMs: Long = 0L)
+
+    private val _recorder = MutableStateFlow(RecorderState())
+    val recorderState: StateFlow<RecorderState> = _recorder.asStateFlow()
+
+    /** The address the camera app writes the next photo to. */
+    fun prepareCameraFile(): Uri {
+        val file = container.attachmentStore.newFile("jpg")
+        cameraFile = file
+        return container.attachmentStore.uriFor(file)
+    }
+
+    /** The camera returned: a real photo becomes a picture of the note ([onAdded] gets its attachment), anything else is thrown away. */
+    fun cameraFinished(noteId: Long, taken: Boolean, onAdded: (AttachmentEntity) -> Unit) {
+        val file = cameraFile ?: return
+        cameraFile = null
+        if (!taken || file.length() == 0L) {
+            container.attachmentStore.delete(file.absolutePath)
+            return
+        }
+        perform("add the photo") {
+            val id = repository.addAttachment(
+                AttachmentEntity(noteId = noteId, kind = AttachmentKind.IMAGE, filePath = file.absolutePath, displayName = "Photo.jpg", mimeType = "image/jpeg", sizeBytes = file.length()),
+            )
+            val saved = repository.attachmentsFor(noteId).firstOrNull { it.id == id }
+            if (saved != null) onAdded(saved)
+        }
+    }
+
+    /** Adds audio files picked on the phone to a note; [onAdded] gets the new attachment ids. */
+    fun addAudioFiles(noteId: Long, uris: List<Uri>, onAdded: (List<Long>) -> Unit) = perform("add the audio") {
+        val added = ArrayList<Long>()
+        for (uri in uris) {
+            val stored = container.attachmentStore.import(uri)
+            if (stored == null || !stored.mimeType.startsWith("audio/")) {
+                stored?.let { container.attachmentStore.delete(it.path) }
+                _message.value = "That file is not audio."
+                continue
+            }
+            added += repository.addAttachment(
+                AttachmentEntity(noteId = noteId, kind = AttachmentKind.AUDIO, filePath = stored.path, displayName = stored.displayName, mimeType = stored.mimeType, sizeBytes = stored.sizeBytes),
+            )
+        }
+        if (added.isNotEmpty()) onAdded(added)
+    }
+
+    fun startRecording() {
+        if (_recorder.value.recording) return
+        _recorder.value.takePath?.let { container.attachmentStore.delete(it) }
+        val file = container.attachmentStore.newFile("m4a")
+        val problem = recorder.start(file)
+        if (problem != null) {
+            _message.value = problem
+            _recorder.value = RecorderState()
+            return
+        }
+        recordingFile = file
+        _recorder.value = RecorderState(recording = true)
+    }
+
+    fun stopRecording() {
+        val file = recordingFile ?: return
+        val length = recorder.stop(file)
+        recordingFile = null
+        if (length == null) {
+            _message.value = "That recording was too short to keep."
+            _recorder.value = RecorderState()
+        } else {
+            _recorder.value = RecorderState(takePath = file.absolutePath, takeMs = length)
+        }
+    }
+
+    fun recordingElapsed(): Long = recorder.elapsedMs()
+
+    fun micDenied() {
+        _message.value = "Allow the microphone in Android settings to record."
+    }
+
+    /** Throws the running or finished take away. */
+    fun discardRecording() {
+        recordingFile?.let { recorder.abort(it) }
+        recordingFile = null
+        _recorder.value.takePath?.let { container.attachmentStore.delete(it) }
+        _recorder.value = RecorderState()
+    }
+
+    /** Puts the finished take into the note as an audio attachment; [onAdded] gets its id. */
+    fun addRecording(noteId: Long, onAdded: (Long) -> Unit) {
+        val take = _recorder.value
+        val path = take.takePath ?: return
+        _recorder.value = RecorderState()
+        perform("add the recording") {
+            val file = java.io.File(path)
+            val id = repository.addAttachment(
+                AttachmentEntity(noteId = noteId, kind = AttachmentKind.AUDIO, filePath = path, displayName = "Recording.m4a", mimeType = "audio/mp4", sizeBytes = file.length(), durationMs = take.takeMs),
+            )
+            onAdded(id)
+        }
+    }
+
+    override fun onCleared() {
+        recordingFile?.let { recorder.abort(it) }
+        super.onCleared()
+    }
+
     /** A fresh file for the crop editor to write into. */
     fun newPictureFile(): java.io.File = container.attachmentStore.newFile("jpg")
 

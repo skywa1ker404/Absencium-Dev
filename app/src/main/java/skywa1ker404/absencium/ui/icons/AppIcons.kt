@@ -208,6 +208,47 @@ object AppIcons {
         )
     }
 
+    val Stop: ImageVector by lazy { glyph("Stop", "M7,7h10v10H7z") }
+
+    val DocumentScanner: ImageVector by lazy {
+        glyph("DocumentScanner", "M3,3h6v2H5v4H3V3zM15,3h6v6h-2V5h-4V3zM3,15h2v4h4v2H3v-6zM19,15h2v6h-6v-2h4v-4zM7,11h10v2H7z")
+    }
+
+    val AudioFile: ImageVector by lazy {
+        glyph("AudioFile", "M4,10h2v4H4zM8,6h2v12H8zM12,3h2v18h-2zM16,7h2v10h-2zM20,10h2v4h-2z")
+    }
+
+    val Crop: ImageVector by lazy {
+        glyph("Crop", "M7,2h2v15h13v2h-3v3h-2v-3H7V2zM2,7h5v2H2V7zM11,5h8v8h-2V7h-6V5z")
+    }
+
+    val FlipHorizontal: ImageVector by lazy {
+        glyph("FlipHorizontal", "M11,3h2v18h-2zM3,19L9,19L9,5zM21,19h-6V5z")
+    }
+
+    val FlipVertical: ImageVector by lazy {
+        glyph("FlipVertical", "M3,11h18v2H3zM5,9L12,3l7,6zM5,15h14l-7,6z")
+    }
+
+    val RotateRight: ImageVector by lazy {
+        glyph(
+            "RotateRight",
+            "M15.55,5.55L11,1v3.07C7.06,4.56 4,7.92 4,12s3.05,7.44 7,7.93v-2.02c-2.84,-0.48 -5,-2.94 -5,-5.91s2.16,-5.43 5,-5.91V10l4.55,-4.45zM19.93,11c-0.17,-1.39 -0.72,-2.73 -1.62,-3.89l-1.42,1.42c0.54,0.75 0.88,1.6 1.02,2.47h2.02zM13,17.9v2.02c1.39,-0.17 2.74,-0.71 3.9,-1.61l-1.44,-1.44c-0.75,0.54 -1.59,0.89 -2.46,1.03zM16.89,15.48l1.42,1.41c0.9,-1.16 1.45,-2.5 1.62,-3.89h-2.02c-0.14,0.87 -0.48,1.72 -1.02,2.48z",
+        )
+    }
+
+    val OpenWith: ImageVector by lazy {
+        glyph("OpenWith", "M12,2L8,6h3v4H7V7L3,11l4,4v-3h4v4H8l4,4l4,-4h-3v-4h4v3l4,-4l-4,-4v3h-4V6h3z")
+    }
+
+    val Opacity: ImageVector by lazy {
+        glyph("Opacity", "M12,3C12,3 5,10.5 5,15a7,7 0,0 0,14 0C19,10.5 12,3 12,3zM12,19a4,4 0,0 1,-4 -4c0,-1.9 1.9,-4.4 4,-6.9z")
+    }
+
+    val Eraser: ImageVector by lazy {
+        glyph("Eraser", "M16.2,3.6L4,15.8a2,2 0,0 0,0 2.8l1.4,1.4h6l8.4,-8.4a2,2 0,0 0,0 -2.8L19,6.2a2,2 0,0 0,-2.8 -2.6zM9.5,18L6,14.5l5,-5L14.5,13z")
+    }
+
     val Mic: ImageVector by lazy {
         glyph(
             "Mic",
