@@ -37,7 +37,7 @@ import skywa1ker404.absencium.data.ai.YouTubeClient
 import skywa1ker404.absencium.data.ai.YouTubeException
 import skywa1ker404.absencium.data.ai.YouTubeLinks
 import skywa1ker404.absencium.data.ai.YouTubeVideo
-import skywa1ker404.absencium.ui.settings.aiReady
+import skywa1ker404.absencium.ui.settings.aiUsable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
@@ -85,6 +85,8 @@ data class AddEntryState(
     val aiSetupMissing2: Boolean = false,
     /** What the AI is doing now ("Writing", "Finding diagrams") and the choices made for the answer. */
     val aiStep: String = "",
+    /** Audio Note: also turn the recording into text with the user's AI when it is saved. */
+    val transcribe: Boolean = false,
     val noteLength: skywa1ker404.absencium.data.ai.NoteLength = skywa1ker404.absencium.data.ai.NoteLength.MODERATE,
     val noteTemplate: skywa1ker404.absencium.data.ai.NoteTemplate = skywa1ker404.absencium.data.ai.NoteTemplate.FULL,
     val syllabusNodeId: Long? = null,
@@ -251,7 +253,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         val current = _state.value
         if (current.pictures.isEmpty() || current.extractStep == ExtractStep.RUNNING) return
         val settings = container.settingsState.value ?: return
-        if (!aiReady(settings, container.apiKeyVault.hasKey())) {
+        if (!aiUsable(settings, container.apiKeyVault.hasKey())) {
             _state.update { it.copy(extractSetupMissing = true, extractError = null) }
             return
         }
@@ -392,7 +394,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         if (current.youtubeStep != YouTubeStep.IDLE || current.subjectId == 0L) return
         val settings = container.settingsState.value ?: return
         val transcript = current.pastedTranscript.trim().ifEmpty { null }
-        val ready = aiReady(settings, container.apiKeyVault.hasKey())
+        val ready = aiUsable(settings, container.apiKeyVault.hasKey())
         if (!ready && !skipAi) {
             _state.update { it.copy(aiSetupMissing = true, youtubeError = null) }
             return
@@ -571,6 +573,13 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         val current = _state.value
         val path = current.recordedPath ?: return
         if (current.busy || current.subjectId == 0L) return
+        if (current.transcribe) {
+            val settings = container.settingsState.value
+            if (settings == null || !aiUsable(settings, container.apiKeyVault.hasKey())) {
+                _state.update { it.copy(message = "Turning a recording into text needs an AI. Set one up in Settings, AI & Integrations, or switch the option off.") }
+                return
+            }
+        }
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
             try {
@@ -587,7 +596,14 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 )
                 val audio = container.vaultRepository.attachmentsFor(id).firstOrNull { it.kind == AttachmentKind.AUDIO }
                 if (audio != null) {
-                    container.vaultRepository.saveNote(id, current.subjectId, title, "{{audio:${audio.id}|100|center}}\n", NoteStatus.ACTIVE)
+                    var body = "{{audio:${audio.id}|100|center}}\n"
+                    if (current.transcribe) {
+                        when (val r = container.textExtractor.extract(path, "audio/mp4", "Recording.m4a", skywa1ker404.absencium.data.ocr.ExtractMode.AI)) {
+                            is skywa1ker404.absencium.data.ocr.Extracted.Text -> body += "\n" + skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(r.text) + "\n"
+                            is skywa1ker404.absencium.data.ocr.Extracted.Failed -> body += "\n*The recording could not be turned into text: ${r.message}*\n"
+                        }
+                    }
+                    container.vaultRepository.saveNote(id, current.subjectId, title, body, NoteStatus.ACTIVE)
                 }
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
                 _state.value = AddEntryState()
@@ -608,6 +624,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
     fun openGenerate() = _state.update { it.copy(stage = EntryStage.GENERATE, message = null, aiError = null, aiSetupMissing2 = false) }
 
     fun setAiPrompt(text: String) = _state.update { it.copy(aiPrompt = text) }
+
+    fun setTranscribe(v: Boolean) = _state.update { it.copy(transcribe = v) }
 
     fun setNoteLength(v: skywa1ker404.absencium.data.ai.NoteLength) = _state.update { it.copy(noteLength = v) }
     fun setNoteTemplate(v: skywa1ker404.absencium.data.ai.NoteTemplate) = _state.update { it.copy(noteTemplate = v) }
@@ -645,7 +663,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             return
         }
         val settings = container.settingsState.value ?: return
-        if (!aiReady(settings, container.apiKeyVault.hasKey())) {
+        if (!aiUsable(settings, container.apiKeyVault.hasKey())) {
             _state.update { it.copy(aiSetupMissing2 = true, aiError = null) }
             return
         }

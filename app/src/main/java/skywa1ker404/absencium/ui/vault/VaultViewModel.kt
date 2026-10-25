@@ -194,7 +194,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     /** Sends [request] to the AI the user set up and gives the answer to [onResult] on the main thread. Returns the job so it can be cancelled. */
     fun askAi(request: String, onResult: (AiOutcome) -> Unit): kotlinx.coroutines.Job {
         val settings = container.settingsState.value
-        if (settings == null || !skywa1ker404.absencium.ui.settings.aiReady(settings, container.apiKeyVault.hasKey())) {
+        if (settings == null || !skywa1ker404.absencium.ui.settings.aiUsable(settings, container.apiKeyVault.hasKey())) {
             onResult(AiOutcome(setupMissing = true))
             return viewModelScope.launch { }
         }

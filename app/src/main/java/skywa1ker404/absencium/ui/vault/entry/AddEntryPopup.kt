@@ -58,6 +58,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -401,6 +402,7 @@ internal fun ActionTile(
     onClick: () -> Unit,
     modifier: Modifier,
     height: androidx.compose.ui.unit.Dp,
+    enabled: Boolean = true,
 ) {
     val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
@@ -423,7 +425,8 @@ internal fun ActionTile(
             }
             .clip(shape)
             .background(container)
-            .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current, onClick = onClick)
+            .alpha(if (enabled) 1f else 0.45f)
+            .clickable(enabled = enabled, interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current, onClick = onClick)
             .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -622,7 +625,7 @@ private fun ExtractionPanel(state: AddEntryState, viewModel: AddEntryViewModel, 
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(colors.secondaryContainer).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("AI is not set up yet", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
+            Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
             Text(
                 "Reading text from photos needs an AI provider, a model that accepts images and your API key. " +
                     "Add them in Settings, AI & Integrations, or continue without the text.",
@@ -855,7 +858,7 @@ private fun YouTubeStage(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("AI is not set up yet", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
+                Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
                 Text(
                     "Add an AI provider, a model and your API key in Settings, AI & Integrations, then come back. " +
                         "Or skip the AI and keep just the transcript you pasted.",

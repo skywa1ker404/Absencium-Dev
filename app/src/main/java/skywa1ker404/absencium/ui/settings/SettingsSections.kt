@@ -122,25 +122,53 @@ fun AiKeySection(viewModel: AiKeyViewModel) {
     if (message != null) MessageCard(message)
 }
 
-/** The master switch is only available once a provider, URL, model and (if required) key are saved. */
+/**
+ * The master switch for everything AI. Turning it on first shows a plain consent popup saying exactly what leaves the phone.
+ * Tapping it while it is off always opens that popup, even before a provider is set up.
+ */
 @Composable
 fun AskAiToggle(settings: AppSettings, viewModel: SettingsViewModel, ready: Boolean) {
+    var asking by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     SwitchCard(
-        title = "Ask AI",
-        subtitle = if (ready || settings.askAiEnabled) {
-            "Master switch for AI help. The Ask AI feature itself arrives in a later update."
-        } else {
-            "Set up a provider, URL, model and key below first."
+        title = "AI Features",
+        subtitle = when {
+            !settings.askAiEnabled -> "Off. Nothing is ever sent anywhere. Only reading text on this phone works."
+            ready -> "On. AI help, text from files, notes and homework use your own provider."
+            else -> "On, but no provider is saved yet. Set up a provider, URL, model and key below."
         },
         checked = settings.askAiEnabled,
-        onCheckedChange = { viewModel.setAskAiEnabled(it) },
-        enabled = ready || settings.askAiEnabled,
+        onCheckedChange = { turnOn -> if (turnOn) asking = true else viewModel.setAskAiEnabled(false) },
+    )
+    if (asking) AiConsentDialog(onAgree = { asking = false; viewModel.setAskAiEnabled(true) }, onDecline = { asking = false })
+}
+
+/** What turning AI Features on means, said plainly. The same popup is used by onboarding. */
+@Composable
+fun AiConsentDialog(onAgree: () -> Unit, onDecline: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDecline,
+        title = { Text("Turn on AI Features?") },
+        text = {
+            Text(
+                "Absencium has no server and collects nothing. With AI Features on, only when you press an AI button, the text, " +
+                    "photos, PDFs or recordings you chose for that action, together with what you typed, are sent from this phone " +
+                    "straight to the AI provider you set up, using your own API key. That provider processes them under its own terms and " +
+                    "may keep them; Absencium cannot see or control that.\n\n" +
+                    "Your key stays in this phone's encrypted storage. Nothing is sent in the background. If you decline, or turn this off " +
+                    "later, no AI button sends anything, and reading text from pictures and files still works on this phone.",
+            )
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onAgree) { Text("Agree") } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDecline) { Text("Decline") } },
     )
 }
 
 /** True when the saved connection is complete: URL and model saved, and a key saved if the provider needs one. */
 fun aiReady(settings: AppSettings, hasKey: Boolean): Boolean =
     settings.aiConnectionSaved && (!settings.aiProvider.keyRequired || hasKey)
+
+/** True when AI may actually be used: the AI Features switch is on and the connection is complete. */
+fun aiUsable(settings: AppSettings, hasKey: Boolean): Boolean = settings.askAiEnabled && aiReady(settings, hasKey)
 
 /**
  * Which AI service Ask AI talks to: the provider, its API URL and the model name. The URL

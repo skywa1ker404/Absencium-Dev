@@ -21,7 +21,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
     val keyState by aiKeyViewModel.state.collectAsStateWithLifecycle()
 
     ScreenScaffold(title = "AI & Integrations", onBack = { navigator.navigateUp() }) {
-        SectionTitle("Ask AI")
+        SectionTitle("AI Features")
         AskAiToggle(settings, settingsViewModel, ready = aiReady(settings, keyState.hasKey))
         AiConnectionSection(settings, settingsViewModel)
         SectionTitle("API key")

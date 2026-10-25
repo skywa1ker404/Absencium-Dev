@@ -251,7 +251,7 @@ fun OnboardingScreen() {
                                     if (!storageChosen) HintText("Choose a folder to continue.")
                                 }
                                 3 -> {
-                                    PageHeader("Ask AI", "Optional. Connect an AI to explain notes and read photos. You can set this up later in Settings.")
+                                    PageHeader("AI Features", "Optional. Connect an AI to explain notes and read photos. You can set this up later in Settings.")
                                     AskAiToggle(settings, settingsViewModel, ready = aiReady(settings, keyState.hasKey))
                                     AiConnectionSection(settings, settingsViewModel)
                                     SectionTitle("API key")

@@ -78,7 +78,8 @@ internal fun AudioStage(viewModel: AddEntryViewModel, subjectName: String, onBac
         ) {
             Text(
                 clock(if (state.recording) elapsed else state.recordedMs),
-                style = MaterialTheme.typography.displayMedium,
+                style = MaterialTheme.typography.displaySmall,
+                maxLines = 1,
                 color = colors.onTertiaryContainer,
             )
             Text(
@@ -89,6 +90,7 @@ internal fun AudioStage(viewModel: AddEntryViewModel, subjectName: String, onBac
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onTertiaryContainer,
+                maxLines = 1,
             )
         }
         AppTextField(
@@ -99,13 +101,20 @@ internal fun AudioStage(viewModel: AddEntryViewModel, subjectName: String, onBac
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(),
         )
+        SwitchCard(
+            "Turn it into text with AI",
+            "Adds the words to the note under the recording (needs a Gemini model)",
+            state.transcribe,
+            viewModel::setTranscribe,
+            enabled = !state.recording,
+        )
         state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             if (state.recording) {
                 PillButton(text = "Stop", onClick = { viewModel.stopRecording() }, modifier = Modifier.weight(1f))
             } else {
                 PillButton(
-                    text = if (state.recordedPath != null) "Record again" else "Record",
+                    text = if (state.recordedPath != null) "Redo" else "Record",
                     tonal = state.recordedPath != null,
                     onClick = {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
@@ -219,7 +228,7 @@ internal fun AiTaskStage(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(colors.secondaryContainer).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("AI is not set up yet", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
+                Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
                 Text(
                     "Add an AI provider, a model and your API key in Settings, AI & Integrations, then come back.",
                     style = MaterialTheme.typography.bodySmall,

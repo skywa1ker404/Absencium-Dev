@@ -178,7 +178,7 @@ fun ExtractChoiceDialog(
                             FileKind.AUDIO -> "It works only with a model that accepts audio, such as Google Gemini."
                             FileKind.IMAGE, FileKind.PDF -> "It copes better with handwriting, tables and messy photos."
                             else -> "It tidies the text into clean notes."
-                        } + if (!aiReady) " AI is not set up yet: add it in Settings, AI & Integrations." else "",
+                        } + if (!aiReady) " AI is off or not set up: add it in Settings, AI & Integrations." else "",
                         enabled = true,
                         highlighted = aiReady,
                         onClick = { onDismiss(); onChoose(ExtractMode.AI) },
@@ -314,7 +314,7 @@ fun ExtractProblemDialog(message: String, setupMissing: Boolean, onOpenSettings:
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(28.dp), color = colors.surfaceContainerHigh, tonalElevation = 6.dp) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(if (setupMissing) "AI is not set up yet" else "Could not get the text", style = MaterialTheme.typography.titleMedium)
+                Text(if (setupMissing) "AI is off or not set up" else "Could not get the text", style = MaterialTheme.typography.titleMedium)
                 Text(
                     if (setupMissing) "Add an AI provider, a model and your API key in Settings, AI & Integrations. Or choose Locally to read pictures and PDFs on this phone." else message,
                     style = MaterialTheme.typography.bodyMedium,

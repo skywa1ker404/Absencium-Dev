@@ -190,7 +190,7 @@ fun AiPanel(
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.secondaryContainer).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text("AI is not set up yet", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
+                    Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
                     Text(
                         "Add a provider, a model and your API key in Settings, AI & Integrations.",
                         style = MaterialTheme.typography.bodySmall,

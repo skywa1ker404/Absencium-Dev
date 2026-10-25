@@ -54,7 +54,7 @@ class AppContainer(context: Context) {
     val textExtractor: skywa1ker404.absencium.data.ocr.TextExtractor by lazy {
         skywa1ker404.absencium.data.ocr.TextExtractor(aiClient, skywa1ker404.absencium.data.ocr.LocalOcr(appContext)) {
             val s = settingsState.value
-            if (s != null && skywa1ker404.absencium.ui.settings.aiReady(s, apiKeyVault.hasKey())) {
+            if (s != null && skywa1ker404.absencium.ui.settings.aiUsable(s, apiKeyVault.hasKey())) {
                 skywa1ker404.absencium.data.ai.AiConnection(s.aiProvider, s.effectiveAiStyle, s.aiBaseUrl, s.aiModel)
             } else {
                 null

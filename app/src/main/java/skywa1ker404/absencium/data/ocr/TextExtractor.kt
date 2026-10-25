@@ -79,7 +79,7 @@ class TextExtractor(
                 val text = when (mode) {
                     ExtractMode.LOCAL -> local(file, kind, onStep)
                     ExtractMode.AI -> {
-                        val conn = connection() ?: return@withContext Extracted.Failed("AI is not set up yet.", setupMissing = true)
+                        val conn = connection() ?: return@withContext Extracted.Failed("AI is off or not set up.", setupMissing = true)
                         viaAi(conn, file, kind, mime, onStep)
                     }
                 }

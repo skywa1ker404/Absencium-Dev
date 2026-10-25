@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import skywa1ker404.absencium.data.ocr.Extracted
+import skywa1ker404.absencium.data.ocr.ExtractMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,7 +55,7 @@ import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.components.PopupShell
 import skywa1ker404.absencium.ui.containerViewModel
 import skywa1ker404.absencium.ui.icons.AppIcons
-import skywa1ker404.absencium.ui.settings.aiReady
+import skywa1ker404.absencium.ui.settings.aiUsable
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import skywa1ker404.absencium.ui.vault.entry.ActionTile
 import skywa1ker404.absencium.ui.vault.entry.LoadingDots
@@ -79,7 +81,7 @@ enum class ImportKind(val title: String, val noun: String, val pluralNoun: Strin
     EXAMS("Import exam timetable", "exam", "exams"),
 }
 
-enum class ImportStage { SOURCE, PASTE, WORKING, REVIEW }
+enum class ImportStage { SOURCE, CHOOSE, PASTE, WORKING, REVIEW }
 
 data class FoundHoliday(val holiday: HolidayCandidate, val selected: Boolean = true)
 
@@ -97,6 +99,9 @@ data class ImportState(
     val setupMissing: Boolean = false,
     val added: Boolean = false,
     val busy: Boolean = false,
+    /** Files picked and waiting for the choice between finding items with AI and just getting their text. */
+    val pending: List<Uri> = emptyList(),
+    val workingStep: String = "",
 )
 
 /**
@@ -133,14 +138,16 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
 
     private fun aiIsReady(): Boolean {
         val settings = container.settingsState.value ?: return false
-        return aiReady(settings, container.apiKeyVault.hasKey())
+        return aiUsable(settings, container.apiKeyVault.hasKey())
     }
 
     private fun connection(): AiConnection? {
         val s = container.settingsState.value ?: return null
-        if (!aiReady(s, container.apiKeyVault.hasKey())) return null
+        if (!aiUsable(s, container.apiKeyVault.hasKey())) return null
         return AiConnection(s.aiProvider, s.effectiveAiStyle, s.aiBaseUrl, s.aiModel)
     }
+
+    fun dropPending() = dropTemporary()
 
     fun toSource() = _state.update { it.copy(stage = ImportStage.SOURCE, message = null, holidays = emptyList(), exams = emptyList(), added = false) }
 
@@ -148,11 +155,18 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
 
     fun setText(text: String) = _state.update { it.copy(text = text) }
 
-    /** Reads the chosen photos, PDFs or text files, then sends them to the AI. */
+    /** Remembers the chosen photos, PDFs or text files and asks whether to find the items with AI or only get their text. */
     fun readFiles(resolver: android.content.ContentResolver, uris: List<Uri>) {
         if (uris.isEmpty()) return
+        _state.update { it.copy(stage = ImportStage.CHOOSE, pending = uris, message = null) }
+    }
+
+    /** "Import": the AI reads the pending files and finds the items. */
+    fun importPending(resolver: android.content.ContentResolver) {
+        val uris = _state.value.pending
+        if (uris.isEmpty()) return
         job?.cancel()
-        _state.update { it.copy(stage = ImportStage.WORKING, message = null) }
+        _state.update { it.copy(stage = ImportStage.WORKING, message = null, workingStep = "Reading") }
         job = viewModelScope.launch {
             try {
                 val read = withContext(Dispatchers.IO) { uris.map { AttachmentReader.read(resolver, it) } }
@@ -165,8 +179,54 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: Exception) {
                 DebugLogger.e("Import", "Could not read the files", e)
                 _state.update { it.copy(stage = ImportStage.SOURCE, message = "Could not read that file. See debug.log for details.") }
+            } finally {
+                dropTemporary()
             }
         }
+    }
+
+    /** "Extract text": the words in the pending files (with AI or on the phone) are put in the paste box to check before searching. */
+    fun extractPending(mode: ExtractMode) {
+        val uris = _state.value.pending
+        if (uris.isEmpty()) return
+        if (mode == ExtractMode.AI && !aiIsReady()) {
+            _state.update { it.copy(stage = ImportStage.SOURCE, setupMissing = true) }
+            return
+        }
+        job?.cancel()
+        _state.update { it.copy(stage = ImportStage.WORKING, message = null, workingStep = "Getting the text") }
+        job = viewModelScope.launch {
+            val parts = ArrayList<String>()
+            var failure: String? = null
+            for (uri in uris) {
+                val stored = store.import(uri)
+                if (stored == null) {
+                    failure = "Could not read that file."
+                    continue
+                }
+                try {
+                    when (val r = container.textExtractor.extract(stored.path, stored.mimeType, stored.displayName, mode) { step ->
+                        _state.update { it.copy(workingStep = step) }
+                    }) {
+                        is Extracted.Text -> parts += r.text
+                        is Extracted.Failed -> failure = r.message
+                    }
+                } finally {
+                    store.delete(stored.path)
+                }
+            }
+            dropTemporary()
+            _state.update {
+                if (parts.isEmpty()) it.copy(stage = ImportStage.SOURCE, message = failure ?: "No text was found in that.")
+                else it.copy(stage = ImportStage.PASTE, text = parts.joinToString("\n\n"), message = failure, pending = emptyList())
+            }
+        }
+    }
+
+    private fun dropTemporary() {
+        cameraFile?.let { store.delete(it.absolutePath) }
+        cameraFile = null
+        _state.update { it.copy(pending = emptyList()) }
     }
 
     /** A fresh file for the camera to write into. */
@@ -178,37 +238,19 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
 
     fun cameraFinished(resolver: android.content.ContentResolver, taken: Boolean) {
         val file = cameraFile ?: return
-        cameraFile = null
         if (!taken || file.length() == 0L) {
+            cameraFile = null
             store.delete(file.absolutePath)
             return
         }
-        val uri = store.uriFor(file)
-        _state.update { it.copy(stage = ImportStage.WORKING, message = null) }
-        job?.cancel()
-        job = viewModelScope.launch {
-            try {
-                val read = withContext(Dispatchers.IO) { listOf(AttachmentReader.read(resolver, uri)) }
-                _state.update { it.copy(attachments = read) }
-                extract()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: AiException) {
-                _state.update { it.copy(stage = ImportStage.SOURCE, message = e.message) }
-            } catch (e: Exception) {
-                DebugLogger.e("Import", "Could not read the camera photo", e)
-                _state.update { it.copy(stage = ImportStage.SOURCE, message = "Could not read that photo. See debug.log for details.") }
-            } finally {
-                // The photo was only needed to be read; it is not kept.
-                store.delete(file.absolutePath)
-            }
-        }
+        // The photo stays until a choice is made; it is only needed to be read and is not kept after that.
+        _state.update { it.copy(stage = ImportStage.CHOOSE, pending = listOf(store.uriFor(file)), message = null) }
     }
 
     /** Sends the pasted text to the AI. */
     fun findInText() {
         job?.cancel()
-        _state.update { it.copy(stage = ImportStage.WORKING, message = null, attachments = emptyList()) }
+        _state.update { it.copy(stage = ImportStage.WORKING, message = null, attachments = emptyList(), workingStep = "") }
         job = viewModelScope.launch { extract() }
     }
 
@@ -369,13 +411,21 @@ fun ImportPopup(kind: ImportKind, onDismiss: () -> Unit, onOpenAiSettings: () ->
                     state = state,
                     onClose = { close() },
                     onPhoto = { photoPicker.launch("image/*") },
-                    onDocument = { documentPicker.launch(arrayOf("application/pdf", "text/plain")) },
+                    onDocument = { documentPicker.launch(arrayOf("application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) },
                     onCamera = { camera.launch(viewModel.prepareCameraFile()) },
                     onPaste = viewModel::toPaste,
                     onOpenAiSettings = {
                         close()
                         onOpenAiSettings()
                     },
+                )
+
+                ImportStage.CHOOSE -> ChooseStage(
+                    state = state,
+                    onBack = { viewModel.dropPending(); viewModel.toSource() },
+                    onImport = { viewModel.importPending(resolver) },
+                    onExtractAi = { viewModel.extractPending(ExtractMode.AI) },
+                    onExtractLocal = { viewModel.extractPending(ExtractMode.LOCAL) },
                 )
 
                 ImportStage.PASTE -> PasteStage(
@@ -387,6 +437,7 @@ fun ImportPopup(kind: ImportKind, onDismiss: () -> Unit, onOpenAiSettings: () ->
 
                 ImportStage.WORKING -> WorkingStage(
                     kind = state.kind,
+                    step = state.workingStep,
                     onCancel = {
                         viewModel.cancel()
                         viewModel.begin(kind)
@@ -433,19 +484,20 @@ private fun SourceStage(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(colors.secondaryContainer).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("AI is not set up yet", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
+                Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
                 Text(
-                    "Reading a document needs an AI provider, a model (one that accepts images for photos) and your API key. " +
-                        "Add them in Settings, AI & Integrations, then come back.",
+                    "Finding items in a document needs an AI provider, a model (one that accepts images for photos) and your API key. " +
+                        "Turn on AI Features and add them in Settings, AI & Integrations. Without AI you can still get the text out of a picture or file on this phone.",
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSecondaryContainer,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PillButton(text = "Open Settings", compact = true, onClick = onOpenAiSettings, modifier = Modifier.weight(1f))
-                    PillButton(text = "Close", compact = true, tonal = true, onClick = onClose, modifier = Modifier.weight(1f))
+                    PillButton(text = "Not now", compact = true, tonal = true, onClick = onClose, modifier = Modifier.weight(1f))
                 }
             }
-        } else {
+        }
+        run {
             ActionTile("Upload a Pic", AppIcons.Image, colors.primaryContainer, colors.onPrimaryContainer, 0, onPhoto, Modifier.fillMaxWidth(), 84.dp)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ActionTile("Document / File", AppIcons.Description, colors.tertiaryContainer, colors.onTertiaryContainer, 2, onDocument, Modifier.weight(1f), 104.dp)
@@ -454,6 +506,40 @@ private fun SourceStage(
             ActionTile("Paste text", AppIcons.Edit, colors.surfaceContainerHighest, colors.onSurface, 3, onPaste, Modifier.fillMaxWidth(), 72.dp)
         }
         state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
+    }
+}
+
+@Composable
+private fun ChooseStage(state: ImportState, onBack: () -> Unit, onImport: () -> Unit, onExtractAi: () -> Unit, onExtractLocal: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val ready = !state.setupMissing
+    Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            SquareIconButton(AppIcons.ArrowBack, "Back", onBack)
+            Column {
+                Text("What should happen?", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "${state.pending.size} ${if (state.pending.size == 1) "file" else "files"} chosen",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+        }
+        ActionTile("Import", AppIcons.Add, colors.primaryContainer, colors.onPrimaryContainer, 0, onImport, Modifier.fillMaxWidth(), 84.dp, enabled = ready)
+        Text(
+            if (ready) "Your AI finds the ${state.kind.pluralNoun} in it and you confirm what to add." else "Needs an AI set up in Settings, AI & Integrations.",
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ActionTile("Extract text with AI", AppIcons.ExtractText, colors.tertiaryContainer, colors.onTertiaryContainer, 2, onExtractAi, Modifier.weight(1f), 104.dp, enabled = ready)
+            ActionTile("Extract text locally", AppIcons.ExtractText, colors.secondaryContainer, colors.onSecondaryContainer, 1, onExtractLocal, Modifier.weight(1f), 104.dp)
+        }
+        Text(
+            "Extracting text puts the words in a box so you can fix them before searching. Locally means on this phone, no AI and no internet, English only.",
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.onSurfaceVariant,
+        )
     }
 }
 
@@ -479,9 +565,9 @@ private fun PasteStage(state: ImportState, onBack: () -> Unit, onText: (String) 
 }
 
 @Composable
-private fun WorkingStage(kind: ImportKind, onCancel: () -> Unit) {
+private fun WorkingStage(kind: ImportKind, step: String, onCancel: () -> Unit) {
     Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        LoadingDots("Reading the ${kind.pluralNoun}", modifier = Modifier.padding(vertical = 18.dp))
+        LoadingDots(step.ifBlank { "Reading the ${kind.pluralNoun}" }, modifier = Modifier.padding(vertical = 18.dp))
         PillButton(text = "Cancel", tonal = true, onClick = onCancel, modifier = Modifier.fillMaxWidth())
     }
 }

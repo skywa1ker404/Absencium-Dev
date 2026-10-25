@@ -42,7 +42,7 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
         NavCard(
             icon = AppIcons.AutoAwesome,
             title = "AI & Integrations",
-            subtitle = "Ask AI, API key vault, Momentum tracker",
+            subtitle = "AI Features, API key vault, Momentum tracker",
             onClick = { navigator.navigate(AiSettingsScreenDestination) },
         )
 
