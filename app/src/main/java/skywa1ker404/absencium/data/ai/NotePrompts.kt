@@ -176,7 +176,7 @@ object NotePrompts {
     """.trimIndent()
 
     /** A diagram description found in the answer. */
-    val diagramLine = Regex("""(?m)^[ \t]*\{\{diagram:\s*(.+?)\s*}}[ \t]*$""")
+    val diagramLine = Regex("""(?m)^[ \t]*\{\{diagram:\s*(.+?)\s*\}\}[ \t]*$""")
 
     /** The descriptions the model asked pictures for, in order, without duplicates and at most [limit]. */
     fun diagramRequests(text: String, limit: Int = 3): List<String> =

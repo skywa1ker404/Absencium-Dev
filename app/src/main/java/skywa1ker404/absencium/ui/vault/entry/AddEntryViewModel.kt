@@ -735,7 +735,12 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 val ask = if (solve) skywa1ker404.absencium.data.ai.NotePrompts.homework(brief) else skywa1ker404.absencium.data.ai.NotePrompts.notes(brief)
                 val raw = container.aiClient.generate(connection, ask, images)
                 if (raw.isBlank()) throw AiException("The model sent back an empty answer.")
-                val reply = skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(raw)
+                val reply = try {
+                    skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(raw)
+                } catch (e: Throwable) {
+                    DebugLogger.e("Vault", "The note cleaner failed; the raw answer is used", e)
+                    raw.trim()
+                }
 
                 // Diagrams: only when the user switched fetching or drawing on.
                 val wanted = if (current.genSearchDiagrams || current.genDrawDiagrams) skywa1ker404.absencium.data.ai.NotePrompts.diagramRequests(reply) else emptyList()
@@ -775,7 +780,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     var body = reply
                     for ((query, entry) in found) {
                         val stored = saved[entry.first.filePath] ?: continue
-                        val line = Regex("""(?m)^[ \t]*\{\{diagram:\s*${Regex.escape(query)}\s*}}[ \t]*$""")
+                        val line = Regex("""(?m)^[ \t]*\{\{diagram:\s*${Regex.escape(query)}\s*\}\}[ \t]*$""")
                         val token = skywa1ker404.absencium.ui.vault.markdown.NoteBlocks.token(skywa1ker404.absencium.ui.vault.markdown.EmbedKind.IMAGE, stored.id, 80)
                         body = body.replace(line, Regex.escapeReplacement(token + "\n{align:center}*" + entry.second + "*"))
                     }
@@ -788,7 +793,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 throw e
             } catch (e: AiException) {
                 _state.update { it.copy(aiRunning = false, aiError = e.message) }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
+                // Errors (not only exceptions) are shown instead of ending the app; the stack trace goes to debug.log.
                 DebugLogger.e("Vault", "The AI task failed", e)
                 _state.update { it.copy(aiRunning = false, aiError = "Something went wrong: ${e.message ?: e.javaClass.simpleName}") }
             }

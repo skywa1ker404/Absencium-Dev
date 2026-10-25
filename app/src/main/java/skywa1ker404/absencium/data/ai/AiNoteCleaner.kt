@@ -71,17 +71,17 @@ object AiNoteCleaner {
     fun math(latex: String): String {
         var s = latex.trim()
         s = s.replace(Regex("""\\(left|right|big|Big|bigg|Bigg|displaystyle|operatorname)(?![A-Za-z])\s?|\\[,;!:]"""), "")
-        s = s.replace(Regex("""\\(text|textbf|textit|mathrm|mathbf)\{([^{}]*)}"""), "$2")
+        s = s.replace(Regex("""\\(text|textbf|textit|mathrm|mathbf)\{([^{}]*)\}"""), "$2")
         repeat(4) {
-            s = s.replace(Regex("""\\[dt]?frac\{([^{}]*)}\{([^{}]*)}""")) { m -> fraction(math(m.groupValues[1]), math(m.groupValues[2])) }
-            s = s.replace(Regex("""\\sqrt\[(\w+)]\{([^{}]*)}""")) { m -> root(m.groupValues[1]) + wrap(math(m.groupValues[2])) }
-            s = s.replace(Regex("""\\sqrt\{([^{}]*)}""")) { m -> "√" + wrap(math(m.groupValues[1])) }
+            s = s.replace(Regex("""\\[dt]?frac\{([^{}]*)\}\{([^{}]*)\}""")) { m -> fraction(math(m.groupValues[1]), math(m.groupValues[2])) }
+            s = s.replace(Regex("""\\sqrt\[(\w+)\]\{([^{}]*)\}""")) { m -> root(m.groupValues[1]) + wrap(math(m.groupValues[2])) }
+            s = s.replace(Regex("""\\sqrt\{([^{}]*)\}""")) { m -> "√" + wrap(math(m.groupValues[1])) }
             s = s.replace(Regex("""\\sqrt\s*(\w)""")) { m -> "√" + m.groupValues[1] }
         }
         s = s.replace(Regex("""\\([A-Za-z]+)""")) { m -> symbols[m.groupValues[1]] ?: m.groupValues[1] }
-        s = s.replace(Regex("""\^\{([^{}]*)}""")) { m -> script(m.groupValues[1], superscripts, "^") }
+        s = s.replace(Regex("""\^\{([^{}]*)\}""")) { m -> script(m.groupValues[1], superscripts, "^") }
         s = s.replace(Regex("""\^([0-9nix+-])""")) { m -> script(m.groupValues[1], superscripts, "^") }
-        s = s.replace(Regex("""_\{([^{}]*)}""")) { m -> script(m.groupValues[1], subscripts, "_") }
+        s = s.replace(Regex("""_\{([^{}]*)\}""")) { m -> script(m.groupValues[1], subscripts, "_") }
         s = s.replace(Regex("""_([0-9aeoxni])""")) { m -> script(m.groupValues[1], subscripts, "_") }
         s = s.replace("\\\\", "\n").replace("\\%", "%").replace("\\&", "&").replace("\\_", "_").replace("{", "").replace("}", "")
         return s.replace(Regex("[ \t]{2,}"), " ").trim()
