@@ -77,7 +77,7 @@ object NotePrompts {
         Rules for the answer:
         - Never draw with text characters: no boxes, no +---+ lines, no lone "v" or "|" arrows, no [ boxed ] words. Show a flow as numbered steps, a table, or centred lines joined with arrows such as {align:center}A → B → C.
         - Never show code or markup symbols. No code fences, no backticks, no LaTeX, no dollar signs, no backslash commands, no HTML.
-        - Write every formula as clean readable Unicode on its own centred line, for example {align:center}**E = mc²**, {align:center}x = (-b ± √(b² - 4ac)) / 2a. Define each symbol on the next line.
+        - Write every formula as clean readable Unicode on its own centred line, for example {align:center}**y = mx + c** or {align:center}A → B → C, using Unicode symbols such as ² ½ √ ± ≤ → Δ. Define each symbol on the next line.
         - Choose the sections this particular topic needs, in the order that teaches it best. Do not reuse one fixed layout, and leave out any section that has nothing real to say.
         - Sound like a good student or a kind teacher wrote it by hand: plain, direct sentences of uneven length, concrete examples, no filler openers ("Certainly", "In conclusion", "It is important to note"), no lists of three adjectives, no summary that repeats the page.
         - Be accurate. If you are unsure of something, say so in one short line instead of guessing.
@@ -89,8 +89,8 @@ object NotePrompts {
         a short overview; why it matters; definitions of key terms; the main idea step by step; a derivation or proof; a formula sheet with each symbol defined;
         a worked example with numbers; a comparison table; a timeline; causes and effects; a process as numbered steps; types as a table; a mnemonic;
         real-life uses; common mistakes; likely exam questions; a quick-revision checklist; a short summary.
-        Science and maths lean on formulas, units and worked examples. History leans on timelines, causes and consequences. Languages lean on rules and exception tables.
-        Biology leans on labelled steps and comparison tables.
+        Let the subject decide the shape: quantitative subjects need formulas, units and worked examples; narrative subjects need timelines, causes and consequences;
+        language subjects need rules, examples and exception tables; descriptive subjects need classifications, comparisons and labelled steps; practical subjects need procedures and observations.
     """.trimIndent()
 
     private fun syllabusPart(s: SyllabusContext): String =
@@ -100,8 +100,8 @@ object NotePrompts {
         !b.searchDiagrams && !b.drawDiagrams -> "Do not mention diagrams or pictures."
         else ->
             "The student switched diagrams on, so include them: put between two and five lines of the exact form {{diagram: a short description of the picture}} " +
-                "on their own, each where the picture belongs (for example right after the paragraph it illustrates), such as {{diagram: labelled cross-section of a human heart}}. " +
-                "Describe each picture in plain English words that would find or draw it, using the most common English name of the subject (for example kidney, not a Latin term), then the word diagram. Use different pictures, not repeats."
+                "on their own, each where the picture belongs (for example right after the paragraph it illustrates). " +
+                "Describe each picture in plain English words that would find or draw it, using the plain, common English name of the subject, then the word diagram. Use different pictures, not repeats."
     }
 
     private fun extras(b: NoteBrief): String = buildList {
@@ -161,7 +161,7 @@ object NotePrompts {
         Use the editor's features visibly, wherever they fit the content (this is required, not optional):
         - At least one table when anything is compared, classified or listed with properties. Example: | Term | Meaning |, then |---|---|, then rows.
         - Key facts to remember in ==highlight==; headings of definitions in {color:1565C0|blue|}; warnings and common mistakes in {color:C62828|red|}; results and tips in {color:2E7D32|green|}.
-        - Every formula and key result on its own centred line: {align:center}F = ma
+        - Every formula and key result on its own centred line: {align:center}a + b = c
         - Numbered steps for any process or working, "a) " letters for options or parts, bullets for properties.
         - A "- [ ] " revision checklist near the end.
         - "> " for the one idea or rule that must not be forgotten, and a line of --- between the big parts.

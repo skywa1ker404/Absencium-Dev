@@ -86,7 +86,7 @@ class DiagramService(private val ai: AiClient) {
         private const val MAX_BYTES = 6_000_000
 
         private val cutWords = Regex("""\s+(showing|with|including|that shows|which shows|labelled|labeled|depicting|illustrating)\s+""", RegexOption.IGNORE_CASE)
-        private val fillers = setOf("a", "an", "the", "of", "and", "detailed", "simple", "labelled", "labeled", "clear", "step", "by", "process", "showing", "human")
+        private val fillers = setOf("a", "an", "the", "of", "and", "detailed", "simple", "labelled", "labeled", "clear", "step", "by", "process", "showing")
 
         /**
          * A long description rarely matches anything, so it is tried shorter and shorter: the part before "showing / with",
