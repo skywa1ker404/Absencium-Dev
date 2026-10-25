@@ -21,22 +21,23 @@ class DiagramService(private val ai: AiClient) {
 
     /** The best freely licensed picture for [query], or null when nothing fits or the network is unavailable. */
     suspend fun fetch(query: String): DiagramPicture? = withContext(Dispatchers.IO) {
-        try {
-            val url = "https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=12" +
-                "&gsrsearch=${URLEncoder.encode(query, "UTF-8")}" +
-                "&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=1000"
-            val pick = pickBest(get(url).toString(Charsets.UTF_8)) ?: return@withContext null
-            val bytes = get(pick.imageUrl)
-            if (bytes.isEmpty() || bytes.size > MAX_BYTES) return@withContext null
-            val png = pick.mime != "image/jpeg"
-            DiagramPicture(bytes, if (png) "image/png" else "image/jpeg", if (png) "png" else "jpg", pick.caption)
-        } catch (e: IOException) {
-            DebugLogger.e("Diagrams", "Could not fetch a diagram", e)
-            null
-        } catch (e: org.json.JSONException) {
-            DebugLogger.e("Diagrams", "Unexpected reply while fetching a diagram", e)
-            null
+        for (variant in queryVariants(query)) {
+            try {
+                val url = "https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=12" +
+                    "&gsrsearch=${URLEncoder.encode(variant, "UTF-8")}" +
+                    "&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=1000"
+                val pick = pickBest(get(url).toString(Charsets.UTF_8)) ?: continue
+                val bytes = get(pick.imageUrl)
+                if (bytes.isEmpty() || bytes.size > MAX_BYTES) continue
+                val png = pick.mime != "image/jpeg"
+                return@withContext DiagramPicture(bytes, if (png) "image/png" else "image/jpeg", if (png) "png" else "jpg", pick.caption)
+            } catch (e: IOException) {
+                DebugLogger.e("Diagrams", "Could not fetch a diagram for \"$variant\"", e)
+            } catch (e: org.json.JSONException) {
+                DebugLogger.e("Diagrams", "Unexpected reply while fetching a diagram", e)
+            }
         }
+        null
     }
 
     /** Draws [description] as a clean labelled diagram on a white background. Throws [AiException] with a readable reason. */
@@ -67,6 +68,26 @@ class DiagramService(private val ai: AiClient) {
 
     companion object {
         private const val MAX_BYTES = 6_000_000
+
+        private val cutWords = Regex("""\s+(showing|with|including|that shows|which shows|labelled|labeled|depicting|illustrating)\s+""", RegexOption.IGNORE_CASE)
+        private val fillers = setOf("a", "an", "the", "of", "and", "detailed", "simple", "labelled", "labeled", "clear", "step", "by", "process", "showing", "human")
+
+        /**
+         * A long description rarely matches anything, so it is tried shorter and shorter: the part before "showing / with",
+         * its main words with "diagram", then just the first two words. Pure, so it is tested.
+         */
+        fun queryVariants(description: String): List<String> {
+            val cleaned = description.replace(Regex("""[^\p{L}\p{N}\s-]"""), " ").replace(Regex("""\s+"""), " ").trim()
+            val head = cutWords.split(cleaned).first().trim()
+            val words = head.split(' ').filter { it.isNotBlank() }
+            val keywords = words.filter { it.lowercase() !in fillers }
+            return listOf(
+                words.take(7).joinToString(" "),
+                (keywords.take(4) + "diagram").joinToString(" "),
+                keywords.take(3).joinToString(" "),
+                keywords.take(2).joinToString(" "),
+            ).filter { it.isNotBlank() }.distinct()
+        }
 
         /** Chooses the first JPEG or PNG in a Commons search reply and builds its credit line. Pure, so it is tested. */
         fun pickBest(json: String): Pick? {

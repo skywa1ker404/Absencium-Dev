@@ -53,6 +53,11 @@ object AiNoteCleaner {
         val indent = line.length - trimmedStart.length
         val pad = line.substring(0, indent)
         return when {
+            // Box drawings made of text characters render as junk; the AI is told not to, and what slips through is cleaned up.
+            Regex("^\\+[-=+]{4,}\\+?$").matches(trimmedStart.trim()) -> ""
+            Regex("^[vV↓|]$").matches(trimmedStart.trim()) -> "{align:center}↓"
+            Regex("^\\[\\s*([^\\[\\]]{2,80}?)\\s*\\]$").matches(trimmedStart.trim()) ->
+                "{align:center}**" + trimmedStart.trim().removePrefix("[").removeSuffix("]").trim() + "**"
             Regex("^#{4,}\\s").containsMatchIn(trimmedStart) -> "### " + trimmedStart.trimStart('#').trim()
             Regex("^[*+•]\\s+").containsMatchIn(trimmedStart) && !trimmedStart.startsWith("**") -> pad + "- " + trimmedStart.drop(1).trim()
             Regex("^-{3,}$|^\\*{3,}$|^_{3,}$").matches(trimmedStart.trim()) -> "---"

@@ -757,7 +757,10 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                         picture = try {
                             container.diagramService.draw(connection, query)
                         } catch (e: AiException) {
-                            diagramNote = e.message
+                            val msg = e.message.orEmpty()
+                            diagramNote = if (msg.contains("429") || msg.contains("quota", true)) {
+                                "your AI plan has no image generation allowance right now (quota used up or not included in the free plan)"
+                            } else msg.lineSequence().first().take(140)
                             null
                         }
                     }

@@ -51,4 +51,10 @@ class AiNoteCleanerTest {
     fun boldIsNotMistakenForABullet() {
         assertEquals("**Bold** start", AiNoteCleaner.clean("**Bold** start"))
     }
+
+    @Test
+    fun textBoxDrawingsBecomeCentredLines() {
+        val out = AiNoteCleaner.clean("[ Renin released ]\nv\n+-------+\n[ Angiotensin II ]")
+        assertEquals("{align:center}**Renin released**\n{align:center}↓\n\n{align:center}**Angiotensin II**", out)
+    }
 }

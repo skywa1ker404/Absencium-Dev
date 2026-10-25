@@ -75,6 +75,7 @@ object NotePrompts {
 
     private val RULES = """
         Rules for the answer:
+        - Never draw with text characters: no boxes, no +---+ lines, no lone "v" or "|" arrows, no [ boxed ] words. Show a flow as numbered steps, a table, or centred lines joined with arrows such as {align:center}A → B → C.
         - Never show code or markup symbols. No code fences, no backticks, no LaTeX, no dollar signs, no backslash commands, no HTML.
         - Write every formula as clean readable Unicode on its own centred line, for example {align:center}**E = mc²**, {align:center}x = (-b ± √(b² - 4ac)) / 2a. Define each symbol on the next line.
         - Choose the sections this particular topic needs, in the order that teaches it best. Do not reuse one fixed layout, and leave out any section that has nothing real to say.
