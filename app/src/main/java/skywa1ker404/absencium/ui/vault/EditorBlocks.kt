@@ -93,6 +93,10 @@ class EmbedActions(
     val onView: () -> Unit,
     val onCrop: () -> Unit,
     val onDraw: () -> Unit,
+    /** Reads the text out of a picture, or turns a recording into text. */
+    val onExtract: () -> Unit,
+    /** Deletes the file itself, not only its place on the page. */
+    val onDelete: () -> Unit,
 )
 
 /** A round handle on a corner of a selected block. Dragging it sideways resizes; [signX] is +1 for a right-hand corner, -1 for a left-hand one. */
@@ -295,25 +299,32 @@ fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actio
                     handle(Alignment.BottomStart, -1)()
                 }
             }
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                @Composable
-                fun item(label: String, onClick: () -> Unit) =
-                    DropdownMenuItem(text = { Text(label) }, onClick = { menuOpen = false; selected = false; onClick() })
-                if (ref.kind != EmbedKind.AUDIO) item("View full screen") { actions.onView() }
-                item("Move up") { actions.onMove(-1) }
-                item("Move down") { actions.onMove(1) }
-                if (ref.kind != EmbedKind.AUDIO) {
-                    item("Small") { actions.onResize(33, ref.align) }
-                    item("Medium") { actions.onResize(60, ref.align) }
-                    item("Large") { actions.onResize(85, ref.align) }
-                    item("Full width") { actions.onResize(100, ref.align) }
-                    item("Align left") { actions.onResize(ref.widthPercent, Align.START) }
-                    item("Align centre") { actions.onResize(ref.widthPercent, Align.CENTER) }
-                    item("Align right") { actions.onResize(ref.widthPercent, Align.END) }
-                }
-                if (ref.kind == EmbedKind.IMAGE) item("Edit: crop, rotate, flip") { actions.onCrop() }
-                if (ref.kind == EmbedKind.DOODLE) item("Draw on it") { actions.onDraw() }
-                item("Remove") { actions.onRemove() }
+            if (menuOpen) {
+                val audio = ref.kind == EmbedKind.AUDIO
+                IconMenu(
+                    title = when (ref.kind) { EmbedKind.IMAGE -> "Picture"; EmbedKind.DOODLE -> "Doodle"; EmbedKind.AUDIO -> "Recording" },
+                    onDismiss = { menuOpen = false },
+                    actions = buildList {
+                        if (!audio) add(MenuAction("View", AppIcons.Fullscreen) { actions.onView() })
+                        if (ref.kind == EmbedKind.IMAGE) add(MenuAction("Edit", AppIcons.Crop) { actions.onCrop() })
+                        if (ref.kind == EmbedKind.DOODLE) add(MenuAction("Draw on it", AppIcons.Brush) { actions.onDraw() })
+                        if (ref.kind == EmbedKind.IMAGE) add(MenuAction("Extract text", AppIcons.ExtractText) { actions.onExtract() })
+                        if (audio) add(MenuAction("Turn into text", AppIcons.Transcribe) { actions.onExtract() })
+                        add(MenuAction("Move up", AppIcons.ArrowUp) { actions.onMove(-1) })
+                        add(MenuAction("Move down", AppIcons.ArrowDown) { actions.onMove(1) })
+                        if (!audio) {
+                            add(MenuAction("Small", AppIcons.SizeSmall) { actions.onResize(33, ref.align) })
+                            add(MenuAction("Medium", AppIcons.SizeMedium) { actions.onResize(60, ref.align) })
+                            add(MenuAction("Large", AppIcons.SizeLarge) { actions.onResize(85, ref.align) })
+                            add(MenuAction("Full width", AppIcons.SizeFull) { actions.onResize(100, ref.align) })
+                            add(MenuAction("Left", AppIcons.AlignLeft) { actions.onResize(ref.widthPercent, Align.START) })
+                            add(MenuAction("Centre", AppIcons.FormatAlignCenter) { actions.onResize(ref.widthPercent, Align.CENTER) })
+                            add(MenuAction("Right", AppIcons.FormatAlignRight) { actions.onResize(ref.widthPercent, Align.END) })
+                        }
+                        add(MenuAction("Take off page", AppIcons.Close) { actions.onRemove() })
+                        add(MenuAction(if (audio) "Delete recording" else "Delete file", AppIcons.Delete, destructive = true) { actions.onDelete() })
+                    },
+                )
             }
         }
     }
@@ -419,18 +430,21 @@ fun TableBlock(text: String, actions: TableActions, modifier: Modifier = Modifie
                     },
             )
         }
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            @Composable
-            fun item(label: String, onClick: () -> Unit) =
-                DropdownMenuItem(text = { Text(label) }, onClick = { menuOpen = false; selected = false; onClick() })
-            item("Edit the table") { actions.onEdit() }
-            item("Add a row") { actions.onSetRows(rowCount + 1) }
-            item("Remove the last row if empty") { actions.onSetRows(rowCount - 1) }
-            item("Add a column") { actions.onAddColumn() }
-            item("Remove the last column") { actions.onRemoveColumn() }
-            item("Move up") { actions.onMove(-1) }
-            item("Move down") { actions.onMove(1) }
-            item("Remove the table") { actions.onRemove() }
+        if (menuOpen) {
+            IconMenu(
+                title = "Table",
+                onDismiss = { menuOpen = false; selected = false },
+                actions = listOf(
+                    MenuAction("Edit", AppIcons.Edit) { actions.onEdit() },
+                    MenuAction("Add row", AppIcons.AddRow) { actions.onSetRows(rowCount + 1) },
+                    MenuAction("Remove empty last row", AppIcons.RemoveRow) { actions.onSetRows(rowCount - 1) },
+                    MenuAction("Add column", AppIcons.AddColumn) { actions.onAddColumn() },
+                    MenuAction("Remove last column", AppIcons.RemoveColumn) { actions.onRemoveColumn() },
+                    MenuAction("Move up", AppIcons.ArrowUp) { actions.onMove(-1) },
+                    MenuAction("Move down", AppIcons.ArrowDown) { actions.onMove(1) },
+                    MenuAction("Delete table", AppIcons.Delete, destructive = true) { actions.onRemove() },
+                ),
+            )
         }
     }
 }

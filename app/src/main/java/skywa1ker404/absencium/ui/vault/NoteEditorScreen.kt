@@ -352,6 +352,9 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         }
     }
     val recorderState by viewModel.recorderState.collectAsStateWithLifecycle()
+    val extractUi by viewModel.extractUi.collectAsStateWithLifecycle()
+    var attachmentMenu by remember { mutableStateOf<AttachmentEntity?>(null) }
+    var pdfOpen by remember { mutableStateOf<AttachmentEntity?>(null) }
     var recordClock by remember { mutableStateOf(0L) }
     LaunchedEffect(recorderState.recording) {
         while (recorderState.recording) {
@@ -775,6 +778,11 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                                     onView = { viewing = attachment },
                                     onCrop = { cropping = attachment },
                                     onDraw = { doodleTarget = attachment; doodling = true },
+                                    onExtract = { attachment?.let { viewModel.askExtract(it) } },
+                                    onDelete = {
+                                        commit(NoteBlocks.remove(text, part.line))
+                                        attachment?.let { viewModel.deleteAttachment(it) }
+                                    },
                                 ),
                             )
                         }
@@ -860,40 +868,111 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         val onPageAudio = remember(text) { usedAudio.findAll(text).mapNotNull { it.groupValues[1].toLongOrNull() }.toSet() }
         val loose = attachments.filter { (it.kind == AttachmentKind.IMAGE || it.kind == AttachmentKind.SKETCH) && it.id !in onPage }
         if (loose.isNotEmpty()) {
-            Text("Not on the page yet. Tap a picture to put it at the cursor.", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+            Text("Not on the page yet. Tap a picture for its options.", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(loose, key = { it.id }) { photo ->
                     PhotoThumb(
                         path = photo.filePath,
-                        onClick = {
-                            val kind = if (photo.kind == AttachmentKind.SKETCH) EmbedKind.DOODLE else EmbedKind.IMAGE
-                            insertBlock(NoteBlocks.token(kind, photo.id, 100))
-                        },
+                        onClick = { attachmentMenu = photo },
                         onRemove = { viewModel.deleteAttachment(photo) },
                     )
                 }
             }
         }
 
-        // Recordings that are not on the page yet, and files attached to the note.
+        // Recordings that are not on the page yet, and files attached to the note. Each opens an icon menu.
         val looseAudio = attachments.filter { it.kind == AttachmentKind.AUDIO && it.id !in onPageAudio }
         if (looseAudio.isNotEmpty()) {
-            Text("Recordings. Tap to put one on the page.", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+            Text("Recordings. Tap one for its options.", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 looseAudio.forEach { a ->
-                    ExpressiveChip(selected = false, onClick = { insertBlock(NoteBlocks.token(EmbedKind.AUDIO, a.id, 100)) }, label = { Text(a.displayName) })
+                    ExpressiveChip(selected = false, onClick = { attachmentMenu = a }, label = { Text(a.displayName) })
                 }
             }
         }
         val files = attachments.filter { it.kind == AttachmentKind.DOCUMENT }
         if (files.isNotEmpty()) {
             Text("Files", style = MaterialTheme.typography.titleMedium)
-            val context = androidx.compose.ui.platform.LocalContext.current
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 files.forEach { f ->
-                    ExpressiveChip(selected = false, onClick = { linkProblem = openAttachment(context, f) }, label = { Text(f.displayName) })
+                    ExpressiveChip(selected = false, onClick = { attachmentMenu = f }, label = { Text(f.displayName) })
                 }
             }
+        }
+
+        attachmentMenu?.let { a ->
+            val kind = skywa1ker404.absencium.data.ocr.FileKind.of(a.mimeType, a.displayName)
+            IconMenu(
+                title = a.displayName,
+                onDismiss = { attachmentMenu = null },
+                actions = buildList {
+                    when (a.kind) {
+                        AttachmentKind.IMAGE, AttachmentKind.SKETCH -> {
+                            val embed = if (a.kind == AttachmentKind.SKETCH) EmbedKind.DOODLE else EmbedKind.IMAGE
+                            add(MenuAction("Put on page", AppIcons.Add) { insertBlock(NoteBlocks.token(embed, a.id, 100)) })
+                            add(MenuAction("View", AppIcons.Fullscreen) { viewing = a })
+                            if (a.kind == AttachmentKind.IMAGE) add(MenuAction("Edit", AppIcons.Crop) { cropping = a })
+                            if (a.kind == AttachmentKind.SKETCH) add(MenuAction("Draw on it", AppIcons.Brush) { doodleTarget = a; doodling = true })
+                            if (a.kind == AttachmentKind.IMAGE) add(MenuAction("Extract text", AppIcons.ExtractText) { viewModel.askExtract(a) })
+                        }
+                        AttachmentKind.AUDIO -> {
+                            add(MenuAction("Put on page", AppIcons.Add) { insertBlock(NoteBlocks.token(EmbedKind.AUDIO, a.id, 100)) })
+                            add(MenuAction("Turn into text", AppIcons.Transcribe) { viewModel.askExtract(a) })
+                        }
+                        else -> {
+                            add(
+                                MenuAction("Open", AppIcons.Description) {
+                                    if (kind == skywa1ker404.absencium.data.ocr.FileKind.PDF) pdfOpen = a else linkProblem = openAttachment(appContext, a)
+                                },
+                            )
+                            if (kind != skywa1ker404.absencium.data.ocr.FileKind.OTHER) add(MenuAction("Extract text", AppIcons.ExtractText) { viewModel.askExtract(a) })
+                            add(MenuAction("Open in another app", AppIcons.OpenInNew) { linkProblem = openAttachment(appContext, a) })
+                        }
+                    }
+                    add(MenuAction("Delete", AppIcons.Delete, destructive = true) { viewModel.deleteAttachment(a) })
+                },
+            )
+        }
+
+        pdfOpen?.let { a ->
+            PdfViewerDialog(
+                path = a.filePath,
+                name = a.displayName,
+                onClose = { pdfOpen = null },
+                onExtract = { viewModel.askExtract(a) },
+                onOpenElsewhere = { linkProblem = openAttachment(appContext, a) },
+            )
+        }
+
+        when (val ui = extractUi) {
+            is VaultViewModel.ExtractUi.Choosing -> ExtractChoiceDialog(
+                fileName = ui.attachment.displayName,
+                kind = skywa1ker404.absencium.data.ocr.FileKind.of(ui.attachment.mimeType, ui.attachment.displayName),
+                aiReady = viewModel.aiReadyForExtract(),
+                onChoose = { mode -> viewModel.runExtract(ui.attachment, mode) },
+                onDismiss = { viewModel.dismissExtract() },
+            )
+            is VaultViewModel.ExtractUi.Running -> ExtractRunningDialog(step = ui.step, onCancel = { viewModel.cancelExtract() })
+            is VaultViewModel.ExtractUi.Done -> ExtractResultDialog(
+                title = "Text from ${ui.title}",
+                text = ui.text,
+                acceptLabel = "Add to the note",
+                acceptIcon = AppIcons.Add,
+                onAccept = { picked ->
+                    viewModel.dismissExtract()
+                    val at = selEnd.coerceIn(0, text.length)
+                    val lead = if (at == 0 || text[at - 1] == '\n') "" else "\n"
+                    apply(MarkdownEdit.insert(text, at, at, lead + picked + "\n"))
+                },
+                onDismiss = { viewModel.dismissExtract() },
+            )
+            is VaultViewModel.ExtractUi.Problem -> ExtractProblemDialog(
+                message = ui.message,
+                setupMissing = ui.setupMissing,
+                onOpenSettings = { navigator.navigate(AiSettingsScreenDestination) },
+                onDismiss = { viewModel.dismissExtract() },
+            )
+            VaultViewModel.ExtractUi.Idle -> Unit
         }
 
         viewing?.let { a ->

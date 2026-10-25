@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -201,7 +202,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
             try {
                 val connection = skywa1ker404.absencium.data.ai.AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
                 val reply = container.aiClient.generate(connection, request)
-                onResult(if (reply.isBlank()) AiOutcome(error = "The model sent back an empty answer.") else AiOutcome(text = reply.trim()))
+                onResult(if (reply.isBlank()) AiOutcome(error = "The model sent back an empty answer.") else AiOutcome(text = skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(reply)))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: skywa1ker404.absencium.data.ai.AiException) {
@@ -211,6 +212,51 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
                 onResult(AiOutcome(error = "Something went wrong: ${e.message ?: e.javaClass.simpleName}"))
             }
         }
+    }
+
+    // ---- Getting text out of attachments ----
+
+    /** Where an extraction from a note's attachment stands. */
+    sealed interface ExtractUi {
+        data object Idle : ExtractUi
+        data class Choosing(val attachment: AttachmentEntity) : ExtractUi
+        data class Running(val step: String) : ExtractUi
+        data class Done(val title: String, val text: String) : ExtractUi
+        data class Problem(val message: String, val setupMissing: Boolean) : ExtractUi
+    }
+
+    private val _extractUi = MutableStateFlow<ExtractUi>(ExtractUi.Idle)
+    val extractUi: StateFlow<ExtractUi> = _extractUi.asStateFlow()
+    private var extractJob: kotlinx.coroutines.Job? = null
+
+    fun aiReadyForExtract(): Boolean = container.textExtractor.aiReady()
+
+    /** Asks how to read [attachment]: with AI or locally. */
+    fun askExtract(attachment: AttachmentEntity) {
+        _extractUi.value = ExtractUi.Choosing(attachment)
+    }
+
+    fun runExtract(attachment: AttachmentEntity, mode: skywa1ker404.absencium.data.ocr.ExtractMode) {
+        extractJob?.cancel()
+        _extractUi.value = ExtractUi.Running("Starting")
+        extractJob = viewModelScope.launch {
+            val result = container.textExtractor.extract(attachment.filePath, attachment.mimeType, attachment.displayName, mode) { step ->
+                _extractUi.update { if (it is ExtractUi.Running) ExtractUi.Running(step) else it }
+            }
+            _extractUi.value = when (result) {
+                is skywa1ker404.absencium.data.ocr.Extracted.Text -> ExtractUi.Done(attachment.displayName, result.text)
+                is skywa1ker404.absencium.data.ocr.Extracted.Failed -> ExtractUi.Problem(result.message, result.setupMissing)
+            }
+        }
+    }
+
+    fun cancelExtract() {
+        extractJob?.cancel()
+        _extractUi.value = ExtractUi.Idle
+    }
+
+    fun dismissExtract() {
+        _extractUi.value = ExtractUi.Idle
     }
 
     // ---- Camera, recording and audio files inside the editor ----

@@ -30,6 +30,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import skywa1ker404.absencium.ui.components.AppTextField
+import skywa1ker404.absencium.ui.components.DropdownOption
+import skywa1ker404.absencium.ui.components.InlineDropdown
+import skywa1ker404.absencium.ui.components.SwitchCard
 import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.icons.AppIcons
 
@@ -156,6 +159,49 @@ internal fun AiTaskStage(
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(),
         )
+        val choices by viewModel.syllabusChoices.collectAsStateWithLifecycle()
+        InlineDropdown(
+            options = skywa1ker404.absencium.data.ai.NoteLength.entries.map { DropdownOption(it, it.label, it.guide.substringBefore(":")) },
+            selected = state.noteLength,
+            onSelect = viewModel::setNoteLength,
+            label = if (solve) "Answer length" else "Notes length",
+            enabled = !state.aiRunning,
+        )
+        if (!solve) {
+            InlineDropdown(
+                options = skywa1ker404.absencium.data.ai.NoteTemplate.entries.map { DropdownOption(it, it.label) },
+                selected = state.noteTemplate,
+                onSelect = viewModel::setNoteTemplate,
+                label = "Kind of notes",
+                enabled = !state.aiRunning,
+            )
+        }
+        if (choices.isNotEmpty()) {
+            InlineDropdown(
+                options = listOf(DropdownOption(-1L, "Not linked")) + choices.map { DropdownOption(it.id, it.label) },
+                selected = state.syllabusNodeId ?: -1L,
+                onSelect = { viewModel.setSyllabusNode(it.takeIf { id -> id >= 0 }) },
+                label = "Follow the syllabus",
+                enabled = !state.aiRunning,
+                maxListHeight = 320.dp,
+            )
+        }
+        AppTextField(
+            value = state.courseInfo,
+            onValueChange = viewModel::setCourseInfo,
+            label = { Text("Course, year or semester (optional)") },
+            enabled = !state.aiRunning,
+            singleLine = true,
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        SwitchCard("Tables, comparisons and graphs", "Adds them wherever they teach better than text", state.genTables, viewModel::setGenTables, enabled = !state.aiRunning)
+        SwitchCard("Add previous year questions", "Likely exam questions with model answers", state.genPyq, viewModel::setGenPyq, enabled = !state.aiRunning)
+        SwitchCard("Fetch diagrams from the internet", "Freely licensed pictures from Wikimedia Commons; only search words are sent", state.genSearchDiagrams, viewModel::setGenSearchDiagrams, enabled = !state.aiRunning)
+        SwitchCard("Generate diagrams with AI", "Draws them with your AI provider (needs Gemini or OpenAI)", state.genDrawDiagrams, viewModel::setGenDrawDiagrams, enabled = !state.aiRunning)
+        if (solve) {
+            SwitchCard("Assignment format", "Title block, introduction, numbered sections and a conclusion", state.genAssignment, viewModel::setGenAssignment, enabled = !state.aiRunning)
+        }
         if (solve) {
             PillButton(text = "Add photos of the homework", tonal = true, enabled = !state.aiRunning, onClick = { picker.launch("image/*") }, modifier = Modifier.fillMaxWidth())
             if (state.pictures.isNotEmpty()) {
@@ -166,7 +212,7 @@ internal fun AiTaskStage(
                 }
             }
         }
-        if (state.aiRunning) LoadingDots(if (solve) "Working on the answer" else "Writing your notes")
+        if (state.aiRunning) LoadingDots(state.aiStep.ifBlank { if (solve) "Working on the answer" else "Writing your notes" })
         state.aiError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
         if (state.aiSetupMissing2) {
             Column(

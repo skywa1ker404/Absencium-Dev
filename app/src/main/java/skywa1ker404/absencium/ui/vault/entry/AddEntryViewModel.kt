@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -80,6 +83,17 @@ data class AddEntryState(
     val aiRunning: Boolean = false,
     val aiError: String? = null,
     val aiSetupMissing2: Boolean = false,
+    /** What the AI is doing now ("Writing", "Finding diagrams") and the choices made for the answer. */
+    val aiStep: String = "",
+    val noteLength: skywa1ker404.absencium.data.ai.NoteLength = skywa1ker404.absencium.data.ai.NoteLength.MODERATE,
+    val noteTemplate: skywa1ker404.absencium.data.ai.NoteTemplate = skywa1ker404.absencium.data.ai.NoteTemplate.FULL,
+    val syllabusNodeId: Long? = null,
+    val courseInfo: String = "",
+    val genSearchDiagrams: Boolean = false,
+    val genDrawDiagrams: Boolean = false,
+    val genTables: Boolean = true,
+    val genPyq: Boolean = false,
+    val genAssignment: Boolean = false,
     /** Audio Note: a recording in progress or waiting to be saved. */
     val recording: Boolean = false,
     val recordedPath: String? = null,
@@ -595,6 +609,27 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
     fun setAiPrompt(text: String) = _state.update { it.copy(aiPrompt = text) }
 
+    fun setNoteLength(v: skywa1ker404.absencium.data.ai.NoteLength) = _state.update { it.copy(noteLength = v) }
+    fun setNoteTemplate(v: skywa1ker404.absencium.data.ai.NoteTemplate) = _state.update { it.copy(noteTemplate = v) }
+    fun setSyllabusNode(id: Long?) = _state.update { it.copy(syllabusNodeId = id) }
+    fun setCourseInfo(v: String) = _state.update { it.copy(courseInfo = v) }
+    fun setGenSearchDiagrams(v: Boolean) = _state.update { it.copy(genSearchDiagrams = v) }
+    fun setGenDrawDiagrams(v: Boolean) = _state.update { it.copy(genDrawDiagrams = v) }
+    fun setGenTables(v: Boolean) = _state.update { it.copy(genTables = v) }
+    fun setGenPyq(v: Boolean) = _state.update { it.copy(genPyq = v) }
+    fun setGenAssignment(v: Boolean) = _state.update { it.copy(genAssignment = v) }
+
+    /** The chosen subject's syllabus tree as dropdown choices; empty when it has none. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val syllabusChoices: StateFlow<List<skywa1ker404.absencium.data.ai.SyllabusPath.Choice>> = _state
+        .map { it.subjectId }
+        .distinctUntilChanged()
+        .flatMapLatest { id ->
+            if (id == 0L) kotlinx.coroutines.flow.flowOf(emptyList())
+            else container.database.syllabusDao().observeBySubject(id).map { skywa1ker404.absencium.data.ai.SyllabusPath.choices(it) }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     fun dismissAiSetup2() = _state.update { it.copy(aiSetupMissing2 = false) }
 
     /**
@@ -625,25 +660,71 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                         AiImage("image/jpeg", android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
                     }
                 } else emptyList()
-                val ask = if (solve) {
-                    "You are a patient tutor. Solve the homework in ${if (images.isEmpty()) "the question below" else "the attached photo(s)"}" +
-                        (if (images.isNotEmpty() && prompt.isNotEmpty()) " and the note below" else "") + ". " +
-                        "Write the answer in Markdown: the question, the working step by step, then the final answer in bold. " +
-                        "Explain each step briefly so a student can follow it." + (if (prompt.isNotEmpty()) "\n\n$prompt" else "")
-                } else {
-                    "You are a study assistant. Write clear, well-structured study notes in Markdown about: $prompt\n" +
-                        "Start with a two or three line summary, then a heading for each topic with short bullet points, key terms with " +
-                        "one-line definitions, and five review questions at the end. Be accurate; if you are unsure of something, say so."
-                }
-                val reply = container.aiClient.generate(connection, ask, images)
-                if (reply.isBlank()) throw AiException("The model sent back an empty answer.")
-                val title = (if (solve) "Homework: " else "") + (prompt.lineSequence().firstOrNull { it.isNotBlank() }?.take(60) ?: "$subjectName homework")
-                val attachments = if (solve) current.pictures.map {
-                    AttachmentEntity(noteId = 0L, kind = AttachmentKind.IMAGE, filePath = it.path, displayName = it.name, mimeType = it.mimeType, sizeBytes = it.sizeBytes)
-                } else emptyList()
-                val id = container.vaultRepository.createEntry(
-                    current.subjectId, title, if (solve) NoteKind.HOMEWORK else NoteKind.AI_NOTES, reply.trim(), current.date, attachments,
+                val nodes = if (current.syllabusNodeId != null) container.database.syllabusDao().observeBySubject(current.subjectId).first() else emptyList()
+                val brief = skywa1ker404.absencium.data.ai.NoteBrief(
+                    request = prompt,
+                    subject = subjectName,
+                    length = current.noteLength,
+                    template = current.noteTemplate,
+                    syllabus = skywa1ker404.absencium.data.ai.SyllabusPath.context(nodes, current.syllabusNodeId, current.courseInfo)
+                        .let { if (it.isEmpty && current.courseInfo.isNotBlank()) it.copy(course = current.courseInfo.trim()) else it },
+                    searchDiagrams = current.genSearchDiagrams,
+                    drawDiagrams = current.genDrawDiagrams,
+                    tablesAndGraphs = current.genTables,
+                    pyq = current.genPyq,
+                    assignment = solve && current.genAssignment,
+                    hasPhotos = images.isNotEmpty(),
                 )
+                _state.update { it.copy(aiStep = if (solve) "Working on the answer" else "Writing your notes") }
+                val ask = if (solve) skywa1ker404.absencium.data.ai.NotePrompts.homework(brief) else skywa1ker404.absencium.data.ai.NotePrompts.notes(brief)
+                val raw = container.aiClient.generate(connection, ask, images)
+                if (raw.isBlank()) throw AiException("The model sent back an empty answer.")
+                val reply = skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(raw)
+
+                // Diagrams: only when the user switched fetching or drawing on.
+                val wanted = if (current.genSearchDiagrams || current.genDrawDiagrams) skywa1ker404.absencium.data.ai.NotePrompts.diagramRequests(reply) else emptyList()
+                val found = LinkedHashMap<String, Pair<AttachmentEntity, String>>()
+                var diagramNote: String? = null
+                for ((index, query) in wanted.withIndex()) {
+                    _state.update { it.copy(aiStep = "Getting diagram ${index + 1} of ${wanted.size}") }
+                    var picture = if (current.genSearchDiagrams) container.diagramService.fetch(query) else null
+                    if (picture == null && current.genDrawDiagrams) {
+                        picture = try {
+                            container.diagramService.draw(connection, query)
+                        } catch (e: AiException) {
+                            diagramNote = e.message
+                            null
+                        }
+                    }
+                    if (picture == null) continue
+                    val file = store.newFile(picture.extension)
+                    withContext(Dispatchers.IO) { file.writeBytes(picture.bytes) }
+                    found[query] = AttachmentEntity(
+                        noteId = 0L, kind = AttachmentKind.IMAGE, filePath = file.absolutePath, displayName = "Diagram ${index + 1}.${picture.extension}",
+                        mimeType = picture.mimeType, sizeBytes = file.length(),
+                    ) to picture.caption
+                }
+
+                diagramNote?.let { DebugLogger.i("Vault", "Diagrams: $it") }
+                val title = (if (solve) "Homework: " else "") + (prompt.lineSequence().firstOrNull { it.isNotBlank() }?.take(60) ?: "$subjectName homework")
+                val attachments = (if (solve) current.pictures.map {
+                    AttachmentEntity(noteId = 0L, kind = AttachmentKind.IMAGE, filePath = it.path, displayName = it.name, mimeType = it.mimeType, sizeBytes = it.sizeBytes)
+                } else emptyList()) + found.values.map { it.first }
+                val id = container.vaultRepository.createEntry(
+                    current.subjectId, title, if (solve) NoteKind.HOMEWORK else NoteKind.AI_NOTES,
+                    skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(reply), current.date, attachments,
+                )
+                if (found.isNotEmpty()) {
+                    val saved = container.vaultRepository.attachmentsFor(id).associateBy { it.filePath }
+                    var body = reply
+                    for ((query, entry) in found) {
+                        val stored = saved[entry.first.filePath] ?: continue
+                        val line = Regex("""(?m)^[ \t]*\{\{diagram:\s*${Regex.escape(query)}\s*}}[ \t]*$""")
+                        val token = skywa1ker404.absencium.ui.vault.markdown.NoteBlocks.token(skywa1ker404.absencium.ui.vault.markdown.EmbedKind.IMAGE, stored.id, 80)
+                        body = body.replace(line, Regex.escapeReplacement(token + "\n{align:center}*" + entry.second + "*"))
+                    }
+                    container.vaultRepository.saveNote(id, current.subjectId, title, skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(body), NoteStatus.ACTIVE)
+                }
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
                 _state.value = AddEntryState()
                 onSaved(id)

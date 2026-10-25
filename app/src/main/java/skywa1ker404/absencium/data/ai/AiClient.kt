@@ -265,6 +265,42 @@ class AiClient(private val keyVault: ApiKeyVault) {
         return text.ifBlank { throw AiException("The provider's reply was empty.") }
     }
 
+    /**
+     * Draws a picture from [prompt] and returns its bytes (PNG or JPEG). Gemini uses its image model through the same key;
+     * OpenAI-compatible services use /images/generations. Claude models cannot draw, which is said plainly.
+     */
+    suspend fun generateImage(connection: AiConnection, prompt: String): ByteArray =
+        withContext(Dispatchers.IO) {
+            val key = keyFor(connection)
+            val base = connection.baseUrl.trim().trimEnd('/')
+            when (connection.style) {
+                ApiStyle.ANTHROPIC -> throw AiException("Claude models cannot draw pictures. Use a Google Gemini or OpenAI key to generate diagrams, or turn on fetching them from the internet.")
+                ApiStyle.GEMINI -> {
+                    val body = JSONObject()
+                        .put("contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))))
+                        .put("generationConfig", JSONObject().put("responseModalities", JSONArray().put("TEXT").put("IMAGE")))
+                    val url = "$base/models/$GEMINI_IMAGE_MODEL:generateContent?key=${URLEncoder.encode(key.orEmpty(), "UTF-8")}"
+                    val json = JSONObject(call("POST", url, emptyMap(), body.toString()))
+                    val parts = json.optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")
+                    var data: String? = null
+                    if (parts != null) for (i in 0 until parts.length()) {
+                        val inline = parts.getJSONObject(i).optJSONObject("inlineData") ?: parts.getJSONObject(i).optJSONObject("inline_data")
+                        if (inline != null) data = inline.optString("data")
+                    }
+                    if (data.isNullOrBlank()) throw AiException("Gemini did not send back a picture.")
+                    android.util.Base64.decode(data, android.util.Base64.DEFAULT)
+                }
+                ApiStyle.OPENAI_COMPATIBLE -> {
+                    val body = JSONObject().put("model", OPENAI_IMAGE_MODEL).put("prompt", prompt).put("size", "1024x1024")
+                    val json = JSONObject(call("POST", "$base/images/generations", openAiHeaders(key), body.toString()))
+                    val item = json.optJSONArray("data")?.optJSONObject(0)
+                    val b64 = item?.optString("b64_json").orEmpty()
+                    if (b64.isBlank()) throw AiException("The service did not send back a picture. It may not offer image generation.")
+                    android.util.Base64.decode(b64, android.util.Base64.DEFAULT)
+                }
+            }
+        }
+
     private fun parseGeminiReply(body: String): String {
         val json = JSONObject(body)
         val parts = json.optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")
@@ -333,5 +369,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
         const val TAG = "AiClient"
         const val ANTHROPIC_VERSION = "2023-06-01"
         const val MAX_PAGES = 10
+        const val GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image"
+        const val OPENAI_IMAGE_MODEL = "gpt-image-1"
     }
 }

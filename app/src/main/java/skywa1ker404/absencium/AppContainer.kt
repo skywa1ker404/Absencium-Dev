@@ -50,6 +50,7 @@ class AppContainer(context: Context) {
     val backupManager = BackupManager(appContext)
     val aiClient = AiClient(apiKeyVault)
     /** Reads text out of pictures, PDFs, documents and recordings, with the user's AI or on the phone. */
+    val diagramService: skywa1ker404.absencium.data.ai.DiagramService by lazy { skywa1ker404.absencium.data.ai.DiagramService(aiClient) }
     val textExtractor: skywa1ker404.absencium.data.ocr.TextExtractor by lazy {
         skywa1ker404.absencium.data.ocr.TextExtractor(aiClient, skywa1ker404.absencium.data.ocr.LocalOcr(appContext)) {
             val s = settingsState.value
