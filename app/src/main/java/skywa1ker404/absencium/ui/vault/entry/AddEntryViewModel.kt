@@ -249,9 +249,13 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
      * Sends the pending photos to the AI model and shows the text it reads. Nothing is saved until the user accepts.
      * Without a saved provider, model and key the setup prompt is shown instead.
      */
-    fun extractText() {
+    fun extractText(mode: skywa1ker404.absencium.data.ocr.ExtractMode = skywa1ker404.absencium.data.ocr.ExtractMode.AI) {
         val current = _state.value
         if (current.pictures.isEmpty() || current.extractStep == ExtractStep.RUNNING) return
+        if (mode == skywa1ker404.absencium.data.ocr.ExtractMode.LOCAL) {
+            extractLocally(current.pictures)
+            return
+        }
         val settings = container.settingsState.value ?: return
         if (!aiUsable(settings, container.apiKeyVault.hasKey())) {
             _state.update { it.copy(extractSetupMissing = true, extractError = null) }
@@ -282,6 +286,27 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
     }
+
+    /** Reads the pending photos on the phone with the built-in reader; no AI and no network. */
+    private fun extractLocally(pictures: List<PendingPicture>) {
+        _state.update { it.copy(extractStep = ExtractStep.RUNNING, extractError = null, extractSetupMissing = false) }
+        extractJob = viewModelScope.launch {
+            val parts = ArrayList<String>()
+            var failure: String? = null
+            for ((index, picture) in pictures.take(MAX_EXTRACT_PHOTOS).withIndex()) {
+                when (val r = container.textExtractor.extract(picture.path, picture.mimeType.ifBlank { "image/jpeg" }, picture.name, skywa1ker404.absencium.data.ocr.ExtractMode.LOCAL)) {
+                    is skywa1ker404.absencium.data.ocr.Extracted.Text -> parts += if (pictures.size > 1) "Photo ${index + 1}\n${r.text}" else r.text
+                    is skywa1ker404.absencium.data.ocr.Extracted.Failed -> failure = r.message
+                }
+            }
+            _state.update {
+                if (parts.isEmpty()) it.copy(extractStep = ExtractStep.IDLE, extractError = failure ?: "No text was found in the photos.")
+                else it.copy(extractStep = ExtractStep.REVIEW, extractedText = parts.joinToString("\n\n"))
+            }
+        }
+    }
+
+    fun aiAvailable(): Boolean = container.textExtractor.aiReady()
 
     private fun failureText(reason: String?): String =
         "Could not extract the text: ${reason ?: "unknown error"}. Check that the chosen model can read images, then try again, or save the photos without the text."
@@ -492,7 +517,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** Saves the chosen files (PDF, Word, anything) as one entry. */
-    fun addDocuments(uris: List<Uri>, subjectName: String, onSaved: (Long) -> Unit) {
+    fun addDocuments(uris: List<Uri>, subjectName: String, mode: skywa1ker404.absencium.data.ocr.ExtractMode? = null, onSaved: (Long) -> Unit) {
         val current = _state.value
         if (uris.isEmpty() || current.busy || current.subjectId == 0L) return
         _state.update { it.copy(busy = true, message = null) }
@@ -517,7 +542,20 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     return@launch
                 }
                 val title = if (attachments.size == 1) attachments[0].displayName.substringBeforeLast('.').ifBlank { "$subjectName file" } else "$subjectName files"
-                val id = container.vaultRepository.createEntry(current.subjectId, title, NoteKind.DOCUMENT, "", current.date, attachments)
+                // Optionally the words of the files go into the note itself, so the entry is searchable and editable.
+                val body = StringBuilder()
+                if (mode != null) {
+                    for (a in attachments) {
+                        val kind = skywa1ker404.absencium.data.ocr.FileKind.of(a.mimeType, a.displayName)
+                        if (kind == skywa1ker404.absencium.data.ocr.FileKind.OTHER) continue
+                        when (val r = container.textExtractor.extract(a.filePath, a.mimeType, a.displayName, mode)) {
+                            is skywa1ker404.absencium.data.ocr.Extracted.Text ->
+                                body.append(if (attachments.size > 1) "## ${a.displayName}\n" else "").append(skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(r.text)).append("\n\n")
+                            is skywa1ker404.absencium.data.ocr.Extracted.Failed -> body.append("*${a.displayName}: ${r.message}*\n\n")
+                        }
+                    }
+                }
+                val id = container.vaultRepository.createEntry(current.subjectId, title, NoteKind.DOCUMENT, body.toString().trim(), current.date, attachments)
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
                 _state.value = AddEntryState()
                 onSaved(id)

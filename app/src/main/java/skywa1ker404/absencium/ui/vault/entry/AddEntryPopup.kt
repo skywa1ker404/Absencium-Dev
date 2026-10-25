@@ -115,8 +115,9 @@ fun AddEntryPopup(
 
     val subject = subjects.firstOrNull { it.id == state.subjectId }
     var pickingDate by remember { mutableStateOf(false) }
+    var pendingDocs by remember { mutableStateOf<List<android.net.Uri>>(emptyList()) }
     val documentPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        viewModel.addDocuments(uris, subject?.name.orEmpty(), onSaved)
+        pendingDocs = uris
     }
 
     fun close() {
@@ -210,6 +211,29 @@ fun AddEntryPopup(
                             )
                         }
                     }
+    }
+
+    if (pendingDocs.isNotEmpty()) {
+        val first = pendingDocs.first()
+        val resolver = androidx.compose.ui.platform.LocalContext.current.contentResolver
+        val mime = remember(first) { resolver.getType(first).orEmpty() }
+        skywa1ker404.absencium.ui.vault.ExtractChoiceDialog(
+            fileName = if (pendingDocs.size == 1) first.lastPathSegment.orEmpty().substringAfterLast('/') else "${pendingDocs.size} files",
+            kind = skywa1ker404.absencium.data.ocr.FileKind.of(mime, first.lastPathSegment.orEmpty()),
+            aiReady = viewModel.aiAvailable(),
+            onChoose = { mode ->
+                val picked = pendingDocs
+                pendingDocs = emptyList()
+                viewModel.addDocuments(picked, subject?.name.orEmpty(), mode, onSaved)
+            },
+            onDismiss = { pendingDocs = emptyList() },
+            skipLabel = "Just attach",
+            onSkip = {
+                val picked = pendingDocs
+                pendingDocs = emptyList()
+                viewModel.addDocuments(picked, subject?.name.orEmpty(), null, onSaved)
+            },
+        )
     }
 
     AnimatedPopup(if (pickingDate) true else null) {
@@ -653,12 +677,20 @@ private fun ExtractionPanel(state: AddEntryState, viewModel: AddEntryViewModel, 
                     androidx.compose.material3.TextButton(onClick = viewModel::discardAcceptedText) { Text("Remove") }
                 }
             }
-            PillButton(
-                text = if (state.acceptedText != null) "Extract text again" else "Extract text with AI",
-                tonal = true,
-                onClick = viewModel::extractText,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                PillButton(
+                    text = if (state.acceptedText != null) "Again with AI" else "Extract with AI",
+                    tonal = true,
+                    onClick = { viewModel.extractText(skywa1ker404.absencium.data.ocr.ExtractMode.AI) },
+                    modifier = Modifier.weight(1f),
+                )
+                PillButton(
+                    text = "Extract locally",
+                    tonal = true,
+                    onClick = { viewModel.extractText(skywa1ker404.absencium.data.ocr.ExtractMode.LOCAL) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
             state.extractError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
         }
     }
