@@ -3,7 +3,6 @@ package skywa1ker404.absencium.data.ocr
 import android.graphics.Bitmap
 import android.util.Base64
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import skywa1ker404.absencium.data.ai.AiClient
 import skywa1ker404.absencium.data.ai.AiConnection
@@ -14,10 +13,6 @@ import skywa1ker404.absencium.ui.vault.entry.ImageTools
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import kotlin.coroutines.coroutineContext
-
-/** How text is taken out of a file: by the user's AI provider, or on the phone without any network. */
-enum class ExtractMode { AI, LOCAL }
 
 /** What kind of file it is, as far as reading text from it goes. */
 enum class FileKind { IMAGE, PDF, AUDIO, WORD, PLAIN, OTHER;
@@ -44,45 +39,29 @@ sealed interface Extracted {
 }
 
 /**
- * Turns a stored file into text. [connection] says which AI to use, or null when none is set up.
- * With [ExtractMode.AI] the file goes to the provider (pictures, PDFs and recordings as they are; Word and text files are read on the
- * phone first and then tidied by the AI). With [ExtractMode.LOCAL] pictures and PDF pages go through the on-phone reader, Word
- * and text files are read directly, and a recording cannot be done at all.
+ * Turns a stored file into text with the user's AI. [connection] says which AI to use, or null when none is set up.
+ * Pictures, PDFs and recordings go to the provider as they are; Word and text files are read on the phone first and then
+ * tidied by the AI.
  */
 class TextExtractor(
     private val ai: AiClient,
-    private val ocr: LocalOcr,
     private val connection: () -> AiConnection?,
 ) {
 
     fun aiReady(): Boolean = connection() != null
 
-    /** Whether [mode] can work on this kind of file at all. */
-    fun supports(kind: FileKind, mode: ExtractMode): Boolean = when (kind) {
-        FileKind.IMAGE, FileKind.PDF -> true
-        FileKind.AUDIO -> mode == ExtractMode.AI
-        FileKind.WORD, FileKind.PLAIN -> true
-        FileKind.OTHER -> false
-    }
+    /** Whether this kind of file can be turned into text at all. */
+    fun supports(kind: FileKind): Boolean = kind != FileKind.OTHER
 
-    suspend fun extract(path: String, mime: String, name: String, mode: ExtractMode, onStep: (String) -> Unit = {}): Extracted =
+    suspend fun extract(path: String, mime: String, name: String, onStep: (String) -> Unit = {}): Extracted =
         withContext(Dispatchers.IO) {
             val kind = FileKind.of(mime, name)
             val file = File(path)
             if (!file.isFile) return@withContext Extracted.Failed("The file is no longer stored on this phone.")
-            if (!supports(kind, mode)) {
-                return@withContext Extracted.Failed(
-                    if (kind == FileKind.AUDIO) "A recording can only be turned into text with AI." else "Absencium cannot read text from this kind of file.",
-                )
-            }
+            if (!supports(kind)) return@withContext Extracted.Failed("Absencium cannot read text from this kind of file.")
+            val conn = connection() ?: return@withContext Extracted.Failed("AI Features are off or not set up.", setupMissing = true)
             try {
-                val text = when (mode) {
-                    ExtractMode.LOCAL -> local(file, kind, onStep)
-                    ExtractMode.AI -> {
-                        val conn = connection() ?: return@withContext Extracted.Failed("AI is off or not set up.", setupMissing = true)
-                        viaAi(conn, file, kind, mime, onStep)
-                    }
-                }
+                val text = viaAi(conn, file, kind, mime, onStep)
                 if (text.isBlank()) Extracted.Failed("No text was found in ${if (kind == FileKind.AUDIO) "that recording" else "that file"}.")
                 else Extracted.Text(text.trim())
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -97,23 +76,8 @@ class TextExtractor(
             }
         }
 
-    private suspend fun local(file: File, kind: FileKind, onStep: (String) -> Unit): String = when (kind) {
-        FileKind.IMAGE -> {
-            onStep("Reading the picture")
-            val bitmap = ImageTools.decode(file.absolutePath, OCR_EDGE) ?: throw IOException("The picture could not be opened.")
-            ocr.read(bitmap)
-        }
-        FileKind.PDF -> {
-            val parts = ArrayList<String>()
-            val total = PdfPages.render(file, PDF_WIDTH, MAX_PDF_PAGES) { index, bitmap ->
-                onStep("Reading page ${index + 1}")
-                parts += ocr.read(bitmap)
-            }
-            if (total == 0) throw IOException("This PDF could not be opened. It may be protected by a password.")
-            coroutineContext.ensureActive()
-            val note = if (total > MAX_PDF_PAGES) "\n\n[Only the first $MAX_PDF_PAGES of $total pages were read.]" else ""
-            parts.filter { it.isNotBlank() }.joinToString("\n\n") + note
-        }
+    /** Word and text files are read directly on the phone; that is file parsing, not picture reading. */
+    private fun readDocument(file: File, kind: FileKind): String = when (kind) {
         FileKind.WORD -> DocText.readDocx(file) ?: throw IOException("This Word file could not be read. Only .docx files work.")
         FileKind.PLAIN -> DocText.readPlain(file) ?: throw IOException("This text file is too large or cannot be read.")
         else -> ""
@@ -133,7 +97,7 @@ class TextExtractor(
                 ai.generate(conn, AUDIO_PROMPT, listOf(AiImage(audioMime, encode(file, "recording"))))
             }
             FileKind.WORD, FileKind.PLAIN -> {
-                val raw = local(file, kind, onStep)
+                val raw = readDocument(file, kind)
                 if (raw.isBlank()) "" else ai.generate(conn, TIDY_PROMPT + "\n\n" + raw.take(MAX_TIDY_CHARS))
             }
             FileKind.OTHER -> ""
@@ -142,16 +106,13 @@ class TextExtractor(
 
     private fun encode(file: File, what: String): String {
         if (file.length() > MAX_AI_FILE_BYTES) {
-            throw AiException("This $what is larger than ${MAX_AI_FILE_BYTES / 1_000_000} MB, which is too big to send to the AI. Try Locally (without AI) for a PDF, or a shorter recording.")
+            throw AiException("This $what is larger than ${MAX_AI_FILE_BYTES / 1_000_000} MB, which is too big to send to the AI. Try a smaller file or a shorter recording.")
         }
         return Base64.encodeToString(file.readBytes(), Base64.NO_WRAP)
     }
 
     companion object {
-        const val OCR_EDGE = 2600
         const val AI_EDGE = 1800
-        const val PDF_WIDTH = 1500
-        const val MAX_PDF_PAGES = 30
         const val MAX_AI_FILE_BYTES = 15_000_000L
         const val MAX_TIDY_CHARS = 60_000
 

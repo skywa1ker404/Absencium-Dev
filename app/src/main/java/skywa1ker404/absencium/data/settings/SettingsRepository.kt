@@ -91,6 +91,8 @@ class SettingsRepository(context: Context) {
     suspend fun setExamModeAutoSilence(value: Boolean) = write(Keys.EXAM_MODE_AUTO_SILENCE, value)
 
     suspend fun setAskAiEnabled(value: Boolean) = write(Keys.ASK_AI_ENABLED, value)
+    suspend fun setSearchImagesEnabled(value: Boolean) = write(Keys.SEARCH_IMAGES_ENABLED, value)
+    suspend fun setGenerateImagesEnabled(value: Boolean) = write(Keys.GENERATE_IMAGES_ENABLED, value)
 
     /** Saves the whole AI connection in one write so the settings never hold half of it. */
     suspend fun setAiConnection(provider: AiProvider, baseUrl: String, model: String, style: ApiStyle) {
@@ -183,6 +185,8 @@ class SettingsRepository(context: Context) {
         val FOCUS_GRACE_MINUTES = intPreferencesKey("focus_grace_minutes")
         val EXAM_MODE_AUTO_SILENCE = booleanPreferencesKey("exam_mode_auto_silence")
         val ASK_AI_ENABLED = booleanPreferencesKey("ask_ai_enabled")
+        val SEARCH_IMAGES_ENABLED = booleanPreferencesKey("search_images_enabled")
+        val GENERATE_IMAGES_ENABLED = booleanPreferencesKey("generate_images_enabled")
         val AI_PROVIDER = stringPreferencesKey("ai_provider")
         val AI_BASE_URL = stringPreferencesKey("ai_base_url")
         val AI_MODEL = stringPreferencesKey("ai_model")
@@ -201,6 +205,7 @@ class SettingsRepository(context: Context) {
         // The keys a restore may set, by type. A key not listed here is never imported.
         val BOOLEANS = setOf(
             ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
+            SEARCH_IMAGES_ENABLED, GENERATE_IMAGES_ENABLED,
             MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY,
         ).map { it.name }.toSet()
         val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES).map { it.name }.toSet()
@@ -233,6 +238,8 @@ class SettingsRepository(context: Context) {
             focusGraceMinutes = this[Keys.FOCUS_GRACE_MINUTES] ?: defaults.focusGraceMinutes,
             examModeAutoSilence = this[Keys.EXAM_MODE_AUTO_SILENCE] ?: defaults.examModeAutoSilence,
             askAiEnabled = this[Keys.ASK_AI_ENABLED] ?: defaults.askAiEnabled,
+            searchImagesEnabled = this[Keys.SEARCH_IMAGES_ENABLED] ?: defaults.searchImagesEnabled,
+            generateImagesEnabled = this[Keys.GENERATE_IMAGES_ENABLED] ?: defaults.generateImagesEnabled,
             aiProvider = enumOrDefault(this[Keys.AI_PROVIDER], defaults.aiProvider),
             aiBaseUrl = this[Keys.AI_BASE_URL] ?: defaults.aiBaseUrl,
             aiModel = this[Keys.AI_MODEL] ?: defaults.aiModel,

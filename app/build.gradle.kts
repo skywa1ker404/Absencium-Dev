@@ -95,7 +95,6 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     implementation(libs.androidx.room.runtime)
-    implementation(libs.tesseract4android)
     ksp(libs.androidx.room.compiler)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.documentfile)

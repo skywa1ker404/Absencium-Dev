@@ -49,6 +49,10 @@ data class AppSettings(
     val focusGraceMinutes: Int = 5,
     val examModeAutoSilence: Boolean = false,
     val askAiEnabled: Boolean = false,
+    /** EXPERIMENTAL: lets Generate Notes look for pictures online. Off by default. */
+    val searchImagesEnabled: Boolean = false,
+    /** Lets Generate Notes ask a paid Gemini or OpenAI plan to draw pictures. Off by default. */
+    val generateImagesEnabled: Boolean = false,
     val aiProvider: AiProvider = AiProvider.OPENAI,
     /** Empty until the user saves a connection. Never has a trailing slash. */
     val aiBaseUrl: String = "",

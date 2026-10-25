@@ -9,6 +9,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.ui.AiKeyViewModel
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.ScreenScaffold
+import skywa1ker404.absencium.ui.components.SwitchCard
 import skywa1ker404.absencium.ui.components.SectionTitle
 import skywa1ker404.absencium.ui.containerViewModel
 
@@ -24,6 +25,19 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
         SectionTitle("AI Features")
         AskAiToggle(settings, settingsViewModel, ready = aiReady(settings, keyState.hasKey))
         AiConnectionSection(settings, settingsViewModel)
+        SectionTitle("Images in generated notes")
+        SwitchCard(
+            title = "Search Images (experimental)",
+            subtitle = "Lets Generate Notes look for free pictures online (Wikimedia Commons, Openverse). Only search words leave the phone. Results can be unrelated, so check each one.",
+            checked = settings.searchImagesEnabled,
+            onCheckedChange = settingsViewModel::setSearchImagesEnabled,
+        )
+        SwitchCard(
+            title = "Generate Images",
+            subtitle = "Lets Generate Notes ask your AI to draw pictures. Needs a paid Google Gemini or OpenAI plan; free plans have no image quota.",
+            checked = settings.generateImagesEnabled,
+            onCheckedChange = settingsViewModel::setGenerateImagesEnabled,
+        )
         SectionTitle("API key")
         AiKeySection(aiKeyViewModel)
         HintText("Absencium works fully offline. AI is only used when you turn it on and ask.")

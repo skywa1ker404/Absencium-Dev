@@ -231,16 +231,16 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
 
     fun aiReadyForExtract(): Boolean = container.textExtractor.aiReady()
 
-    /** Asks how to read [attachment]: with AI or locally. */
+    /** Asks (with a plain explanation) before reading [attachment] with the AI. */
     fun askExtract(attachment: AttachmentEntity) {
         _extractUi.value = ExtractUi.Choosing(attachment)
     }
 
-    fun runExtract(attachment: AttachmentEntity, mode: skywa1ker404.absencium.data.ocr.ExtractMode) {
+    fun runExtract(attachment: AttachmentEntity) {
         extractJob?.cancel()
         _extractUi.value = ExtractUi.Running("Starting")
         extractJob = viewModelScope.launch {
-            val result = container.textExtractor.extract(attachment.filePath, attachment.mimeType, attachment.displayName, mode) { step ->
+            val result = container.textExtractor.extract(attachment.filePath, attachment.mimeType, attachment.displayName) { step ->
                 _extractUi.update { if (it is ExtractUi.Running) ExtractUi.Running(step) else it }
             }
             _extractUi.value = when (result) {

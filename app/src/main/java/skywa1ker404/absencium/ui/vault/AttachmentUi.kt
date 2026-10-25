@@ -64,7 +64,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
-import skywa1ker404.absencium.data.ocr.ExtractMode
 import skywa1ker404.absencium.data.ocr.FileKind
 import skywa1ker404.absencium.ui.icons.AppIcons
 
@@ -127,15 +126,15 @@ fun IconMenu(title: String?, actions: List<MenuAction>, onDismiss: () -> Unit) {
 }
 
 /**
- * Asks how to get the text out of a file: with the user's AI, or on the phone without it. Says plainly what each one means.
- * [onSkip] (when given) is a third way out that leaves the file as it is.
+ * Asks before a file's text is taken out with the user's AI, and says plainly what that means (what leaves the phone).
+ * [onSkip] (when given) is another way out that leaves the file as it is.
  */
 @Composable
 fun ExtractChoiceDialog(
     fileName: String,
     kind: FileKind,
     aiReady: Boolean,
-    onChoose: (ExtractMode) -> Unit,
+    onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     skipLabel: String? = null,
     onSkip: (() -> Unit)? = null,
@@ -148,7 +147,6 @@ fun ExtractChoiceDialog(
         FileKind.AUDIO -> "recording"
         else -> "document"
     }
-    val localPossible = kind != FileKind.AUDIO && kind != FileKind.OTHER
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = true)) {
         AnimatedVisibility(
             visibleState = open,
@@ -176,25 +174,13 @@ fun ExtractChoiceDialog(
                         body = "Sends this $noun to your AI provider with your own API key. It needs internet, some providers charge for it, " +
                             "and the provider can see what is in it. " + when (kind) {
                             FileKind.AUDIO -> "It works only with a model that accepts audio, such as Google Gemini."
-                            FileKind.IMAGE, FileKind.PDF -> "It copes better with handwriting, tables and messy photos."
+                            FileKind.IMAGE, FileKind.PDF -> "It copes with handwriting, tables and messy photos."
                             else -> "It tidies the text into clean notes."
-                        } + if (!aiReady) " AI is off or not set up: add it in Settings, AI & Integrations." else "",
-                        enabled = true,
+                        } + " AI can make mistakes, so check the text." +
+                            if (!aiReady) " AI Features are off or not set up: turn them on in Settings, AI & Integrations." else "",
+                        enabled = aiReady,
                         highlighted = aiReady,
-                        onClick = { onDismiss(); onChoose(ExtractMode.AI) },
-                    )
-                    ChoiceCard(
-                        icon = AppIcons.ExtractText,
-                        title = "Locally (without AI)",
-                        body = when (kind) {
-                            FileKind.AUDIO -> "A recording cannot be turned into text without AI."
-                            FileKind.IMAGE -> "Runs on this phone with no network, and nothing leaves it. Works best on clear, straight, printed English text; handwriting and tables may come out wrong."
-                            FileKind.PDF -> "Runs on this phone with no network, and nothing leaves it. Each page is read as a picture, so it works best on clear printed English text. A long PDF takes a while (the first 30 pages are read)."
-                            else -> "Reads the text straight out of the file on this phone, with no network."
-                        },
-                        enabled = localPossible,
-                        highlighted = false,
-                        onClick = { onDismiss(); onChoose(ExtractMode.LOCAL) },
+                        onClick = { onDismiss(); onConfirm() },
                     )
                     if (onSkip != null && skipLabel != null) {
                         Text(
@@ -316,7 +302,7 @@ fun ExtractProblemDialog(message: String, setupMissing: Boolean, onOpenSettings:
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(if (setupMissing) "AI is off or not set up" else "Could not get the text", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    if (setupMissing) "Add an AI provider, a model and your API key in Settings, AI & Integrations. Or choose Locally to read pictures and PDFs on this phone." else message,
+                    if (setupMissing) "Turn on AI Features and add an AI provider, a model and your API key in Settings, AI & Integrations." else message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )

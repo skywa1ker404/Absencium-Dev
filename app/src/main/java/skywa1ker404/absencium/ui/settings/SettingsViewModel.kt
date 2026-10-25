@@ -64,6 +64,10 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setAskAiEnabled(value: Boolean) = launch { repository.setAskAiEnabled(value) }
 
+    fun setSearchImagesEnabled(value: Boolean) = launch { repository.setSearchImagesEnabled(value) }
+
+    fun setGenerateImagesEnabled(value: Boolean) = launch { repository.setGenerateImagesEnabled(value) }
+
     fun setAiConnection(provider: AiProvider, baseUrl: String, model: String, style: ApiStyle) = launch {
         repository.setAiConnection(provider, baseUrl, model, style)
         DebugLogger.i("AI", "AI connection saved: provider=${provider.name} url=$baseUrl model=$model style=${style.name}")

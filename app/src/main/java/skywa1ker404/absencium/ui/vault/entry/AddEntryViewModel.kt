@@ -249,13 +249,9 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
      * Sends the pending photos to the AI model and shows the text it reads. Nothing is saved until the user accepts.
      * Without a saved provider, model and key the setup prompt is shown instead.
      */
-    fun extractText(mode: skywa1ker404.absencium.data.ocr.ExtractMode = skywa1ker404.absencium.data.ocr.ExtractMode.AI) {
+    fun extractText() {
         val current = _state.value
         if (current.pictures.isEmpty() || current.extractStep == ExtractStep.RUNNING) return
-        if (mode == skywa1ker404.absencium.data.ocr.ExtractMode.LOCAL) {
-            extractLocally(current.pictures)
-            return
-        }
         val settings = container.settingsState.value ?: return
         if (!aiUsable(settings, container.apiKeyVault.hasKey())) {
             _state.update { it.copy(extractSetupMissing = true, extractError = null) }
@@ -283,25 +279,6 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: Exception) {
                 DebugLogger.e("Extract", "Text extraction failed", e)
                 _state.update { it.copy(extractStep = ExtractStep.IDLE, extractError = failureText(e.message ?: e.javaClass.simpleName)) }
-            }
-        }
-    }
-
-    /** Reads the pending photos on the phone with the built-in reader; no AI and no network. */
-    private fun extractLocally(pictures: List<PendingPicture>) {
-        _state.update { it.copy(extractStep = ExtractStep.RUNNING, extractError = null, extractSetupMissing = false) }
-        extractJob = viewModelScope.launch {
-            val parts = ArrayList<String>()
-            var failure: String? = null
-            for ((index, picture) in pictures.take(MAX_EXTRACT_PHOTOS).withIndex()) {
-                when (val r = container.textExtractor.extract(picture.path, picture.mimeType.ifBlank { "image/jpeg" }, picture.name, skywa1ker404.absencium.data.ocr.ExtractMode.LOCAL)) {
-                    is skywa1ker404.absencium.data.ocr.Extracted.Text -> parts += if (pictures.size > 1) "Photo ${index + 1}\n${r.text}" else r.text
-                    is skywa1ker404.absencium.data.ocr.Extracted.Failed -> failure = r.message
-                }
-            }
-            _state.update {
-                if (parts.isEmpty()) it.copy(extractStep = ExtractStep.IDLE, extractError = failure ?: "No text was found in the photos.")
-                else it.copy(extractStep = ExtractStep.REVIEW, extractedText = parts.joinToString("\n\n"))
             }
         }
     }
@@ -352,6 +329,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     absentDate = current.date,
                     attachments = attachments,
                 )
+                putPicturesOnPage(id, current.subjectId, title, current.acceptedText.orEmpty())
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
                 DebugLogger.i("Vault", "Saved entry $id with ${attachments.size} photo(s)")
                 // The files now belong to the entry, so they must not be deleted when the popup closes.
@@ -364,6 +342,16 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 _state.update { it.copy(busy = false, message = "Could not save the entry: ${e.message ?: e.javaClass.simpleName}") }
             }
         }
+    }
+
+    /** Pictures of a new entry go straight onto its page, above any text, instead of waiting in the strip under the note. */
+    private suspend fun putPicturesOnPage(id: Long, subjectId: Long, title: String, body: String) {
+        val images = container.vaultRepository.attachmentsFor(id).filter { it.kind == AttachmentKind.IMAGE }.sortedBy { it.createdAt }
+        if (images.isEmpty()) return
+        val blocks = images.joinToString("\n") {
+            skywa1ker404.absencium.ui.vault.markdown.NoteBlocks.token(skywa1ker404.absencium.ui.vault.markdown.EmbedKind.IMAGE, it.id, 100)
+        }
+        container.vaultRepository.saveNote(id, subjectId, title, blocks + "\n" + (if (body.isBlank()) "" else "\n" + body), NoteStatus.ACTIVE)
     }
 
     fun openYouTube() = _state.update { it.copy(stage = EntryStage.YOUTUBE, message = null) }
@@ -517,7 +505,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** Saves the chosen files (PDF, Word, anything) as one entry. */
-    fun addDocuments(uris: List<Uri>, subjectName: String, mode: skywa1ker404.absencium.data.ocr.ExtractMode? = null, onSaved: (Long) -> Unit) {
+    fun addDocuments(uris: List<Uri>, subjectName: String, extractText: Boolean = false, onSaved: (Long) -> Unit) {
         val current = _state.value
         if (uris.isEmpty() || current.busy || current.subjectId == 0L) return
         _state.update { it.copy(busy = true, message = null) }
@@ -544,11 +532,11 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 val title = if (attachments.size == 1) attachments[0].displayName.substringBeforeLast('.').ifBlank { "$subjectName file" } else "$subjectName files"
                 // Optionally the words of the files go into the note itself, so the entry is searchable and editable.
                 val body = StringBuilder()
-                if (mode != null) {
+                if (extractText) {
                     for (a in attachments) {
                         val kind = skywa1ker404.absencium.data.ocr.FileKind.of(a.mimeType, a.displayName)
                         if (kind == skywa1ker404.absencium.data.ocr.FileKind.OTHER) continue
-                        when (val r = container.textExtractor.extract(a.filePath, a.mimeType, a.displayName, mode)) {
+                        when (val r = container.textExtractor.extract(a.filePath, a.mimeType, a.displayName)) {
                             is skywa1ker404.absencium.data.ocr.Extracted.Text ->
                                 body.append(if (attachments.size > 1) "## ${a.displayName}\n" else "").append(skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(r.text)).append("\n\n")
                             is skywa1ker404.absencium.data.ocr.Extracted.Failed -> body.append("*${a.displayName}: ${r.message}*\n\n")
@@ -556,6 +544,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     }
                 }
                 val id = container.vaultRepository.createEntry(current.subjectId, title, NoteKind.DOCUMENT, body.toString().trim(), current.date, attachments)
+                putPicturesOnPage(id, current.subjectId, title, body.toString().trim())
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
                 _state.value = AddEntryState()
                 onSaved(id)
@@ -636,7 +625,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 if (audio != null) {
                     var body = "{{audio:${audio.id}|100|center}}\n"
                     if (current.transcribe) {
-                        when (val r = container.textExtractor.extract(path, "audio/mp4", "Recording.m4a", skywa1ker404.absencium.data.ocr.ExtractMode.AI)) {
+                        when (val r = container.textExtractor.extract(path, "audio/mp4", "Recording.m4a")) {
                             is skywa1ker404.absencium.data.ocr.Extracted.Text -> body += "\n" + skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(r.text) + "\n"
                             is skywa1ker404.absencium.data.ocr.Extracted.Failed -> body += "\n*The recording could not be turned into text: ${r.message}*\n"
                         }
@@ -662,6 +651,13 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
     fun openGenerate() = _state.update { it.copy(stage = EntryStage.GENERATE, message = null, aiError = null, aiSetupMissing2 = false) }
 
     fun setAiPrompt(text: String) = _state.update { it.copy(aiPrompt = text) }
+
+    /** Which image sources the user switched on in Settings, AI & Integrations. Both are off until they do. */
+    data class ImageSources(val search: Boolean = false, val generate: Boolean = false)
+
+    val imageSources: StateFlow<ImageSources> = container.settingsState
+        .map { ImageSources(it?.searchImagesEnabled == true, it?.generateImagesEnabled == true) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ImageSources())
 
     fun setTranscribe(v: Boolean) = _state.update { it.copy(transcribe = v) }
 
@@ -716,6 +712,9 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                         AiImage("image/jpeg", android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
                     }
                 } else emptyList()
+                val sources = imageSources.value
+                val useSearch = current.genSearchDiagrams && sources.search
+                val useDraw = current.genDrawDiagrams && sources.generate
                 val nodes = if (current.syllabusNodeId != null) container.database.syllabusDao().observeBySubject(current.subjectId).first() else emptyList()
                 val brief = skywa1ker404.absencium.data.ai.NoteBrief(
                     request = prompt,
@@ -724,8 +723,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     template = current.noteTemplate,
                     syllabus = skywa1ker404.absencium.data.ai.SyllabusPath.context(nodes, current.syllabusNodeId, current.courseInfo)
                         .let { if (it.isEmpty && current.courseInfo.isNotBlank()) it.copy(course = current.courseInfo.trim()) else it },
-                    searchDiagrams = current.genSearchDiagrams,
-                    drawDiagrams = current.genDrawDiagrams,
+                    searchDiagrams = useSearch,
+                    drawDiagrams = useDraw,
                     tablesAndGraphs = current.genTables,
                     pyq = current.genPyq,
                     assignment = solve && current.genAssignment,
@@ -743,7 +742,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 }
 
                 // Diagrams: only when the user switched fetching or drawing on.
-                val wantsDiagrams = current.genSearchDiagrams || current.genDrawDiagrams
+                val wantsDiagrams = useSearch || useDraw
                 var wanted = if (wantsDiagrams) skywa1ker404.absencium.data.ai.NotePrompts.diagramRequests(reply, 5) else emptyList()
                 // The model did not place any diagram lines: look for one picture of the topic itself.
                 if (wantsDiagrams && wanted.isEmpty()) wanted = listOf("${prompt.lineSequence().firstOrNull { it.isNotBlank() }?.take(80) ?: subjectName} diagram")
@@ -752,8 +751,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 var diagramNote: String? = null
                 for ((index, query) in wanted.withIndex()) {
                     _state.update { it.copy(aiStep = "Getting diagram ${index + 1} of ${wanted.size}") }
-                    var picture = if (current.genSearchDiagrams) container.diagramService.fetch(query) else null
-                    if (picture == null && current.genDrawDiagrams) {
+                    var picture = if (useSearch) container.diagramService.fetch(query) else null
+                    if (picture == null && useDraw) {
                         picture = try {
                             container.diagramService.draw(connection, query)
                         } catch (e: AiException) {
@@ -797,7 +796,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     }
                     body = skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(body)
                     if (failedDiagrams.isNotEmpty()) {
-                        val why = diagramNote?.let { ": $it" } ?: if (current.genSearchDiagrams) ": nothing suitable was found online, or there is no internet" else ""
+                        val why = diagramNote?.let { ": $it" } ?: if (useSearch) ": nothing suitable was found online, or there is no internet" else ""
                         body = body.trimEnd() + "\n\n*No picture could be added for ${failedDiagrams.joinToString(", ") { "\"$it\"" }}$why*"
                     }
                     container.vaultRepository.saveNote(id, current.subjectId, title, body, NoteStatus.ACTIVE)

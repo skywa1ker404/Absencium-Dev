@@ -22,7 +22,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import skywa1ker404.absencium.data.ocr.Extracted
-import skywa1ker404.absencium.data.ocr.ExtractMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -186,10 +185,10 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** "Extract text": the words in the pending files (with AI or on the phone) are put in the paste box to check before searching. */
-    fun extractPending(mode: ExtractMode) {
+    fun extractPending() {
         val uris = _state.value.pending
         if (uris.isEmpty()) return
-        if (mode == ExtractMode.AI && !aiIsReady()) {
+        if (!aiIsReady()) {
             _state.update { it.copy(stage = ImportStage.SOURCE, setupMissing = true) }
             return
         }
@@ -205,7 +204,7 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
                     continue
                 }
                 try {
-                    when (val r = container.textExtractor.extract(stored.path, stored.mimeType, stored.displayName, mode) { step ->
+                    when (val r = container.textExtractor.extract(stored.path, stored.mimeType, stored.displayName) { step ->
                         _state.update { it.copy(workingStep = step) }
                     }) {
                         is Extracted.Text -> parts += r.text
@@ -424,8 +423,7 @@ fun ImportPopup(kind: ImportKind, onDismiss: () -> Unit, onOpenAiSettings: () ->
                     state = state,
                     onBack = { viewModel.dropPending(); viewModel.toSource() },
                     onImport = { viewModel.importPending(resolver) },
-                    onExtractAi = { viewModel.extractPending(ExtractMode.AI) },
-                    onExtractLocal = { viewModel.extractPending(ExtractMode.LOCAL) },
+                    onExtract = { viewModel.extractPending() },
                 )
 
                 ImportStage.PASTE -> PasteStage(
@@ -510,7 +508,7 @@ private fun SourceStage(
 }
 
 @Composable
-private fun ChooseStage(state: ImportState, onBack: () -> Unit, onImport: () -> Unit, onExtractAi: () -> Unit, onExtractLocal: () -> Unit) {
+private fun ChooseStage(state: ImportState, onBack: () -> Unit, onImport: () -> Unit, onExtract: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val ready = !state.setupMissing
     Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -531,12 +529,9 @@ private fun ChooseStage(state: ImportState, onBack: () -> Unit, onImport: () -> 
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ActionTile("Extract text with AI", AppIcons.ExtractText, colors.tertiaryContainer, colors.onTertiaryContainer, 2, onExtractAi, Modifier.weight(1f), 104.dp, enabled = ready)
-            ActionTile("Extract text locally", AppIcons.ExtractText, colors.secondaryContainer, colors.onSecondaryContainer, 1, onExtractLocal, Modifier.weight(1f), 104.dp)
-        }
+        ActionTile("Extract text with AI", AppIcons.ExtractText, colors.tertiaryContainer, colors.onTertiaryContainer, 2, onExtract, Modifier.fillMaxWidth(), 84.dp, enabled = ready)
         Text(
-            "Extracting text puts the words in a box so you can fix them before searching. Locally means on this phone, no AI and no internet, English only.",
+            "Extracting text puts the words in a box so you can fix them before searching. AI can make mistakes, so check the text.",
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )

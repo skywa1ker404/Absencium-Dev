@@ -49,10 +49,11 @@ class AppContainer(context: Context) {
     val shareService: skywa1ker404.absencium.data.share.ShareService by lazy { skywa1ker404.absencium.data.share.ShareService(appContext) }
     val backupManager = BackupManager(appContext)
     val aiClient = AiClient(apiKeyVault)
-    /** Reads text out of pictures, PDFs, documents and recordings, with the user's AI or on the phone. */
+        /** Finds or draws the images AI notes ask for (both optional, off by default). */
     val diagramService: skywa1ker404.absencium.data.ai.DiagramService by lazy { skywa1ker404.absencium.data.ai.DiagramService(aiClient) }
+    /** Reads text out of pictures, PDFs, documents and recordings with the user's AI. */
     val textExtractor: skywa1ker404.absencium.data.ocr.TextExtractor by lazy {
-        skywa1ker404.absencium.data.ocr.TextExtractor(aiClient, skywa1ker404.absencium.data.ocr.LocalOcr(appContext)) {
+        skywa1ker404.absencium.data.ocr.TextExtractor(aiClient) {
             val s = settingsState.value
             if (s != null && skywa1ker404.absencium.ui.settings.aiUsable(s, apiKeyVault.hasKey())) {
                 skywa1ker404.absencium.data.ai.AiConnection(s.aiProvider, s.effectiveAiStyle, s.aiBaseUrl, s.aiModel)

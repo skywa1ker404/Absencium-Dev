@@ -949,7 +949,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                 fileName = ui.attachment.displayName,
                 kind = skywa1ker404.absencium.data.ocr.FileKind.of(ui.attachment.mimeType, ui.attachment.displayName),
                 aiReady = viewModel.aiReadyForExtract(),
-                onChoose = { mode -> viewModel.runExtract(ui.attachment, mode) },
+                onConfirm = { viewModel.runExtract(ui.attachment) },
                 onDismiss = { viewModel.dismissExtract() },
             )
             is VaultViewModel.ExtractUi.Running -> ExtractRunningDialog(step = ui.step, onCancel = { viewModel.cancelExtract() })
