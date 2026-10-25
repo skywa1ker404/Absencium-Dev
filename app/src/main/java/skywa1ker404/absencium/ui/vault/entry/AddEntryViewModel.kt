@@ -733,7 +733,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 )
                 _state.update { it.copy(aiStep = if (solve) "Working on the answer" else "Writing your notes") }
                 val ask = if (solve) skywa1ker404.absencium.data.ai.NotePrompts.homework(brief) else skywa1ker404.absencium.data.ai.NotePrompts.notes(brief)
-                val raw = container.aiClient.generate(connection, ask, images)
+                val raw = container.aiClient.generate(connection, ask, images, maxTokens = current.noteLength.maxTokens)
                 if (raw.isBlank()) throw AiException("The model sent back an empty answer.")
                 val reply = try {
                     skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(raw)
@@ -743,7 +743,11 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 }
 
                 // Diagrams: only when the user switched fetching or drawing on.
-                val wanted = if (current.genSearchDiagrams || current.genDrawDiagrams) skywa1ker404.absencium.data.ai.NotePrompts.diagramRequests(reply) else emptyList()
+                val wantsDiagrams = current.genSearchDiagrams || current.genDrawDiagrams
+                var wanted = if (wantsDiagrams) skywa1ker404.absencium.data.ai.NotePrompts.diagramRequests(reply, 5) else emptyList()
+                // The model did not place any diagram lines: look for one picture of the topic itself.
+                if (wantsDiagrams && wanted.isEmpty()) wanted = listOf("${prompt.lineSequence().firstOrNull { it.isNotBlank() }?.take(80) ?: subjectName} diagram")
+                val failedDiagrams = ArrayList<String>()
                 val found = LinkedHashMap<String, Pair<AttachmentEntity, String>>()
                 var diagramNote: String? = null
                 for ((index, query) in wanted.withIndex()) {
@@ -757,7 +761,10 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                             null
                         }
                     }
-                    if (picture == null) continue
+                    if (picture == null) {
+                        failedDiagrams += query
+                        continue
+                    }
                     val file = store.newFile(picture.extension)
                     withContext(Dispatchers.IO) { file.writeBytes(picture.bytes) }
                     found[query] = AttachmentEntity(
@@ -775,16 +782,22 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     current.subjectId, title, if (solve) NoteKind.HOMEWORK else NoteKind.AI_NOTES,
                     skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(reply), current.date, attachments,
                 )
-                if (found.isNotEmpty()) {
+                if (found.isNotEmpty() || failedDiagrams.isNotEmpty()) {
                     val saved = container.vaultRepository.attachmentsFor(id).associateBy { it.filePath }
                     var body = reply
                     for ((query, entry) in found) {
                         val stored = saved[entry.first.filePath] ?: continue
                         val line = Regex("""(?m)^[ \t]*\{\{diagram:\s*${Regex.escape(query)}\s*\}\}[ \t]*$""")
-                        val token = skywa1ker404.absencium.ui.vault.markdown.NoteBlocks.token(skywa1ker404.absencium.ui.vault.markdown.EmbedKind.IMAGE, stored.id, 80)
-                        body = body.replace(line, Regex.escapeReplacement(token + "\n{align:center}*" + entry.second + "*"))
+                        val block = skywa1ker404.absencium.ui.vault.markdown.NoteBlocks.token(skywa1ker404.absencium.ui.vault.markdown.EmbedKind.IMAGE, stored.id, 80) +
+                            "\n{align:center}*" + entry.second + "*"
+                        body = if (line.containsMatchIn(body)) body.replace(line, Regex.escapeReplacement(block)) else body.trimEnd() + "\n\n" + block
                     }
-                    container.vaultRepository.saveNote(id, current.subjectId, title, skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(body), NoteStatus.ACTIVE)
+                    body = skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(body)
+                    if (failedDiagrams.isNotEmpty()) {
+                        val why = diagramNote?.let { ": $it" } ?: if (current.genSearchDiagrams) ": nothing suitable was found online, or there is no internet" else ""
+                        body = body.trimEnd() + "\n\n*No picture could be added for ${failedDiagrams.joinToString(", ") { "\"$it\"" }}$why*"
+                    }
+                    container.vaultRepository.saveNote(id, current.subjectId, title, body, NoteStatus.ACTIVE)
                 }
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
                 _state.value = AddEntryState()

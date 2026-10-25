@@ -82,6 +82,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
         prompt: String,
         images: List<AiImage> = emptyList(),
         videoUrl: String? = null,
+        maxTokens: Int? = null,
     ): String =
         withContext(Dispatchers.IO) {
             val key = keyFor(connection)
@@ -138,7 +139,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                         )
                     }
                     content.put(JSONObject().put("type", "text").put("text", prompt))
-                    val body = JSONObject().put("model", model).put("max_tokens", 4096).put(
+                    val body = JSONObject().put("model", model).put("max_tokens", maxTokens ?: 4096).put(
                         "messages",
                         JSONArray().put(JSONObject().put("role", "user").put("content", content)),
                     )
@@ -163,6 +164,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                         )
                     }
                     val body = JSONObject().put("contents", JSONArray().put(JSONObject().put("parts", parts)))
+                    if (maxTokens != null) body.put("generationConfig", JSONObject().put("maxOutputTokens", maxTokens))
                     val id = model.removePrefix("models/")
                     val url = "$base/models/$id:generateContent?key=${URLEncoder.encode(key.orEmpty(), "UTF-8")}"
                     val reply = call("POST", url, emptyMap(), body.toString())

@@ -22,13 +22,14 @@ class DiagramService(private val ai: AiClient) {
     /** The best freely licensed picture for [query], or null when nothing fits or the network is unavailable. */
     suspend fun fetch(query: String): DiagramPicture? = withContext(Dispatchers.IO) {
         try {
-            val url = "https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=8" +
-                "&gsrsearch=${URLEncoder.encode("$query filetype:bitmap", "UTF-8")}" +
+            val url = "https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=12" +
+                "&gsrsearch=${URLEncoder.encode(query, "UTF-8")}" +
                 "&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=1000"
             val pick = pickBest(get(url).toString(Charsets.UTF_8)) ?: return@withContext null
             val bytes = get(pick.imageUrl)
             if (bytes.isEmpty() || bytes.size > MAX_BYTES) return@withContext null
-            DiagramPicture(bytes, pick.mime, if (pick.mime == "image/png") "png" else "jpg", pick.caption)
+            val png = pick.mime != "image/jpeg"
+            DiagramPicture(bytes, if (png) "image/png" else "image/jpeg", if (png) "png" else "jpg", pick.caption)
         } catch (e: IOException) {
             DebugLogger.e("Diagrams", "Could not fetch a diagram", e)
             null
@@ -74,7 +75,8 @@ class DiagramService(private val ai: AiClient) {
             for (page in ordered) {
                 val info = page.optJSONArray("imageinfo")?.optJSONObject(0) ?: continue
                 val mime = info.optString("mime")
-                if (mime != "image/jpeg" && mime != "image/png") continue
+                // An SVG is delivered as a PNG thumbnail (its "thumburl"), so it is usable too.
+                if (mime != "image/jpeg" && mime != "image/png" && mime != "image/svg+xml") continue
                 val url = info.optString("thumburl").ifBlank { info.optString("url") }
                 if (url.isBlank()) continue
                 val meta = info.optJSONObject("extmetadata")

@@ -1,10 +1,10 @@
 package skywa1ker404.absencium.data.ai
 
 /** How long the generated notes should be. */
-enum class NoteLength(val label: String, val guide: String) {
-    MODERATE("Moderate", "about one page: the essentials, tight and easy to revise"),
-    LENGTHY("Lengthy", "about two to three pages: every important point with explanations and examples"),
-    IN_DEPTH("In Depth", "four pages or more: complete coverage with reasoning, derivations, worked examples and edge cases"),
+enum class NoteLength(val label: String, val guide: String, val maxTokens: Int) {
+    MODERATE("Moderate", "about 1 page, 500 to 800 words: the essentials, tight and easy to revise", 6_000),
+    LENGTHY("Lengthy", "about 3 pages, 1,500 to 2,500 words: every important point with explanations and examples", 10_000),
+    IN_DEPTH("In Depth", "6 pages or more, at least 3,500 words: complete coverage with reasoning, derivations, several worked examples, edge cases and exam questions", 16_000),
 }
 
 /** The kind of notes wanted. */
@@ -98,9 +98,9 @@ object NotePrompts {
     private fun diagramPart(b: NoteBrief): String = when {
         !b.searchDiagrams && !b.drawDiagrams -> "Do not mention diagrams or pictures."
         else ->
-            "Where a diagram would really help (at most three in the whole answer), put one line {{diagram: a short description of the picture}} on its own " +
-                "where the picture belongs, for example {{diagram: labelled cross-section of a human heart}}. Describe the picture in plain words that would find or draw it. " +
-                "Do not add a diagram for something a table or formula already shows."
+            "The student switched diagrams on, so include them: put between two and five lines of the exact form {{diagram: a short description of the picture}} " +
+                "on their own, each where the picture belongs (for example right after the paragraph it illustrates), such as {{diagram: labelled cross-section of a human heart}}. " +
+                "Describe each picture in plain words that would find or draw it: the subject, and the word diagram, figure or graph. Use different pictures, not repeats."
     }
 
     private fun extras(b: NoteBrief): String = buildList {
@@ -120,12 +120,14 @@ object NotePrompts {
         ${priority(b.request)}
 
         Defaults, used only where the student's text says nothing different:
-        Length: ${b.length.label} (${b.length.guide}).
+        Length: ${b.length.label} (${b.length.guide}). This length is a requirement, not a hint: do not stop early, do not summarise where the student asked for depth, and keep going until the topic is fully covered at that size.
         Kind of notes: ${b.template.label}. ${b.template.guide}
         ${syllabusPart(b.syllabus)}
         $EDITOR
 
         $SECTION_MENU
+
+        $FEATURES
 
         ${extras(b)}
 
@@ -145,10 +147,24 @@ object NotePrompts {
         Length: ${b.length.label} (${b.length.guide}).
         $EDITOR
 
+        $FEATURES
+
         ${extras(b)}
 
         $RULES
         ${diagramPart(b)}
+    """.trimIndent()
+
+    /** The editor's features the answer must really use, with a tiny example of each. */
+    private val FEATURES = """
+        Use the editor's features visibly, wherever they fit the content (this is required, not optional):
+        - At least one table when anything is compared, classified or listed with properties. Example: | Term | Meaning |, then |---|---|, then rows.
+        - Key facts to remember in ==highlight==; headings of definitions in {color:1565C0|blue|}; warnings and common mistakes in {color:C62828|red|}; results and tips in {color:2E7D32|green|}.
+        - Every formula and key result on its own centred line: {align:center}F = ma
+        - Numbered steps for any process or working, "a) " letters for options or parts, bullets for properties.
+        - A "- [ ] " revision checklist near the end.
+        - "> " for the one idea or rule that must not be forgotten, and a line of --- between the big parts.
+        - **bold** for each key term the first time it appears, ++underline++ for sub-labels.
     """.trimIndent()
 
     private val SOLUTION = """
