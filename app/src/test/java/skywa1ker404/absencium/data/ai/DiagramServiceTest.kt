@@ -16,7 +16,7 @@ class DiagramServiceTest {
     fun longDescriptionsAreShortenedForSearch() {
         val v = DiagramService.queryVariants("detailed cross-section of the human eyeball showing cornea, iris, lens, retina, and optic nerve")
         assertEquals("detailed cross-section of the human eyeball", v.first())
-        assertEquals(true, v.contains("cross-section eyeball diagram"))
+        assertEquals(true, v.contains("cross-section human eyeball diagram"))
         assertEquals(true, v.size >= 3)
     }
 

@@ -1,6 +1,6 @@
 name: Dev release
 
-# Manual only. Publishes an UNSTABLE development prerelease of the Dev repository: a dev-signed debug APK and optimised APK
+# Manual only. Publishes an UNSTABLE development prerelease of the Dev repository: a dev-signed optimised (R8) APK
 # with SHA-256 checksums. Nothing here is a stable release, and nothing here runs on a push.
 on:
   workflow_dispatch:
@@ -28,15 +28,14 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
-      - name: Build both APKs
+      - name: Build the optimised APK
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug assembleRelease --console=plain
+          ./gradlew assembleRelease --console=plain
 
       - name: Verify and collect
         run: |
           mkdir out
-          cp app/build/outputs/apk/debug/app-debug.apk out/Absencium-Dev-debug.apk
           cp app/build/outputs/apk/release/app-release.apk out/Absencium-Dev-optimized.apk
           for f in out/*.apk; do bash .github/scripts/verify_apk.sh "$f" skywa1ker404.absencium.dev; echo; done | tee out/apk-report.txt
           (cd out && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)

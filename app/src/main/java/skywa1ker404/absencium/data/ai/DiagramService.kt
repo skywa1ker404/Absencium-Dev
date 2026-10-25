@@ -132,7 +132,7 @@ class DiagramService(private val ai: AiClient) {
             if (tokens.size > 1 && tokens.last() in languageCodes && Regex("""[-_]""").containsMatchIn(lower)) return false
             if (keywords.isEmpty()) return true
             val matched = keywords.count { k -> tokens.any { it.startsWith(k.take(5)) || k.startsWith(it.take(5)) && it.length >= 3 } }
-            val needed = if (keywords.size >= 4) 2 else 1
+            val needed = if (keywords.size >= 6) 2 else 1
             return matched >= needed
         }
 
