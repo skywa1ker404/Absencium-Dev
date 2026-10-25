@@ -37,6 +37,21 @@ class DiagramService(private val ai: AiClient) {
                 DebugLogger.e("Diagrams", "Unexpected reply while fetching a diagram", e)
             }
         }
+        // Second source: Openverse, a free index of openly licensed pictures from many sites (no key needed).
+        for (variant in queryVariants(query)) {
+            try {
+                val url = "https://api.openverse.org/v1/images/?page_size=10&mature=false&q=${URLEncoder.encode(variant, "UTF-8")}"
+                val pick = pickOpenverse(get(url).toString(Charsets.UTF_8)) ?: continue
+                val bytes = get(pick.imageUrl)
+                if (bytes.isEmpty() || bytes.size > MAX_BYTES) continue
+                val jpeg = bytes.size > 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte()
+                return@withContext DiagramPicture(bytes, if (jpeg) "image/jpeg" else "image/png", if (jpeg) "jpg" else "png", pick.caption)
+            } catch (e: IOException) {
+                DebugLogger.e("Diagrams", "Openverse failed for \"$variant\"", e)
+            } catch (e: org.json.JSONException) {
+                DebugLogger.e("Diagrams", "Unexpected Openverse reply", e)
+            }
+        }
         null
     }
 
@@ -87,6 +102,21 @@ class DiagramService(private val ai: AiClient) {
                 keywords.take(3).joinToString(" "),
                 keywords.take(2).joinToString(" "),
             ).filter { it.isNotBlank() }.distinct()
+        }
+
+        /** The first Openverse result that has a thumbnail, with its title, creator and licence as the credit. */
+        fun pickOpenverse(json: String): Pick? {
+            val results = JSONObject(json).optJSONArray("results") ?: return null
+            for (i in 0 until results.length()) {
+                val item = results.getJSONObject(i)
+                val url = item.optString("thumbnail").ifBlank { item.optString("url") }
+                if (url.isBlank()) continue
+                val licence = item.optString("license").uppercase() + item.optString("license_version").let { if (it.isBlank()) "" else " $it" }
+                val credit = listOf(item.optString("title").take(60), item.optString("creator").take(60), licence.trim())
+                    .filter { it.isNotBlank() }.joinToString(", ")
+                return Pick(url, "image/jpeg", "Picture: $credit (Openverse)")
+            }
+            return null
         }
 
         /** Chooses the first JPEG or PNG in a Commons search reply and builds its credit line. Pure, so it is tested. */
