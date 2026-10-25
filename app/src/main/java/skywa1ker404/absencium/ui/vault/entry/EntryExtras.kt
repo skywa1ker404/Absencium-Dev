@@ -7,6 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import skywa1ker404.absencium.ui.components.AppTextField
 import skywa1ker404.absencium.ui.components.DropdownOption
+import skywa1ker404.absencium.ui.components.ExpressiveChip
 import skywa1ker404.absencium.ui.components.InlineDropdown
 import skywa1ker404.absencium.ui.components.SwitchCard
 import skywa1ker404.absencium.ui.components.PillButton
@@ -138,6 +141,7 @@ internal fun AudioStage(viewModel: AddEntryViewModel, subjectName: String, onBac
 }
 
 /** Solve Homework (type the question and/or add photos) and Generate AI Notes (type a topic). The AI answer becomes a new entry. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun AiTaskStage(
     viewModel: AddEntryViewModel,
@@ -169,50 +173,9 @@ internal fun AiTaskStage(
             modifier = Modifier.fillMaxWidth(),
         )
         val choices by viewModel.syllabusChoices.collectAsStateWithLifecycle()
-        InlineDropdown(
-            options = skywa1ker404.absencium.data.ai.NoteLength.entries.map { DropdownOption(it, it.label, it.guide.substringBefore(":")) },
-            selected = state.noteLength,
-            onSelect = viewModel::setNoteLength,
-            label = if (solve) "Answer length" else "Notes length",
-            enabled = !state.aiRunning,
-        )
-        if (!solve) {
-            InlineDropdown(
-                options = skywa1ker404.absencium.data.ai.NoteTemplate.entries.map { DropdownOption(it, it.label) },
-                selected = state.noteTemplate,
-                onSelect = viewModel::setNoteTemplate,
-                label = "Kind of notes",
-                enabled = !state.aiRunning,
-            )
-        }
-        if (choices.isNotEmpty()) {
-            InlineDropdown(
-                options = listOf(DropdownOption(-1L, "Not linked")) + choices.map { DropdownOption(it.id, it.label) },
-                selected = state.syllabusNodeId ?: -1L,
-                onSelect = { viewModel.setSyllabusNode(it.takeIf { id -> id >= 0 }) },
-                label = "Follow the syllabus",
-                enabled = !state.aiRunning,
-                maxListHeight = 320.dp,
-            )
-        }
-        AppTextField(
-            value = state.courseInfo,
-            onValueChange = viewModel::setCourseInfo,
-            label = { Text("Course, year or semester (optional)") },
-            enabled = !state.aiRunning,
-            singleLine = true,
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        SwitchCard("Tables, comparisons and graphs", "Adds them wherever they teach better than text", state.genTables, viewModel::setGenTables, enabled = !state.aiRunning)
-        SwitchCard("Add previous year questions", "Likely exam questions with model answers", state.genPyq, viewModel::setGenPyq, enabled = !state.aiRunning)
-        SwitchCard("Fetch diagrams from the internet", "Freely licensed pictures from Wikimedia Commons; only search words are sent", state.genSearchDiagrams, viewModel::setGenSearchDiagrams, enabled = !state.aiRunning)
-        SwitchCard("Generate diagrams with AI", "Draws them with your AI provider (needs Gemini or OpenAI)", state.genDrawDiagrams, viewModel::setGenDrawDiagrams, enabled = !state.aiRunning)
+        val idle = !state.aiRunning
         if (solve) {
-            SwitchCard("Assignment format", "Title block, introduction, numbered sections and a conclusion", state.genAssignment, viewModel::setGenAssignment, enabled = !state.aiRunning)
-        }
-        if (solve) {
-            PillButton(text = "Add photos of the homework", tonal = true, enabled = !state.aiRunning, onClick = { picker.launch("image/*") }, modifier = Modifier.fillMaxWidth())
+            PillButton(text = "Add photos of the homework", tonal = true, enabled = idle, onClick = { picker.launch("image/*") }, modifier = Modifier.fillMaxWidth())
             if (state.pictures.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(state.pictures, key = { it.id }) { picture ->
@@ -220,6 +183,69 @@ internal fun AiTaskStage(
                     }
                 }
             }
+        }
+        OptionGroup(title = if (solve) "Answer length" else "Notes length", icon = AppIcons.Description, help = state.noteLength.guide.substringBefore(":")) {
+            ChoiceBar(
+                options = skywa1ker404.absencium.data.ai.NoteLength.entries,
+                selected = state.noteLength,
+                label = { it.label },
+                onSelect = viewModel::setNoteLength,
+                enabled = idle,
+            )
+            if (!solve) {
+                InlineDropdown(
+                    options = skywa1ker404.absencium.data.ai.NoteTemplate.entries.map { DropdownOption(it, it.label) },
+                    selected = state.noteTemplate,
+                    onSelect = viewModel::setNoteTemplate,
+                    label = "Kind of notes",
+                    enabled = idle,
+                )
+            }
+        }
+        OptionGroup(title = "Include", icon = AppIcons.AddRow, help = "Tap to switch each on or off") {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ExpressiveChip(selected = state.genTables, onClick = { viewModel.setGenTables(!state.genTables) }, label = { Text("Tables and comparisons") }, enabled = idle)
+                ExpressiveChip(selected = state.genPyq, onClick = { viewModel.setGenPyq(!state.genPyq) }, label = { Text("Previous year questions") }, enabled = idle)
+                if (solve) {
+                    ExpressiveChip(selected = state.genAssignment, onClick = { viewModel.setGenAssignment(!state.genAssignment) }, label = { Text("Assignment format") }, enabled = idle)
+                }
+            }
+        }
+        OptionGroup(
+            title = "Diagrams",
+            icon = AppIcons.Image,
+            help = when {
+                state.genSearchDiagrams && state.genDrawDiagrams -> "Searches first, draws what it cannot find"
+                state.genSearchDiagrams -> "Free pictures from Wikimedia Commons and Openverse; only search words are sent"
+                state.genDrawDiagrams -> "Drawn by your AI provider (Gemini or OpenAI, may need a paid plan)"
+                else -> "None"
+            },
+        ) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ExpressiveChip(selected = state.genSearchDiagrams, onClick = { viewModel.setGenSearchDiagrams(!state.genSearchDiagrams) }, label = { Text("Find online") }, enabled = idle)
+                ExpressiveChip(selected = state.genDrawDiagrams, onClick = { viewModel.setGenDrawDiagrams(!state.genDrawDiagrams) }, label = { Text("Draw with AI") }, enabled = idle)
+            }
+        }
+        OptionGroup(title = "Your course", icon = AppIcons.Edit, help = "Keeps the answer inside what you are taught") {
+            if (choices.isNotEmpty()) {
+                InlineDropdown(
+                    options = listOf(DropdownOption(-1L, "Not linked")) + choices.map { DropdownOption(it.id, it.label) },
+                    selected = state.syllabusNodeId ?: -1L,
+                    onSelect = { viewModel.setSyllabusNode(it.takeIf { id -> id >= 0 }) },
+                    label = "Syllabus topic",
+                    enabled = idle,
+                    maxListHeight = 320.dp,
+                )
+            }
+            AppTextField(
+                value = state.courseInfo,
+                onValueChange = viewModel::setCourseInfo,
+                label = { Text("Course, year or semester (optional)") },
+                enabled = idle,
+                singleLine = true,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
         if (state.aiRunning) LoadingDots(state.aiStep.ifBlank { if (solve) "Working on the answer" else "Writing your notes" })
         state.aiError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
