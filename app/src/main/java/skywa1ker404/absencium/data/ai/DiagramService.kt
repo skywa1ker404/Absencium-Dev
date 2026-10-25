@@ -21,12 +21,13 @@ class DiagramService(private val ai: AiClient) {
 
     /** The best freely licensed picture for [query], or null when nothing fits or the network is unavailable. */
     suspend fun fetch(query: String): DiagramPicture? = withContext(Dispatchers.IO) {
+        val keywords = significantWords(query)
         for (variant in queryVariants(query)) {
             try {
                 val url = "https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=12" +
                     "&gsrsearch=${URLEncoder.encode(variant, "UTF-8")}" +
                     "&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=1000"
-                val pick = pickBest(get(url).toString(Charsets.UTF_8)) ?: continue
+                val pick = pickBest(get(url).toString(Charsets.UTF_8), keywords) ?: continue
                 val bytes = get(pick.imageUrl)
                 if (bytes.isEmpty() || bytes.size > MAX_BYTES) continue
                 val png = pick.mime != "image/jpeg"
@@ -41,7 +42,7 @@ class DiagramService(private val ai: AiClient) {
         for (variant in queryVariants(query)) {
             try {
                 val url = "https://api.openverse.org/v1/images/?page_size=10&mature=false&q=${URLEncoder.encode(variant, "UTF-8")}"
-                val pick = pickOpenverse(get(url).toString(Charsets.UTF_8)) ?: continue
+                val pick = pickOpenverse(get(url).toString(Charsets.UTF_8), keywords) ?: continue
                 val bytes = get(pick.imageUrl)
                 if (bytes.isEmpty() || bytes.size > MAX_BYTES) continue
                 val jpeg = bytes.size > 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte()
@@ -104,13 +105,44 @@ class DiagramService(private val ai: AiClient) {
             ).filter { it.isNotBlank() }.distinct()
         }
 
+        private val languageCodes = setOf(
+            "sr", "cs", "de", "fr", "es", "it", "pt", "ru", "ja", "zh", "ko", "ar", "nl", "pl", "tr", "hi", "bn", "ta", "te", "mr", "gu", "ur",
+            "fa", "he", "el", "sv", "no", "nb", "da", "fi", "hu", "ro", "bg", "uk", "vi", "th", "id", "ms", "ca", "hr", "sk", "sl", "lt", "lv",
+            "et", "sq", "mk", "bs", "sh", "ml", "kn", "pa", "ne", "si", "my", "km", "eu", "gl", "af", "sw", "be", "ka", "hy", "az", "kk", "uz",
+        )
+
+        /** The words of a description that a good picture's title should contain (plural endings ignored, small words dropped). */
+        fun significantWords(description: String): List<String> =
+            description.lowercase().split(Regex("""[^\p{L}\p{N}]+"""))
+                .filter { it.length >= 3 && it !in fillers && it !in setOf("diagram", "figure", "picture", "image", "labelled", "labeled", "showing", "with", "for", "from") }
+                .map { it.removeSuffix("s") }
+                .distinct()
+                .take(6)
+
+        /**
+         * Whether a picture's title looks right: Latin letters only, no language tag such as "-sr" or "_de", and it shares
+         * enough words with what was asked for. Better no picture than an unrelated or foreign-language one.
+         */
+        fun suitable(title: String, keywords: List<String>): Boolean {
+            if (title.any { it.isLetter() && it.code > 0x24F }) return false
+            val lower = title.lowercase()
+            val tokens = lower.split(Regex("""[^\p{L}\p{N}]+""")).filter { it.isNotEmpty() }
+            val tagged = Regex("""[-_ (]([a-z]{2,3})\)?$""").find(lower.trim())?.groupValues?.get(1)
+            if (tagged != null && tagged in languageCodes) return false
+            if (tokens.size > 1 && tokens.last() in languageCodes && Regex("""[-_]""").containsMatchIn(lower)) return false
+            if (keywords.isEmpty()) return true
+            val matched = keywords.count { k -> tokens.any { it.startsWith(k.take(5)) || k.startsWith(it.take(5)) && it.length >= 3 } }
+            val needed = if (keywords.size >= 4) 2 else 1
+            return matched >= needed
+        }
+
         /** The first Openverse result that has a thumbnail, with its title, creator and licence as the credit. */
-        fun pickOpenverse(json: String): Pick? {
+        fun pickOpenverse(json: String, keywords: List<String>): Pick? {
             val results = JSONObject(json).optJSONArray("results") ?: return null
             for (i in 0 until results.length()) {
                 val item = results.getJSONObject(i)
                 val url = item.optString("thumbnail").ifBlank { item.optString("url") }
-                if (url.isBlank()) continue
+                if (url.isBlank() || !suitable(item.optString("title"), keywords)) continue
                 val licence = item.optString("license").uppercase() + item.optString("license_version").let { if (it.isBlank()) "" else " $it" }
                 val credit = listOf(item.optString("title").take(60), item.optString("creator").take(60), licence.trim())
                     .filter { it.isNotBlank() }.joinToString(", ")
@@ -120,7 +152,7 @@ class DiagramService(private val ai: AiClient) {
         }
 
         /** Chooses the first JPEG or PNG in a Commons search reply and builds its credit line. Pure, so it is tested. */
-        fun pickBest(json: String): Pick? {
+        fun pickBest(json: String, keywords: List<String>): Pick? {
             val pages = JSONObject(json).optJSONObject("query")?.optJSONObject("pages") ?: return null
             val ordered = pages.keys().asSequence().map { pages.getJSONObject(it) }.sortedBy { it.optInt("index", Int.MAX_VALUE) }
             for (page in ordered) {
@@ -134,6 +166,7 @@ class DiagramService(private val ai: AiClient) {
                 val licence = meta?.optJSONObject("LicenseShortName")?.optString("value").orEmpty()
                 val artist = meta?.optJSONObject("Artist")?.optString("value").orEmpty().replace(Regex("<[^>]*>"), "").trim().take(60)
                 val title = page.optString("title").removePrefix("File:").substringBeforeLast('.')
+                if (!suitable(title, keywords)) continue
                 val credit = listOf(title, artist, licence).filter { it.isNotBlank() }.joinToString(", ")
                 return Pick(url, mime, "Picture: $credit (Wikimedia Commons)")
             }

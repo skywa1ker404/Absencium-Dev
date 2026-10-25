@@ -28,7 +28,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import skywa1ker404.absencium.ui.components.LocalFrostedPopup
 import skywa1ker404.absencium.ui.theme.LocalQuality
+
+/** A tonal fill that turns see-through inside a frosted (Liquid Glass) popup, so the glass shows through, like the app's cards. */
+@Composable
+private fun glassFill(base: Color): Color = if (LocalFrostedPopup.current) base.copy(alpha = base.alpha * 0.62f) else base
 
 /**
  * A group of connected choices (one is always picked). The picked one is a filled, rounder pill that springs between
@@ -46,7 +52,7 @@ internal fun <T> ChoiceBar(
     val colors = MaterialTheme.colorScheme
     val q = LocalQuality.current
     Row(
-        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(colors.surfaceContainerHighest).padding(4.dp),
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(glassFill(colors.surfaceContainerHighest)).padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         options.forEach { option ->
@@ -58,7 +64,7 @@ internal fun <T> ChoiceBar(
                 animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
                 label = "choiceCorner",
             )
-            val fill by animateColorAsState(if (isSelected) colors.primary else colors.surfaceContainerHighest, q.spring(stiffness = Spring.StiffnessMedium), label = "choiceFill")
+            val fill by animateColorAsState(if (isSelected) colors.primary else Color.Transparent, q.spring(stiffness = Spring.StiffnessMedium), label = "choiceFill")
             val ink by animateColorAsState(if (isSelected) colors.onPrimary else colors.onSurfaceVariant, q.spring(stiffness = Spring.StiffnessMedium), label = "choiceInk")
             Box(
                 modifier = Modifier
@@ -87,7 +93,7 @@ internal fun OptionGroup(
 ) {
     val colors = MaterialTheme.colorScheme
     Column(
-        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(colors.surfaceContainerHigh).padding(18.dp),
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(glassFill(colors.surfaceContainerHigh)).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

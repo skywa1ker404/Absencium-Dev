@@ -101,7 +101,7 @@ object NotePrompts {
         else ->
             "The student switched diagrams on, so include them: put between two and five lines of the exact form {{diagram: a short description of the picture}} " +
                 "on their own, each where the picture belongs (for example right after the paragraph it illustrates), such as {{diagram: labelled cross-section of a human heart}}. " +
-                "Describe each picture in plain words that would find or draw it: the subject, and the word diagram, figure or graph. Use different pictures, not repeats."
+                "Describe each picture in plain English words that would find or draw it, using the most common English name of the subject (for example "kidney", not a Latin term), then the word diagram. Use different pictures, not repeats."
     }
 
     private fun extras(b: NoteBrief): String = buildList {

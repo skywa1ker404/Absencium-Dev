@@ -19,4 +19,20 @@ class DiagramServiceTest {
         assertEquals(true, v.contains("cross-section eyeball diagram"))
         assertEquals(true, v.size >= 3)
     }
+
+    @Test
+    fun foreignAndUnrelatedTitlesAreRejected() {
+        val k = DiagramService.significantWords("female reproductive system diagram")
+        assertEquals(false, DiagramService.suitable("Scheme female reproductive system-sr", k))
+        assertEquals(false, DiagramService.suitable("Plutonium hexafluoride phase diagram-cs", k))
+        assertEquals(false, DiagramService.suitable("Женская система", k))
+        assertEquals(true, DiagramService.suitable("Female reproductive system", k))
+    }
+
+    @Test
+    fun englishRelatedTitlesPass() {
+        val k = DiagramService.significantWords("human kidney nephron structure")
+        assertEquals(true, DiagramService.suitable("Nephron diagram", k))
+        assertEquals(true, DiagramService.suitable("Kidney anatomy", k))
+    }
 }
