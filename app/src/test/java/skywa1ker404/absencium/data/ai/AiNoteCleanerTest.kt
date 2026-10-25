@@ -26,7 +26,7 @@ class AiNoteCleanerTest {
 
     @Test
     fun dollarMathIsUnwrappedAndDisplayMathIsCentred() {
-        val out = AiNoteCleaner.clean("The area is $\\pi r^2$.\n\n$$E = mc^2$$\n\nDone")
+        val out = AiNoteCleaner.clean("The area is $\\pi r^2$.\n\n\$\$E = mc^2\$\$\n\nDone")
         assertEquals("The area is π r².\n\n{align:center}E = mc²\n\nDone", out)
     }
 
