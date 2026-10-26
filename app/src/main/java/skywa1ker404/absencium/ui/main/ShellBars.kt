@@ -537,7 +537,13 @@ fun ShellFabMenu(
 
 /** The round floating search button that sits above the navigation pill. */
 @Composable
-fun ShellSearchButton(backdrop: LayerBackdrop?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ShellSearchButton(
+    backdrop: LayerBackdrop?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = AppIcons.Search,
+    description: String = "Search",
+) {
     val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -555,11 +561,11 @@ fun ShellSearchButton(backdrop: LayerBackdrop?, onClick: () -> Unit, modifier: M
             }
             .floatingGlass(backdrop, CircleShape)
             .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
-            .semantics { contentDescription = "Search" },
+            .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = AppIcons.Search,
+            imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(24.dp),

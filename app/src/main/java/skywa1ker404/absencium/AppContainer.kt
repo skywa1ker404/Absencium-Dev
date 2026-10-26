@@ -48,7 +48,8 @@ class AppContainer(context: Context) {
     val attachmentStore = AttachmentStore(appContext)
     val shareService: skywa1ker404.absencium.data.share.ShareService by lazy { skywa1ker404.absencium.data.share.ShareService(appContext) }
     val backupManager = BackupManager(appContext)
-    val aiClient = AiClient(apiKeyVault)
+    val aiHistory = skywa1ker404.absencium.data.ai.AiHistory(appContext)
+    val aiClient = AiClient(apiKeyVault).also { it.history = aiHistory }
         /** Finds or draws the images AI notes ask for (both optional, off by default). */
     val diagramService: skywa1ker404.absencium.data.ai.DiagramService by lazy { skywa1ker404.absencium.data.ai.DiagramService(aiClient) }
     /** Reads text out of pictures, PDFs, documents and recordings with the user's AI. */

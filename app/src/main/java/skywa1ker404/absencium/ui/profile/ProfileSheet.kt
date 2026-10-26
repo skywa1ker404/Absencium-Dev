@@ -63,6 +63,7 @@ fun ProfileSheet(
     onSaveName: (String) -> Unit,
     onOpenAttendance: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenAiHub: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     var name by remember(settings.displayName) { mutableStateOf(settings.displayName) }
@@ -154,6 +155,13 @@ fun ProfileSheet(
                 title = "Settings",
                 subtitle = "General, appearance, storage and AI",
                 onClick = onOpenSettings,
+            )
+
+            NavCard(
+                icon = AppIcons.AutoAwesome,
+                title = "AI Hub",
+                subtitle = if (settings.askAiEnabled) "Every AI request and answer, kept on this phone" else "AI Features are off. Turn them on in Settings, or ignore this.",
+                onClick = onOpenAiHub,
             )
 
             SectionTitle("Attendance logs")

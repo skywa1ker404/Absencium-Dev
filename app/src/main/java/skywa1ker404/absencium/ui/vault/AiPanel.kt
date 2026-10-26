@@ -141,6 +141,7 @@ fun AiPanel(
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                             }
+                            if (prompt.isEmpty()) skywa1ker404.absencium.ui.components.VoiceInputButton(onText = { onPrompt(it) }, enabled = !state.running)
                             Tool("Send", { onSend() }, selected = prompt.isNotBlank() && !state.running, icon = AppIcons.SkipNext)
                         }
 

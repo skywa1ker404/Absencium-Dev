@@ -53,6 +53,9 @@ class AiException(message: String) : Exception(message)
  */
 class AiClient(private val keyVault: ApiKeyVault) {
 
+    /** Every request and its answer is kept here for the AI Hub; set once by the app container. */
+    var history: AiHistory? = null
+
     /** The models the provider offers, sorted by name. */
     suspend fun listModels(connection: AiConnection): List<AiModel> = withContext(Dispatchers.IO) {
         val key = keyFor(connection)
@@ -83,6 +86,25 @@ class AiClient(private val keyVault: ApiKeyVault) {
         images: List<AiImage> = emptyList(),
         videoUrl: String? = null,
         maxTokens: Int? = null,
+    ): String {
+        try {
+            val reply = generateRaw(connection, prompt, images, videoUrl, maxTokens)
+            history?.add(connection.model, prompt, reply, null, images.size)
+            return reply
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            history?.add(connection.model, prompt, null, e.message ?: e.javaClass.simpleName, images.size)
+            throw e
+        }
+    }
+
+    private suspend fun generateRaw(
+        connection: AiConnection,
+        prompt: String,
+        images: List<AiImage>,
+        videoUrl: String?,
+        maxTokens: Int?,
     ): String =
         withContext(Dispatchers.IO) {
             val key = keyFor(connection)

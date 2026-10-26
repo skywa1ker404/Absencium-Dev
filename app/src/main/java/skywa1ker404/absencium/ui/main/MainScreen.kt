@@ -52,6 +52,7 @@ import skywa1ker404.absencium.ui.capture.ImportKind
 import skywa1ker404.absencium.ui.capture.ImportPopup
 import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.AiHubScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SubjectFolderScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDestination
@@ -342,6 +343,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             addEntry = AddEntryRequest()
                         },
                         FabAction("Drafts", AppIcons.Draft) { fabOpen = false; showDrafts = true },
+                        FabAction("Edit subjects", AppIcons.Edit) { fabOpen = false; navigator.navigate(SubjectsScreenDestination) },
                     )
                 }
                 SlideAway(
@@ -366,6 +368,23 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp),
             ) {
                 ShellSearchButton(backdrop = backdrop, onClick = { showSearch = true })
+            }
+
+            // The AI Hub button sits on the other side of the pill; it disappears when AI Features are switched off.
+            if (settings.askAiEnabled) {
+                SlideAway(
+                    hidden = { compactState.value },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp),
+                ) {
+                    ShellSearchButton(
+                        backdrop = backdrop,
+                        onClick = { navigator.navigate(AiHubScreenDestination) },
+                        icon = AppIcons.AutoAwesome,
+                        description = "AI Hub",
+                    )
+                }
             }
 
             BottomPill(
@@ -521,6 +540,10 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     onOpenSettings = {
                         showProfile = false
                         navigator.navigate(SettingsHubScreenDestination)
+                    },
+                    onOpenAiHub = {
+                        showProfile = false
+                        navigator.navigate(AiHubScreenDestination)
                     },
                 )
             }

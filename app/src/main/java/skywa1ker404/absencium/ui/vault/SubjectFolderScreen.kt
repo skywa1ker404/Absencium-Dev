@@ -14,7 +14,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import skywa1ker404.absencium.ui.components.verticalScrollbar
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import skywa1ker404.absencium.ui.icons.AppIcons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +54,7 @@ import skywa1ker404.absencium.ui.components.SectionTitle
 import skywa1ker404.absencium.ui.containerViewModel
 
 /** One subject's folder: its notes, the Finished / Written Notes archive, and Guides and Question Banks. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Destination<RootGraph>
 @Composable
 fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
@@ -91,6 +98,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         BackHandler(enabled = selecting) { selectedIds = emptySet() }
         val listState = rememberLazyListState()
 
+        Box(Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().verticalScrollbar(listState, colors.onSurfaceVariant),
@@ -118,24 +126,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             }
             item(key = "new") {
                 if (selecting) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("${selected.size} selected", style = MaterialTheme.typography.titleMedium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val allFinished = selected.isNotEmpty() && selected.all { it.status == NoteStatus.FINISHED }
-                            PillButton(
-                                text = if (allFinished) "Reopen" else "Finish",
-                                compact = true,
-                                onClick = {
-                                    viewModel.setNotesStatus(selected, if (allFinished) NoteStatus.ACTIVE else NoteStatus.FINISHED)
-                                    selectedIds = emptySet()
-                                },
-                            )
-                            PillButton(text = "Share", compact = true, tonal = true, onClick = { showShare = true })
-                            PillButton(text = "Move", compact = true, tonal = true, onClick = { showMove = true })
-                            PillButton(text = "Delete", compact = true, tonal = true, onClick = { confirmBatchDelete = true })
-                            PillButton(text = "Cancel", compact = true, tonal = true, onClick = { selectedIds = emptySet() })
-                        }
-                    }
+                    Text("${selected.size} selected. Use the bar at the top.", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
                 } else {
                     PillButton(
                         text = "New entry in this folder",
@@ -218,6 +209,28 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     onDelete = { guideToDelete = guide },
                 )
             }
+        }
+        if (selecting) {
+            val allFinished = selected.isNotEmpty() && selected.all { it.status == NoteStatus.FINISHED }
+            // Material 3 Expressive floating toolbar: the count on the left, the actions in the middle, Cancel on the right.
+            HorizontalFloatingToolbar(
+                expanded = true,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp),
+                leadingContent = { Text("${selected.size}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 12.dp)) },
+                trailingContent = {
+                    IconButton(onClick = { selectedIds = emptySet() }) { Icon(AppIcons.Close, contentDescription = "Cancel selection") }
+                },
+                content = {
+                    TextButton(onClick = {
+                        viewModel.setNotesStatus(selected, if (allFinished) NoteStatus.ACTIVE else NoteStatus.FINISHED)
+                        selectedIds = emptySet()
+                    }) { Text(if (allFinished) "Reopen" else "Finish") }
+                    TextButton(onClick = { showShare = true }) { Text("Share") }
+                    TextButton(onClick = { showMove = true }) { Text("Move") }
+                    TextButton(onClick = { confirmBatchDelete = true }) { Text("Delete") }
+                },
+            )
+        }
         }
     }
 

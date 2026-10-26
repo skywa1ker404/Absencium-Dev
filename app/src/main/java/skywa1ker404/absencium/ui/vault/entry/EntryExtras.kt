@@ -167,6 +167,7 @@ internal fun AiTaskStage(
             onValueChange = viewModel::setAiPrompt,
             label = { Text(if (solve) "Type the question (or add a photo of it)" else "What should the notes be about?") },
             enabled = !state.aiRunning,
+            trailingIcon = { skywa1ker404.absencium.ui.components.VoiceInputButton(onText = { viewModel.setAiPrompt((state.aiPrompt + " " + it).trim()) }, enabled = !state.aiRunning) },
             minLines = 3,
             maxLines = 8,
             shape = RoundedCornerShape(20.dp),
