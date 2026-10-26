@@ -19,7 +19,6 @@ import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -57,7 +56,6 @@ internal fun <T> ChoiceBar(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    val colors = MaterialTheme.colorScheme
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
@@ -68,7 +66,6 @@ internal fun <T> ChoiceBar(
                 onCheckedChange = { onSelect(option) },
                 modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
                 enabled = enabled,
-                colors = ToggleButtonDefaults.toggleButtonColors(containerColor = glassFill(colors.surfaceContainerHighest)),
                 shapes = when (index) {
                     0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
                     options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
