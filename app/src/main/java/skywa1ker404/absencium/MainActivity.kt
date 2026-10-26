@@ -19,7 +19,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ReadingScreenDestination
-import com.ramcosta.composedestinations.navigation.toDestinationsNavigator
 import skywa1ker404.absencium.ui.vault.ReadingMiniPlayer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -103,7 +102,7 @@ class MainActivity : ComponentActivity() {
                             mini = mini,
                             onOpen = { id ->
                                 container.readingMini.value = null
-                                navController.toDestinationsNavigator().navigate(ReadingScreenDestination(noteId = id))
+                                navController.navigate(ReadingScreenDestination(noteId = id).route)
                             },
                             onDismiss = { container.readingMini.value = null },
                         )
