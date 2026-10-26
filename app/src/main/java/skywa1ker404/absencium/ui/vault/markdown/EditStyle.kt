@@ -137,6 +137,17 @@ object EditStyle {
                         i++
                     }
                 }
+                text.startsWith("***", i) && find(text, "***", i + 3, to) > i + 3 -> {
+                    val close = find(text, "***", i + 3, to)
+                    out += EditRange(i, i + 3, EditKind.MARKER)
+                    out += EditRange(i + 3, close, EditKind.BOLD)
+                    out += EditRange(i + 3, close, EditKind.ITALIC)
+                    out += EditRange(close, close + 3, EditKind.MARKER)
+                    skip += close
+                    skip += close + 1
+                    skip += close + 2
+                    i += 3
+                }
                 text.startsWith("**", i) -> i = pair(text, i, to, "**", EditKind.BOLD, out, skip, spaced = false)
                 text.startsWith("~~", i) -> i = pair(text, i, to, "~~", EditKind.STRIKE, out, skip, spaced = false)
                 text.startsWith("++", i) -> i = pair(text, i, to, "++", EditKind.UNDERLINE, out, skip, spaced = true)
@@ -185,7 +196,7 @@ object EditStyle {
         val argStart = i + if (isColor) 7 else 6
         val bar = find(text, "|", i, to)
         if (bar !in (argStart + 1)..(argStart + 7)) return i + 1
-        val close = find(text, "|}", bar + 1, to)
+        val close = tagClose(text, bar + 1, to)
         if (close < 0) return i + 1
         val arg = text.substring(argStart, bar)
         val value = if (isColor) (if (arg.length == 6) arg.toIntOrNull(16) else null) else arg.toIntOrNull()?.takeIf { it in 8..64 }

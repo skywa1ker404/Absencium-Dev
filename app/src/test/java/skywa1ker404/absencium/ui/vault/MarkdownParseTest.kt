@@ -41,6 +41,32 @@ class MarkdownParseTest {
         assertTrue(s.any { it.text == "F" && it.link == "F" })
     }
 
+    @Test fun stackedFormattingKeepsEveryStyle() {
+        val s = MarkdownParse.inline("{size:24|{color:C62828|~~++==*word*==++~~|}|}")
+        assertEquals(1, s.size)
+        val w = s.single()
+        assertEquals("word", w.text)
+        assertTrue(w.strike && w.underline && w.highlight && w.italic)
+        assertEquals(24, w.sizeSp)
+        assertEquals(0xC62828, w.color)
+    }
+
+    @Test fun nestedTagsPairUpAndTextAfterThemIsPlain() {
+        val s = MarkdownParse.inline("{size:20|a {color:2E7D32|b|} c|} d")
+        assertEquals("a b c d", s.joinToString("") { it.text })
+        assertEquals(true, s.first { it.text == "b" }.let { it.sizeSp == 20 && it.color == 0x2E7D32 })
+        assertEquals(true, s.first { it.text == " c" }.let { it.sizeSp == 20 && it.color == null })
+        assertEquals(true, s.last().let { it.text == " d" && it.sizeSp == null })
+    }
+
+    @Test fun boldItalicAndCodeCombine() {
+        val bi = MarkdownParse.inline("***both***").single()
+        assertTrue(bi.bold && bi.italic)
+        assertEquals("both", bi.text)
+        val ic = MarkdownParse.inline("*`code`*").single()
+        assertTrue(ic.italic && ic.code)
+    }
+
     @Test fun unmatchedMarkersStayAsText() {
         assertEquals("a ** b", MarkdownParse.inline("a ** b").joinToString("") { it.text })
         assertEquals("2 * 3 * 4", MarkdownParse.inline("2 * 3 * 4").joinToString("") { it.text })

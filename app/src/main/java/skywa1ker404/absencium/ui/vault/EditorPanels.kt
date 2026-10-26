@@ -51,6 +51,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import skywa1ker404.absencium.ui.components.floatingGlass
+import skywa1ker404.absencium.ui.components.glassPuck
+import androidx.compose.ui.graphics.luminance
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import skywa1ker404.absencium.ui.vault.markdown.Align
@@ -97,17 +99,26 @@ internal fun Tool(
     // A small press and a soft colour change; quick enough to stay out of the way of typing.
     val scale by animateFloatAsState(if (pressed) 0.9f else 1f, tween(90), label = "toolPress")
     val fill by animateColorAsState(if (selected) colors.primaryContainer else Color.Transparent, tween(140), label = "toolFill")
+    val glass = skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current
+    val backdrop = LocalBackdrop.current
+    val isDark = colors.surface.luminance() < 0.5f
     Box(
         modifier = Modifier
             .size(44.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .clip(CircleShape)
-            .background(fill)
+            .then(
+                // Liquid Glass: the picked tool is the same clear, light-bending bead as in the main navigation pill.
+                if (glass && backdrop != null) {
+                    if (selected) Modifier.glassPuck(backdrop, CircleShape, isDark) else Modifier.clip(CircleShape)
+                } else {
+                    Modifier.clip(CircleShape).background(fill)
+                },
+            )
             .clickable(interactionSource = source, indication = LocalIndication.current, onClick = onClick)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        val tint = if (selected) colors.onPrimaryContainer else colors.onSurface
+        val tint = if (selected && !(glass && backdrop != null)) colors.onPrimaryContainer else colors.onSurface
         if (icon != null) Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
         if (glyph != null) Text(glyph, fontSize = glyphSize.sp, fontWeight = glyphWeight, color = tint)
     }

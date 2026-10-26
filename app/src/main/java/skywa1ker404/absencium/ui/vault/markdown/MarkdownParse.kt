@@ -217,6 +217,12 @@ object MarkdownParse {
                         i = close + 1
                     } else { plain.append(text[i]); i++ }
                 }
+                text.startsWith("***", i) && find(text, "***", i + 3) > i + 3 -> {
+                    val close = find(text, "***", i + 3)
+                    flushPlain()
+                    inline(text.substring(i + 3, close)).forEach { spans += it.copy(bold = true, italic = true) }
+                    i = close + 3
+                }
                 text.startsWith("**", i) -> {
                     val close = find(text, "**", i + 2)
                     if (close > i + 2) {
@@ -247,7 +253,7 @@ object MarkdownParse {
                     val bar = find(text, "|", i)
                     val isColor = text.startsWith("{color:", i)
                     val argStart = i + if (isColor) 7 else 6
-                    val close = if (bar in (argStart + 1)..(argStart + 7)) find(text, "|}", bar + 1) else -1
+                    val close = if (bar in (argStart + 1)..(argStart + 7)) tagClose(text, bar + 1, text.length) else -1
                     val arg = if (close > 0) text.substring(argStart, bar) else ""
                     val colorValue = if (isColor && arg.length == 6) arg.toIntOrNull(16) else null
                     val sizeValue = if (!isColor) arg.toIntOrNull()?.takeIf { it in 8..64 } else null
@@ -273,4 +279,35 @@ object MarkdownParse {
         flushPlain()
         return spans
     }
+}
+
+/** Whether a colour or size tag opens at [j]: `{color:RRGGBB|` or `{size:N|` with a valid value. */
+private fun opensTag(text: String, j: Int): Boolean {
+    if (text.startsWith("{color:", j)) {
+        val bar = j + 13
+        return bar < text.length && text[bar] == '|' && text.substring(j + 7, bar).all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }
+    }
+    if (text.startsWith("{size:", j)) {
+        val bar = text.indexOf('|', j + 6)
+        return bar in (j + 7)..(j + 8) && text.substring(j + 6, bar).all { it.isDigit() }
+    }
+    return false
+}
+
+/**
+ * Where the `|}` that closes the tag opened just before [from] is, skipping the closers of tags nested inside it, so
+ * `{size:20|{color:C62828|big red|}|}` pairs up correctly. -1 when it is never closed. Looks at most 2000 characters ahead.
+ */
+internal fun tagClose(text: String, from: Int, limit: Int): Int {
+    var depth = 1
+    var j = from
+    val end = minOf(limit, from + 2000)
+    while (j < end) {
+        when {
+            text[j] == '{' && opensTag(text, j) -> { depth++; j += 6 }
+            text.startsWith("|}", j) -> { depth--; if (depth == 0) return j; j += 2 }
+            else -> j++
+        }
+    }
+    return -1
 }
