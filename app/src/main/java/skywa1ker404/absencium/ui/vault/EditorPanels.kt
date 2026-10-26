@@ -336,6 +336,7 @@ fun RecordPanel(
 ) {
     val colors = MaterialTheme.colorScheme
     GlassCard(modifier) {
+      Column {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -360,5 +361,6 @@ fun RecordPanel(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
             )
         }
+      }
     }
 }

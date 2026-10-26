@@ -735,6 +735,7 @@ fun PhotoPreviewDialog(
 }
 
 /** ". .. ..." that keeps counting up while something runs. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun LoadingDots(label: String, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
     val dots by androidx.compose.runtime.produceState(".") {
@@ -745,7 +746,15 @@ internal fun LoadingDots(label: String, modifier: Modifier = Modifier, color: Co
             kotlinx.coroutines.delay(420)
         }
     }
-    Text(text = "$label $dots", style = MaterialTheme.typography.bodyMedium, color = color, modifier = modifier)
+    androidx.compose.foundation.layout.Row(
+        modifier = modifier,
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+    ) {
+        // Material 3 Expressive loading indicator: a shape that morphs from one to the next while it works.
+        androidx.compose.material3.LoadingIndicator(modifier = Modifier.size(32.dp))
+        Text(text = "$label $dots", style = MaterialTheme.typography.bodyMedium, color = color)
+    }
 }
 
 @Composable

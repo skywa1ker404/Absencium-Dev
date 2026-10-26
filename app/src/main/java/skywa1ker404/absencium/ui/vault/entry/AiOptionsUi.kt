@@ -15,7 +15,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,9 +44,10 @@ import skywa1ker404.absencium.ui.theme.LocalQuality
 private fun glassFill(base: Color): Color = if (LocalFrostedPopup.current) base.copy(alpha = base.alpha * 0.62f) else base
 
 /**
- * A group of connected choices (one is always picked). The picked one is a filled, rounder pill that springs between
- * segments; the others stay square-ish, like the connected button groups of Material 3 Expressive.
+ * A group of connected choices (one is always picked), built from the Material 3 Expressive connected button group:
+ * the picked toggle button morphs to a fully rounded shape, the others keep squarer connected corners.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun <T> ChoiceBar(
     options: List<T>,
@@ -50,33 +58,24 @@ internal fun <T> ChoiceBar(
     enabled: Boolean = true,
 ) {
     val colors = MaterialTheme.colorScheme
-    val q = LocalQuality.current
     Row(
-        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(glassFill(colors.surfaceContainerHighest)).padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
     ) {
-        options.forEach { option ->
-            val isSelected = option == selected
-            val interaction = remember { MutableInteractionSource() }
-            val pressed by interaction.collectIsPressedAsState()
-            val corner by animateDpAsState(
-                targetValue = if (pressed) 10.dp else if (isSelected) 26.dp else 14.dp,
-                animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-                label = "choiceCorner",
-            )
-            val fill by animateColorAsState(if (isSelected) colors.primary else Color.Transparent, q.spring(stiffness = Spring.StiffnessMedium), label = "choiceFill")
-            val ink by animateColorAsState(if (isSelected) colors.onPrimary else colors.onSurfaceVariant, q.spring(stiffness = Spring.StiffnessMedium), label = "choiceInk")
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .clip(RoundedCornerShape(corner))
-                    .background(fill)
-                    .clickable(enabled = enabled, interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current) { onSelect(option) }
-                    .padding(horizontal = 6.dp),
-                contentAlignment = Alignment.Center,
+        options.forEachIndexed { index, option ->
+            ToggleButton(
+                checked = option == selected,
+                onCheckedChange = { onSelect(option) },
+                modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
+                enabled = enabled,
+                colors = ToggleButtonDefaults.toggleButtonColors(containerColor = glassFill(colors.surfaceContainerHighest)),
+                shapes = when (index) {
+                    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                    options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                },
             ) {
-                Text(label(option), style = MaterialTheme.typography.labelLarge, color = ink, textAlign = TextAlign.Center, maxLines = 1)
+                Text(label(option), maxLines = 1, textAlign = TextAlign.Center)
             }
         }
     }
