@@ -56,6 +56,12 @@ internal fun <T> ChoiceBar(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    // Inside a frosted (Liquid Glass) popup the unpicked buttons' tonal fills turn see-through, like the rest of the card.
+    val base = MaterialTheme.colorScheme
+    val scheme = if (LocalFrostedPopup.current) {
+        base.copy(surfaceContainer = glassFill(base.surfaceContainer), surfaceContainerHigh = glassFill(base.surfaceContainerHigh), surfaceContainerHighest = glassFill(base.surfaceContainerHighest))
+    } else base
+    MaterialTheme(colorScheme = scheme, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
@@ -75,6 +81,7 @@ internal fun <T> ChoiceBar(
                 Text(label(option), maxLines = 1, textAlign = TextAlign.Center)
             }
         }
+    }
     }
 }
 
