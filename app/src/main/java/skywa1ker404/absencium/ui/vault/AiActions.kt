@@ -42,8 +42,8 @@ enum class AiAction(
     fun tooShort(length: Int): Boolean = length < minChars
 
     /** The full request sent to the model. Markdown formatting is kept so the answer drops straight into the note. */
-    fun request(text: String): String =
-        "$instruction\nAnswer with the result only, no introduction. Use plain Markdown (headings with #, lists with -, **bold**) only where it helps.\n\nText:\n$text"
+    fun request(text: String, language: String? = null): String =
+        "${if (this == TRANSLATE && language != null) "Translate the text below into $language, keeping its formatting." else instruction}\nAnswer with the result only, no introduction. Use plain Markdown (headings with #, lists with -, **bold**) only where it helps.\n\nText:\n$text"
 
     companion object {
         /** A request typed by the user. */

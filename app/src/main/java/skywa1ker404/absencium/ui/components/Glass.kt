@@ -57,12 +57,12 @@ fun Modifier.floatingGlass(
     // The glass takes the colours of the active theme: a veil of the surface colour, nudged toward its accent container.
     val scheme = MaterialTheme.colorScheme
     val veilBase = lerp(scheme.surface, scheme.primaryContainer, 0.18f)
-    val veil = veilBase.copy(alpha = if (denseVeil) (if (isDark) 0.62f else 0.72f) else if (isDark) 0.42f else 0.5f)
+    val veil = veilBase.copy(alpha = if (denseVeil) (if (isDark) 0.48f else 0.58f) else if (isDark) 0.36f else 0.44f)
     val blurDp = LocalGlassBlur.current
     // Lens refraction needs rounded corners and Android 13 (a runtime shader); a plain rectangle only blurs.
     val useLens = lens && quality.glassLens && shape is CornerBasedShape && isRuntimeShaderSupported()
     val rim = if (bordered && !quality.glassHighlight) {
-        Modifier.border(1.dp, Color.White.copy(alpha = if (isDark) 0.16f else 0.55f), shape)
+        Modifier.border(1.2.dp, Color.White.copy(alpha = if (isDark) 0.30f else 0.80f), shape)
     } else {
         Modifier
     }
@@ -83,7 +83,19 @@ fun Modifier.floatingGlass(
             highlight = if (bordered && quality.glassHighlight) ({ Highlight.Default }) else null,
             shadow = if (bordered && quality.glassHighlight && useLens) ({ Shadow.Default }) else null,
             // Plain glass: no colour of its own, only a faint light or dark veil so it reads on any content.
-            onDrawSurface = { drawRect(veil) },
+            onDrawSurface = {
+                drawRect(veil)
+                // A soft sheen across the upper left, like light catching a pane.
+                drawRect(
+                    Brush.linearGradient(
+                        0f to Color.White.copy(alpha = if (isDark) 0.14f else 0.34f),
+                        0.5f to Color.White.copy(alpha = if (isDark) 0.03f else 0.08f),
+                        1f to Color.Transparent,
+                        start = Offset.Zero,
+                        end = Offset(size.width, size.height),
+                    ),
+                )
+            },
         )
         .then(rim)
 }
@@ -97,18 +109,22 @@ val LocalCardBackdrop = androidx.compose.runtime.staticCompositionLocalOf<LayerB
  */
 @Suppress("UNUSED_PARAMETER")
 @Composable
-fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, tintAlpha: Float = 0.55f): Modifier {
+fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, tintAlpha: Float = 0.42f): Modifier =
+    flatPane(shape, tint, tintAlpha)
+
+/**
+ * A pane of tinted glass drawn flat (no backdrop sampling, so it is cheap to scroll and to animate): the theme's [tint] at a
+ * low [tintAlpha] so what is behind shows through, a bright sheen across the upper left that fades away, a faint second
+ * reflection in the lower right, and a thin edge of light that is brightest at the top left, as in a glass UI kit.
+ */
+@Composable
+fun Modifier.flatPane(shape: Shape, tint: Color, tintAlpha: Float = 0.42f): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    // Light catches the upper-left of the pane and fades across it, like the panes in a glass UI kit: a soft sheen, strongest
-    // at the top-left corner, gone by the lower right.
-    val sheenStrong = Color.White.copy(alpha = if (isDark) 0.11f else 0.30f)
-    val sheenSoft = Color.White.copy(alpha = if (isDark) 0.03f else 0.08f)
-    // Drawn flat, with no backdrop sampling at all. A card only ever sampled the smooth GlassWallpaper, so the sampled copy
-    // looked the same as the tint laid straight over the real wallpaper, but it cost an offscreen effect pass per card on
-    // every scroll frame (and a very tall card, like the model list, cost a very tall one). The edge light is a thin gradient
-    // rim instead of the library's highlight. Floating bars and popups, which have real content behind them, keep real glass.
-    val rimStrong = Color.White.copy(alpha = if (isDark) 0.30f else 0.70f)
-    val rimSoft = Color.White.copy(alpha = if (isDark) 0.05f else 0.18f)
+    val sheenStrong = Color.White.copy(alpha = if (isDark) 0.20f else 0.46f)
+    val sheenSoft = Color.White.copy(alpha = if (isDark) 0.05f else 0.12f)
+    val bounce = Color.White.copy(alpha = if (isDark) 0.05f else 0.14f)
+    val rimStrong = Color.White.copy(alpha = if (isDark) 0.46f else 0.95f)
+    val rimSoft = Color.White.copy(alpha = if (isDark) 0.08f else 0.22f)
     return this
         .clip(shape)
         .drawBehind {
@@ -116,16 +132,25 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
             drawRect(
                 Brush.linearGradient(
                     0f to sheenStrong,
-                    0.4f to sheenSoft,
-                    1f to Color.Transparent,
+                    0.45f to sheenSoft,
+                    0.8f to Color.Transparent,
+                    start = Offset.Zero,
+                    end = Offset(size.width, size.height),
+                ),
+            )
+            drawRect(
+                Brush.linearGradient(
+                    0f to Color.Transparent,
+                    0.75f to Color.Transparent,
+                    1f to bounce,
                     start = Offset.Zero,
                     end = Offset(size.width, size.height),
                 ),
             )
         }
         .border(
-            1.dp,
-            Brush.linearGradient(0f to rimStrong, 0.5f to rimSoft, 1f to rimStrong.copy(alpha = rimStrong.alpha * 0.4f)),
+            1.2.dp,
+            Brush.linearGradient(0f to rimStrong, 0.5f to rimSoft, 1f to rimStrong.copy(alpha = rimStrong.alpha * 0.45f)),
             shape,
         )
 }
@@ -137,8 +162,18 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
 @Composable
 fun Modifier.glassControl(shape: Shape, tint: Color, tintAlpha: Float = 0.7f): Modifier {
     val backdrop = LocalCardBackdrop.current
-    return if (backdrop != null) glassSurface(backdrop, shape, tint, tintAlpha) else this.clip(shape).background(tint)
+    return when {
+        backdrop != null -> glassSurface(backdrop, shape, tint, tintAlpha)
+        // Inside a frosted popup the popup is the glass; the control is a see-through tinted pane on it.
+        LocalFrostedPopup.current -> flatPane(shape, tint, tintAlpha * 0.8f)
+        else -> this.clip(shape).background(tint)
+    }
 }
+
+/** A tinted pane that is glass whenever Liquid Glass is on (drawn flat), and a plain tonal fill otherwise. */
+@Composable
+fun Modifier.glassPane(shape: Shape, tint: Color, tintAlpha: Float = 0.5f): Modifier =
+    if (LocalGlassEnabled.current) flatPane(shape, tint, tintAlpha) else this.clip(shape).background(tint)
 
 /**
  * A tinted pane for small things that move or animate on top of glass (the sliding highlight of a switch): the same tint and

@@ -177,8 +177,7 @@ fun PopupHeader(title: String, onClose: () -> Unit, subtitle: String? = null) {
             onClick = onClose,
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                .glassPane(RoundedCornerShape(16.dp), MaterialTheme.colorScheme.surfaceContainerHighest, 0.5f),
         ) {
             Icon(AppIcons.Close, contentDescription = "Close")
         }

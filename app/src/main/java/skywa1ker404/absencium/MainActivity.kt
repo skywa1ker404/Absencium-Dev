@@ -18,6 +18,9 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.generated.destinations.ReadingScreenDestination
+import com.ramcosta.composedestinations.navigation.toDestinationsNavigator
+import skywa1ker404.absencium.ui.vault.ReadingMiniPlayer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +68,7 @@ class MainActivity : ComponentActivity() {
                     onDispose { }
                 }
                 AbsenciumTheme(settings = loaded) {
+                  val navController = androidx.navigation.compose.rememberNavController()
                   Box(modifier = Modifier.fillMaxSize()) {
                     // First run: the setup, then the feature tour, then the app. Each hands over to the next with a
                     // smooth fade (the old screen fades out first, then the new one fades in), never a cut.
@@ -86,8 +90,23 @@ class MainActivity : ComponentActivity() {
                                 val settingsViewModel = rememberSettingsViewModel()
                                 IntroTourContent(onFinish = settingsViewModel::setIntroSeen)
                             }
-                            AppPhase.APP -> DestinationsNavHost(navGraph = NavGraphs.root, defaultTransitions = ScreenTransitions)
+                            AppPhase.APP -> DestinationsNavHost(
+                                navGraph = NavGraphs.root,
+                                defaultTransitions = ScreenTransitions,
+                                navController = navController,
+                            )
                         }
+                    }
+                    if (phase == AppPhase.APP) {
+                        val mini by container.readingMini.collectAsStateWithLifecycle()
+                        ReadingMiniPlayer(
+                            mini = mini,
+                            onOpen = { id ->
+                                container.readingMini.value = null
+                                navController.toDestinationsNavigator().navigate(ReadingScreenDestination(noteId = id))
+                            },
+                            onDismiss = { container.readingMini.value = null },
+                        )
                     }
                     if (phase == AppPhase.APP) UndoHost(container.undoBus)
                     // The in-app splash sits on top once per launch, in the chosen theme, then fades into the app.

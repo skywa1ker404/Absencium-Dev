@@ -197,3 +197,25 @@ private fun ToggleHalf(
         Text(text = label, style = MaterialTheme.typography.labelLarge, color = tint, maxLines = 1)
     }
 }
+
+/**
+ * Makes an element spring into place when it first appears: it swells up from a little smaller, rises a few pixels and fades in
+ * with a bouncy Material 3 Expressive spring. [delayMs] staggers a list so its items arrive one after another.
+ */
+@Composable
+fun Modifier.bounceIn(delayMs: Int = 0): Modifier {
+    val q = LocalQuality.current
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        if (delayMs > 0) kotlinx.coroutines.delay(delayMs.toLong())
+        progress.animateTo(1f, q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
+    }
+    return this.graphicsLayer {
+        val v = progress.value
+        val scale = 0.86f + 0.14f * v
+        scaleX = scale
+        scaleY = scale
+        alpha = v.coerceIn(0f, 1f)
+        translationY = (1f - v) * 48f
+    }
+}

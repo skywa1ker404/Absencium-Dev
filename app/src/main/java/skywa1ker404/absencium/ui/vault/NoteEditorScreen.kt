@@ -84,6 +84,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ReadingScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -185,6 +186,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
     // Set once the note is deleted or filed, so closing the screen does not save it again.
     var skipFlush by remember(note.id) { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var showLanguages by remember { mutableStateOf(false) }
     val history = remember(note.id) { EditHistory() }
     var historyVersion by remember(note.id) { mutableIntStateOf(0) }
 
@@ -410,7 +412,21 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
             aiState = aiState.copy(error = "${action.label} needs at least ${action.minChars} characters. Select some text or write a little more.", result = null, setupMissing = false)
             return
         }
+        if (action == AiAction.TRANSLATE) {
+            showLanguages = true
+            return
+        }
         startAi(action.label, action.request(AiAction.excerpt(sourceText, action == AiAction.CONTINUE)), action.replaces)
+    }
+
+    fun translateInto(language: String) {
+        showLanguages = false
+        val trimmed = sourceText.trim()
+        if (AiAction.TRANSLATE.tooShort(trimmed.length)) {
+            aiState = aiState.copy(error = "Select some text or write a little more to translate.", result = null, setupMissing = false)
+            return
+        }
+        startAi("Translate to $language", AiAction.TRANSLATE.request(AiAction.excerpt(sourceText, false), language), true)
     }
 
     fun sendCustomAi() {
@@ -511,6 +527,16 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                 Box {
                     IconButton(onClick = { menuOpen = true }) { Icon(AppIcons.MoreVert, contentDescription = "More") }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Reading mode") },
+                            onClick = {
+                                menuOpen = false
+                                scope.launch {
+                                    if (isDirty()) saveNow()
+                                    navigator.navigate(ReadingScreenDestination(noteId = note.id))
+                                }
+                            },
+                        )
                         DropdownMenuItem(text = { Text("Notes info") }, onClick = { menuOpen = false; showInfo = true })
                         DropdownMenuItem(text = { Text("Share or export") }, onClick = { menuOpen = false; showShare = true })
                         DropdownMenuItem(
@@ -1076,6 +1102,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
             )
         }
 
+        if (showLanguages) LanguagePickerDialog(current = "English", onPick = { translateInto(it) }, onDismiss = { showLanguages = false })
         if (confirmDelete) {
             AlertDialog(
                 onDismissRequest = { confirmDelete = false },

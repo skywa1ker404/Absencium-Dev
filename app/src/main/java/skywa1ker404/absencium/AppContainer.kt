@@ -22,6 +22,9 @@ import skywa1ker404.absencium.data.trash.TrashRepository
 import skywa1ker404.absencium.data.trash.UndoBus
 import skywa1ker404.absencium.data.vault.VaultRepository
 
+/** What the reading miniplayer shows: the note, where it is filed and which page the reader reached. */
+data class MiniReading(val noteId: Long, val title: String, val place: String, val page: Int, val pages: Int)
+
 /**
  * Hand-built dependency container, following the repository pattern from Now in Android
  * (the database and DataStore are the source of truth and repositories expose Flows)
@@ -67,6 +70,20 @@ class AppContainer(context: Context) {
     val vaultRepository: VaultRepository by lazy { VaultRepository(database) }
     val trashRepository: TrashRepository by lazy { TrashRepository(database, attachmentStore) }
     val undoBus = UndoBus()
+
+    /** The note being read in the minimised reading player, or null. Lives here so every screen can show it. */
+    val readingMini = kotlinx.coroutines.flow.MutableStateFlow<MiniReading?>(null)
+    private val readingPrefs = appContext.getSharedPreferences("reading", Context.MODE_PRIVATE)
+
+    /** Where reading stopped in a note (scroll position), so reading can continue from there. */
+    fun readingPosition(noteId: Long): Int = readingPrefs.getInt("pos_$noteId", 0)
+    fun saveReadingPosition(noteId: Long, value: Int) { readingPrefs.edit().putInt("pos_$noteId", value).apply() }
+
+    /** A bookmarked place in a note, or -1. */
+    fun bookmark(noteId: Long): Int = readingPrefs.getInt("mark_$noteId", -1)
+    fun saveBookmark(noteId: Long, value: Int?) {
+        readingPrefs.edit().apply { if (value == null) remove("mark_$noteId") else putInt("mark_$noteId", value) }.apply()
+    }
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.subjectDao(), database.subjectCascadeDao()) }
 }
 

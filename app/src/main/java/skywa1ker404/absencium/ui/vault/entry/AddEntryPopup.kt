@@ -47,6 +47,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import skywa1ker404.absencium.ui.components.AppTextField
+import skywa1ker404.absencium.ui.components.glassPane
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -441,8 +442,7 @@ internal fun ActionTile(
                 scaleX = scale
                 scaleY = scale
             }
-            .clip(shape)
-            .background(container)
+            .glassPane(shape, container, 0.5f)
             .alpha(if (enabled) 1f else 0.45f)
             .clickable(enabled = enabled, interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current, onClick = onClick)
             .padding(16.dp),

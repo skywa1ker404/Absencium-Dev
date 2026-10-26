@@ -376,7 +376,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     hidden = { compactState.value },
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(start = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp),
+                        // On the same row as the pill, to its left and outside it (pill 64dp tall, button 52dp).
+                        .padding(start = 16.dp, bottom = bottomInset + 16.dp + 6.dp),
                 ) {
                     ShellSearchButton(
                         backdrop = backdrop,

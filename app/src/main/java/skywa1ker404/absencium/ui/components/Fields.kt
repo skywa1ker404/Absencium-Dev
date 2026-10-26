@@ -124,6 +124,7 @@ fun AppTextField(
     shape: Shape = FieldShape,
 ) {
     val colors = MaterialTheme.colorScheme
+    val fieldFill = if (skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current) colors.surfaceContainerLow.copy(alpha = 0.45f) else colors.surfaceContainerLow
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -147,9 +148,9 @@ fun AppTextField(
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = colors.primary,
             unfocusedBorderColor = colors.outlineVariant,
-            focusedContainerColor = colors.surfaceContainerLow,
-            unfocusedContainerColor = colors.surfaceContainerLow,
-            disabledContainerColor = colors.surfaceContainerLow,
+            focusedContainerColor = fieldFill,
+            unfocusedContainerColor = fieldFill,
+            disabledContainerColor = fieldFill,
         ),
     )
 }
@@ -167,6 +168,7 @@ fun AppTextField(
     shape: Shape = FieldShape,
 ) {
     val colors = MaterialTheme.colorScheme
+    val fieldFill = if (skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current) colors.surfaceContainerLow.copy(alpha = 0.45f) else colors.surfaceContainerLow
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -180,8 +182,8 @@ fun AppTextField(
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = colors.primary,
             unfocusedBorderColor = colors.outlineVariant,
-            focusedContainerColor = colors.surfaceContainerLow,
-            unfocusedContainerColor = colors.surfaceContainerLow,
+            focusedContainerColor = fieldFill,
+            unfocusedContainerColor = fieldFill,
         ),
     )
 }

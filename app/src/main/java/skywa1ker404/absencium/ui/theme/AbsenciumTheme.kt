@@ -120,6 +120,7 @@ private val AbsenciumTypography: Typography = Typography().let { base ->
     )
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AbsenciumTheme(
     settings: AppSettings,
@@ -153,7 +154,13 @@ fun AbsenciumTheme(
         if (settings.themeMode == ThemeMode.DARK_OLED && isDark) generated.oledBlack() else generated
     }
 
-    MaterialTheme(colorScheme = colorScheme, shapes = AbsenciumShapes, typography = AbsenciumTypography) {
+    // Material 3 Expressive: the springy, bouncy motion scheme drives every Material component (switches, sliders, toggle buttons).
+    androidx.compose.material3.MaterialExpressiveTheme(
+        colorScheme = colorScheme,
+        motionScheme = androidx.compose.material3.MotionScheme.expressive(),
+        shapes = AbsenciumShapes,
+        typography = AbsenciumTypography,
+    ) {
         CompositionLocalProvider(
             LocalQuality provides quality,
             LocalGlassEnabled provides glassActive,

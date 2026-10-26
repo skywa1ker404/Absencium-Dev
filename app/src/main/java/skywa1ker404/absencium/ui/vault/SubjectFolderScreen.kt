@@ -75,7 +75,27 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     val subject = loaded?.subjects?.firstOrNull { it.id == subjectId }
 
     // A lazy list: a folder with hundreds of notes only builds the rows on screen instead of every card at once.
-    ScreenScaffold(title = subject?.name ?: "Folder", onBack = { navigator.navigateUp() }, scrollable = false) {
+    ScreenScaffold(
+        title = subject?.name ?: "Folder",
+        onBack = { navigator.navigateUp() },
+        scrollable = false,
+        overlay = {
+            if (addEntry) {
+            AddEntryPopup(
+                onDismiss = { addEntry = false },
+                onSaved = { id ->
+                    addEntry = false
+                    navigator.navigate(NoteEditorScreenDestination(noteId = id, startInEdit = true))
+                },
+                onOpenAiSettings = {
+                    addEntry = false
+                    navigator.navigate(AiSettingsScreenDestination)
+                },
+                initialSubjectId = subjectId,
+            )
+        }
+        },
+    ) {
         if (loaded == null) {
             HintText("Loading...")
             return@ScreenScaffold
@@ -210,12 +230,23 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 )
             }
         }
-        if (selecting) {
+        androidx.compose.animation.AnimatedVisibility(
+            visible = selecting,
+            modifier = Modifier.align(Alignment.TopCenter),
+            enter = androidx.compose.animation.scaleIn(
+                initialScale = 0.6f,
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+            ) + androidx.compose.animation.slideInVertically(
+                initialOffsetY = { -it },
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+            ) + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.scaleOut(targetScale = 0.7f) + androidx.compose.animation.slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
+        ) {
             val allFinished = selected.isNotEmpty() && selected.all { it.status == NoteStatus.FINISHED }
             // Material 3 Expressive floating toolbar: the count on the left, the actions in the middle, Cancel on the right.
             HorizontalFloatingToolbar(
                 expanded = true,
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp),
+                modifier = Modifier.padding(top = 4.dp),
                 leadingContent = { Text("${selected.size}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 12.dp)) },
                 trailingContent = {
                     IconButton(onClick = { selectedIds = emptySet() }) { Icon(AppIcons.Close, contentDescription = "Cancel selection") }
@@ -311,18 +342,4 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         )
     }
 
-    if (addEntry) {
-        AddEntryPopup(
-            onDismiss = { addEntry = false },
-            onSaved = { id ->
-                addEntry = false
-                navigator.navigate(NoteEditorScreenDestination(noteId = id, startInEdit = true))
-            },
-            onOpenAiSettings = {
-                addEntry = false
-                navigator.navigate(AiSettingsScreenDestination)
-            },
-            initialSubjectId = subjectId,
-        )
-    }
 }

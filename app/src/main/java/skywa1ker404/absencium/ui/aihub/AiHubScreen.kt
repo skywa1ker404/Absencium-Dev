@@ -29,6 +29,7 @@ import skywa1ker404.absencium.data.ai.AiHistoryEntry
 import skywa1ker404.absencium.data.settings.AppSettings
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.HintText
+import skywa1ker404.absencium.ui.components.bounceIn
 import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.components.ScreenScaffold
 import skywa1ker404.absencium.ui.containerViewModel
@@ -60,10 +61,10 @@ fun AiHubScreen(navigator: DestinationsNavigator) {
         if (entries.isEmpty()) HintText("No AI requests yet.")
         else PillButton(text = "Clear all history", tonal = true, onClick = { confirmClear = true })
 
-        entries.forEach { entry ->
+        entries.forEachIndexed { index, entry ->
             androidx.compose.runtime.key(entry.time) {
                 var open by remember { mutableStateOf(false) }
-                AppCard(modifier = Modifier.fillMaxWidth().animateContentSize(), onClick = { open = !open }) {
+                AppCard(modifier = Modifier.fillMaxWidth().bounceIn((index * 45).coerceAtMost(450)).animateContentSize(), onClick = { open = !open }) {
                     Text(
                         text = firstLine(entry.prompt),
                         style = MaterialTheme.typography.titleSmall,

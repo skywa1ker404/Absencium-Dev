@@ -133,14 +133,16 @@ fun AppCard(
             }
             .animateContentSize(animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy))
             // Liquid Glass: the card is a pane of glass over the wallpaper, tinted with its own tonal colour.
-            .then(if (cardBackdrop != null) Modifier.glassSurface(cardBackdrop, shape, container) else Modifier),
+            .then(
+                when {
+                    cardBackdrop != null -> Modifier.glassSurface(cardBackdrop, shape, container)
+                    // In a frosted popup the card is a see-through tinted pane, so the popup's glass shows through it.
+                    LocalFrostedPopup.current -> Modifier.flatPane(shape, container, 0.4f)
+                    else -> Modifier
+                },
+            ),
         shape = shape,
-        // In a frosted popup the card is a see-through tonal fill, so the popup's glass shows through it.
-        color = when {
-            cardBackdrop != null -> Color.Transparent
-            LocalFrostedPopup.current -> container.copy(alpha = container.alpha * 0.62f)
-            else -> container
-        },
+        color = if (cardBackdrop != null || LocalFrostedPopup.current) Color.Transparent else container,
     ) {
         HostAnimatesSize {
             Column(modifier = Modifier.then(clickModifier).padding(20.dp), content = content)
@@ -164,6 +166,8 @@ fun ScreenScaffold(
     scrollable: Boolean = true,
     /** Replaces the standard title bar (the note editor draws its own, with different buttons in edit and preview). */
     customTopBar: (@Composable () -> Unit)? = null,
+    /** Popups of the screen. They sit above the page inside its glass layer, so with Liquid Glass they blur the page like the pill. */
+    overlay: @Composable () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val glass = LocalGlassEnabled.current
@@ -171,6 +175,7 @@ fun ScreenScaffold(
     val colors = MaterialTheme.colorScheme
 
     CompositionLocalProvider(LocalBackdrop provides backdrop) {
+      Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = modifier,
             containerColor = colors.background,
@@ -221,6 +226,8 @@ fun ScreenScaffold(
                 }
             }
         }
+        overlay()
+      }
     }
 }
 
@@ -425,7 +432,7 @@ fun PillButton(
     val active = enabled && !loading
     val tap = rememberTapGuard(onClick = onClick)
     // With Liquid Glass the button is a pane of glass tinted in its usual colour; its own fill becomes clear.
-    val glass = LocalCardBackdrop.current != null
+    val glass = LocalCardBackdrop.current != null || LocalFrostedPopup.current
     val tint = if (tonal) colors.secondaryContainer else colors.primary
     val glassModifier = if (glass) Modifier.glassControl(CircleShape, tint, if (active) 0.78f else 0.3f) else Modifier
     val pillModifier = modifier
