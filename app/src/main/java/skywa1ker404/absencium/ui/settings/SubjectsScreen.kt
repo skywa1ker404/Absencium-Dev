@@ -1,5 +1,7 @@
 package skywa1ker404.absencium.ui.settings
 
+import skywa1ker404.absencium.ui.icons.AppIcons
+import skywa1ker404.absencium.ui.components.ExpressiveEmptyState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
@@ -80,7 +82,7 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
 
         SectionTitle("Your subjects")
         if (subjects.isEmpty()) {
-            HintText("No subjects yet. Add one above, or add sample data from Settings, then Test Lab.")
+            ExpressiveEmptyState(AppIcons.Folder, "No subjects yet", "Add one above, or add sample data from Settings, then Test Lab.")
         }
         subjects.forEach { subject ->
             key(subject.id) { SubjectCard(subject, viewModel) }

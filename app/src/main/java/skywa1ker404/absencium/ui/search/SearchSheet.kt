@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.search
 
+import skywa1ker404.absencium.ui.components.ExpressiveEmptyState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -154,7 +155,7 @@ fun SearchSheet(
             ) {
                 when {
                     query.isBlank() -> HintText("Type to search. Typos are forgiven.")
-                    results.isEmpty -> HintText("No matches for \"${query.trim()}\".")
+                    results.isEmpty -> ExpressiveEmptyState(AppIcons.Search, "No matches", "Nothing found for \"${query.trim()}\". Try another word.")
                 }
 
                 if (results.notes.isNotEmpty()) {

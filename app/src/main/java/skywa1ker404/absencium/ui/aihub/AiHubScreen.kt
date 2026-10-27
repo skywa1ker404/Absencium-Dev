@@ -1,5 +1,7 @@
 package skywa1ker404.absencium.ui.aihub
 
+import skywa1ker404.absencium.ui.icons.AppIcons
+import skywa1ker404.absencium.ui.components.ExpressiveEmptyState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -58,7 +60,7 @@ fun AiHubScreen(navigator: DestinationsNavigator) {
             HintText("AI Features are off, so nothing new is sent. You can still read and delete the history below. Turn them on in Settings, AI Features.")
         }
         HintText("Each request you made, with the answer. This history never leaves this phone.")
-        if (entries.isEmpty()) HintText("No AI requests yet.")
+        if (entries.isEmpty()) ExpressiveEmptyState(AppIcons.AutoAwesome, "No AI requests yet", "Everything you ask the AI, and its answer, is kept here on your phone.")
         else PillButton(text = "Clear all history", tonal = true, onClick = { confirmClear = true })
 
         entries.forEachIndexed { index, entry ->
