@@ -133,8 +133,10 @@ fun PopupShell(
                     modifier = Modifier
                         .widthIn(max = 480.dp)
                         .fillMaxWidth()
-                        .animateContentSize(q.spring(dampingRatio = 0.92f, stiffness = Spring.StiffnessMediumLow))
+                        // The height limit comes first so the size animation can never outgrow it: with the keyboard open
+                        // the available height shrinks, and an animation running past it cut off the bottom of the card.
                         .heightIn(max = maxCardHeight)
+                        .animateContentSize(q.spring(dampingRatio = 0.92f, stiffness = Spring.StiffnessMediumLow))
                         .clip(shape),
                 ) {
                     // The pane sits in its own layer beneath the content. Drawn on the content's own node, the blur was

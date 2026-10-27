@@ -57,8 +57,10 @@ fun Modifier.floatingGlass(
     // The glass takes the colours of the active theme: a veil of the surface colour, nudged toward its accent container.
     val scheme = MaterialTheme.colorScheme
     val veilBase = lerp(scheme.surface, scheme.primaryContainer, 0.18f)
-    val veil = veilBase.copy(alpha = if (denseVeil) (if (isDark) 0.48f else 0.58f) else if (isDark) 0.42f else 0.5f)
-    val blurDp = LocalGlassBlur.current
+    // A popup (dense veil) carries text over whatever is behind it, so it blurs harder and veils more: nothing behind it may
+    // read through as a second layer of labels. Bars and the pill keep the lighter look.
+    val veil = veilBase.copy(alpha = if (denseVeil) (if (isDark) 0.72f else 0.80f) else if (isDark) 0.42f else 0.5f)
+    val blurDp = if (denseVeil) maxOf(LocalGlassBlur.current, 18.dp) else LocalGlassBlur.current
     // Lens refraction needs rounded corners and Android 13 (a runtime shader); a plain rectangle only blurs.
     val useLens = lens && quality.glassLens && shape is CornerBasedShape && isRuntimeShaderSupported()
     val rim = if (bordered && !quality.glassHighlight) {
@@ -80,7 +82,8 @@ fun Modifier.floatingGlass(
                     lens(refractionHeight = 12.dp.toPx(), refractionAmount = 24.dp.toPx())
                 }
             },
-            highlight = if (bordered && quality.glassHighlight) ({ Highlight.Default }) else null,
+            // Popups use the plain, even edge of Kyant's dialog; bars keep the angled light of the original look.
+            highlight = if (bordered && quality.glassHighlight) ({ if (denseVeil) Highlight.Plain else Highlight.Default }) else null,
             shadow = if (bordered && quality.glassHighlight && useLens) ({ Shadow.Default }) else null,
             // Plain glass: no colour of its own, only a faint light or dark veil so it reads on any content.
             onDrawSurface = { drawRect(veil) },
@@ -108,16 +111,11 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
 fun Modifier.flatPane(shape: Shape, tint: Color, tintAlpha: Float = 0.42f): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     // No glow: a flat tint and a thin, even edge of light. Glass is told apart by the wallpaper showing through it, not by haze.
-    val rimTop = Color.White.copy(alpha = if (isDark) 0.28f else 0.70f)
-    val rimBottom = Color.White.copy(alpha = if (isDark) 0.06f else 0.20f)
+    val rim = Color.White.copy(alpha = if (isDark) 0.12f else 0.45f)
     return this
         .clip(shape)
         .drawBehind { drawRect(tint.copy(alpha = tintAlpha)) }
-        .border(
-            0.8.dp,
-            Brush.linearGradient(0f to rimTop, 1f to rimBottom, start = Offset.Zero, end = Offset.Infinite),
-            shape,
-        )
+        .border(0.6.dp, rim, shape)
 }
 
 /**
@@ -177,6 +175,8 @@ fun GlassWallpaper(modifier: Modifier = Modifier) {
                 blob(a, w * 0.15f, h * 0.12f, w * 0.9f)
                 blob(b, w * 0.95f, h * 0.45f, w * 0.85f)
                 blob(c, w * 0.2f, h * 0.85f, w * 0.9f)
+                // A broad, soft patch of the theme's main colour so glass has something lively to blur (no bright spot).
+                blob(scheme.primary, w * 0.5f, h * 0.3f, w * 1.0f, peak = 0.22f)
                 blob(lerp(a, b, 0.5f), w * 0.55f, h * 0.65f, w * 0.7f, peak = 0.55f)
             },
     )
