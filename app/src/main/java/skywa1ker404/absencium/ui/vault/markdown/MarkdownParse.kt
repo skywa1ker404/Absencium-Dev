@@ -259,8 +259,9 @@ object MarkdownParse {
                     val sizeValue = if (!isColor) arg.toIntOrNull()?.takeIf { it in 8..64 } else null
                     if (close > bar && (colorValue != null || sizeValue != null)) {
                         flushPlain()
+                        // The innermost tag wins, the same as in the editor, where inner styles are applied last.
                         inline(text.substring(bar + 1, close)).forEach {
-                            spans += if (colorValue != null) it.copy(color = colorValue) else it.copy(sizeSp = sizeValue)
+                            spans += if (colorValue != null) it.copy(color = it.color ?: colorValue) else it.copy(sizeSp = it.sizeSp ?: sizeValue)
                         }
                         i = close + 2
                     } else { plain.append(text[i]); i++ }
@@ -304,6 +305,11 @@ internal fun tagClose(text: String, from: Int, limit: Int): Int {
     val end = minOf(limit, from + 2000)
     while (j < end) {
         when {
+            // A code span is literal text: tags opened or closed inside it do not count.
+            text[j] == '`' -> {
+                val closeTick = text.indexOf('`', j + 1)
+                j = if (closeTick > j + 1 && closeTick < end) closeTick + 1 else j + 1
+            }
             text[j] == '{' && opensTag(text, j) -> { depth++; j += 6 }
             text.startsWith("|}", j) -> { depth--; if (depth == 0) return j; j += 2 }
             else -> j++

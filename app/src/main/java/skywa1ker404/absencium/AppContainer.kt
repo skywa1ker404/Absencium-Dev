@@ -55,16 +55,16 @@ class AppContainer(context: Context) {
     val aiClient = AiClient(apiKeyVault).also { it.history = aiHistory }
         /** Finds or draws the images AI notes ask for (both optional, off by default). */
     val diagramService: skywa1ker404.absencium.data.ai.DiagramService by lazy { skywa1ker404.absencium.data.ai.DiagramService(aiClient) }
+    /** The AI the user set up, or null when AI Features are off or not yet set up. */
+    fun aiConnection(): skywa1ker404.absencium.data.ai.AiConnection? {
+        val s = settingsState.value ?: return null
+        if (!skywa1ker404.absencium.ui.settings.aiUsable(s, apiKeyVault.hasKey())) return null
+        return skywa1ker404.absencium.data.ai.AiConnection(s.aiProvider, s.effectiveAiStyle, s.aiBaseUrl, s.aiModel)
+    }
+
     /** Reads text out of pictures, PDFs, documents and recordings with the user's AI. */
     val textExtractor: skywa1ker404.absencium.data.ocr.TextExtractor by lazy {
-        skywa1ker404.absencium.data.ocr.TextExtractor(aiClient) {
-            val s = settingsState.value
-            if (s != null && skywa1ker404.absencium.ui.settings.aiUsable(s, apiKeyVault.hasKey())) {
-                skywa1ker404.absencium.data.ai.AiConnection(s.aiProvider, s.effectiveAiStyle, s.aiBaseUrl, s.aiModel)
-            } else {
-                null
-            }
-        }
+        skywa1ker404.absencium.data.ocr.TextExtractor(aiClient) { aiConnection() }
     }
     val calendarRepository: CalendarRepository by lazy { CalendarRepository(database, settingsRepository.settings) }
     val vaultRepository: VaultRepository by lazy { VaultRepository(database) }

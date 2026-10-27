@@ -26,6 +26,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import com.ramcosta.composedestinations.generated.destinations.SyllabusScreenDestination
+import skywa1ker404.absencium.data.db.GuideType
+import skywa1ker404.absencium.data.syllabus.SyllabusTree
+import skywa1ker404.absencium.ui.components.ExpressiveChip
+import skywa1ker404.absencium.ui.syllabus.SyllabusPickerDialog
+import skywa1ker404.absencium.ui.syllabus.syllabusLabel
+import skywa1ker404.absencium.ui.vault.entry.ChoiceBar
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -69,6 +77,11 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     var confirmBatchDelete by remember { mutableStateOf(false) }
     var showMove by remember { mutableStateOf(false) }
     var showShare by remember { mutableStateOf(false) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var topicFilter by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showFilter by remember { mutableStateOf(false) }
+    var fileGuide by remember { mutableStateOf<GuideEntity?>(null) }
+    val nodes by remember(subjectId) { viewModel.syllabusNodes(subjectId) }.collectAsStateWithLifecycle(emptyList())
     val colors = MaterialTheme.colorScheme
 
     val loaded = data
@@ -108,6 +121,10 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         val finished = remember(loaded, subjectId) { loaded.notesOf(subjectId, NoteStatus.FINISHED) }
         val guides = remember(loaded, subjectId) { loaded.guides.filter { it.subjectId == subjectId } }
         val drafts = remember(loaded, subjectId) { loaded.notesOf(subjectId, NoteStatus.DRAFT) }
+        // The notes under the chosen topic and everything inside it; null shows every note.
+        val allowed = remember(nodes, topicFilter) { topicFilter?.let { SyllabusTree.withDescendants(nodes, it).toSet() } }
+        val activeShown = if (allowed == null) active else active.filter { it.syllabusNodeId in allowed }
+        val finishedShown = if (allowed == null) finished else finished.filter { it.syllabusNodeId in allowed }
         // Selected notes that still exist (one may have been deleted or moved elsewhere while selected).
         val everyNote = active + finished
         val selected = everyNote.filter { it.id in selectedIds }
@@ -155,6 +172,22 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
 
+            item(key = "tabs") {
+                val names = listOf("Notes", "Study material", "Syllabus")
+                ChoiceBar(options = listOf(0, 1, 2), selected = tab, label = { names[it] }, onSelect = { tab = it; selectedIds = emptySet() })
+            }
+
+            if (tab == 0) {
+            item(key = "topic-filter") {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExpressiveChip(
+                        selected = topicFilter != null,
+                        onClick = { showFilter = true },
+                        label = { Text("Topic: " + if (topicFilter == null) "All" else syllabusLabel(nodes, topicFilter).substringAfterLast(" › ")) },
+                    )
+                    if (topicFilter != null) TextButton(onClick = { topicFilter = null }) { Text("Clear") }
+                }
+            }
             if (drafts.isNotEmpty()) {
                 item(key = "drafts-title") { SectionTitle("Drafts") }
                 items(drafts, key = { "draft-${it.id}" }) { draft ->
@@ -166,15 +199,16 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
             item(key = "notes-title") { SectionTitle("Notes") }
-            if (active.isEmpty()) {
+            if (activeShown.isEmpty()) {
                 item(key = "notes-empty") {
                     HintText(
-                        if (finished.isEmpty() && drafts.isEmpty()) "This folder is empty. Add an entry above, or press and hold a note later to select several."
+                        if (topicFilter != null) "No notes under this topic. Clear the topic to see every note."
+                        else if (finished.isEmpty() && drafts.isEmpty()) "This folder is empty. Add an entry above, or press and hold a note later to select several."
                         else "No notes here right now. Notes you mark as finished move to the archive below.",
                     )
                 }
             }
-            items(active, key = { "note-${it.id}" }) { note ->
+            items(activeShown, key = { "note-${it.id}" }) { note ->
                 NoteCard(
                     note,
                     photoCount = loaded.attachmentsOf(note.id).size,
@@ -193,7 +227,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
-                            text = "${finished.size} ${if (finished.size == 1) "note" else "notes"} archived",
+                            text = "${finishedShown.size} ${if (finishedShown.size == 1) "note" else "notes"} archived",
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
@@ -205,7 +239,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
             if (finishedOpen) {
-                items(finished, key = { "done-${it.id}" }) { note ->
+                items(finishedShown, key = { "done-${it.id}" }) { note ->
                     NoteCard(
                         note,
                         photoCount = loaded.attachmentsOf(note.id).size,
@@ -216,18 +250,61 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
 
-            item(key = "guides-title") { SectionTitle("Guides & Question Banks") }
-            if (guides.isEmpty()) {
-                item(key = "guides-empty") { HintText("No PDFs yet. Add one from a new entry with the Guide / Answer PDF format.") }
             }
-            items(guides, key = { "guide-${it.id}" }) { guide ->
-                GuideCard(
-                    guide = guide,
-                    onClick = {
-                        openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
-                    },
-                    onDelete = { guideToDelete = guide },
-                )
+
+            if (tab == 1) {
+                item(key = "material-intro") {
+                    HintText("Previous year papers, answer books, guides and the official syllabus of this subject. File each one under the topic it covers.")
+                }
+                item(key = "material-add") {
+                    PillButton(text = "Add study material", tonal = true, onClick = { navigator.navigate(NewEntryScreenDestination(subjectId = subjectId)) })
+                }
+                if (guides.isEmpty()) {
+                    item(key = "guides-empty") { HintText("Nothing here yet. Add a PDF from a new entry with the Guide / Answer PDF format.") }
+                }
+                GuideType.entries.forEach { type ->
+                    val ofType = guides.filter { it.guideType == type }
+                    if (ofType.isNotEmpty()) {
+                        item(key = "type-${type.name}") { SectionTitle(type.sectionTitle()) }
+                        items(ofType, key = { "guide-${it.id}" }) { guide ->
+                            GuideCard(
+                                guide = guide,
+                                topic = syllabusLabel(nodes, guide.syllabusNodeId).substringAfterLast(" › "),
+                                onFile = { fileGuide = guide },
+                                onClick = {
+                                    openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+                                },
+                                onDelete = { guideToDelete = guide },
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (tab == 2) {
+                item(key = "syllabus-card") {
+                    val overall = SyllabusTree.progress(nodes, null)
+                    AppCard(modifier = Modifier.fillMaxWidth(), onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) }) {
+                        Text(
+                            if (nodes.isEmpty()) "No syllabus yet" else "${(overall * 100).toInt()}% of the syllabus studied",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            if (nodes.isEmpty()) "Add units, chapters and topics, or import an outline." else "${nodes.size} items. Tap to open the full tree.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                }
+                val units = nodes.filter { it.parentId == null }.sortedWith(compareBy({ it.position }, { it.id }))
+                items(units, key = { "unit-${it.id}" }) { unit ->
+                    AppCard(modifier = Modifier.fillMaxWidth(), onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) }) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(unit.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                            Text("${(SyllabusTree.progress(nodes, unit.id) * 100).toInt()}%", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                        }
+                    }
+                }
             }
         }
         androidx.compose.animation.AnimatedVisibility(
@@ -265,6 +342,26 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         }
     }
 
+    if (showFilter) {
+        SyllabusPickerDialog(
+            nodes = nodes,
+            current = topicFilter,
+            noneLabel = "All topics",
+            title = "Show notes under",
+            onPick = { topicFilter = it; showFilter = false },
+            onDismiss = { showFilter = false },
+            onOpenSyllabus = { showFilter = false; navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) },
+        )
+    }
+    fileGuide?.let { guide ->
+        SyllabusPickerDialog(
+            nodes = nodes,
+            current = guide.syllabusNodeId,
+            onPick = { viewModel.setGuideSyllabus(guide.id, it); fileGuide = null },
+            onDismiss = { fileGuide = null },
+            onOpenSyllabus = { fileGuide = null; navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) },
+        )
+    }
     ShareHost(viewModel)
     if (showShare) {
         val toShare = remember(selectedIds, data) { (data?.notes.orEmpty()).filter { it.id in selectedIds } }

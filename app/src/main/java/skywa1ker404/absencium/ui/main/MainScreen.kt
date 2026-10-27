@@ -56,6 +56,7 @@ import com.ramcosta.composedestinations.generated.destinations.AiHubScreenDestin
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SubjectFolderScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SyllabusOverviewScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.TrashScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.data.db.ExamEntity
@@ -343,6 +344,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             addEntry = AddEntryRequest()
                         },
                         FabAction("Drafts", AppIcons.Draft) { fabOpen = false; showDrafts = true },
+                        FabAction("Syllabus", AppIcons.School) { fabOpen = false; navigator.navigate(SyllabusOverviewScreenDestination) },
                         FabAction("Edit subjects", AppIcons.Edit) { fabOpen = false; navigator.navigate(SubjectsScreenDestination) },
                     )
                 }

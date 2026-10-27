@@ -85,6 +85,9 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ReadingScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SyllabusScreenDestination
+import skywa1ker404.absencium.ui.syllabus.SyllabusPickerDialog
+import skywa1ker404.absencium.ui.syllabus.syllabusLabel
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -187,6 +190,10 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
     var skipFlush by remember(note.id) { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var showLanguages by remember { mutableStateOf(false) }
+    var showTopicPicker by remember { mutableStateOf(false) }
+    var topicId by remember(note.id) { mutableStateOf(note.syllabusNodeId) }
+    val topicNodes by remember(note.subjectId) { viewModel.syllabusNodes(note.subjectId) }.collectAsStateWithLifecycle(emptyList())
+    val topicLabel = syllabusLabel(topicNodes, topicId)
     val history = remember(note.id) { EditHistory() }
     var historyVersion by remember(note.id) { mutableIntStateOf(0) }
 
@@ -537,6 +544,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                                 }
                             },
                         )
+                        DropdownMenuItem(text = { Text("File under a topic") }, onClick = { menuOpen = false; showTopicPicker = true })
                         DropdownMenuItem(text = { Text("Notes info") }, onClick = { menuOpen = false; showInfo = true })
                         DropdownMenuItem(text = { Text("Share or export") }, onClick = { menuOpen = false; showShare = true })
                         DropdownMenuItem(
@@ -683,7 +691,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
 
         // Date, size, where the note belongs, and the save state, in one small line.
         Text(
-            text = "$dateText  |  ${"%,d".format(text.length)} characters  |  Uncategorized  |  $saveText",
+            text = "$dateText  |  ${"%,d".format(text.length)} characters  |  $topicLabel  |  $saveText",
             style = MaterialTheme.typography.labelSmall,
             color = if (saveState == SaveState.FAILED) colors.error else colors.onSurfaceVariant,
             modifier = if (saveState == SaveState.FAILED) Modifier.clickable { scope.launch { saveNow() } } else Modifier,
@@ -1089,7 +1097,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         InfoLine("Subject", subjectName)
-                        InfoLine("Category", "Uncategorized")
+                        InfoLine("Category", topicLabel)
                         InfoLine("Created", dateText)
                         InfoLine("Last edited", edited)
                         InfoLine("Characters", "%,d".format(text.length))
@@ -1102,6 +1110,22 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
             )
         }
 
+        if (showTopicPicker) {
+            SyllabusPickerDialog(
+                nodes = topicNodes,
+                current = topicId,
+                onPick = { picked ->
+                    topicId = picked
+                    viewModel.setNoteSyllabus(note.id, picked)
+                    showTopicPicker = false
+                },
+                onDismiss = { showTopicPicker = false },
+                onOpenSyllabus = {
+                    showTopicPicker = false
+                    navigator.navigate(SyllabusScreenDestination(subjectId = note.subjectId))
+                },
+            )
+        }
         if (showLanguages) LanguagePickerDialog(current = "English", onPick = { translateInto(it) }, onDismiss = { showLanguages = false })
         if (confirmDelete) {
             AlertDialog(

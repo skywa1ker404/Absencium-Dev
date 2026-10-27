@@ -57,12 +57,12 @@ fun Modifier.floatingGlass(
     // The glass takes the colours of the active theme: a veil of the surface colour, nudged toward its accent container.
     val scheme = MaterialTheme.colorScheme
     val veilBase = lerp(scheme.surface, scheme.primaryContainer, 0.18f)
-    val veil = veilBase.copy(alpha = if (denseVeil) (if (isDark) 0.48f else 0.58f) else if (isDark) 0.36f else 0.44f)
+    val veil = veilBase.copy(alpha = if (denseVeil) (if (isDark) 0.48f else 0.58f) else if (isDark) 0.42f else 0.5f)
     val blurDp = LocalGlassBlur.current
     // Lens refraction needs rounded corners and Android 13 (a runtime shader); a plain rectangle only blurs.
     val useLens = lens && quality.glassLens && shape is CornerBasedShape && isRuntimeShaderSupported()
     val rim = if (bordered && !quality.glassHighlight) {
-        Modifier.border(1.2.dp, Color.White.copy(alpha = if (isDark) 0.30f else 0.80f), shape)
+        Modifier.border(1.dp, Color.White.copy(alpha = if (isDark) 0.16f else 0.55f), shape)
     } else {
         Modifier
     }
@@ -83,19 +83,7 @@ fun Modifier.floatingGlass(
             highlight = if (bordered && quality.glassHighlight) ({ Highlight.Default }) else null,
             shadow = if (bordered && quality.glassHighlight && useLens) ({ Shadow.Default }) else null,
             // Plain glass: no colour of its own, only a faint light or dark veil so it reads on any content.
-            onDrawSurface = {
-                drawRect(veil)
-                // A soft sheen across the upper left, like light catching a pane.
-                drawRect(
-                    Brush.linearGradient(
-                        0f to Color.White.copy(alpha = if (isDark) 0.14f else 0.34f),
-                        0.5f to Color.White.copy(alpha = if (isDark) 0.03f else 0.08f),
-                        1f to Color.Transparent,
-                        start = Offset.Zero,
-                        end = Offset(size.width, size.height),
-                    ),
-                )
-            },
+            onDrawSurface = { drawRect(veil) },
         )
         .then(rim)
 }
@@ -114,43 +102,20 @@ fun Modifier.glassSurface(backdrop: LayerBackdrop, shape: Shape, tint: Color, ti
 
 /**
  * A pane of tinted glass drawn flat (no backdrop sampling, so it is cheap to scroll and to animate): the theme's [tint] at a
- * low [tintAlpha] so what is behind shows through, a bright sheen across the upper left that fades away, a faint second
- * reflection in the lower right, and a thin edge of light that is brightest at the top left, as in a glass UI kit.
+ * low [tintAlpha] so what is behind shows through, and a thin edge of light that is brightest at the top left. No sheen or glow.
  */
 @Composable
 fun Modifier.flatPane(shape: Shape, tint: Color, tintAlpha: Float = 0.42f): Modifier {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val sheenStrong = Color.White.copy(alpha = if (isDark) 0.20f else 0.46f)
-    val sheenSoft = Color.White.copy(alpha = if (isDark) 0.05f else 0.12f)
-    val bounce = Color.White.copy(alpha = if (isDark) 0.05f else 0.14f)
-    val rimStrong = Color.White.copy(alpha = if (isDark) 0.46f else 0.95f)
-    val rimSoft = Color.White.copy(alpha = if (isDark) 0.08f else 0.22f)
+    // No glow: a flat tint and a thin, even edge of light. Glass is told apart by the wallpaper showing through it, not by haze.
+    val rimTop = Color.White.copy(alpha = if (isDark) 0.28f else 0.70f)
+    val rimBottom = Color.White.copy(alpha = if (isDark) 0.06f else 0.20f)
     return this
         .clip(shape)
-        .drawBehind {
-            drawRect(tint.copy(alpha = tintAlpha))
-            drawRect(
-                Brush.linearGradient(
-                    0f to sheenStrong,
-                    0.45f to sheenSoft,
-                    0.8f to Color.Transparent,
-                    start = Offset.Zero,
-                    end = Offset(size.width, size.height),
-                ),
-            )
-            drawRect(
-                Brush.linearGradient(
-                    0f to Color.Transparent,
-                    0.75f to Color.Transparent,
-                    1f to bounce,
-                    start = Offset.Zero,
-                    end = Offset(size.width, size.height),
-                ),
-            )
-        }
+        .drawBehind { drawRect(tint.copy(alpha = tintAlpha)) }
         .border(
-            1.2.dp,
-            Brush.linearGradient(0f to rimStrong, 0.5f to rimSoft, 1f to rimStrong.copy(alpha = rimStrong.alpha * 0.45f)),
+            0.8.dp,
+            Brush.linearGradient(0f to rimTop, 1f to rimBottom, start = Offset.Zero, end = Offset.Infinite),
             shape,
         )
 }
@@ -183,21 +148,7 @@ fun Modifier.glassPane(shape: Shape, tint: Color, tintAlpha: Float = 0.5f): Modi
 @Composable
 fun Modifier.flatGlassFill(shape: Shape, tint: Color, tintAlpha: Float = 0.8f): Modifier {
     if (LocalCardBackdrop.current == null) return this.clip(shape).background(tint)
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val sheenStrong = Color.White.copy(alpha = if (isDark) 0.11f else 0.30f)
-    val sheenSoft = Color.White.copy(alpha = if (isDark) 0.03f else 0.08f)
-    return this.clip(shape).drawBehind {
-        drawRect(tint.copy(alpha = tintAlpha))
-        drawRect(
-            Brush.linearGradient(
-                0f to sheenStrong,
-                0.4f to sheenSoft,
-                1f to Color.Transparent,
-                start = Offset.Zero,
-                end = Offset(size.width, size.height),
-            ),
-        )
-    }
+    return this.clip(shape).drawBehind { drawRect(tint.copy(alpha = tintAlpha)) }
 }
 
 /** The wallpaper behind everything in glass mode: soft blobs of the theme's own colours for the glass to blur. */
@@ -208,7 +159,6 @@ fun GlassWallpaper(modifier: Modifier = Modifier) {
     val b = scheme.tertiaryContainer
     val c = scheme.secondaryContainer
     val base = scheme.background
-    val streak = Color.White.copy(alpha = if (base.luminance() < 0.5f) 0.07f else 0.22f)
     Box(
         modifier = modifier
             .background(base)
@@ -227,18 +177,7 @@ fun GlassWallpaper(modifier: Modifier = Modifier) {
                 blob(a, w * 0.15f, h * 0.12f, w * 0.9f)
                 blob(b, w * 0.95f, h * 0.45f, w * 0.85f)
                 blob(c, w * 0.2f, h * 0.85f, w * 0.9f)
-                // A fourth, fainter colour in the middle so the glass has more to bend, and a soft diagonal streak of light
-                // across the screen, as in the reference glass designs.
                 blob(lerp(a, b, 0.5f), w * 0.55f, h * 0.65f, w * 0.7f, peak = 0.55f)
-                drawRect(
-                    Brush.linearGradient(
-                        0f to Color.Transparent,
-                        0.45f to streak,
-                        0.6f to Color.Transparent,
-                        start = Offset(0f, 0f),
-                        end = Offset(w, h * 0.7f),
-                    ),
-                )
             },
     )
 }

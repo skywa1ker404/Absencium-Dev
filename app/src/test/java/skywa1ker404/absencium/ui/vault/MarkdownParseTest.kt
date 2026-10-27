@@ -4,6 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import skywa1ker404.absencium.ui.vault.markdown.Block
+import skywa1ker404.absencium.ui.vault.markdown.EditKind
+import skywa1ker404.absencium.ui.vault.markdown.EditStyle
+import skywa1ker404.absencium.ui.vault.markdown.LiveFormat
 import skywa1ker404.absencium.ui.vault.markdown.MarkdownParse
 import skywa1ker404.absencium.ui.vault.markdown.NoteTags
 import skywa1ker404.absencium.ui.vault.markdown.Span
@@ -57,6 +60,26 @@ class MarkdownParseTest {
         assertEquals(true, s.first { it.text == "b" }.let { it.sizeSp == 20 && it.color == 0x2E7D32 })
         assertEquals(true, s.first { it.text == " c" }.let { it.sizeSp == 20 && it.color == null })
         assertEquals(true, s.last().let { it.text == " d" && it.sizeSp == null })
+    }
+
+    @Test fun innermostSizeWinsAndCodeHidesTags() {
+        val s = MarkdownParse.inline("{size:22|`a {size:30|b` {size:30|inner|} `c |} d`|} e")
+        assertEquals("a {size:30|b" + " " + "inner" + " " + "c |} d" + " e", s.joinToString("") { it.text })
+        assertEquals(30, s.first { it.text == "inner" }.sizeSp)
+        assertEquals(22, s.first { it.code }.sizeSp)
+        assertEquals(null, s.last().sizeSp)
+    }
+
+    @Test fun pileOfStylesAndCodeSpansStaysBalanced() {
+        val note = "{size:22|`=={size:30|~~++***# *++~~==`{size:30|usiiwiwijw|}`==~~++****++~~|}==`|}"
+        val spans = MarkdownParse.inline(note)
+        assertEquals("=={size:30|~~++***# *++~~==usiiwiwijw==~~++****++~~|}==", spans.joinToString("") { it.text })
+        assertEquals(30, spans.first { it.text == "usiiwiwijw" }.sizeSp)
+        val edit = EditStyle.ranges(note)
+        val markers = edit.filter { it.kind == EditKind.MARKER }.sortedBy { it.start }
+        for (k in 1 until markers.size) assertTrue("markers overlap at ${markers[k].start}", markers[k].start >= markers[k - 1].end)
+        val plan = LiveFormat.plan(note)
+        assertEquals("=={size:30|~~++***# *++~~==usiiwiwijw==~~++****++~~|}==", plan.visible)
     }
 
     @Test fun boldItalicAndCodeCombine() {

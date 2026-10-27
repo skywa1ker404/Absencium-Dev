@@ -86,6 +86,20 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     fun saveInBackground(id: Long, subjectId: Long, title: String, body: String, status: NoteStatus, tags: String? = null) =
         perform("save the note") { repository.saveNote(id, subjectId, title, body, status, tags) }
 
+    /** The syllabus tree of a subject, for filing a note under one of its topics. */
+    fun syllabusNodes(subjectId: Long): kotlinx.coroutines.flow.Flow<List<skywa1ker404.absencium.data.db.SyllabusNodeEntity>> =
+        container.database.syllabusDao().observeBySubject(subjectId)
+
+    /** Files a note under a unit, chapter or topic, or back to Uncategorized (null). */
+    fun setNoteSyllabus(noteId: Long, nodeId: Long?) = perform("file the note under a topic") {
+        container.database.noteDao().setSyllabusNode(noteId, nodeId)
+    }
+
+    /** The same for a piece of study material. */
+    fun setGuideSyllabus(guideId: Long, nodeId: Long?) = perform("file the material under a topic") {
+        container.database.guideDao().setSyllabusNode(guideId, nodeId)
+    }
+
     fun setNoteStatus(note: NoteEntity, status: NoteStatus) = perform("update the note") {
         repository.setNoteStatus(note, status)
     }

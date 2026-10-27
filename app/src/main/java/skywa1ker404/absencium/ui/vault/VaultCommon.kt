@@ -26,6 +26,14 @@ import java.io.File
 import java.text.DateFormat
 import java.util.Date
 
+/** The heading of a group of study material of this type. */
+fun GuideType.sectionTitle(): String = when (this) {
+    GuideType.QP -> "Previous year question papers"
+    GuideType.SYLLABUS -> "Syllabus documents"
+    GuideType.ANSWER_BANK -> "Answer books and banks"
+    GuideType.GUIDE -> "Guides"
+}
+
 fun GuideType.label(): String = when (this) {
     GuideType.QP -> "Question paper"
     GuideType.SYLLABUS -> "Syllabus"
@@ -133,7 +141,15 @@ fun NoteCard(
 }
 
 @Composable
-fun GuideCard(guide: GuideEntity, onClick: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+fun GuideCard(
+    guide: GuideEntity,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** Where the material is filed in the syllabus, shown under its type. */
+    topic: String? = null,
+    onFile: (() -> Unit)? = null,
+) {
     val colors = MaterialTheme.colorScheme
     AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -141,11 +157,12 @@ fun GuideCard(guide: GuideEntity, onClick: () -> Unit, onDelete: () -> Unit, mod
             Column(modifier = Modifier.weight(1f)) {
                 Text(guide.fileName, style = MaterialTheme.typography.titleMedium, maxLines = 1)
                 Text(
-                    text = guide.guideType.label(),
+                    text = guide.guideType.label() + (topic?.let { " · $it" } ?: ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
             }
+            if (onFile != null) androidx.compose.material3.TextButton(onClick = onFile) { Text("Topic") }
             androidx.compose.material3.TextButton(onClick = onDelete) { Text("Remove") }
         }
     }
