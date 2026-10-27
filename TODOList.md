@@ -18,6 +18,26 @@ Last updated: 2026-10-27 (syllabus, reading mode, AI Hub, docs and master spec r
 
 ---
 
+## Ledger: everything still pending (owner rule 2026-10-28: never drop a pending task when new requests arrive)
+
+Update this list whenever something is finished or added. Each line points to the row that holds the details.
+
+| Pending | Where |
+| --- | --- |
+| Liquid Glass batch 1 rest: press / drag squash and highlight on floating buttons, toggles, sliders; calmer tiles inside popups; places that ignore "Apply frosted glass on other elements" (dialogs, menus, pickers) | 19.1 |
+| Material 3 Expressive batch 2: unread guide pages (need pasted text), apply the full component set | 19.3 |
+| Screen redesign batch 3 from images 3 to 15, starting with the **notes list, syllabus tree and study material** (screenshots 19 to 22) | 19.4 |
+| Reading mode: markup tools saved with the note | 10.26 |
+| Audio notes: play / pause in the mini-player (the player is now docked) | 10.29 |
+| Hide the mic button while scrolling | 10.28 |
+| "Paste" in the multi-select toolbar | 10.32 |
+| "AI is disabled. Enable it or ignore" on every AI button, consent popup | 10.34 |
+| Subject folder: sidebar, sort menu, card view | 10.15 |
+| Syllabus: practical syllabus option (needs a migration), "generate notes for this topic" and the syllabus summary card in the profile | 10.16, 10.18 |
+| Batch D: pages, doodle shapes and layers, syllabus-aware AI (10.36), text reflow beside media | 10.36 onward |
+| Pre-1.0 audit with your consent; Steps 14 to 16 | Steps 3, 14, 15, 16 |
+| Waiting on you: device testing of everything marked "not device-tested", audit and cleanup approval, the open decisions in `docs/MASTER_SPEC.md` | CURRENT.md |
+
 ## Step 0. Build, signing and release separation (6 tasks)
 
 | # | Task | Status |

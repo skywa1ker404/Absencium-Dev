@@ -171,3 +171,19 @@ The Liquid Glass reference. Light blue-grey gradient wallpaper; **white transluc
 | Analytics | 08, 15, 13 |
 | Liquid Glass look of any element | 06 |
 | What not to repeat | 01, 02 |
+
+---
+
+## Our own screenshots, second set (2026-10-28, owner: "ugly looking generic")
+
+| File | Screen | What is wrong and what replaces it |
+| --- | --- | --- |
+| `16-ai-options-popup-keyboard-gap.jpg` | AI notes options, keyboard open | Card cut off at the top and a gap above the keyboard (fixed by the height clamp in `25f76a2`; re-test). Still plain tonal cards: becomes glass sections with chips (images 07, 13) |
+| `17-ai-options-syllabus-dropdown.jpg` | Same popup, syllabus topic list open | A long list of full paths in one grey box. Becomes a tree picker with the path as breadcrumb chips and indent (image 12) |
+| `18-show-notes-under-dialog.jpg` | "Show notes under" topic filter | Plain radio list in a stock dialog. Becomes a glass sheet with the tree, hue dots and counts per topic |
+| `19-subject-folder-study-tab.jpg` | Subject folder, Study tab (old ChoiceBar tabs, before the TabPill) | Empty text and a plain button. Becomes grouped pastel rows with a white icon square and a pill action (image 09), empty state with the shape badge |
+| `20-subject-folder-syllabus-tab.jpg` | Subject folder, Syllabus tab | Two flat full-width bars. Becomes a progress card with a ring and the units as pastel tiles (images 08, 12) |
+| `21-syllabus-tree-screen.jpg` | Syllabus screen | Every node is its own big card, nested ones just shifted right, status as a grey text pill. Becomes one pastel card per unit holding its chapters and topics as rows with a thin guide line, a round status mark (hollow, half, check) instead of the text pill, striped / wavy progress (images 04, 11, 12) |
+| `22-subject-folder-notes-tab.jpg` | Subject folder, Notes tab | Identical dark cards, raw markup shown in the preview (`` `==~~++{size:30|`...``), no topic, no status. Becomes hue-tinted cards with a clean text preview (markers stripped), topic chip, date and status dot, optionally a masonry grid (images 03, 14) |
+
+Owner rule (2026-10-28): redesign these three (notes list, syllabus tree, study material) from images 3 to 15 when the screen overhaul (Step 19.4) reaches them, and **never drop a pending task after new requests arrive** (see the ledger in `TODOList.md`).
