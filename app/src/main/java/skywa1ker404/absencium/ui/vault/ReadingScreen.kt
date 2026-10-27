@@ -1,5 +1,8 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.components.AppMenu
+import skywa1ker404.absencium.ui.components.AppMenuDivider
+import skywa1ker404.absencium.ui.components.AppMenuItem
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -98,22 +101,6 @@ import skywa1ker404.absencium.ui.vault.entry.rememberPhoto
 import skywa1ker404.absencium.ui.vault.markdown.Block
 import skywa1ker404.absencium.ui.vault.markdown.EmbedKind
 
-/** How the reading page is coloured: the app's theme, or a fixed light, dark or warm paper look that is easy on the eyes. */
-private enum class ReadTheme(val label: String) { AUTO("Same as the app"), LIGHT("Light"), DARK("Dark"), EYE("Eye comfort") }
-
-private val EyeScheme = lightColorScheme(
-    primary = Color(0xFF8A5A00),
-    background = Color(0xFFF4ECD8),
-    surface = Color(0xFFF4ECD8),
-    onBackground = Color(0xFF3B3226),
-    onSurface = Color(0xFF3B3226),
-    onSurfaceVariant = Color(0xFF6B5E4A),
-    surfaceContainerHigh = Color(0xFFEADFC4),
-    surfaceContainerHighest = Color(0xFFE2D5B5),
-    primaryContainer = Color(0xFFE9D5A6),
-    onPrimaryContainer = Color(0xFF3B2A00),
-)
-
 /** What the AI popup at the bottom is showing. */
 private class AiAnswer(val title: String, val loading: Boolean, val text: String?, val error: String?)
 
@@ -177,7 +164,6 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
     val attachments = vault?.attachmentsOf(note.id).orEmpty()
     val subjectName = vault?.subjects?.firstOrNull { it.id == note.subjectId }?.name.orEmpty()
 
-    var theme by remember { mutableStateOf(ReadTheme.AUTO) }
     var zoom by remember { mutableFloatStateOf(1f) }
     var focus by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
@@ -278,12 +264,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
     }
 
     val base = MaterialTheme.colorScheme
-    val scheme = when (theme) {
-        ReadTheme.AUTO -> base
-        ReadTheme.LIGHT -> lightColorScheme()
-        ReadTheme.DARK -> darkColorScheme()
-        ReadTheme.EYE -> EyeScheme
-    }
+    val scheme = base
     val density = LocalDensity.current
 
     MaterialTheme(colorScheme = scheme, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes) {
@@ -361,36 +342,23 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                         }) { Icon(AppIcons.ExpandMore, contentDescription = "Minimise to the reading player", tint = colors.onBackground) }
                         Box {
                             IconButton(onClick = { menuOpen = true }) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = colors.onBackground) }
-                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                                DropdownMenuItem(text = { Text("Share or export") }, onClick = { menuOpen = false; showShare = true })
-                                DropdownMenuItem(text = { Text("Focus mode") }, onClick = { menuOpen = false; focus = true })
-                                ReadTheme.entries.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(option.label + if (option == theme) "  ✓" else "") },
-                                        onClick = { menuOpen = false; theme = option },
-                                    )
-                                }
-                                DropdownMenuItem(
-                                    text = { Text("Bookmark this page") },
-                                    onClick = { menuOpen = false; container.saveBookmark(note.id, scroll.value) },
-                                )
+                            AppMenu(expanded = menuOpen, onDismiss = { menuOpen = false }) {
+                                AppMenuItem(AppIcons.Share, "Share or export", { menuOpen = false; showShare = true })
+                                AppMenuItem(AppIcons.Fullscreen, "Focus mode", { menuOpen = false; focus = true })
+                                AppMenuDivider()
+                                AppMenuItem(AppIcons.Bookmark, "Bookmark this page", { menuOpen = false; container.saveBookmark(note.id, scroll.value) })
                                 if (container.bookmark(note.id) >= 0) {
-                                    DropdownMenuItem(
-                                        text = { Text("Go to the bookmark") },
-                                        onClick = { menuOpen = false; scope.launch { scroll.animateScrollTo(container.bookmark(note.id).coerceIn(0, scroll.maxValue)) } },
-                                    )
-                                    DropdownMenuItem(text = { Text("Remove the bookmark") }, onClick = { menuOpen = false; container.saveBookmark(note.id, null) })
+                                    AppMenuItem(AppIcons.ArrowDown, "Go to the bookmark", { menuOpen = false; scope.launch { scroll.animateScrollTo(container.bookmark(note.id).coerceIn(0, scroll.maxValue)) } })
+                                    AppMenuItem(AppIcons.Remove, "Remove the bookmark", { menuOpen = false; container.saveBookmark(note.id, null) })
                                 }
-                                DropdownMenuItem(
-                                    text = { Text("Mark as finished") },
-                                    onClick = {
-                                        menuOpen = false
-                                        scope.launch {
-                                            viewModel.saveNote(note.id, note.subjectId, note.title, note.bodyText, NoteStatus.FINISHED, note.tags)
-                                            navigator.navigateUp()
-                                        }
-                                    },
-                                )
+                                AppMenuDivider()
+                                AppMenuItem(AppIcons.Check, "Mark as finished", {
+                                    menuOpen = false
+                                    scope.launch {
+                                        viewModel.saveNote(note.id, note.subjectId, note.title, note.bodyText, NoteStatus.FINISHED, note.tags)
+                                        navigator.navigateUp()
+                                    }
+                                })
                             }
                         }
                     }

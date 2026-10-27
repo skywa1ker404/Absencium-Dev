@@ -1,5 +1,8 @@
 package skywa1ker404.absencium.ui.syllabus
 
+import skywa1ker404.absencium.ui.components.AppMenu
+import skywa1ker404.absencium.ui.components.AppMenuDivider
+import skywa1ker404.absencium.ui.components.AppMenuItem
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
@@ -258,15 +261,17 @@ private fun SyllabusRow(
                 StatusPill(status = node.status, onClick = onCycle)
                 Box {
                     IconButton(onClick = { menu = true }) { Icon(AppIcons.MoreVert, contentDescription = "More") }
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    AppMenu(expanded = menu, onDismiss = { menu = false }) {
                         if (row.depth < SyllabusTree.MAX_DEPTH) {
-                            DropdownMenuItem(text = { Text("Add ${SyllabusTree.levelName(row.depth + 1).lowercase()}") }, onClick = { menu = false; onAddInside() })
+                            AppMenuItem(AppIcons.Add, "Add ${SyllabusTree.levelName(row.depth + 1).lowercase()}", { menu = false; onAddInside() })
                         }
-                        DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; onRename() })
-                        DropdownMenuItem(text = { Text("Details") }, onClick = { menu = false; onDetails() })
-                        DropdownMenuItem(text = { Text("Move up") }, onClick = { menu = false; onMoveUp() })
-                        DropdownMenuItem(text = { Text("Move down") }, onClick = { menu = false; onMoveDown() })
-                        DropdownMenuItem(text = { Text("Delete") }, onClick = { menu = false; onDelete() })
+                        AppMenuItem(AppIcons.Edit, "Rename", { menu = false; onRename() })
+                        AppMenuItem(AppIcons.Description, "Details", { menu = false; onDetails() })
+                        AppMenuDivider()
+                        AppMenuItem(AppIcons.ArrowUp, "Move up", { menu = false; onMoveUp() })
+                        AppMenuItem(AppIcons.ArrowDown, "Move down", { menu = false; onMoveDown() })
+                        AppMenuDivider()
+                        AppMenuItem(AppIcons.Delete, "Delete", { menu = false; onDelete() }, destructive = true)
                     }
                 }
             }

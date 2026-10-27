@@ -2,6 +2,11 @@ package skywa1ker404.absencium.ui.vault
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -174,7 +179,14 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
 
             item(key = "tabs") {
                 val names = listOf("Notes", "Study material", "Syllabus")
-                ChoiceBar(options = listOf(0, 1, 2), selected = tab, label = { names[it] }, onSelect = { tab = it; selectedIds = emptySet() })
+                val icons = listOf(AppIcons.Description, AppIcons.Book, AppIcons.School)
+                skywa1ker404.absencium.ui.components.TabPill(
+                    options = listOf(0, 1, 2),
+                    selected = tab,
+                    label = { names[it] },
+                    icon = { icons[it] },
+                    onSelect = { tab = it; selectedIds = emptySet() },
+                )
             }
 
             if (tab == 0) {
@@ -324,18 +336,24 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             HorizontalFloatingToolbar(
                 expanded = true,
                 modifier = Modifier.padding(top = 4.dp),
-                leadingContent = { Text("${selected.size}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 12.dp)) },
+                leadingContent = {
+                    // The count sits on a round primary badge so it reads as the state of the whole toolbar.
+                    Box(
+                        modifier = Modifier.padding(start = 4.dp).size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center,
+                    ) { Text("${selected.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary) }
+                },
                 trailingContent = {
                     IconButton(onClick = { selectedIds = emptySet() }) { Icon(AppIcons.Close, contentDescription = "Cancel selection") }
                 },
                 content = {
-                    TextButton(onClick = {
+                    SelectionAction(AppIcons.Check, if (allFinished) "Reopen" else "Finish") {
                         viewModel.setNotesStatus(selected, if (allFinished) NoteStatus.ACTIVE else NoteStatus.FINISHED)
                         selectedIds = emptySet()
-                    }) { Text(if (allFinished) "Reopen" else "Finish") }
-                    TextButton(onClick = { showShare = true }) { Text("Share") }
-                    TextButton(onClick = { showMove = true }) { Text("Move") }
-                    TextButton(onClick = { confirmBatchDelete = true }) { Text("Delete") }
+                    }
+                    SelectionAction(AppIcons.Share, "Share") { showShare = true }
+                    SelectionAction(AppIcons.Folder, "Move") { showMove = true }
+                    SelectionAction(AppIcons.Delete, "Delete", destructive = true) { confirmBatchDelete = true }
                 },
             )
         }
@@ -439,4 +457,21 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         )
     }
 
+}
+
+/** One action of the selection toolbar: an icon with its name under it. */
+@Composable
+private fun SelectionAction(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, destructive: Boolean = false, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val tint = if (destructive) colors.error else colors.onSurface
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tint)
+    }
 }

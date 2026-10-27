@@ -1,5 +1,8 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.components.AppMenu
+import skywa1ker404.absencium.ui.components.AppMenuDivider
+import skywa1ker404.absencium.ui.components.AppMenuItem
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -533,34 +536,30 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                 IconButton(onClick = { redo() }, enabled = history.canRedo) { Icon(AppIcons.Redo, contentDescription = "Redo") }
                 Box {
                     IconButton(onClick = { menuOpen = true }) { Icon(AppIcons.MoreVert, contentDescription = "More") }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Reading mode") },
-                            onClick = {
-                                menuOpen = false
-                                scope.launch {
-                                    if (isDirty()) saveNow()
-                                    navigator.navigate(ReadingScreenDestination(noteId = note.id))
-                                }
-                            },
-                        )
-                        DropdownMenuItem(text = { Text("File under a topic") }, onClick = { menuOpen = false; showTopicPicker = true })
-                        DropdownMenuItem(text = { Text("Notes info") }, onClick = { menuOpen = false; showInfo = true })
-                        DropdownMenuItem(text = { Text("Share or export") }, onClick = { menuOpen = false; showShare = true })
-                        DropdownMenuItem(
-                            text = { Text(if (status == NoteStatus.FINISHED) "Reopen" else "Mark as finished") },
-                            onClick = {
-                                menuOpen = false
-                                skipFlush = true
-                                val next = if (status == NoteStatus.FINISHED) NoteStatus.ACTIVE else NoteStatus.FINISHED
-                                scope.launch {
-                                    // Finished notes move to the subject's Finished / Written Notes archive.
-                                    viewModel.saveNote(note.id, note.subjectId, cleanTitle(title), text, next, note.tags)
-                                    navigator.navigateUp()
-                                }
-                            },
-                        )
-                        DropdownMenuItem(text = { Text("Delete") }, onClick = { menuOpen = false; confirmDelete = true })
+                    AppMenu(expanded = menuOpen, onDismiss = { menuOpen = false }) {
+                        AppMenuItem(AppIcons.Book, "Reading mode", {
+                            menuOpen = false
+                            scope.launch {
+                                if (isDirty()) saveNow()
+                                navigator.navigate(ReadingScreenDestination(noteId = note.id))
+                            }
+                        })
+                        AppMenuItem(AppIcons.Folder, "File under a topic", { menuOpen = false; showTopicPicker = true })
+                        AppMenuItem(AppIcons.Info, "Notes info", { menuOpen = false; showInfo = true })
+                        AppMenuDivider()
+                        AppMenuItem(AppIcons.Share, "Share or export", { menuOpen = false; showShare = true })
+                        AppMenuItem(AppIcons.Check, if (status == NoteStatus.FINISHED) "Reopen" else "Mark as finished", {
+                            menuOpen = false
+                            skipFlush = true
+                            val next = if (status == NoteStatus.FINISHED) NoteStatus.ACTIVE else NoteStatus.FINISHED
+                            scope.launch {
+                                // Finished notes move to the subject's Finished / Written Notes archive.
+                                viewModel.saveNote(note.id, note.subjectId, cleanTitle(title), text, next, note.tags)
+                                navigator.navigateUp()
+                            }
+                        })
+                        AppMenuDivider()
+                        AppMenuItem(AppIcons.Delete, "Delete", { menuOpen = false; confirmDelete = true }, destructive = true)
                     }
                 }
             }
