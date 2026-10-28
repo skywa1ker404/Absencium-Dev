@@ -10,6 +10,18 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import skywa1ker404.absencium.ui.components.Hue
+import skywa1ker404.absencium.ui.components.hueFor
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -101,16 +113,27 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
     )
 
     ScreenScaffold(title = "Syllabus", onBack = { navigator.navigateUp() }) {
-        AppCard(modifier = Modifier.fillMaxWidth().bounceIn(0)) {
-            Text(subjectName.ifEmpty { "Subject" }, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = if (nodes.isEmpty()) "No syllabus yet" else "${(overall * 100).toInt()}% of the syllabus studied",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (nodes.isNotEmpty()) {
-                Spacer(Modifier.size(12.dp))
-                LinearWavyProgressIndicator(progress = { animatedOverall }, modifier = Modifier.fillMaxWidth())
+        val headHue = hueFor(0)
+        AppCard(modifier = Modifier.fillMaxWidth().bounceIn(0), container = headHue.container.copy(alpha = 0.75f)) {
+            Text(subjectName.ifEmpty { "Subject" }, style = MaterialTheme.typography.titleMedium, color = headHue.onContainer)
+            if (nodes.isEmpty()) {
+                Text("No syllabus yet", style = MaterialTheme.typography.bodyMedium, color = headHue.onContainer.copy(alpha = 0.8f))
+            } else {
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("${(overall * 100).toInt()}%", style = MaterialTheme.typography.displayMedium, color = headHue.onContainer)
+                    Text(
+                        "of the syllabus studied",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = headHue.onContainer.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+                LinearWavyProgressIndicator(
+                    progress = { animatedOverall },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = headHue.accent,
+                    trackColor = headHue.accent.copy(alpha = 0.18f),
+                )
             }
         }
 
@@ -129,23 +152,39 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
             HintText("Tap a status to move it on. Tapping it on a unit or chapter sets everything inside it.")
         }
 
-        rows.forEachIndexed { index, row ->
-            androidx.compose.runtime.key(row.node.id) {
-                SyllabusRow(
-                    row = row,
-                    progress = SyllabusTree.progress(nodes, row.node.id),
-                    linked = counts[row.node.id] ?: 0,
-                    expanded = row.node.id !in collapsed,
-                    delayMs = (index * 25).coerceAtMost(300),
-                    onToggle = { collapsed = if (row.node.id in collapsed) collapsed - row.node.id else collapsed + row.node.id },
-                    onCycle = { viewModel.cycleStatus(row.node.id) },
-                    onAddInside = { editing = Editing.Add(row.node.id, SyllabusTree.levelName(row.depth + 1)) },
-                    onRename = { editing = Editing.Rename(row.node) },
-                    onDetails = { editing = Editing.Details(row.node) },
-                    onMoveUp = { viewModel.move(row.node.id, up = true) },
-                    onMoveDown = { viewModel.move(row.node.id, up = false) },
-                    onDelete = { deleting = row.node },
-                )
+        // One card per unit; its chapters, topics and subtopics are rows inside it.
+        val groups = remember(rows) {
+            val out = ArrayList<MutableList<SyllabusTree.Row>>()
+            rows.forEach { r -> if (r.depth == 0) out += mutableListOf(r) else out.lastOrNull()?.add(r) }
+            out
+        }
+        groups.forEachIndexed { groupIndex, group ->
+            androidx.compose.runtime.key(group.first().node.id) {
+                val hue = hueFor((groupIndex + 1).toLong())
+                AppCard(
+                    modifier = Modifier.fillMaxWidth().bounceIn((groupIndex * 45).coerceAtMost(300)),
+                    container = hue.container.copy(alpha = 0.75f),
+                ) {
+                    group.forEach { row ->
+                        androidx.compose.runtime.key(row.node.id) {
+                            SyllabusRow(
+                                row = row,
+                                hue = hue,
+                                progress = SyllabusTree.progress(nodes, row.node.id),
+                                linked = counts[row.node.id] ?: 0,
+                                expanded = row.node.id !in collapsed,
+                                onToggle = { collapsed = if (row.node.id in collapsed) collapsed - row.node.id else collapsed + row.node.id },
+                                onCycle = { viewModel.cycleStatus(row.node.id) },
+                                onAddInside = { editing = Editing.Add(row.node.id, SyllabusTree.levelName(row.depth + 1)) },
+                                onRename = { editing = Editing.Rename(row.node) },
+                                onDetails = { editing = Editing.Details(row.node) },
+                                onMoveUp = { viewModel.move(row.node.id, up = true) },
+                                onMoveDown = { viewModel.move(row.node.id, up = false) },
+                                onDelete = { deleting = row.node },
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -208,13 +247,17 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
     }
 }
 
+/**
+ * One line of a unit's card: a round status mark, the title with its level and progress, a chevron when it has children, and a
+ * menu. Deeper lines are indented and joined to their parent by a thin guide line.
+ */
 @Composable
 private fun SyllabusRow(
     row: SyllabusTree.Row,
+    hue: Hue,
     progress: Float,
     linked: Int,
     expanded: Boolean,
-    delayMs: Int,
     onToggle: () -> Unit,
     onCycle: () -> Unit,
     onAddInside: () -> Unit,
@@ -226,86 +269,122 @@ private fun SyllabusRow(
 ) {
     val node = row.node
     var menu by remember { mutableStateOf(false) }
+    val guide = hue.onContainer.copy(alpha = 0.2f)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = (row.depth * 14).dp)
-            .bounceIn(delayMs),
+            .then(
+                if (row.depth > 0) {
+                    Modifier.drawBehind {
+                        drawLine(guide, Offset(0f, 0f), Offset(0f, size.height), strokeWidth = 2.dp.toPx())
+                    }
+                } else {
+                    Modifier
+                },
+            )
+            .padding(start = if (row.depth > 0) 8.dp else 0.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(enabled = row.hasChildren, onClick = onToggle),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        AppCard(modifier = Modifier.weight(1f), onClick = if (row.hasChildren) onToggle else null) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (row.hasChildren) {
-                    val turn by animateFloatAsState(
-                        targetValue = if (expanded) 1f else 0f,
-                        animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
-                        label = "chevron",
-                    )
-                    Icon(
-                        AppIcons.ExpandMore,
-                        contentDescription = if (expanded) "Collapse" else "Expand",
-                        modifier = Modifier.size(22.dp).rotate(-90f * (1f - turn)),
-                    )
+        StatusMark(status = node.status, accent = hue.accent, onClick = onCycle)
+        Column(modifier = Modifier.weight(1f).padding(vertical = 8.dp)) {
+            Text(
+                node.title,
+                style = if (row.depth == 0) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall,
+                color = hue.onContainer,
+            )
+            val line = buildString {
+                append(SyllabusTree.levelName(row.depth))
+                if (row.hasChildren) append(" \u00b7 ${(progress * 100).toInt()}%")
+                if (linked > 0) append(" \u00b7 $linked filed here")
+            }
+            Text(line, style = MaterialTheme.typography.bodySmall, color = hue.onContainer.copy(alpha = 0.75f))
+            node.details?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 3, color = hue.onContainer.copy(alpha = 0.75f))
+            }
+        }
+        if (row.hasChildren) {
+            val turn by animateFloatAsState(
+                targetValue = if (expanded) 1f else 0f,
+                animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
+                label = "chevron",
+            )
+            Icon(
+                AppIcons.ExpandMore,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                tint = hue.onContainer,
+                modifier = Modifier.size(22.dp).rotate(-90f * (1f - turn)),
+            )
+        }
+        Box {
+            IconButton(onClick = { menu = true }) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = hue.onContainer) }
+            AppMenu(expanded = menu, onDismiss = { menu = false }) {
+                if (row.depth < SyllabusTree.MAX_DEPTH) {
+                    AppMenuItem(AppIcons.Add, "Add ${SyllabusTree.levelName(row.depth + 1).lowercase()}", { menu = false; onAddInside() })
                 }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(node.title, style = if (row.depth == 0) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall)
-                    val line = buildString {
-                        append(SyllabusTree.levelName(row.depth))
-                        if (row.hasChildren) append(" · ${(progress * 100).toInt()}%")
-                        if (linked > 0) append(" · $linked filed here")
-                    }
-                    Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    node.details?.takeIf { it.isNotBlank() }?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 3, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                StatusPill(status = node.status, onClick = onCycle)
-                Box {
-                    IconButton(onClick = { menu = true }) { Icon(AppIcons.MoreVert, contentDescription = "More") }
-                    AppMenu(expanded = menu, onDismiss = { menu = false }) {
-                        if (row.depth < SyllabusTree.MAX_DEPTH) {
-                            AppMenuItem(AppIcons.Add, "Add ${SyllabusTree.levelName(row.depth + 1).lowercase()}", { menu = false; onAddInside() })
-                        }
-                        AppMenuItem(AppIcons.Edit, "Rename", { menu = false; onRename() })
-                        AppMenuItem(AppIcons.Description, "Details", { menu = false; onDetails() })
-                        AppMenuDivider()
-                        AppMenuItem(AppIcons.ArrowUp, "Move up", { menu = false; onMoveUp() })
-                        AppMenuItem(AppIcons.ArrowDown, "Move down", { menu = false; onMoveDown() })
-                        AppMenuDivider()
-                        AppMenuItem(AppIcons.Delete, "Delete", { menu = false; onDelete() }, destructive = true)
-                    }
-                }
+                AppMenuItem(AppIcons.Edit, "Rename", { menu = false; onRename() })
+                AppMenuItem(AppIcons.Description, "Details", { menu = false; onDetails() })
+                AppMenuDivider()
+                AppMenuItem(AppIcons.ArrowUp, "Move up", { menu = false; onMoveUp() })
+                AppMenuItem(AppIcons.ArrowDown, "Move down", { menu = false; onMoveDown() })
+                AppMenuDivider()
+                AppMenuItem(AppIcons.Delete, "Delete", { menu = false; onDelete() }, destructive = true)
             }
         }
     }
 }
 
-/** The status of a node. Tapping it moves it on; the colour and size spring to the new state. */
+/**
+ * The status of a node as a round mark: an empty ring (not started), a half-filled ring (in progress) or a filled ring with a
+ * tick (done). Tapping it moves it on; the fill sweeps round and the mark pops with a spring.
+ */
 @Composable
-private fun StatusPill(status: SyllabusStatus, onClick: () -> Unit) {
+private fun StatusMark(status: SyllabusStatus, accent: Color, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val target = when (status) {
-        SyllabusStatus.NOT_STARTED -> colors.surfaceContainerHighest
-        SyllabusStatus.IN_PROGRESS -> colors.tertiaryContainer
-        SyllabusStatus.COMPLETED -> colors.primaryContainer
-    }
-    val container by animateColorAsState(target, animationSpec = LocalQuality.current.spring(), label = "status")
-    // A small spring pop each time the status changes.
+    val fill by animateFloatAsState(
+        targetValue = when (status) {
+            SyllabusStatus.NOT_STARTED -> 0f
+            SyllabusStatus.IN_PROGRESS -> 0.5f
+            SyllabusStatus.COMPLETED -> 1f
+        },
+        animationSpec = LocalQuality.current.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "statusFill",
+    )
     val pop = remember { Animatable(1f) }
     LaunchedEffect(status) {
-        pop.snapTo(0.8f)
+        pop.snapTo(0.78f)
         pop.animateTo(1f, spring(Spring.DampingRatioHighBouncy, Spring.StiffnessMedium))
     }
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = container,
-        modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value },
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .clickable(role = Role.Checkbox, onClickLabel = statusLabel(status), onClick = onClick)
+            .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
+            .semantics { contentDescription = statusLabel(status) },
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = statusLabel(status),
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-        )
+        Canvas(modifier = Modifier.size(28.dp)) {
+            val stroke = 2.5.dp.toPx()
+            drawCircle(accent, radius = size.minDimension / 2f - stroke / 2f, style = Stroke(stroke))
+            if (fill > 0f) {
+                val inset = 4.dp.toPx()
+                drawArc(
+                    color = accent,
+                    startAngle = -90f,
+                    sweepAngle = 360f * fill,
+                    useCenter = true,
+                    topLeft = Offset(inset, inset),
+                    size = Size(size.width - 2 * inset, size.height - 2 * inset),
+                )
+            }
+        }
+        if (status == SyllabusStatus.COMPLETED) {
+            Icon(AppIcons.Check, contentDescription = null, tint = colors.surface, modifier = Modifier.size(16.dp))
+        }
     }
 }
 

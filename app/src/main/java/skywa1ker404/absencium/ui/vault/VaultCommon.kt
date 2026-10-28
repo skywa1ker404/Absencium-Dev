@@ -1,5 +1,26 @@
 package skywa1ker404.absencium.ui.vault
 
+import androidx.compose.foundation.ExperimentalLayoutApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
+import skywa1ker404.absencium.ui.components.AppMenu
+import skywa1ker404.absencium.ui.components.AppMenuItem
+import skywa1ker404.absencium.ui.components.hueFor
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -104,6 +125,24 @@ fun noteBadges(note: NoteEntity, photoCount: Int): String {
     return parts.joinToString("  \u00b7  ")
 }
 
+/** A small rounded label on a tinted card: a topic, a count, a status. */
+@Composable
+fun CardChip(text: String, color: Color, modifier: Modifier = Modifier, icon: ImageVector? = null) {
+    Row(
+        modifier = modifier.clip(CircleShape).background(color.copy(alpha = 0.12f)).padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (icon != null) Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(12.dp))
+        Text(text, style = MaterialTheme.typography.labelSmall, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/**
+ * A note in a list, laid out like the tinted cards of reference image 03: a hue per topic, a large title, a clean text preview
+ * (no raw markers), and small chips for its topic, pictures, tags, date and status.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NoteCard(
     note: NoteEntity,
@@ -112,34 +151,66 @@ fun NoteCard(
     photoCount: Int = 0,
     selected: Boolean = false,
     onLongClick: (() -> Unit)? = null,
+    /** Where the note is filed in the syllabus, or null for Uncategorized. */
+    topic: String? = null,
 ) {
     val colors = MaterialTheme.colorScheme
-    AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick, highlighted = selected) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (selected) Text("\u2713", style = MaterialTheme.typography.titleMedium, color = colors.primary)
-            Text(note.title.ifBlank { "Untitled note" }, style = MaterialTheme.typography.titleMedium, maxLines = 1)
-        }
-        val preview = note.snippet()
-        if (preview.isNotEmpty()) {
+    val hue = hueFor(note.syllabusNodeId ?: note.id)
+    val lines = remember(note.bodyText) { notePreviewLines(note.bodyText) }
+    val ink = hue.onContainer
+    AppCard(
+        modifier = modifier.fillMaxWidth().then(
+            if (selected) Modifier.border(2.dp, colors.primary, MaterialTheme.shapes.large) else Modifier,
+        ),
+        onClick = onClick,
+        onLongClick = onLongClick,
+        container = hue.container.copy(alpha = 0.75f),
+    ) {
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = preview,
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
+                note.title.ifBlank { "Untitled note" },
+                style = MaterialTheme.typography.titleLarge,
+                color = ink,
                 maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
+            if (selected) {
+                Box(
+                    modifier = Modifier.size(28.dp).clip(CircleShape).background(colors.primary),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(AppIcons.Check, contentDescription = "Selected", tint = colors.onPrimary, modifier = Modifier.size(18.dp)) }
+            }
         }
-        val badges = noteBadges(note, photoCount)
-        if (badges.isNotEmpty()) {
-            Text(text = badges, style = MaterialTheme.typography.labelSmall, color = colors.primary, maxLines = 1)
+        if (lines.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                lines.forEach { line ->
+                    Text(line, style = MaterialTheme.typography.bodyMedium, color = ink.copy(alpha = 0.82f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
-        Text(
-            text = formatNoteDate(note.createdDate),
-            style = MaterialTheme.typography.labelSmall,
-            color = colors.onSurfaceVariant,
-        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (topic != null) CardChip(topic, hue.accent, icon = AppIcons.Folder)
+            if (photoCount > 0) CardChip(if (photoCount == 1) "1 photo" else "$photoCount photos", ink, icon = AppIcons.Image)
+            skywa1ker404.absencium.ui.vault.markdown.NoteTags.parse(note.tags).take(3).forEach { CardChip("#$it", ink) }
+            if (note.status == skywa1ker404.absencium.data.db.NoteStatus.FINISHED) CardChip("Finished", hue.accent, icon = AppIcons.Check)
+            CardChip(formatNoteDate(note.createdDate), ink)
+        }
     }
 }
 
+/** The symbol of a kind of study material. */
+private fun GuideType.icon(): ImageVector = when (this) {
+    GuideType.QP -> AppIcons.Quiz
+    GuideType.SYLLABUS -> AppIcons.School
+    GuideType.ANSWER_BANK -> AppIcons.Check
+    GuideType.GUIDE -> AppIcons.Book
+}
+
+/**
+ * A piece of study material as a pastel row (reference image 09): a white rounded-square icon, the file name, its kind and
+ * topic, and an Open pill. The menu files it under a topic or removes it.
+ */
 @Composable
 fun GuideCard(
     guide: GuideEntity,
@@ -151,19 +222,41 @@ fun GuideCard(
     onFile: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
-    AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
+    val hue = hueFor(guide.guideType.ordinal.toLong())
+    var menu by remember { mutableStateOf(false) }
+    AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick, container = hue.container.copy(alpha = 0.75f)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(AppIcons.Book, contentDescription = null, tint = colors.primary, modifier = Modifier.size(24.dp))
+            Box(
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(colors.surface.copy(alpha = 0.9f)),
+                contentAlignment = Alignment.Center,
+            ) { Icon(guide.guideType.icon(), contentDescription = null, tint = hue.accent, modifier = Modifier.size(24.dp)) }
             Column(modifier = Modifier.weight(1f)) {
-                Text(guide.fileName, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Text(guide.fileName, style = MaterialTheme.typography.titleMedium, color = hue.onContainer, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
                     text = guide.guideType.label() + (topic?.let { " · $it" } ?: ""),
                     style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
+                    color = hue.onContainer.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (onFile != null) androidx.compose.material3.TextButton(onClick = onFile) { Text("Topic") }
-            androidx.compose.material3.TextButton(onClick = onDelete) { Text("Remove") }
+            Text(
+                "Open",
+                style = MaterialTheme.typography.labelLarge,
+                color = colors.onSurface,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(colors.surface.copy(alpha = 0.9f))
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 16.dp, vertical = 9.dp),
+            )
+            Box {
+                IconButton(onClick = { menu = true }) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = hue.onContainer) }
+                AppMenu(expanded = menu, onDismiss = { menu = false }) {
+                    if (onFile != null) AppMenuItem(AppIcons.Folder, "File under a topic", { menu = false; onFile() })
+                    AppMenuItem(AppIcons.Delete, "Remove", { menu = false; onDelete() }, destructive = true)
+                }
+            }
         }
     }
 }

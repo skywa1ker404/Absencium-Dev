@@ -7,6 +7,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -83,6 +86,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     var showMove by remember { mutableStateOf(false) }
     var showShare by remember { mutableStateOf(false) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var materialFilter by rememberSaveable { mutableIntStateOf(-1) }
     var topicFilter by rememberSaveable { mutableStateOf<Long?>(null) }
     var showFilter by remember { mutableStateOf(false) }
     var fileGuide by remember { mutableStateOf<GuideEntity?>(null) }
@@ -225,6 +229,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     note,
                     photoCount = loaded.attachmentsOf(note.id).size,
                     selected = note.id in selectedIds,
+                    topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
                     onLongClick = { toggle(note.id) },
                     onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
                 )
@@ -256,6 +261,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                         note,
                         photoCount = loaded.attachmentsOf(note.id).size,
                         selected = note.id in selectedIds,
+                        topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
                         onLongClick = { toggle(note.id) },
                         onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
                     )
@@ -265,55 +271,144 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             }
 
             if (tab == 1) {
-                item(key = "material-intro") {
-                    HintText("Previous year papers, answer books, guides and the official syllabus of this subject. File each one under the topic it covers.")
-                }
                 item(key = "material-add") {
                     PillButton(text = "Add study material", tonal = true, onClick = { navigator.navigate(NewEntryScreenDestination(subjectId = subjectId)) })
                 }
                 if (guides.isEmpty()) {
-                    item(key = "guides-empty") { HintText("Nothing here yet. Add a PDF from a new entry with the Guide / Answer PDF format.") }
-                }
-                GuideType.entries.forEach { type ->
-                    val ofType = guides.filter { it.guideType == type }
-                    if (ofType.isNotEmpty()) {
-                        item(key = "type-${type.name}") { SectionTitle(type.sectionTitle()) }
-                        items(ofType, key = { "guide-${it.id}" }) { guide ->
-                            GuideCard(
-                                guide = guide,
-                                topic = syllabusLabel(nodes, guide.syllabusNodeId).substringAfterLast(" › "),
-                                onFile = { fileGuide = guide },
-                                onClick = {
-                                    openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
-                                },
-                                onDelete = { guideToDelete = guide },
+                    item(key = "guides-empty") {
+                        skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
+                            icon = AppIcons.Book,
+                            title = "No study material yet",
+                            text = "Add previous year papers, answer books, guides or the official syllabus as PDFs, then file each under the topic it covers. Use the Guide / Answer PDF format in a new entry.",
+                        )
+                    }
+                } else {
+                    item(key = "material-filters") {
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            ExpressiveChip(
+                                selected = materialFilter == -1,
+                                onClick = { materialFilter = -1 },
+                                label = { Text("All  ${guides.size}") },
                             )
+                            GuideType.entries.forEach { type ->
+                                val count = guides.count { it.guideType == type }
+                                if (count > 0) {
+                                    ExpressiveChip(
+                                        selected = materialFilter == type.ordinal,
+                                        onClick = { materialFilter = type.ordinal },
+                                        label = { Text("${type.label()}  $count") },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    GuideType.entries.forEach { type ->
+                        val ofType = guides.filter { it.guideType == type }
+                        if (ofType.isNotEmpty() && (materialFilter == -1 || materialFilter == type.ordinal)) {
+                            if (materialFilter == -1) item(key = "type-${type.name}") { SectionTitle(type.sectionTitle()) }
+                            items(ofType, key = { "guide-${it.id}" }) { guide ->
+                                GuideCard(
+                                    guide = guide,
+                                    topic = guide.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
+                                    onFile = { fileGuide = guide },
+                                    onClick = {
+                                        openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+                                    },
+                                    onDelete = { guideToDelete = guide },
+                                )
+                            }
                         }
                     }
                 }
             }
 
             if (tab == 2) {
-                item(key = "syllabus-card") {
-                    val overall = SyllabusTree.progress(nodes, null)
-                    AppCard(modifier = Modifier.fillMaxWidth(), onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) }) {
-                        Text(
-                            if (nodes.isEmpty()) "No syllabus yet" else "${(overall * 100).toInt()}% of the syllabus studied",
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            if (nodes.isEmpty()) "Add units, chapters and topics, or import an outline." else "${nodes.size} items. Tap to open the full tree.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onSurfaceVariant,
+                if (nodes.isEmpty()) {
+                    item(key = "syllabus-empty") {
+                        skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
+                            icon = AppIcons.School,
+                            title = "No syllabus yet",
+                            text = "Add the units, chapters and topics of this subject, or import an outline. Notes and study material can then be filed under them.",
+                            action = {
+                                PillButton(text = "Build the syllabus", onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) })
+                            },
                         )
                     }
-                }
-                val units = nodes.filter { it.parentId == null }.sortedWith(compareBy({ it.position }, { it.id }))
-                items(units, key = { "unit-${it.id}" }) { unit ->
-                    AppCard(modifier = Modifier.fillMaxWidth(), onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) }) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(unit.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                            Text("${(SyllabusTree.progress(nodes, unit.id) * 100).toInt()}%", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                } else {
+                    item(key = "syllabus-card") {
+                        val overall = SyllabusTree.progress(nodes, null)
+                        val done = nodes.count { it.status == skywa1ker404.absencium.data.db.SyllabusStatus.COMPLETED }
+                        val hue = skywa1ker404.absencium.ui.components.hueFor(0)
+                        AppCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            container = hue.container.copy(alpha = 0.75f),
+                            onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) },
+                        ) {
+                            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("${(overall * 100).toInt()}%", style = MaterialTheme.typography.displaySmall, color = hue.onContainer)
+                                Text(
+                                    "of the syllabus studied",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = hue.onContainer.copy(alpha = 0.8f),
+                                    modifier = Modifier.padding(bottom = 6.dp),
+                                )
+                            }
+                            androidx.compose.material3.LinearProgressIndicator(
+                                progress = { overall },
+                                modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
+                                color = hue.accent,
+                                trackColor = hue.accent.copy(alpha = 0.18f),
+                                drawStopIndicator = {},
+                            )
+                            Text(
+                                "${nodes.size} items, $done done. Tap to open the full tree.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = hue.onContainer.copy(alpha = 0.8f),
+                            )
+                        }
+                    }
+                    val units = nodes.filter { it.parentId == null }.sortedWith(compareBy({ it.position }, { it.id }))
+                    items(units.size, key = { "unit-${units[it].id}" }) { index ->
+                        val unit = units[index]
+                        val hue = skywa1ker404.absencium.ui.components.hueFor((index + 1).toLong())
+                        val progress = SyllabusTree.progress(nodes, unit.id)
+                        val chapters = nodes.count { it.parentId == unit.id }
+                        AppCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            container = hue.container.copy(alpha = 0.75f),
+                            onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) },
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Box(
+                                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(colors.surface.copy(alpha = 0.9f)),
+                                    contentAlignment = Alignment.Center,
+                                ) { Text("${index + 1}", style = MaterialTheme.typography.titleMedium, color = hue.accent) }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(unit.title, style = MaterialTheme.typography.titleMedium, color = hue.onContainer, maxLines = 2)
+                                    Text(
+                                        if (chapters == 0) "No chapters yet" else if (chapters == 1) "1 chapter" else "$chapters chapters",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = hue.onContainer.copy(alpha = 0.75f),
+                                    )
+                                }
+                                Text(
+                                    "${(progress * 100).toInt()}%",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = colors.onSurface,
+                                    modifier = Modifier.clip(CircleShape).background(colors.surface.copy(alpha = 0.9f)).padding(horizontal = 12.dp, vertical = 7.dp),
+                                )
+                            }
+                            androidx.compose.material3.LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+                                color = hue.accent,
+                                trackColor = hue.accent.copy(alpha = 0.18f),
+                                drawStopIndicator = {},
+                            )
                         }
                     }
                 }
