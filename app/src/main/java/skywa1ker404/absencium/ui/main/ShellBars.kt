@@ -543,6 +543,7 @@ fun ShellSearchButton(
     modifier: Modifier = Modifier,
     icon: androidx.compose.ui.graphics.vector.ImageVector = AppIcons.Search,
     description: String = "Search",
+    shape: androidx.compose.ui.graphics.Shape = CircleShape,
 ) {
     val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
@@ -559,7 +560,8 @@ fun ShellSearchButton(
                 scaleX = scale
                 scaleY = scale
             }
-            .floatingGlass(backdrop, CircleShape)
+            .floatingGlass(backdrop, shape)
+            .clip(shape)
             .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,

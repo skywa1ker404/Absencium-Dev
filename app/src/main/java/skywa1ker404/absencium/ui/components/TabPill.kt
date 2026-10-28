@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import kotlin.math.roundToInt
 
@@ -50,6 +51,8 @@ fun <T> TabPill(
     icon: (T) -> ImageVector,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
+    /** True for a pill that floats at the bottom of a screen like the main navigation pill: real glass over the page behind it. */
+    floating: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
     val q = LocalQuality.current
@@ -64,7 +67,10 @@ fun <T> TabPill(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
-            .glassPane(CircleShape, colors.surfaceContainerHigh, 0.6f)
+            .then(
+                if (floating) Modifier.floatingGlass(LocalBackdrop.current, CircleShape)
+                else Modifier.glassPane(CircleShape, colors.surfaceContainerHigh, 0.6f),
+            )
             .padding(4.dp),
     ) {
         val tabWidth = maxWidth / options.size

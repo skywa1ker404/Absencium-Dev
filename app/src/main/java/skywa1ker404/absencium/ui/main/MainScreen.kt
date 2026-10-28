@@ -386,6 +386,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
                         onClick = { navigator.navigate(AiHubScreenDestination) },
                         icon = AppIcons.AutoAwesome,
                         description = "AI Hub",
+                        // A squircle, so it reads as the pill's companion rather than another round button.
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
                     )
                 }
             }

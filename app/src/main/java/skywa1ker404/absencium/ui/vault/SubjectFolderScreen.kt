@@ -1,5 +1,13 @@
 package skywa1ker404.absencium.ui.vault
 
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.navigationBarsPadding
+import skywa1ker404.absencium.ui.components.AppMenu
+import skywa1ker404.absencium.ui.components.AppMenuItem
+import skywa1ker404.absencium.ui.components.AppMenuDivider
+import skywa1ker404.absencium.ui.components.TabPill
+import skywa1ker404.absencium.ui.main.ShellFab
+import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.shape.CircleShape
@@ -64,7 +72,6 @@ import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.vault.entry.AddEntryPopup
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.MessageCard
-import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.components.ScreenScaffold
 import skywa1ker404.absencium.ui.components.SectionTitle
 import skywa1ker404.absencium.ui.containerViewModel
@@ -88,7 +95,6 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var materialFilter by rememberSaveable { mutableIntStateOf(-1) }
     var topicFilter by rememberSaveable { mutableStateOf<Long?>(null) }
-    var showFilter by remember { mutableStateOf(false) }
     var fileGuide by remember { mutableStateOf<GuideEntity?>(null) }
     val nodes by remember(subjectId) { viewModel.syllabusNodes(subjectId) }.collectAsStateWithLifecycle(emptyList())
     val colors = MaterialTheme.colorScheme
@@ -101,7 +107,106 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         title = subject?.name ?: "Folder",
         onBack = { navigator.navigateUp() },
         scrollable = false,
+        titleContent = {
+            // The subject's name is a button: it opens the topics of the syllabus, and picking one filters the notes under it.
+            var topicsOpen by remember { mutableStateOf(false) }
+            Box {
+                Row(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable(enabled = tab == 0 && subject != null) { topicsOpen = true }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                        Text(subject?.name ?: "Folder", style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (tab == 0 && topicFilter != null) {
+                            Text(
+                                "Under " + syllabusLabel(nodes, topicFilter).substringAfterLast(" \u203a "),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = colors.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                    if (tab == 0 && subject != null) Icon(AppIcons.ExpandMore, contentDescription = "Filter notes by topic", tint = colors.onSurfaceVariant)
+                }
+                AppMenu(expanded = topicsOpen, onDismiss = { topicsOpen = false }) {
+                    AppMenuItem(AppIcons.Description, "All topics", { topicsOpen = false; topicFilter = null })
+                    val rows = SyllabusTree.rows(nodes, emptySet())
+                    if (rows.isNotEmpty()) AppMenuDivider()
+                    rows.forEach { row ->
+                        val chosen = topicFilter == row.node.id
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = {
+                                Text(
+                                    row.node.title,
+                                    style = if (row.depth == 0) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyLarge,
+                                    color = if (chosen) colors.primary else colors.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                            onClick = { topicsOpen = false; topicFilter = row.node.id },
+                            modifier = Modifier.padding(start = (row.depth * 14).dp, end = 6.dp).clip(RoundedCornerShape(18.dp)),
+                            trailingIcon = if (chosen) ({ Icon(AppIcons.Check, contentDescription = null, tint = colors.primary) }) else null,
+                        )
+                    }
+                    AppMenuDivider()
+                    AppMenuItem(AppIcons.School, if (nodes.isEmpty()) "Build the syllabus" else "Open the syllabus", {
+                        topicsOpen = false
+                        navigator.navigate(SyllabusScreenDestination(subjectId = subjectId))
+                    })
+                }
+            }
+        },
         overlay = {
+            // Like the main screen: a pill of tabs floating at the bottom and a button for the main action above it, on the right.
+            Box(Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = selectedIds.isEmpty() && subject != null,
+                        enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
+                    ) {
+                        ShellFab(
+                            icon = if (tab == 2) AppIcons.Edit else AppIcons.Add,
+                            label = when (tab) {
+                                0 -> "New entry"
+                                1 -> "Add material"
+                                else -> if (nodes.isEmpty()) "Build syllabus" else "Edit syllabus"
+                            },
+                            onClick = {
+                                when (tab) {
+                                    0 -> addEntry = true
+                                    1 -> navigator.navigate(NewEntryScreenDestination(subjectId = subjectId))
+                                    else -> navigator.navigate(SyllabusScreenDestination(subjectId = subjectId))
+                                }
+                            },
+                            backdrop = LocalBackdrop.current,
+                        )
+                    }
+                    val names = listOf("Notes", "Study material", "Syllabus")
+                    val icons = listOf(AppIcons.Description, AppIcons.Book, AppIcons.School)
+                    TabPill(
+                        options = listOf(0, 1, 2),
+                        selected = tab,
+                        label = { names[it] },
+                        icon = { icons[it] },
+                        onSelect = { tab = it; selectedIds = emptySet() },
+                        floating = true,
+                    )
+                }
+            }
             if (addEntry) {
             AddEntryPopup(
                 onDismiss = { addEntry = false },
@@ -149,7 +254,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             state = listState,
             modifier = Modifier.fillMaxSize().verticalScrollbar(listState, colors.onSurfaceVariant),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 24.dp),
+            contentPadding = PaddingValues(bottom = 172.dp),
         ) {
             if (message != null) {
                 item(key = "message") {
@@ -170,38 +275,16 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     Text(subject.name, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, maxLines = 1)
                 }
             }
-            item(key = "new") {
-                if (selecting) {
-                    Text("${selected.size} selected. Use the bar at the top.", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
-                } else {
-                    PillButton(
-                        text = "New entry in this folder",
-                        onClick = { addEntry = true },
-                    )
-                }
-            }
-
-            item(key = "tabs") {
-                val names = listOf("Notes", "Study material", "Syllabus")
-                val icons = listOf(AppIcons.Description, AppIcons.Book, AppIcons.School)
-                skywa1ker404.absencium.ui.components.TabPill(
-                    options = listOf(0, 1, 2),
-                    selected = tab,
-                    label = { names[it] },
-                    icon = { icons[it] },
-                    onSelect = { tab = it; selectedIds = emptySet() },
-                )
-            }
-
             if (tab == 0) {
-            item(key = "topic-filter") {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ExpressiveChip(
-                        selected = topicFilter != null,
-                        onClick = { showFilter = true },
-                        label = { Text("Topic: " + if (topicFilter == null) "All" else syllabusLabel(nodes, topicFilter).substringAfterLast(" › ")) },
-                    )
-                    if (topicFilter != null) TextButton(onClick = { topicFilter = null }) { Text("Clear") }
+            if (topicFilter != null) {
+                item(key = "topic-filter") {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ExpressiveChip(
+                            selected = true,
+                            onClick = { topicFilter = null },
+                            label = { Text("Under " + syllabusLabel(nodes, topicFilter).substringAfterLast(" \u203a ") + "   \u2715") },
+                        )
+                    }
                 }
             }
             if (drafts.isNotEmpty()) {
@@ -219,7 +302,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 item(key = "notes-empty") {
                     HintText(
                         if (topicFilter != null) "No notes under this topic. Clear the topic to see every note."
-                        else if (finished.isEmpty() && drafts.isEmpty()) "This folder is empty. Add an entry above, or press and hold a note later to select several."
+                        else if (finished.isEmpty() && drafts.isEmpty()) "This folder is empty. Use New entry below, or press and hold a note later to select several."
                         else "No notes here right now. Notes you mark as finished move to the archive below.",
                     )
                 }
@@ -271,9 +354,6 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             }
 
             if (tab == 1) {
-                item(key = "material-add") {
-                    PillButton(text = "Add study material", tonal = true, onClick = { navigator.navigate(NewEntryScreenDestination(subjectId = subjectId)) })
-                }
                 if (guides.isEmpty()) {
                     item(key = "guides-empty") {
                         skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
@@ -333,9 +413,6 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                             icon = AppIcons.School,
                             title = "No syllabus yet",
                             text = "Add the units, chapters and topics of this subject, or import an outline. Notes and study material can then be filed under them.",
-                            action = {
-                                PillButton(text = "Build the syllabus", onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) })
-                            },
                         )
                     }
                 } else {
@@ -455,17 +532,6 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         }
     }
 
-    if (showFilter) {
-        SyllabusPickerDialog(
-            nodes = nodes,
-            current = topicFilter,
-            noneLabel = "All topics",
-            title = "Show notes under",
-            onPick = { topicFilter = it; showFilter = false },
-            onDismiss = { showFilter = false },
-            onOpenSyllabus = { showFilter = false; navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) },
-        )
-    }
     fileGuide?.let { guide ->
         SyllabusPickerDialog(
             nodes = nodes,

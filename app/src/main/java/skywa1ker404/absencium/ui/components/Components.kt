@@ -168,6 +168,8 @@ fun ScreenScaffold(
     customTopBar: (@Composable () -> Unit)? = null,
     /** Popups of the screen. They sit above the page inside its glass layer, so with Liquid Glass they blur the page like the pill. */
     overlay: @Composable () -> Unit = {},
+    /** Replaces the plain title text (the folder screen turns its title into a menu button). */
+    titleContent: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val glass = LocalGlassEnabled.current
@@ -181,7 +183,7 @@ fun ScreenScaffold(
             containerColor = colors.background,
             topBar = {
                 if (customTopBar != null) customTopBar() else TopAppBar(
-                    title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
+                    title = { if (titleContent != null) titleContent() else Text(title, style = MaterialTheme.typography.headlineSmall) },
                     navigationIcon = {
                         if (onBack != null) {
                             IconButton(

@@ -1,5 +1,10 @@
 package skywa1ker404.absencium.ui.settings
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
+import skywa1ker404.absencium.ui.main.ShellFab
+import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -62,43 +67,62 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
     val message by viewModel.message.collectAsStateWithLifecycle()
     var newName by remember { mutableStateOf("") }
 
-    ScreenScaffold(title = "Subjects", onBack = { navigator.navigateUp() }) {
-        AppCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Add a subject", style = MaterialTheme.typography.titleMedium)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(top = 8.dp),
-            ) {
-                AppTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    label = { Text("Subject name") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.weight(1f),
-                )
-                PillButton(
-                    text = "Add",
-                    onClick = {
-                        viewModel.add(newName)
-                        newName = ""
+    var adding by remember { mutableStateOf(false) }
+
+    ScreenScaffold(
+        title = "Subjects",
+        onBack = { navigator.navigateUp() },
+        overlay = {
+            Box(Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(16.dp),
+                ) {
+                    ShellFab(icon = AppIcons.Add, label = "Add subject", onClick = { adding = true }, backdrop = LocalBackdrop.current)
+                }
+            }
+            if (adding) {
+                AlertDialog(
+                    onDismissRequest = { adding = false; newName = "" },
+                    title = { Text("Add a subject") },
+                    text = {
+                        AppTextField(
+                            value = newName,
+                            onValueChange = { newName = it },
+                            label = { Text("Subject name") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     },
-                    enabled = newName.isNotBlank(),
+                    confirmButton = {
+                        TextButton(
+                            enabled = newName.isNotBlank(),
+                            onClick = {
+                                viewModel.add(newName)
+                                newName = ""
+                                adding = false
+                            },
+                        ) { Text("Add") }
+                    },
+                    dismissButton = { TextButton(onClick = { adding = false; newName = "" }) { Text("Cancel") } },
                 )
             }
-        }
-
+        },
+    ) {
         val feedback = message
         if (feedback != null) MessageCard(feedback)
 
         SectionTitle("Your subjects")
         if (subjects.isEmpty()) {
-            ExpressiveEmptyState(AppIcons.Folder, "No subjects yet", "Add one above, or add sample data from Settings, then Test Lab.")
+            ExpressiveEmptyState(AppIcons.Folder, "No subjects yet", "Add one with the button below, or add sample data from Settings, then Test Lab.")
         }
         subjects.forEach { subject ->
             key(subject.id) { SubjectCard(subject, viewModel) }
         }
+        androidx.compose.foundation.layout.Spacer(Modifier.height(96.dp))
     }
 }
 

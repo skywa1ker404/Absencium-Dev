@@ -1,5 +1,10 @@
 package skywa1ker404.absencium.ui.syllabus
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
+import skywa1ker404.absencium.ui.main.ShellFab
+import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import skywa1ker404.absencium.ui.components.AppMenu
 import skywa1ker404.absencium.ui.components.AppMenuDivider
 import skywa1ker404.absencium.ui.components.AppMenuItem
@@ -112,7 +117,36 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
         label = "overall",
     )
 
-    ScreenScaffold(title = "Syllabus", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(
+        title = "Syllabus",
+        onBack = { navigator.navigateUp() },
+        overlay = {
+            // The two ways to add to the syllabus are buttons floating at the bottom right, like the main screen's.
+            Box(Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    ShellFab(
+                        icon = AppIcons.AutoAwesome,
+                        label = "Import outline",
+                        onClick = { viewModel.dismissImport(); showImport = true },
+                        backdrop = LocalBackdrop.current,
+                    )
+                    ShellFab(
+                        icon = AppIcons.Add,
+                        label = "Add unit",
+                        onClick = { editing = Editing.Add(null, SyllabusTree.levelName(0)) },
+                        backdrop = LocalBackdrop.current,
+                    )
+                }
+            }
+        },
+    ) {
         val headHue = hueFor(0)
         AppCard(modifier = Modifier.fillMaxWidth().bounceIn(0), container = headHue.container.copy(alpha = 0.75f)) {
             Text(subjectName.ifEmpty { "Subject" }, style = MaterialTheme.typography.titleMedium, color = headHue.onContainer)
@@ -135,11 +169,6 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     trackColor = headHue.accent.copy(alpha = 0.18f),
                 )
             }
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PillButton(text = "Add unit", onClick = { editing = Editing.Add(null, SyllabusTree.levelName(0)) })
-            PillButton(text = "Import outline", tonal = true, onClick = { viewModel.dismissImport(); showImport = true })
         }
 
         if (nodes.isEmpty()) {
@@ -187,6 +216,7 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
         }
+        Spacer(Modifier.height(168.dp))
     }
 
     editing?.let { current ->

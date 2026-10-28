@@ -17,24 +17,29 @@ object MarkdownEdit {
      * is already wrapped. With only a cursor, inserts the pair around [placeholder] and selects the placeholder.
      */
     fun toggleWrap(text: String, start: Int, end: Int, marker: String, placeholder: String): Edited {
+        val kind = InlineStyle.kindFor(marker) ?: return plainWrap(text, start, end, marker, placeholder)
+        val (s0, e0) = clamp(text, start, end)
+        val ws = InlineStyle.wraps(text)
+        val (s, e) = InlineStyle.fit(s0, e0, ws)
+        // Code shows its text as typed: nothing else can style what is inside it.
+        if (kind != EditKind.CODE && InlineStyle.insideCode(ws, s, e)) return Edited(text, s, e)
+        val host = InlineStyle.host(ws, kind, s, e)
+        if (host != null) return InlineStyle.release(text, host, s, e, ws)
+        return InlineStyle.wrap(text, s, e, kind, marker, marker, placeholder, ws)
+    }
+
+    private fun plainWrap(text: String, start: Int, end: Int, marker: String, placeholder: String): Edited {
         val (s, e) = clamp(text, start, end)
         val m = marker.length
-        // Already wrapped just outside the selection: take the markers off.
         if (s >= m && e + m <= text.length && text.substring(s - m, s) == marker && text.substring(e, e + m) == marker) {
             val out = text.substring(0, s - m) + text.substring(s, e) + text.substring(e + m)
             return Edited(out, s - m, e - m)
-        }
-        // Selection includes the markers itself.
-        val selected = text.substring(s, e)
-        if (selected.length >= 2 * m && selected.startsWith(marker) && selected.endsWith(marker)) {
-            val inner = selected.substring(m, selected.length - m)
-            return Edited(text.substring(0, s) + inner + text.substring(e), s, s + inner.length)
         }
         if (s == e) {
             val out = text.substring(0, s) + marker + placeholder + marker + text.substring(e)
             return Edited(out, s + m, s + m + placeholder.length)
         }
-        val out = text.substring(0, s) + marker + selected + marker + text.substring(e)
+        val out = text.substring(0, s) + marker + text.substring(s, e) + marker + text.substring(e)
         return Edited(out, s + m, e + m)
     }
 
@@ -50,92 +55,84 @@ object MarkdownEdit {
         return i
     }
 
-    private val headingPrefix = Regex("^#{1,6} ")
-    private val bulletPrefix = Regex("^(\\s*)[-*+] (?!\\[[ xX]\\] )")
-    private val checkPrefix = Regex("^(\\s*)[-*+] \\[[ xX]\\] ")
-    private val numberPrefix = Regex("^(\\s*)\\d+\\. ")
-    private val quotePrefix = Regex("^> ?")
+    private enum class LineKind { NONE, HEADING, CHECK, BULLET, NUMBER, LETTER, QUOTE }
 
-    /** Applies [transform] to every line the selection touches and keeps the selection over the same lines. */
-    private fun mapLines(text: String, start: Int, end: Int, transform: (List<String>) -> List<String>): Edited {
-        val (s, e) = clamp(text, start, end)
-        val from = lineStart(text, s)
-        // A selection that ends exactly at the start of a line does not include that line.
-        val to = lineEnd(text, if (e > s && e > 0 && text[e - 1] == '\n') e - 1 else e)
-        val lines = text.substring(from, to).split("\n")
-        val out = transform(lines).joinToString("\n")
-        val result = text.substring(0, from) + out + text.substring(to)
-        val delta = out.length - (to - from)
-        return if (s == e) {
-            // A cursor stays on its line, moved by what changed in front of it.
-            val firstDelta = transform(listOf(lines.first())).first().length - lines.first().length
-            val pos = (s + firstDelta).coerceIn(from, from + out.length)
-            Edited(result, pos, pos)
-        } else {
-            Edited(result, from, to + delta)
-        }
+    /** A line taken apart: its alignment tag, its indent, what kind of line it is, and the text after every block prefix. */
+    private class Parts(val head: String, val indent: String, val kind: LineKind, val level: Int, val body: String)
+
+    private val alignHead = Regex("^\\{align:(?:center|end)\\}")
+    private val anyPrefix = Regex("^(?:(#{1,6}) +|[-*+] \\[[ xX]\\] ?|[-*+] +|\\d{1,9}[.)] +|[a-z]\\) +|> ?)")
+
+    private fun isRuleText(s: String): Boolean {
+        val t = s.filter { !it.isWhitespace() }
+        return t.length >= 3 && (t.all { it == '-' } || t.all { it == '*' } || t.all { it == '_' })
     }
+
+    /**
+     * A line has one block prefix (a heading mark, a list marker or a quote mark) after its alignment tag: that is all the page
+     * reads. Every prefix found is taken off, so a line that already holds a stack of them is cleaned up when a new one is chosen.
+     */
+    private fun parts(line: String): Parts {
+        val head = alignHead.find(line)?.value ?: ""
+        val rest = line.substring(head.length)
+        val indent = rest.takeWhile { it == ' ' || it == '\t' }
+        var body = rest.substring(indent.length)
+        if (isRuleText(body)) return Parts(head, indent, LineKind.NONE, 0, body)
+        var kind = LineKind.NONE
+        var level = 0
+        var guard = 0
+        while (guard++ < 8) {
+            val m = anyPrefix.find(body) ?: break
+            if (kind == LineKind.NONE) {
+                val v = m.value
+                kind = when {
+                    v.startsWith("#") -> { level = m.groupValues[1].length; LineKind.HEADING }
+                    v.startsWith(">") -> LineKind.QUOTE
+                    v[0] in "-*+" && v.contains('[') -> LineKind.CHECK
+                    v[0] in "-*+" -> LineKind.BULLET
+                    v[0].isDigit() -> LineKind.NUMBER
+                    else -> LineKind.LETTER
+                }
+            }
+            body = body.substring(m.value.length)
+        }
+        return Parts(head, indent, kind, level, body)
+    }
+
+    /** Gives every touched line the prefix [prefixFor] makes, or takes that kind of prefix off when every line already has it. */
+    private fun prefixLines(text: String, start: Int, end: Int, kind: LineKind, level: Int = 0, prefixFor: (Int) -> String): Edited =
+        mapLines(text, start, end) { lines ->
+            val blankOnly = lines.all { it.isBlank() }
+            val parsed = lines.map { parts(it) }
+            val all = !blankOnly && lines.indices.filter { lines[it].isNotBlank() }
+                .all { parsed[it].kind == kind && (kind != LineKind.HEADING || parsed[it].level == level) }
+            var n = 0
+            lines.mapIndexed { i, line ->
+                val p = parsed[i]
+                when {
+                    line.isBlank() && !blankOnly -> line
+                    all -> p.head + p.indent + p.body
+                    else -> p.head + (if (kind == LineKind.HEADING) "" else p.indent) + prefixFor(n++) + p.body
+                }
+            }
+        }
 
     /** `# ` to `###### `. Choosing the level a line already has removes the heading. */
     fun heading(text: String, start: Int, end: Int, level: Int): Edited {
-        val wanted = "#".repeat(level.coerceIn(1, 6)) + " "
-        return mapLines(text, start, end) { lines ->
-            val allSame = lines.all { it.startsWith(wanted) }
-            lines.map { line ->
-                val bare = line.replace(headingPrefix, "")
-                if (allSame) bare else wanted + bare
-            }
-        }
+        val l = level.coerceIn(1, 6)
+        return prefixLines(text, start, end, LineKind.HEADING, l) { "#".repeat(l) + " " }
     }
 
-    fun bullet(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val blankOnly = lines.all { it.isBlank() }
-        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { bulletPrefix.containsMatchIn(it) }
-        lines.map { line ->
-            when {
-                line.isBlank() && !blankOnly -> line
-                all -> line.replace(bulletPrefix) { it.groupValues[1] }
-                else -> "- " + line.replace(checkPrefix) { it.groupValues[1] }.replace(numberPrefix) { it.groupValues[1] }.replace(bulletPrefix) { it.groupValues[1] }
-            }
-        }
-    }
+    fun bullet(text: String, start: Int, end: Int): Edited = prefixLines(text, start, end, LineKind.BULLET) { "- " }
 
-    fun numbered(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val blankOnly = lines.all { it.isBlank() }
-        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { numberPrefix.containsMatchIn(it) }
-        var n = 0
-        lines.map { line ->
-            when {
-                line.isBlank() && !blankOnly -> line
-                all -> line.replace(numberPrefix) { it.groupValues[1] }
-                else -> { n++; "$n. " + line.replace(bulletPrefix) { it.groupValues[1] }.replace(checkPrefix) { it.groupValues[1] }.replace(numberPrefix) { it.groupValues[1] } }
-            }
-        }
-    }
+    fun numbered(text: String, start: Int, end: Int): Edited = prefixLines(text, start, end, LineKind.NUMBER) { "${it + 1}. " }
 
-    fun checklist(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val blankOnly = lines.all { it.isBlank() }
-        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { checkPrefix.containsMatchIn(it) }
-        lines.map { line ->
-            when {
-                line.isBlank() && !blankOnly -> line
-                all -> line.replace(checkPrefix) { it.groupValues[1] }
-                else -> "- [ ] " + line.replace(checkPrefix) { it.groupValues[1] }.replace(bulletPrefix) { it.groupValues[1] }.replace(numberPrefix) { it.groupValues[1] }
-            }
-        }
-    }
+    fun checklist(text: String, start: Int, end: Int): Edited = prefixLines(text, start, end, LineKind.CHECK) { "- [ ] " }
 
-    fun quote(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val blankOnly = lines.all { it.isBlank() }
-        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { quotePrefix.containsMatchIn(it) }
-        lines.map { line ->
-            when {
-                line.isBlank() && !blankOnly -> line
-                all -> line.replace(quotePrefix, "")
-                else -> "> $line"
-            }
-        }
-    }
+    fun quote(text: String, start: Int, end: Int): Edited = prefixLines(text, start, end, LineKind.QUOTE) { "> " }
+
+    /** A lettered list: `a) `, `b) `... Choosing it again on a lettered selection removes it. */
+    fun lettered(text: String, start: Int, end: Int): Edited = prefixLines(text, start, end, LineKind.LETTER) { "${'a' + (it % 26)}) " }
 
     /** Inserts [snippet] at the selection, replacing it, with the cursor after it. */
     fun insert(text: String, start: Int, end: Int, snippet: String): Edited {
@@ -165,38 +162,34 @@ object MarkdownEdit {
         return lines.joinToString("\n")
     }
 
-    private val colorOpen = Regex("\\{color:[0-9A-Fa-f]{6}\\|$")
-    private val sizeOpen = Regex("\\{size:\\d{1,2}\\|$")
     private val alignTag = Regex("^\\{align:(center|end)\\}")
 
     /**
-     * Gives the selection a colour (`{color:RRGGBB|text|}`), replacing a colour it already has; null removes it. With only a
-     * cursor it inserts the placeholder in that colour.
+     * Gives the selection a colour (`{color:RRGGBB|text|}`), replacing the colour it already has (whatever other styles sit between);
+     * null removes it. With only a cursor it inserts the placeholder in that colour, or recolours the run the cursor is in.
      */
     fun setColor(text: String, start: Int, end: Int, rgb: Int?, placeholder: String = "text"): Edited =
-        setTag(text, start, end, colorOpen, rgb?.let { "{color:%06X|".format(it and 0xFFFFFF) }, placeholder)
+        setTag(text, start, end, EditKind.COLOR, rgb?.let { "{color:%06X|".format(it and 0xFFFFFF) }, placeholder)
 
     /** Same for the font size in sp (8 to 64); null removes it. */
     fun setSize(text: String, start: Int, end: Int, sp: Int?, placeholder: String = "text"): Edited =
-        setTag(text, start, end, sizeOpen, sp?.coerceIn(8, 64)?.let { "{size:$it|" }, placeholder)
+        setTag(text, start, end, EditKind.SIZE, sp?.coerceIn(8, 64)?.let { "{size:$it|" }, placeholder)
 
-    private fun setTag(text: String, start: Int, end: Int, existing: Regex, open: String?, placeholder: String): Edited {
-        val (s, e) = clamp(text, start, end)
-        val before = text.substring(maxOf(0, s - 16), s)
-        val old = existing.find(before)
-        if (old != null && text.startsWith("|}", e)) {
-            val tagStart = s - old.value.length
-            val body = text.substring(s, e)
-            return if (open == null) {
-                Edited(text.substring(0, tagStart) + body + text.substring(e + 2), tagStart, tagStart + body.length)
-            } else {
-                Edited(text.substring(0, tagStart) + open + body + text.substring(e), tagStart + open.length, tagStart + open.length + body.length)
-            }
+    private fun setTag(text: String, start: Int, end: Int, kind: EditKind, open: String?, placeholder: String): Edited {
+        val (s0, e0) = clamp(text, start, end)
+        val ws = InlineStyle.wraps(text)
+        val (s, e) = InlineStyle.fit(s0, e0, ws)
+        if (InlineStyle.insideCode(ws, s, e)) return Edited(text, s, e)
+        val host = InlineStyle.host(ws, kind, s, e)
+        if (host != null) {
+            return if (open == null) InlineStyle.release(text, host, s, e, ws) else InlineStyle.release(text, host, s, e, ws, open, "|}")
         }
-        if (open == null) return Edited(text, s, e)
-        val body = if (s == e) placeholder else text.substring(s, e)
-        val out = text.substring(0, s) + open + body + "|}" + text.substring(e)
-        return Edited(out, s + open.length, s + open.length + body.length)
+        if (open == null) {
+            if (s == e) return Edited(text, s, e)
+            // Only colours or sizes inside the selection: take those off.
+            return InlineStyle.wrap(text, s, e, kind, "", "", placeholder, ws)
+        }
+        return InlineStyle.wrap(text, s, e, kind, open, "|}", placeholder, ws)
     }
 
     /** Aligns every line the selection touches: start (no tag), centre or end. */
@@ -209,26 +202,6 @@ object MarkdownEdit {
                 align == Align.CENTER -> "{align:center}$bare"
                 align == Align.END -> "{align:end}$bare"
                 else -> bare
-            }
-        }
-    }
-
-    private val letterPrefix = Regex("^(\\s*)[a-z]\\) ")
-
-    /** A lettered list: `a) `, `b) `... Choosing it again on a lettered selection removes it. */
-    fun lettered(text: String, start: Int, end: Int): Edited = mapLines(text, start, end) { lines ->
-        val blankOnly = lines.all { it.isBlank() }
-        val all = !blankOnly && lines.filter { it.isNotBlank() }.all { letterPrefix.containsMatchIn(it) }
-        var n = 0
-        lines.map { line ->
-            when {
-                line.isBlank() && !blankOnly -> line
-                all -> line.replace(letterPrefix) { it.groupValues[1] }
-                else -> {
-                    val letter = 'a' + (n % 26)
-                    n++
-                    "$letter) " + line.replace(bulletPrefix) { it.groupValues[1] }.replace(checkPrefix) { it.groupValues[1] }.replace(numberPrefix) { it.groupValues[1] }
-                }
             }
         }
     }

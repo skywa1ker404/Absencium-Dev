@@ -153,4 +153,13 @@ class MarkdownParseTest {
         assertEquals(emptyList<String>(), NoteTags.suggestions("exam", all, listOf("exam")).filter { it == "exam" })
         assertEquals(Span("x"), Span("x"))
     }
+
+    @Test fun italicAroundBoldAndBoldAroundItalicBothRead() {
+        val a = MarkdownParse.inline("*foo **bar***")
+        assertEquals(listOf("foo " to false, "bar" to true), a.map { it.text to it.bold })
+        assertTrue(a.all { it.italic })
+        val b = MarkdownParse.inline("**a *b***")
+        assertEquals(listOf("a " to false, "b" to true), b.map { it.text to it.italic })
+        assertTrue(b.all { it.bold })
+    }
 }

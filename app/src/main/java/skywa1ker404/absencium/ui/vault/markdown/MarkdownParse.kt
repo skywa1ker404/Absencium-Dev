@@ -224,7 +224,7 @@ object MarkdownParse {
                     i = close + 3
                 }
                 text.startsWith("**", i) -> {
-                    val close = find(text, "**", i + 2)
+                    val close = boldClose(text, i + 2, find(text, "**", i + 2), text.length)
                     if (close > i + 2) {
                         flushPlain()
                         inline(text.substring(i + 2, close)).forEach { spans += it.copy(bold = true) }
@@ -267,7 +267,7 @@ object MarkdownParse {
                     } else { plain.append(text[i]); i++ }
                 }
                 text[i] == '*' && i + 1 < text.length && !text[i + 1].isWhitespace() -> {
-                    val close = find(text, "*", i + 1)
+                    val close = italicClose(text, i + 1, text.length)
                     if (close > i + 1 && !text[close - 1].isWhitespace()) {
                         flushPlain()
                         inline(text.substring(i + 1, close)).forEach { spans += it.copy(italic = true) }
@@ -312,6 +312,39 @@ internal fun tagClose(text: String, from: Int, limit: Int): Int {
             }
             text[j] == '{' && opensTag(text, j) -> { depth++; j += 6 }
             text.startsWith("|}", j) -> { depth--; if (depth == 0) return j; j += 2 }
+            else -> j++
+        }
+    }
+    return -1
+}
+
+/**
+ * Where the `**` that closes a bold run opened just before [from] is, given the first `**` found at [close]. In `**a *b***` the
+ * last two stars of the three close the bold and the first one closes the italic inside it, so the bold closes one later.
+ */
+internal fun boldClose(text: String, from: Int, close: Int, limit: Int): Int {
+    if (close < 0 || close + 2 >= limit || text[close + 2] != '*') return close
+    var stars = 0
+    for (k in from until close) if (text[k] == '*') stars++
+    return if (stars % 2 == 1) close + 1 else close
+}
+
+/**
+ * Where the single `*` that closes an italic run opened just before [from] is: a `**...**` bold run inside it is skipped, and
+ * the first star of a `***` closes it (`*a **b***`, `**a *b***`). -1 when it is never closed. Looks at most 2000 characters ahead.
+ */
+internal fun italicClose(text: String, from: Int, limit: Int): Int {
+    var j = from
+    val end = minOf(limit, from + 2000)
+    while (j < end) {
+        when {
+            // `**a *b***`: the first star of the three closes the italic, the other two close the bold around it.
+            text.startsWith("***", j) -> return j
+            text.startsWith("**", j) -> {
+                val c = text.indexOf("**", j + 2)
+                j = if (c in 0 until end) c + 2 else j + 2
+            }
+            text[j] == '*' -> return j
             else -> j++
         }
     }

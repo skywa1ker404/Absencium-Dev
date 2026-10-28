@@ -153,8 +153,8 @@ object EditStyle {
                 text.startsWith("++", i) -> i = pair(text, i, to, "++", EditKind.UNDERLINE, out, skip, spaced = true)
                 text.startsWith("==", i) -> i = pair(text, i, to, "==", EditKind.HIGHLIGHT, out, skip, spaced = true)
                 c == '*' && i + 1 < to && !text[i + 1].isWhitespace() -> {
-                    val close = find(text, "*", i + 1, to)
-                    if (close > i + 1 && !text[close - 1].isWhitespace() && !text.startsWith("**", close)) {
+                    val close = italicClose(text, i + 1, to)
+                    if (close > i + 1 && !text[close - 1].isWhitespace()) {
                         out += EditRange(i, i + 1, EditKind.MARKER)
                         out += EditRange(i + 1, close, EditKind.ITALIC)
                         out += EditRange(close, close + 1, EditKind.MARKER)
@@ -180,7 +180,8 @@ object EditStyle {
         spaced: Boolean,
     ): Int {
         val opens = !spaced || (i + 2 < to && !text[i + 2].isWhitespace())
-        val close = if (opens) find(text, marker, i + 2, to) else -1
+        var close = if (opens) find(text, marker, i + 2, to) else -1
+        if (marker == "**") close = boldClose(text, i + 2, close, to)
         if (close > i + 2 && !(spaced && text[close - 1].isWhitespace())) {
             out += EditRange(i, i + 2, EditKind.MARKER)
             out += EditRange(i + 2, close, kind)
