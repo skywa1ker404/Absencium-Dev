@@ -1,5 +1,17 @@
 package skywa1ker404.absencium.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import skywa1ker404.absencium.ui.calendar.subjectColor
+import skywa1ker404.absencium.ui.components.AppMenu
+import skywa1ker404.absencium.ui.components.AppMenuDivider
+import skywa1ker404.absencium.ui.components.AppMenuItem
+import skywa1ker404.absencium.ui.components.hueFor
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.components.ExpressiveEmptyState
 import androidx.compose.foundation.layout.Arrangement
@@ -100,13 +112,51 @@ private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
     var renaming by remember { mutableStateOf(false) }
     var newName by remember(subject.name) { mutableStateOf(subject.name) }
 
+    var menu by remember { mutableStateOf(false) }
+    val hue = hueFor(subject.id)
+    val colors = MaterialTheme.colorScheme
     AppCard(
         modifier = Modifier
             .fillMaxWidth()
             .alpha(if (subject.isActive) 1f else 0.6f),
-        highlighted = subject.isActive && !subject.isMuted,
+        container = hue.container.copy(alpha = 0.7f),
     ) {
-        Text(subject.name, style = MaterialTheme.typography.titleMedium)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // The subject's own colour on a white square, with its first letter: the same colour it has on the timetable.
+            Box(
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(subjectColor(subject.id)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    subject.name.trim().take(1).uppercase(),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(subject.name, style = MaterialTheme.typography.titleMedium, color = hue.onContainer, maxLines = 2)
+                Text(
+                    text = (if (subject.isActive) "Active" else "Inactive") + if (subject.isMuted) " \u00b7 Muted" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = hue.onContainer.copy(alpha = 0.75f),
+                )
+            }
+            Box {
+                IconButton(onClick = { menu = true }) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = hue.onContainer) }
+                AppMenu(expanded = menu, onDismiss = { menu = false }) {
+                    AppMenuItem(AppIcons.Edit, "Rename", { menu = false; renaming = true })
+                    AppMenuDivider()
+                    AppMenuItem(AppIcons.Delete, "Delete", {
+                        menu = false
+                        scope.launch {
+                            entryCount = viewModel.entryCount(subject)
+                            typed = ""
+                            stage = 1
+                        }
+                    }, destructive = true)
+                }
+            }
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -124,14 +174,6 @@ private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
                 label = { Text(if (subject.isMuted) "Muted" else "Mute") },
                 shape = CircleShape,
             )
-            TextButton(onClick = { renaming = true }) { Text("Rename") }
-            TextButton(onClick = {
-                scope.launch {
-                    entryCount = viewModel.entryCount(subject)
-                    typed = ""
-                    stage = 1
-                }
-            }) { Text("Delete") }
         }
     }
 

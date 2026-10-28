@@ -1,5 +1,18 @@
 package skywa1ker404.absencium.ui.trash
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import skywa1ker404.absencium.data.trash.TrashKind
+import skywa1ker404.absencium.ui.components.ExpressiveEmptyState
+import skywa1ker404.absencium.ui.components.bounceIn
+import skywa1ker404.absencium.ui.components.hueFor
+import skywa1ker404.absencium.ui.icons.AppIcons
+import skywa1ker404.absencium.ui.vault.CardChip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -94,21 +107,56 @@ fun TrashScreen(navigator: DestinationsNavigator) {
     ScreenScaffold(title = "Trash", onBack = { navigator.navigateUp() }) {
         HintText("Deleted items stay here for ${TrashRepository.RETENTION_DAYS} days and can be restored. After that they are removed for good.")
         message?.let { MessageCard(it) }
-        if (list != null && list.isEmpty()) HintText("The Trash is empty.")
+        if (list != null && list.isEmpty()) {
+            ExpressiveEmptyState(
+                icon = AppIcons.Delete,
+                title = "The Trash is empty",
+                text = "Entries, exams, holidays and lectures you delete wait here for ${TrashRepository.RETENTION_DAYS} days.",
+            )
+        }
         if (!list.isNullOrEmpty()) {
             PillButton(text = "Empty the Trash", tonal = true, onClick = { confirmEmpty = true })
         }
-        list.orEmpty().forEach { item ->
+        list.orEmpty().forEachIndexed { index, item ->
             androidx.compose.runtime.key(item.key) {
-                AppCard(modifier = Modifier.fillMaxWidth()) {
-                    Text(item.title, style = MaterialTheme.typography.titleMedium)
-                    val left = TrashRepository.daysLeft(item.deletedAt)
-                    Text(
-                        text = listOf(item.kind.label, item.detail).filter { it.isNotBlank() }.joinToString(" · ") +
-                            " · $left ${if (left == 1) "day" else "days"} left",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                val hue = hueFor(item.kind.ordinal.toLong())
+                val left = TrashRepository.daysLeft(item.deletedAt)
+                val colors = MaterialTheme.colorScheme
+                AppCard(
+                    modifier = Modifier.fillMaxWidth().bounceIn((index * 40).coerceAtMost(240)),
+                    container = hue.container.copy(alpha = 0.7f),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(
+                            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(colors.surface.copy(alpha = 0.9f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = when (item.kind) {
+                                    TrashKind.NOTE -> AppIcons.Description
+                                    TrashKind.EXAM -> AppIcons.Quiz
+                                    TrashKind.HOLIDAY -> AppIcons.CalendarMonth
+                                    TrashKind.LECTURE -> AppIcons.Schedule
+                                },
+                                contentDescription = null,
+                                tint = hue.accent,
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(item.title, style = MaterialTheme.typography.titleMedium, color = hue.onContainer, maxLines = 2)
+                            Text(
+                                text = listOf(item.kind.label, item.detail).filter { it.isNotBlank() }.joinToString(" \u00b7 "),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = hue.onContainer.copy(alpha = 0.75f),
+                                maxLines = 1,
+                            )
+                        }
+                        // Few days left is the one thing worth a warning colour.
+                        CardChip(
+                            text = "$left ${if (left == 1) "day" else "days"} left",
+                            color = if (left <= 3) colors.error else hue.onContainer,
+                        )
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
                         PillButton(text = "Restore", compact = true, onClick = { viewModel.restore(item) })
                         PillButton(text = "Delete for good", compact = true, tonal = true, onClick = { confirmPurge = item })
