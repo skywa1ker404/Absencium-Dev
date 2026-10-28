@@ -17,6 +17,9 @@ Standing rules: preserve working features; never invent APIs; never claim someth
 - Themes: Default, Monet, Presets, Liquid Glass. Monet and Liquid Glass are greyed out below Android 12.
 - Liquid Glass follows the Kyant0 Backdrop reference (clear blur, lens refraction, a flat veil of the theme colour, one thin edge, soft shadow, **no glow or haze**). Performance mode keeps plain surfaces.
 - Material 3 Expressive everywhere: the expressive motion scheme, springy and bouncy motion on every screen including loading and empty states, loaders that morph between M3 shapes with haptics, shape morphing on selection, the expressive component set (button groups, toggle and split buttons, floating toolbars, FAB menu, wavy progress, flexible app bars, carousels, etc.).
+- Floating controls follow the main screen: a screen with tabs or a main action keeps them at the bottom as glass over the page, never as bars inside the list. The tabs are a floating pill (`TabPill`, floating), the main action is an extended floating button above it on the right, the AI Hub button is a squircle beside the main pill, and add / import actions are floating buttons (not inline buttons). They are placed in the screen's overlay layer so they can sample the page behind them.
+- Menus (3-dot, selection, topic) and dialogs use the app's own themed components; a subject's name in a folder is a menu button for its syllabus topics.
+- The activity resizes for the keyboard (`adjustResize`, edge-to-edge); popups move with the keyboard through `imePadding` only.
 - Display: dynamic refresh rate, capped at 90 Hz. Reduced-motion and haptics settings respected.
 
 ## 3. Storage (one mode: local)
@@ -38,10 +41,10 @@ Standing rules: preserve working features; never invent APIs; never claim someth
 - AI notes follow the typed prompt above all defaults; the syllabus path (unit, chapter, topic) is passed to AI features when a topic is chosen.
 
 ## 6. Vault, editor, reading and syllabus (1.0)
-- Vault: one folder per subject with breadcrumbs, metadata badges, multi-select with a floating toolbar (move, finish, share, delete), long-press actions, drafts, Trash. Notes / Study material / Syllabus tabs inside a subject, with a filter by topic.
+- Vault: one folder per subject with breadcrumbs, metadata badges, multi-select with a floating toolbar (move, finish, share, delete), long-press actions, drafts, Trash. Notes / Study material / Syllabus tabs inside a subject (a floating pill at the bottom, with a floating button for the tab's main action), and a topic filter that opens from the subject's name.
 - Study material: previous year papers, answer books, guides and syllabus documents, each filed under a syllabus topic.
 - Syllabus tree per subject (unit, chapter, topic, subtopic) with status, progress, import of an outline from text or a file (AI), linking of notes and material.
-- Note editor: live Markdown with hidden markers, toolbars as M3 Expressive button groups, stacked styles (the innermost colour or size wins), tables, checklists, images, doodles, recordings, AI panel with actions, languages for translation.
+- Note editor: live Markdown with hidden markers, toolbars as M3 Expressive button groups, stacked styles (the innermost colour or size wins; applying a style again removes it from the pair that encloses the selection, splitting the pair for a partial selection, and never nests a second pair; colour and size replace each other through other styles; one block prefix per line, after the alignment tag, so list kinds, quote and heading replace each other), tables, checklists, images, doodles, recordings, AI panel with actions, languages for translation.
 - Reading mode with selection pill (Explain, Translate, Meaning, Ask), themes, bookmarks, a mini player that can be minimised to a bubble.
 - Share note as PDF, Markdown or ZIP (EXIF-clean), chosen attachments, never uploaded automatically. Sharing between phones (Sharewave) is after 1.0.
 

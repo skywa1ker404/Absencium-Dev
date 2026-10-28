@@ -187,3 +187,10 @@ The Liquid Glass reference. Light blue-grey gradient wallpaper; **white transluc
 | `22-subject-folder-notes-tab.jpg` | Subject folder, Notes tab | Identical dark cards, raw markup shown in the preview (`` `==~~++{size:30|`...``), no topic, no status. Becomes hue-tinted cards with a clean text preview (markers stripped), topic chip, date and status dot, optionally a masonry grid (images 03, 14) |
 
 Owner rule (2026-10-28): redesign these three (notes list, syllabus tree, study material) from images 3 to 15 when the screen overhaul (Step 19.4) reaches them, and **never drop a pending task after new requests arrive** (see the ledger in `TODOList.md`).
+
+## Status of the layout work (2026-10-28, CI green `79fbc9f`)
+
+- Pictures 16 and the gap above the keyboard: the cause was the activity's window mode (pan instead of resize), fixed in the manifest; the height clamp from `25f76a2` stays. Needs a device check.
+- Owner reference "pic 2" (AI button, pill, plus and search buttons at the bottom): the folder screen now follows it. The tabs are a floating glass pill, the main action is an extended floating button above it on the right, the AI Hub button became a squircle. The same floating pattern is used for Add subject (Subjects) and Add unit / Import outline (Syllabus).
+- Redesigned and CI green: notes list, study material, syllabus tree, Home, Today, Trash, Subjects.
+- Still to redesign: Appearance, Vault grid, Attendance, Timetable day view, AI Hub, Settings hub, profile, onboarding, editor toolbar, reading selection pill, AI options popup and the tree-style topic picker (screens 17 and 18).
