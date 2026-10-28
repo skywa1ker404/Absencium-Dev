@@ -38,7 +38,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.AlertDialog
+import skywa1ker404.absencium.ui.components.AlertDialog
 import skywa1ker404.absencium.ui.components.ExpressiveChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme

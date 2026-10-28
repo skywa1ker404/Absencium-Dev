@@ -23,7 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
+import skywa1ker404.absencium.ui.components.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import skywa1ker404.absencium.ui.components.ExpressiveChip
 import androidx.compose.material3.Icon

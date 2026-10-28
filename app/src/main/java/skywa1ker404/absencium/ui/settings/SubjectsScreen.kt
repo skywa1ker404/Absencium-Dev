@@ -4,7 +4,7 @@ import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.components.ExpressiveEmptyState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.AlertDialog
+import skywa1ker404.absencium.ui.components.AlertDialog
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Row

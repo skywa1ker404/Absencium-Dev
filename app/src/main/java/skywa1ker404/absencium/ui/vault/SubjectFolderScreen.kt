@@ -23,7 +23,7 @@ import skywa1ker404.absencium.ui.components.verticalScrollbar
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.AlertDialog
+import skywa1ker404.absencium.ui.components.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon

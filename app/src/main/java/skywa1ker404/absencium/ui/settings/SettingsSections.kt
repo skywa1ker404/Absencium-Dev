@@ -145,7 +145,7 @@ fun AskAiToggle(settings: AppSettings, viewModel: SettingsViewModel, ready: Bool
 /** What turning AI Features on means, said plainly. The same popup is used by onboarding. */
 @Composable
 fun AiConsentDialog(onAgree: () -> Unit, onDecline: () -> Unit) {
-    androidx.compose.material3.AlertDialog(
+    skywa1ker404.absencium.ui.components.AlertDialog(
         onDismissRequest = onDecline,
         title = { Text("Turn on AI Features?") },
         text = {
