@@ -194,3 +194,9 @@ Owner rule (2026-10-28): redesign these three (notes list, syllabus tree, study 
 - Owner reference "pic 2" (AI button, pill, plus and search buttons at the bottom): the folder screen now follows it. The tabs are a floating glass pill, the main action is an extended floating button above it on the right, the AI Hub button became a squircle. The same floating pattern is used for Add subject (Subjects) and Add unit / Import outline (Syllabus).
 - Redesigned and CI green: notes list, study material, syllabus tree, Home, Today, Trash, Subjects.
 - Still to redesign: Appearance, Vault grid, Attendance, Timetable day view, AI Hub, Settings hub, profile, onboarding, editor toolbar, reading selection pill, AI options popup and the tree-style topic picker (screens 17 and 18).
+
+### Update 2026-10-29 (CI green `91daba9`)
+- Screens 23 to 27 (owner screenshots: Attendance card on the calendar tab, three states; Import an outline dialog with squeezed buttons; folder notes tab in the light theme with a copy of the pill and a band at the bottom) were fixed as TODOList 19.11 to 19.13.
+- Home follows images 07 and 13 more closely: one bunk buffer card with a drawer under it for the subjects to watch (hidden by default), quick actions Attendance / Timetable / AI Hub, a pinned Subjects button beside the pill.
+- The owner's rule: read this file before every new UI task; every new element uses the Material 3 Expressive components and springs.
+
