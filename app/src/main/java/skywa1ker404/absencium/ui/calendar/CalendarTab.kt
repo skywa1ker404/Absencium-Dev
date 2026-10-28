@@ -434,9 +434,10 @@ private fun DayCell(
     val fill = when (status) {
         AttendanceStatus.PRESENT -> colors.primary
         AttendanceStatus.ABSENT -> colors.error
+        // A holiday keeps its own warm tone even when it is the chosen day; the chosen day is told apart by a ring (below).
         else -> when {
+            isOff -> lerp(colors.surfaceContainerHigh, colors.tertiaryContainer, 0.85f)
             isSelected -> colors.primaryContainer
-            isOff -> lerp(colors.surfaceContainerHigh, colors.tertiaryContainer, 0.6f)
             else -> Color.Transparent
         }
     }
@@ -445,13 +446,14 @@ private fun DayCell(
         AttendanceStatus.PRESENT -> colors.onPrimary
         AttendanceStatus.ABSENT -> colors.onError
         else -> when {
+            isOff -> colors.onTertiaryContainer
             isSelected -> colors.onPrimaryContainer
             isToday -> colors.primary
-            isOff -> colors.onTertiaryContainer
             else -> colors.onSurface
         }
     }
     val glass = LocalCardBackdrop.current != null
+    val ringColor = colors.primary
     val dotColors = exams.take(3).map { subjectColor(it.subjectId) }
     // One text node; the circle, the joining bar and the exam dots are drawn directly so a month of cells
     // stays cheap to compose, measure and draw. The selected day is drawn full size, the rest slightly smaller.
@@ -486,6 +488,10 @@ private fun DayCell(
                     } else {
                         drawCircle(fill, radius = radius)
                     }
+                }
+                if (isSelected) {
+                    // The chosen day: a ring in the theme's main colour around whatever the day already is.
+                    drawCircle(ringColor, radius = half - 1.dp.toPx(), style = Stroke(width = 2.dp.toPx()))
                 }
                 val dot = 2.5.dp.toPx()
                 val gap = 2.dp.toPx()
@@ -658,7 +664,7 @@ private fun AttendanceStatus.chipLabel(): String = when (this) {
  * small arrow stays so it can be reopened.
  */
 @Composable
-private fun TodayCard(
+internal fun TodayCard(
     data: CalendarData,
     today: LocalDate,
     overall: skywa1ker404.absencium.domain.OverallAttendance,

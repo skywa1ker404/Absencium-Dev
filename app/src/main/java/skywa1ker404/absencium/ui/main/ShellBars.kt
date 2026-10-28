@@ -684,3 +684,31 @@ fun AbsenciumWordmark(color: androidx.compose.ui.graphics.Color, modifier: Modif
         Text(text = "bsencium", style = style, color = color)
     }
 }
+
+
+/**
+ * Scroll direction for the floating bottom controls of a screen: scrolling down shrinks the pill to icons and slides the button
+ * away, scrolling back up brings them back. Put [connection] on the screen (nestedScroll) and read [compact] only inside the
+ * controls, so scrolling never recomposes the whole screen. The main screen uses the same distances.
+ */
+class PillScroll {
+    val compact = androidx.compose.runtime.mutableStateOf(false)
+    private var travelled = 0f
+
+    val connection = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+        override fun onPreScroll(
+            available: androidx.compose.ui.geometry.Offset,
+            source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
+        ): androidx.compose.ui.geometry.Offset {
+            val dy = available.y
+            if (dy == 0f) return androidx.compose.ui.geometry.Offset.Zero
+            if (travelled * dy < 0f) travelled = 0f
+            travelled += dy
+            if (travelled < -72f && !compact.value) compact.value = true else if (travelled > 36f && compact.value) compact.value = false
+            return androidx.compose.ui.geometry.Offset.Zero
+        }
+    }
+}
+
+@Composable
+fun rememberPillScroll(): PillScroll = androidx.compose.runtime.remember { PillScroll() }

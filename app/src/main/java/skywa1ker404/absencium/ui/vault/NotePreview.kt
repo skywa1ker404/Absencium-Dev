@@ -4,7 +4,12 @@ import skywa1ker404.absencium.ui.vault.markdown.Block
 import skywa1ker404.absencium.ui.vault.markdown.MarkdownParse
 import skywa1ker404.absencium.ui.vault.markdown.Span
 
-private fun List<Span>.plain(): String = joinToString("") { it.text }.replace(Regex("\\s+"), " ").trim()
+/** Style fragments that are left in the text when a pair was broken (an older note, or half a pair after an edit). */
+private val strayTag = Regex("""\{(?:color:[0-9A-Fa-f]{6}|size:\d{1,2})\||\|\}|\*\*|~~|\+\+|==""")
+private val strayPrefix = Regex("""^(?:(?:[a-z]\)|>|[-*+]|\d{1,9}[.)]|#{1,6})\s+)+""")
+
+private fun List<Span>.plain(): String =
+    joinToString("") { it.text }.replace(strayTag, "").replace(Regex("\\s+"), " ").trim().replace(strayPrefix, "")
 
 /**
  * What a note card shows of its body: the first few lines as plain text, read with the same parser as the preview page,

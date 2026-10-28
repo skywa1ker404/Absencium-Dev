@@ -152,6 +152,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var importKind by remember { mutableStateOf<ImportKind?>(null) }
     var showProfile by rememberSaveable { mutableStateOf(false) }
     var showTimetable by rememberSaveable { mutableStateOf(false) }
+    var showAttendancePopup by rememberSaveable { mutableStateOf(false) }
     var monthPicker by remember { mutableStateOf<MonthPickRequest?>(null) }
     var showDrafts by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
@@ -245,7 +246,9 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onManageSubjects = { navigator.navigate(SubjectsScreenDestination) },
                             // Back from the Attendance tab returns here (the tab back handler goes to Home).
                             onOpenAttendance = { tab = TAB_ATTENDS },
+                            onLogAttendance = { showAttendancePopup = true },
                             onOpenTimetable = { showTimetable = true },
+                            onOpenAiHub = if (settings.askAiEnabled) ({ navigator.navigate(AiHubScreenDestination) }) else null,
                         )
 
                         current == TAB_ATTENDS -> CalendarTab(
@@ -372,21 +375,20 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 ShellSearchButton(backdrop = backdrop, onClick = { showSearch = true })
             }
 
-            // The AI Hub button sits on the other side of the pill; it disappears when AI Features are switched off.
-            if (settings.askAiEnabled) {
+            // Pinned Subjects button, on the Home screen only: on the same row as the pill, to its left (pill 64dp tall, button 52dp).
+            // The AI Hub is reached from the Home quick actions and the profile.
+            if (tab == TAB_HOME) {
                 SlideAway(
                     hidden = { compactState.value },
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        // On the same row as the pill, to its left and outside it (pill 64dp tall, button 52dp).
                         .padding(start = 16.dp, bottom = bottomInset + 16.dp + 6.dp),
                 ) {
                     ShellSearchButton(
                         backdrop = backdrop,
-                        onClick = { navigator.navigate(AiHubScreenDestination) },
-                        icon = AppIcons.AutoAwesome,
-                        description = "AI Hub",
-                        // A squircle, so it reads as the pill's companion rather than another round button.
+                        onClick = { navigator.navigate(SubjectsScreenDestination) },
+                        icon = AppIcons.Folder,
+                        description = "Subjects",
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
                     )
                 }
@@ -492,6 +494,23 @@ fun MainScreen(navigator: DestinationsNavigator) {
 
             AnimatedPopup(monthPicker) { request ->
                 MonthYearPopup(request = request, onDismiss = { monthPicker = null })
+            }
+
+            AnimatedPopup(if (showAttendancePopup && loaded != null) true else null) {
+                if (loaded != null) skywa1ker404.absencium.ui.calendar.AttendancePopup(
+                    data = loaded,
+                    today = now.toLocalDate(),
+                    viewModel = calendarViewModel,
+                    onAddNotes = { subjectId, date ->
+                        showAttendancePopup = false
+                        addEntry = AddEntryRequest(subjectId, date)
+                    },
+                    onOpenAttendanceTab = {
+                        showAttendancePopup = false
+                        tab = TAB_ATTENDS
+                    },
+                    onDismiss = { showAttendancePopup = false },
+                )
             }
 
             AnimatedPopup(if (showTimetable) true else null) {

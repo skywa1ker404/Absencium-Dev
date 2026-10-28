@@ -1,11 +1,15 @@
 package skywa1ker404.absencium.ui.vault
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import skywa1ker404.absencium.ui.main.BottomPill
+import skywa1ker404.absencium.ui.main.MainTab
+import skywa1ker404.absencium.ui.main.SlideAway
+import skywa1ker404.absencium.ui.main.rememberPillScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.navigationBarsPadding
 import skywa1ker404.absencium.ui.components.AppMenu
 import skywa1ker404.absencium.ui.components.AppMenuItem
 import skywa1ker404.absencium.ui.components.AppMenuDivider
-import skywa1ker404.absencium.ui.components.TabPill
 import skywa1ker404.absencium.ui.main.ShellFab
 import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import android.widget.Toast
@@ -98,6 +102,8 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     var fileGuide by remember { mutableStateOf<GuideEntity?>(null) }
     val nodes by remember(subjectId) { viewModel.syllabusNodes(subjectId) }.collectAsStateWithLifecycle(emptyList())
     val colors = MaterialTheme.colorScheme
+    val pillScroll = rememberPillScroll()
+    androidx.compose.runtime.LaunchedEffect(tab) { pillScroll.compact.value = false }
 
     val loaded = data
     val subject = loaded?.subjects?.firstOrNull { it.id == subjectId }
@@ -107,6 +113,8 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         title = subject?.name ?: "Folder",
         onBack = { navigator.navigateUp() },
         scrollable = false,
+        edgeToEdgeBottom = true,
+        modifier = Modifier.nestedScroll(pillScroll.connection),
         titleContent = {
             // The subject's name is a button: it opens the topics of the syllabus, and picking one filters the notes under it.
             var topicsOpen by remember { mutableStateOf(false) }
@@ -163,15 +171,11 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             }
         },
         overlay = {
-            // Like the main screen: a pill of tabs floating at the bottom and a button for the main action above it, on the right.
-            Box(Modifier.fillMaxSize()) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+            // Like the main screen: the same pill (it shrinks to icons while the list scrolls down) and the button above it on the right.
+            Box(Modifier.fillMaxSize().navigationBarsPadding()) {
+                SlideAway(
+                    hidden = { pillScroll.compact.value },
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp + 64.dp + 12.dp),
                 ) {
                     androidx.compose.animation.AnimatedVisibility(
                         visible = selectedIds.isEmpty() && subject != null,
@@ -195,17 +199,15 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                             backdrop = LocalBackdrop.current,
                         )
                     }
-                    val names = listOf("Notes", "Study material", "Syllabus")
-                    val icons = listOf(AppIcons.Description, AppIcons.Book, AppIcons.School)
-                    TabPill(
-                        options = listOf(0, 1, 2),
-                        selected = tab,
-                        label = { names[it] },
-                        icon = { icons[it] },
-                        onSelect = { tab = it; selectedIds = emptySet() },
-                        floating = true,
-                    )
                 }
+                BottomPill(
+                    tabs = FolderTabs,
+                    selectedIndex = tab,
+                    compact = { pillScroll.compact.value },
+                    backdrop = LocalBackdrop.current,
+                    onSelect = { tab = it; selectedIds = emptySet() },
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+                )
             }
             if (addEntry) {
             AddEntryPopup(
@@ -636,3 +638,10 @@ private fun SelectionAction(icon: androidx.compose.ui.graphics.vector.ImageVecto
         Text(label, style = MaterialTheme.typography.labelSmall, color = tint)
     }
 }
+
+/** The three tabs of a subject folder, in the same pill as the main screen's. */
+private val FolderTabs = listOf(
+    MainTab("Notes", AppIcons.Description),
+    MainTab("Study material", AppIcons.Book),
+    MainTab("Syllabus", AppIcons.School),
+)

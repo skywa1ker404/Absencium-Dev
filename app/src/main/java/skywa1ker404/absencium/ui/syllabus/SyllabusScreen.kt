@@ -481,6 +481,25 @@ private fun ImportDialog(
                             minLines = 5,
                             modifier = Modifier.fillMaxWidth(),
                         )
+                        // The two ways to read the text with help sit under the field; the dialog's own buttons stay short.
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            PillButton(
+                                text = "File",
+                                tonal = true,
+                                compact = true,
+                                enabled = aiReady,
+                                modifier = Modifier.weight(1f),
+                                onClick = { picker.launch(arrayOf("application/pdf", "text/*", "image/*", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) },
+                            )
+                            PillButton(
+                                text = "Tidy with AI",
+                                tonal = true,
+                                compact = true,
+                                enabled = aiReady && text.isNotBlank(),
+                                modifier = Modifier.weight(1f),
+                                onClick = { onWithAi(text) },
+                            )
+                        }
                         if (!aiReady) HintText("AI Features are off or not set up, so only \"Use as typed\" works. Turn them on in Settings, AI Features.")
                     }
                     is OutlineImport.Working -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -505,11 +524,7 @@ private fun ImportDialog(
         },
         confirmButton = {
             when (state) {
-                OutlineImport.Idle -> Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TextButton(enabled = aiReady, onClick = { picker.launch(arrayOf("application/pdf", "text/*", "image/*", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) }) { Text("File") }
-                    TextButton(enabled = aiReady && text.isNotBlank(), onClick = { onWithAi(text) }) { Text("Tidy with AI") }
-                    TextButton(enabled = text.isNotBlank(), onClick = { onTyped(text) }) { Text("Use as typed") }
-                }
+                OutlineImport.Idle -> TextButton(enabled = text.isNotBlank(), onClick = { onTyped(text) }) { Text("Use as typed") }
                 is OutlineImport.Ready -> TextButton(onClick = { onAccept(state.items) }) { Text("Add ${state.items.size}") }
                 is OutlineImport.Problem -> TextButton(onClick = onBack) { Text("Back") }
                 is OutlineImport.Working -> Spacer(Modifier.width(1.dp))

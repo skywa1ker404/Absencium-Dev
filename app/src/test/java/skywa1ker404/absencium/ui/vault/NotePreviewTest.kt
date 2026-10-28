@@ -23,4 +23,11 @@ class NotePreviewTest {
         assertTrue(notePreviewLines("").isEmpty())
         assertEquals(4, notePreviewLines((1..50).joinToString("\n\n") { "line $it" }).size)
     }
+
+    @Test
+    fun brokenStackedMarkupIsCleanedFromThePreview() {
+        val lines = notePreviewLines("- [ ] a) > a) > - a) > a) *++`{size:12|# **~~`{size:30|{color:43A047|text|}`~~**|}|}`++*")
+        assertTrue(lines.isNotEmpty())
+        assertTrue(lines.none { it.contains("{size") || it.contains("{color") || it.contains("a) >") || it.contains("**") })
+    }
 }

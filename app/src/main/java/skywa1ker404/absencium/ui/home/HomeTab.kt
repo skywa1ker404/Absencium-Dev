@@ -1,5 +1,12 @@
 package skywa1ker404.absencium.ui.home
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import skywa1ker404.absencium.ui.components.Reveal
+import skywa1ker404.absencium.ui.components.ExpandChevron
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Icon
 import skywa1ker404.absencium.ui.components.Hue
@@ -91,7 +98,9 @@ fun HomeTab(
     onOpenExam: (ExamEntity) -> Unit,
     onManageSubjects: () -> Unit,
     onOpenAttendance: () -> Unit,
+    onLogAttendance: () -> Unit,
     onOpenTimetable: () -> Unit,
+    onOpenAiHub: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val today = now.toLocalDate()
@@ -151,9 +160,10 @@ fun HomeTab(
 
         if (data.subjects.any { it.isActive }) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                QuickAction(AppIcons.CalendarMonth, "Attendance", hueFor(0), onOpenAttendance, Modifier.bounceIn(0))
+                QuickAction(AppIcons.CalendarMonth, "Attendance", hueFor(0), onLogAttendance, Modifier.bounceIn(0))
                 QuickAction(AppIcons.Schedule, "Timetable", hueFor(1), onOpenTimetable, Modifier.bounceIn(60))
-                QuickAction(AppIcons.Folder, "Subjects", hueFor(2), onManageSubjects, Modifier.bounceIn(120))
+                // Subjects has its own pinned button beside the pill on this screen; the AI Hub takes the third place.
+                if (onOpenAiHub != null) QuickAction(AppIcons.AutoAwesome, "AI Hub", hueFor(2), onOpenAiHub, Modifier.bounceIn(120))
             }
         }
 
@@ -169,24 +179,36 @@ fun HomeTab(
                 PillButton(text = "Add subjects", onClick = onManageSubjects)
             }
         } else {
-            AttendanceCard(
-                overallPercent = overall.percent,
-                present = overall.present,
-                held = overall.held,
-                threshold = threshold,
-                onClick = onOpenAttendance,
-            )
-
             val watch = perSubject.filter { s -> s.percent?.let { it < threshold + APPROACHING_POINTS } == true }
-            if (watch.isNotEmpty()) {
-                SectionTitle("Watch these subjects")
-                watch.forEachIndexed { index, item ->
-                    val hue = hueFor((item.subject.id % 5))
+            var watchOpen by rememberSaveable { mutableStateOf(false) }
+            val overallPct = overall.percent
+            val below = overallPct != null && overallPct < threshold
+            val joined = if (below) colors.errorContainer else colors.primaryContainer
+            val onJoined = if (below) colors.onErrorContainer else colors.onPrimaryContainer
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                AttendanceCard(
+                    overallPercent = overall.percent,
+                    present = overall.present,
+                    held = overall.held,
+                    threshold = threshold,
+                    onClick = onOpenAttendance,
+                    hasWatch = watch.isNotEmpty(),
+                    watchOpen = watchOpen,
+                    onToggleWatch = { watchOpen = !watchOpen },
+                )
+                // Closed by default: the subjects that need watching hang from the bunk buffer card like a drawer.
+                Reveal(visible = watchOpen && watch.isNotEmpty()) {
                     AppCard(
-                        modifier = Modifier.fillMaxWidth().bounceIn((index * 50).coerceAtMost(250)),
-                        container = hue.container.copy(alpha = 0.7f),
+                        modifier = Modifier.fillMaxWidth(),
+                        container = joined.copy(alpha = 0.8f),
+                        shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 28.dp, bottomEnd = 28.dp),
                         onClick = onOpenAttendance,
-                    ) { WatchRow(item, threshold) }
+                    ) {
+                        Text("Watch these subjects", style = MaterialTheme.typography.labelLarge, color = onJoined.copy(alpha = 0.8f))
+                        watch.forEachIndexed { index, item ->
+                            Box(modifier = Modifier.padding(top = if (index == 0) 8.dp else 12.dp)) { WatchRow(item, threshold) }
+                        }
+                    }
                 }
             }
         }
@@ -278,12 +300,31 @@ fun HomeTab(
  * earlier stacked layout, with every number still on it.
  */
 @Composable
-private fun AttendanceCard(overallPercent: Double?, present: Int, held: Int, threshold: Int, onClick: () -> Unit) {
+private fun AttendanceCard(
+    overallPercent: Double?,
+    present: Int,
+    held: Int,
+    threshold: Int,
+    onClick: () -> Unit,
+    hasWatch: Boolean,
+    watchOpen: Boolean,
+    onToggleWatch: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val below = overallPercent != null && overallPercent < threshold
     val container = if (below) colors.errorContainer else colors.primaryContainer
     val onContainer = if (below) colors.onErrorContainer else colors.onPrimaryContainer
-    AppCard(modifier = Modifier.fillMaxWidth(), container = container, onClick = onClick) {
+    val bottomCorner by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (watchOpen && hasWatch) 8.dp else 28.dp,
+        animationSpec = LocalQuality.current.spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "bunkCorner",
+    )
+    AppCard(
+        modifier = Modifier.fillMaxWidth(),
+        container = container,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = bottomCorner, bottomEnd = bottomCorner),
+        onClick = onClick,
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             RingGauge(
                 percent = overallPercent,
@@ -325,7 +366,11 @@ private fun AttendanceCard(overallPercent: Double?, present: Int, held: Int, thr
                         maxLines = 2,
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
+                ) {
                     CompactPill("Present $present", colors.primary, colors.onPrimary)
                     CompactPill(
                         "Absent ${(held - present).coerceAtLeast(0)}",
@@ -333,6 +378,25 @@ private fun AttendanceCard(overallPercent: Double?, present: Int, held: Int, thr
                         if (below) colors.onError else colors.onErrorContainer,
                     )
                     CompactPill("Total $held", colors.surface, colors.onSurface)
+                    if (hasWatch) {
+                        Spacer(Modifier.weight(1f))
+                        // No text: a small arrow in the corner opens the subjects to watch.
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(onContainer.copy(alpha = 0.12f))
+                                .clickable(onClick = onToggleWatch),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            ExpandChevron(
+                                expanded = watchOpen,
+                                description = if (watchOpen) "Hide the subjects to watch" else "Show the subjects to watch",
+                                modifier = Modifier.size(20.dp),
+                                tint = onContainer,
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -82,7 +82,12 @@ fun Reveal(visible: Boolean, modifier: Modifier = Modifier, content: @Composable
 
 /** The chevron that turns over when something expands, with the same bouncy spring everywhere. */
 @Composable
-fun ExpandChevron(expanded: Boolean, modifier: Modifier = Modifier, description: String? = null) {
+fun ExpandChevron(
+    expanded: Boolean,
+    modifier: Modifier = Modifier,
+    description: String? = null,
+    tint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified,
+) {
     val q = LocalQuality.current
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
@@ -92,7 +97,7 @@ fun ExpandChevron(expanded: Boolean, modifier: Modifier = Modifier, description:
     Icon(
         imageVector = AppIcons.ExpandMore,
         contentDescription = description,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        tint = if (tint == androidx.compose.ui.graphics.Color.Unspecified) MaterialTheme.colorScheme.onSurfaceVariant else tint,
         modifier = modifier.graphicsLayer { rotationZ = rotation },
     )
 }

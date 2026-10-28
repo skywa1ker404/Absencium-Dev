@@ -91,11 +91,12 @@ fun AppCard(
     container: Color? = null,
     /** A long press, for selecting the card. A card with only this still shows the press animation. */
     onLongClick: (() -> Unit)? = null,
+    /** Another outline, for two cards that are joined (the corners where they meet are small). */
+    shape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.large,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
-    val shape = MaterialTheme.shapes.large
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -170,6 +171,8 @@ fun ScreenScaffold(
     overlay: @Composable () -> Unit = {},
     /** Replaces the plain title text (the folder screen turns its title into a menu button). */
     titleContent: (@Composable () -> Unit)? = null,
+    /** True when the content scrolls behind floating bottom controls: it then runs to the very bottom, under the navigation bar. */
+    edgeToEdgeBottom: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val glass = LocalGlassEnabled.current
@@ -220,8 +223,8 @@ fun ScreenScaffold(
                             .fillMaxSize()
                             // [scrollable] false: the content scrolls itself (a lazy list), so it must not sit in a scroll.
                             .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                            .padding(padding)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(if (edgeToEdgeBottom) PaddingValues(top = padding.calculateTopPadding()) else padding)
+                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = if (edgeToEdgeBottom) 0.dp else 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         content = content,
                     )
