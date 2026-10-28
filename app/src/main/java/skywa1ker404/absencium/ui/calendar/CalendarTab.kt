@@ -1,5 +1,9 @@
 package skywa1ker404.absencium.ui.calendar
 
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ToggleButton
+import skywa1ker404.absencium.ui.components.hueFor
+import skywa1ker404.absencium.ui.components.bounceIn
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -506,6 +510,7 @@ private fun DayCell(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DayPanel(
     date: LocalDate,
@@ -577,35 +582,49 @@ private fun DayPanel(
             )
         }
     }
-    lectures.forEach { lecture ->
+    lectures.forEachIndexed { index, lecture ->
         val record = data.attendance.firstOrNull { it.subjectId == lecture.subject.id && it.date == date }
         val logged = record?.status
-        AppCard(modifier = Modifier.fillMaxWidth()) {
+        val hue = hueFor(lecture.subject.id)
+        AppCard(
+            modifier = Modifier.fillMaxWidth().bounceIn((index * 50).coerceAtMost(250)),
+            container = hue.container.copy(alpha = 0.7f),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(subjectColor(lecture.subject.id)))
+                Box(
+                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(colors.surface.copy(alpha = 0.9f)),
+                    contentAlignment = Alignment.Center,
+                ) { Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(subjectColor(lecture.subject.id))) }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(lecture.subject.name, style = MaterialTheme.typography.titleMedium)
+                    Text(lecture.subject.name, style = MaterialTheme.typography.titleLarge, color = hue.onContainer, maxLines = 2)
                     val room = lecture.slot.roomNumber?.takeIf { it.isNotBlank() }
                     Text(
                         text = "${lecture.slot.startTime.hm()} to ${lecture.slot.endTime.hm()}" +
-                            (if (room != null) " · Room $room" else ""),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
+                            (if (room != null) " \u00b7 Room $room" else ""),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = hue.onContainer.copy(alpha = 0.8f),
                     )
                 }
             }
+            // Present / Absent / Cancelled as one connected Material 3 Expressive button group.
             Row(
-                modifier = Modifier.padding(top = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
-                AttendanceStatus.entries.forEach { status ->
-                    ExpressiveChip(
-                        selected = logged == status,
+                AttendanceStatus.entries.forEachIndexed { i, status ->
+                    ToggleButton(
+                        checked = logged == status,
+                        onCheckedChange = { onSetStatus(lecture.subject.id, status) },
                         enabled = !isFuture,
-                        onClick = { onSetStatus(lecture.subject.id, status) },
-                        label = { Text(status.chipLabel()) },
-                        shape = CircleShape,
-                    )
+                        modifier = Modifier.weight(1f),
+                        shapes = when (i) {
+                            0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                            AttendanceStatus.entries.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                            else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                        },
+                    ) {
+                        Text(status.chipLabel(), maxLines = 1)
+                    }
                 }
             }
             if (record != null && record.status == AttendanceStatus.ABSENT) {

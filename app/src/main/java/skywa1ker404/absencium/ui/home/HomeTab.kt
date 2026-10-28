@@ -1,5 +1,11 @@
 package skywa1ker404.absencium.ui.home
 
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Icon
+import skywa1ker404.absencium.ui.components.Hue
+import skywa1ker404.absencium.ui.components.hueFor
+import skywa1ker404.absencium.ui.components.bounceIn
+import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -100,10 +106,19 @@ fun HomeTab(
     TabColumn(contentPadding) {
         Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
             val name = settings.displayName.trim()
+            // Two weights, like the headings of the reference designs: the greeting quiet, the name strong.
             Text(
-                text = if (name.isEmpty()) greeting(now.hour) else "${greeting(now.hour)}, $name",
+                text = if (name.isEmpty()) greeting(now.hour) else "${greeting(now.hour)},",
                 style = MaterialTheme.typography.headlineLarge,
+                color = if (name.isEmpty()) colors.onSurface else colors.onSurfaceVariant,
             )
+            if (name.isNotEmpty()) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                )
+            }
             Text(
                 text = today.pretty(),
                 style = MaterialTheme.typography.bodyMedium,
@@ -134,6 +149,14 @@ fun HomeTab(
             }
         }
 
+        if (data.subjects.any { it.isActive }) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                QuickAction(AppIcons.CalendarMonth, "Attendance", hueFor(0), onOpenAttendance, Modifier.bounceIn(0))
+                QuickAction(AppIcons.Schedule, "Timetable", hueFor(1), onOpenTimetable, Modifier.bounceIn(60))
+                QuickAction(AppIcons.Folder, "Subjects", hueFor(2), onManageSubjects, Modifier.bounceIn(120))
+            }
+        }
+
         if (data.subjects.none { it.isActive }) {
             AppCard(modifier = Modifier.fillMaxWidth(), onClick = onManageSubjects) {
                 Text("Add your subjects", style = MaterialTheme.typography.titleMedium)
@@ -157,10 +180,13 @@ fun HomeTab(
             val watch = perSubject.filter { s -> s.percent?.let { it < threshold + APPROACHING_POINTS } == true }
             if (watch.isNotEmpty()) {
                 SectionTitle("Watch these subjects")
-                AppCard(modifier = Modifier.fillMaxWidth(), onClick = onOpenAttendance) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        watch.forEach { WatchRow(it, threshold) }
-                    }
+                watch.forEachIndexed { index, item ->
+                    val hue = hueFor((item.subject.id % 5))
+                    AppCard(
+                        modifier = Modifier.fillMaxWidth().bounceIn((index * 50).coerceAtMost(250)),
+                        container = hue.container.copy(alpha = 0.7f),
+                        onClick = onOpenAttendance,
+                    ) { WatchRow(item, threshold) }
                 }
             }
         }
@@ -357,5 +383,28 @@ private fun WatchRow(item: SubjectAttendance, threshold: Int) {
             style = MaterialTheme.typography.titleMedium,
             color = if (percent < threshold) colors.error else colors.tertiary,
         )
+    }
+}
+
+/** A round shortcut with its name under it, like the quick actions of reference image 05. */
+@Composable
+private fun QuickAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    hue: Hue,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp)).clickable(onClick = onClick).padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            modifier = Modifier.size(64.dp).clip(CircleShape).background(hue.container.copy(alpha = 0.8f)),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, contentDescription = null, tint = hue.onContainer, modifier = Modifier.size(28.dp)) }
+        Text(label, style = MaterialTheme.typography.labelMedium, color = colors.onSurface)
     }
 }
