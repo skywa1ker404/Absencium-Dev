@@ -1,6 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
-import androidx.compose.foundation.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
