@@ -55,6 +55,26 @@ object MarkdownEdit {
         return i
     }
 
+    /** Applies [transform] to every line the selection touches and keeps the selection over the same lines. */
+    private fun mapLines(text: String, start: Int, end: Int, transform: (List<String>) -> List<String>): Edited {
+        val (s, e) = clamp(text, start, end)
+        val from = lineStart(text, s)
+        // A selection that ends exactly at the start of a line does not include that line.
+        val to = lineEnd(text, if (e > s && e > 0 && text[e - 1] == '\n') e - 1 else e)
+        val lines = text.substring(from, to).split("\n")
+        val out = transform(lines).joinToString("\n")
+        val result = text.substring(0, from) + out + text.substring(to)
+        val delta = out.length - (to - from)
+        return if (s == e) {
+            // A cursor stays on its line, moved by what changed in front of it.
+            val firstDelta = transform(listOf(lines.first())).first().length - lines.first().length
+            val pos = (s + firstDelta).coerceIn(from, from + out.length)
+            Edited(result, pos, pos)
+        } else {
+            Edited(result, from, to + delta)
+        }
+    }
+
     private enum class LineKind { NONE, HEADING, CHECK, BULLET, NUMBER, LETTER, QUOTE }
 
     /** A line taken apart: its alignment tag, its indent, what kind of line it is, and the text after every block prefix. */
