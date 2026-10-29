@@ -379,7 +379,10 @@ private fun PillTab(
     }
 }
 
-/** The contextual action button above the bar (Add Entry on Attendance, New Entry in the Vault). */
+/**
+ * The contextual action button above the bar (New entry, Add subject...). An extended button: icon and label together, and just the
+ * icon while [expanded] is false, which the screens set while their list scrolls down. The label grows and shrinks with a spring.
+ */
 @Composable
 fun ShellFab(
     icon: ImageVector,
@@ -387,6 +390,7 @@ fun ShellFab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     backdrop: LayerBackdrop? = null,
+    expanded: Boolean = true,
 ) {
     val q = LocalQuality.current
     val interaction = remember { MutableInteractionSource() }
@@ -396,6 +400,12 @@ fun ShellFab(
         animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
         label = "fabPress",
     )
+    val labelIn = androidx.compose.animation.expandHorizontally(
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+    ) + androidx.compose.animation.fadeIn()
+    val labelOut = androidx.compose.animation.shrinkHorizontally(
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
+    ) + androidx.compose.animation.fadeOut()
     if (backdrop != null) {
         // Glass mode: a plain glass pill with no colour of its own.
         Row(
@@ -406,16 +416,20 @@ fun ShellFab(
                 }
                 .floatingGlass(backdrop, CircleShape)
                 .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
-                .padding(horizontal = 20.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 8.dp),
-            )
+            Icon(imageVector = icon, contentDescription = if (expanded) null else label, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
+            androidx.compose.animation.AnimatedVisibility(visible = expanded, enter = labelIn, exit = labelOut) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.padding(start = 8.dp, end = 4.dp),
+                )
+            }
         }
         return
     }
@@ -431,11 +445,19 @@ fun ShellFab(
             contentColor = MaterialTheme.colorScheme.onPrimary,
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
         interactionSource = interaction,
     ) {
-        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
-        Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 8.dp))
+        Icon(imageVector = icon, contentDescription = if (expanded) null else label, modifier = Modifier.size(20.dp))
+        androidx.compose.animation.AnimatedVisibility(visible = expanded, enter = labelIn, exit = labelOut) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.padding(start = 8.dp, end = 4.dp),
+            )
+        }
     }
 }
 
@@ -696,11 +718,13 @@ class PillScroll {
     private var travelled = 0f
 
     val connection = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-        override fun onPreScroll(
+        // Only scrolling the list really did counts: a page too short to scroll must not shrink the bar.
+        override fun onPostScroll(
+            consumed: androidx.compose.ui.geometry.Offset,
             available: androidx.compose.ui.geometry.Offset,
             source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
         ): androidx.compose.ui.geometry.Offset {
-            val dy = available.y
+            val dy = consumed.y
             if (dy == 0f) return androidx.compose.ui.geometry.Offset.Zero
             if (travelled * dy < 0f) travelled = 0f
             travelled += dy

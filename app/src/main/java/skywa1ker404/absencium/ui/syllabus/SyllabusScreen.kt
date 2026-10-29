@@ -17,6 +17,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -34,7 +35,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -117,9 +121,12 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
         label = "overall",
     )
 
+    val pillScroll = skywa1ker404.absencium.ui.main.rememberPillScroll()
+
     ScreenScaffold(
         title = "Syllabus",
         onBack = { navigator.navigateUp() },
+        modifier = Modifier.nestedScroll(pillScroll.connection),
         overlay = {
             // The two ways to add to the syllabus are buttons floating at the bottom right, like the main screen's.
             Box(Modifier.fillMaxSize()) {
@@ -136,12 +143,14 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
                         label = "Import outline",
                         onClick = { viewModel.dismissImport(); showImport = true },
                         backdrop = LocalBackdrop.current,
+                        expanded = !pillScroll.compact.value,
                     )
                     ShellFab(
                         icon = AppIcons.Add,
                         label = "Add unit",
                         onClick = { editing = Editing.Add(null, SyllabusTree.levelName(0)) },
                         backdrop = LocalBackdrop.current,
+                        expanded = !pillScroll.compact.value,
                     )
                 }
             }
@@ -270,7 +279,9 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
             onTyped = viewModel::importTyped,
             onWithAi = viewModel::importWithAi,
             onFile = viewModel::importFile,
-            onAccept = { items -> viewModel.insertOutline(items); showImport = false },
+            existing = nodes,
+            subjectName = subjectName,
+            onAccept = { items, chosen -> viewModel.insertOutline(items, chosen); showImport = false },
             onBack = viewModel::dismissImport,
             onClose = { viewModel.dismissImport(); showImport = false },
         )
@@ -456,11 +467,17 @@ private fun ImportDialog(
     onTyped: (String) -> Unit,
     onWithAi: (String) -> Unit,
     onFile: (android.net.Uri) -> Unit,
-    onAccept: (List<SyllabusTree.OutlineItem>) -> Unit,
+    existing: List<SyllabusNodeEntity>,
+    subjectName: String,
+    onAccept: (List<SyllabusTree.OutlineItem>, Set<Int>) -> Unit,
     onBack: () -> Unit,
     onClose: () -> Unit,
 ) {
     var text by remember { mutableStateOf("") }
+    // After the outline is read the student picks what to add. What is already in the syllabus is never offered twice.
+    val found = (state as? OutlineImport.Ready)?.items.orEmpty()
+    val dups = remember(state, existing) { SyllabusTree.duplicates(existing, found, null) }
+    var chosen by remember(state) { mutableStateOf(found.indices.filter { it !in dups }.toSet()) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) onFile(uri) }
     AlertDialog(
         onDismissRequest = onClose,
@@ -507,16 +524,56 @@ private fun ImportDialog(
                         Text(state.step, style = MaterialTheme.typography.bodyMedium)
                     }
                     is OutlineImport.Ready -> {
-                        Text("${state.items.size} items found:", style = MaterialTheme.typography.titleSmall)
-                        state.items.take(14).forEach { item ->
-                            Text(
-                                item.title,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = (item.depth * 14).dp),
-                                maxLines = 1,
-                            )
+                        val fresh = state.items.size - dups.size
+                        Text(
+                            "${state.items.size} items found for ${subjectName.ifEmpty { "this subject" }}" +
+                                if (dups.isEmpty()) "." else ", $fresh new and ${dups.size} already in the syllabus.",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = { chosen = state.items.indices.filter { it !in dups }.toSet() }) { Text("Select all") }
+                            TextButton(onClick = { chosen = emptySet() }) { Text("Select none") }
                         }
-                        if (state.items.size > 14) HintText("and ${state.items.size - 14} more")
+                        Column(modifier = Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+                            state.items.forEachIndexed { index, item ->
+                                val isDup = index in dups
+                                val on = isDup || index in chosen
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable(enabled = !isDup) {
+                                            val family = SyllabusTree.subtreeIndices(state.items, index).filter { it !in dups }
+                                            chosen = if (index in chosen) {
+                                                // Taking an item off takes everything inside it off too.
+                                                chosen - family.toSet()
+                                            } else {
+                                                // Putting one on also puts on what it sits inside, so it has a place to go.
+                                                var next = chosen + index
+                                                var up = SyllabusTree.parentIndex(state.items, index)
+                                                while (up != null) {
+                                                    if (up !in dups) next = next + up
+                                                    up = SyllabusTree.parentIndex(state.items, up)
+                                                }
+                                                next
+                                            }
+                                        }
+                                        .padding(start = (item.depth * 16).dp, top = 2.dp, bottom = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    androidx.compose.material3.Checkbox(checked = on, onCheckedChange = null, enabled = !isDup)
+                                    Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
+                                        Text(
+                                            item.title,
+                                            style = if (item.depth == 0) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
+                                            maxLines = 2,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        )
+                                        if (isDup) Text("Already in the syllabus", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
                     }
                     is OutlineImport.Problem -> Text(state.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                 }
@@ -525,7 +582,7 @@ private fun ImportDialog(
         confirmButton = {
             when (state) {
                 OutlineImport.Idle -> TextButton(enabled = text.isNotBlank(), onClick = { onTyped(text) }) { Text("Use as typed") }
-                is OutlineImport.Ready -> TextButton(onClick = { onAccept(state.items) }) { Text("Add ${state.items.size}") }
+                is OutlineImport.Ready -> TextButton(enabled = chosen.isNotEmpty(), onClick = { onAccept(state.items, chosen) }) { Text("Add ${chosen.size}") }
                 is OutlineImport.Problem -> TextButton(onClick = onBack) { Text("Back") }
                 is OutlineImport.Working -> Spacer(Modifier.width(1.dp))
             }

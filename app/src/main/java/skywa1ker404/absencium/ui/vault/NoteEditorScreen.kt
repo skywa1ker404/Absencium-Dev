@@ -34,6 +34,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -688,13 +691,55 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
             },
         )
 
-        // Date, size, where the note belongs, and the save state, in one small line.
+        // Date, size and the save state in one small line; the topic is a dropdown chip under it.
+        val visibleCount = remember(parts) {
+            parts.filter { it.kind == PartKind.TEXT }.sumOf { LiveFormat.plan(it.text).visible.length }
+        }
         Text(
-            text = "$dateText  |  ${"%,d".format(text.length)} characters  |  $topicLabel  |  $saveText",
+            text = "$dateText  |  ${"%,d".format(visibleCount)} ${if (visibleCount == 1) "character" else "characters"}  |  $saveText",
             style = MaterialTheme.typography.labelSmall,
             color = if (saveState == SaveState.FAILED) colors.error else colors.onSurfaceVariant,
             modifier = if (saveState == SaveState.FAILED) Modifier.clickable { scope.launch { saveNow() } } else Modifier,
         )
+        var topicMenuOpen by remember { mutableStateOf(false) }
+        Box {
+            Row(
+                modifier = Modifier
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(colors.secondaryContainer.copy(alpha = 0.7f))
+                    .clickable { topicMenuOpen = true }
+                    .padding(start = 10.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(AppIcons.Folder, contentDescription = null, tint = colors.onSecondaryContainer, modifier = Modifier.size(14.dp))
+                Text(
+                    topicLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.onSecondaryContainer,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 260.dp),
+                )
+                Icon(AppIcons.ExpandMore, contentDescription = "Change topic", tint = colors.onSecondaryContainer, modifier = Modifier.size(18.dp))
+            }
+            skywa1ker404.absencium.ui.syllabus.TopicMenu(
+                expanded = topicMenuOpen,
+                onDismiss = { topicMenuOpen = false },
+                nodes = topicNodes,
+                selectedId = topicId,
+                noneLabel = "Uncategorized",
+                onPick = { picked ->
+                    topicMenuOpen = false
+                    topicId = picked
+                    viewModel.setNoteSyllabus(note.id, picked)
+                },
+                onOpenSyllabus = {
+                    topicMenuOpen = false
+                    navigator.navigate(SyllabusScreenDestination(subjectId = note.subjectId))
+                },
+            )
+        }
 
         // The page: text parts are live text fields, pictures, doodles and tables are blocks between them.
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {

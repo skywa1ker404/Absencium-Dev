@@ -95,6 +95,21 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
         container.database.noteDao().setSyllabusNode(noteId, nodeId)
     }
 
+    /** Renames a note and sets the date it is filed under (the selection toolbar's Edit). */
+    fun editNote(noteId: Long, title: String, createdDate: Long) = perform("edit the entry") {
+        container.database.noteDao().setTitleAndDate(noteId, title.trim().ifEmpty { "Untitled note" }, createdDate)
+    }
+
+    /** Files several pieces of study material under one topic (or back to Uncategorized). */
+    fun setGuidesSyllabus(guideIds: Collection<Long>, nodeId: Long?) = perform("file the material under a topic") {
+        guideIds.forEach { container.database.guideDao().setSyllabusNode(it, nodeId) }
+    }
+
+    /** Removes several pieces of study material, with their stored copies. */
+    fun deleteGuides(guides: List<GuideEntity>) = perform("delete the material") {
+        guides.forEach { deleteGuideNow(it) }
+    }
+
     /** The same for a piece of study material. */
     fun setGuideSyllabus(guideId: Long, nodeId: Long?) = perform("file the material under a topic") {
         container.database.guideDao().setSyllabusNode(guideId, nodeId)
@@ -432,7 +447,9 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
 
     fun discardDraft(id: Long) = perform("remove the draft") { repository.deleteNoteById(id) }
 
-    fun deleteGuide(guide: GuideEntity) = perform("delete the guide") {
+    fun deleteGuide(guide: GuideEntity) = perform("delete the guide") { deleteGuideNow(guide) }
+
+    private suspend fun deleteGuideNow(guide: GuideEntity) {
         withContext(Dispatchers.IO) {
             // Remove the stored copy too, when it is in the notes folder.
             container.notesStorage.rootFolder()

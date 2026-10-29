@@ -187,4 +187,31 @@ class MarkdownEditTest {
     @Test fun headingKeepsNoStackedPrefix() {
         assertEquals("## x", MarkdownEdit.heading("> - x", 0, 5, 2).text)
     }
+
+    @Test fun colourOnAWholeHeadingLineGoesAfterTheHeadingMark() {
+        val r = MarkdownEdit.setColor("## Title", 0, 8, 0x43A047)
+        assertEquals("## {color:43A047|Title|}", r.text)
+    }
+
+    @Test fun boldOnAWholeBulletLineGoesAfterTheMarker() {
+        assertEquals("- **item**", MarkdownEdit.toggleWrap("- item", 0, 6, "**", "bold").text)
+    }
+
+    @Test fun aCursorInsideTheHeadingMarkIsMovedToTheWords() {
+        assertEquals("# **bold**", MarkdownEdit.toggleWrap("# ", 0, 0, "**", "bold").text)
+    }
+
+    @Test fun aStyleOverTwoLinesIsAPairOnEachLine() {
+        val r = MarkdownEdit.toggleWrap("one\ntwo", 0, 7, "**", "bold")
+        assertEquals("**one**\n**two**", r.text)
+        assertEquals("one\ntwo", r.text.substring(r.start, r.end).replace("**", ""))
+    }
+
+    @Test fun theSameStyleOverTwoStyledLinesTakesItOffBoth() {
+        assertEquals("one\ntwo", MarkdownEdit.toggleWrap("**one**\n**two**", 0, 15, "**", "bold").text)
+    }
+
+    @Test fun aMixedSelectionStylesOnlyTheLinesThatLackIt() {
+        assertEquals("**one**\n**two**", MarkdownEdit.toggleWrap("**one**\ntwo", 0, 11, "**", "bold").text)
+    }
 }

@@ -28,15 +28,24 @@ import skywa1ker404.absencium.ui.theme.LocalGlassEnabled
  * (A pop-up is its own window, so it cannot blur what is behind it; the tint is kept dense enough to read.)
  */
 @Composable
-fun AppMenu(expanded: Boolean, onDismiss: () -> Unit, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun AppMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** A fully solid container, for long menus whose text must not show what is behind them. */
+    solid: Boolean = false,
+    offset: androidx.compose.ui.unit.DpOffset = androidx.compose.ui.unit.DpOffset(0.dp, 0.dp),
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val glass = LocalGlassEnabled.current
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
         modifier = modifier,
+        offset = offset,
         shape = RoundedCornerShape(28.dp),
-        containerColor = if (glass) colors.surfaceContainerHigh.copy(alpha = 0.94f) else colors.surfaceContainerHigh,
+        containerColor = if (glass && !solid) colors.surfaceContainerHigh.copy(alpha = 0.94f) else colors.surfaceContainerHigh,
         tonalElevation = 0.dp,
         shadowElevation = 10.dp,
         border = BorderStroke(0.6.dp, Color.White.copy(alpha = if (glass) 0.18f else 0.08f)),

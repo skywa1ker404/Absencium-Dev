@@ -196,8 +196,12 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
     private suspend fun outlineFromText(text: String): OutlineImport {
         val connection = container.aiConnection()
             ?: return OutlineImport.Problem("AI Features are off or not set up. You can still add the outline as typed text.", setupMissing = true)
+        val subject = _subjectName.value.ifEmpty { container.database.subjectDao().getById(subjectId)?.name.orEmpty() }
         return try {
-            val reply = container.aiClient.generate(connection, OUTLINE_PROMPT + text.take(MAX_SOURCE), maxTokens = 8000)
+            val reply = container.aiClient.generate(connection, outlinePrompt(subject) + sourceFor(text, subject), maxTokens = 8000)
+            if (reply.trim().equals("NONE", ignoreCase = true)) {
+                return OutlineImport.Problem("The text does not seem to contain a syllabus for $subject. Check the subject name, or paste just its part.")
+            }
             val items = SyllabusTree.parseOutline(reply)
             if (items.isEmpty()) OutlineImport.Problem("The AI did not find any units or topics in that text.") else OutlineImport.Ready(items)
         } catch (e: CancellationException) {
@@ -210,10 +214,17 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
         }
     }
 
-    /** Adds the outline that was read, below [parentId] (null for the top level), and closes the import. */
-    fun insertOutline(items: List<SyllabusTree.OutlineItem>, parentId: Long? = null) {
+    /**
+     * Adds the items of the outline that were chosen ([chosen] are indexes into [items]), below [parentId] (null for the top level),
+     * and closes the import. Nothing that is already there is added twice: an item whose title already sits under the same parent
+     * is skipped, and what is inside it goes into the existing node.
+     */
+    fun insertOutline(items: List<SyllabusTree.OutlineItem>, chosen: Set<Int> = items.indices.toSet(), parentId: Long? = null) {
         viewModelScope.launch {
             val existing = nodes.value
+            fun norm(t: String) = t.trim().replace(Regex("\\s+"), " ").lowercase()
+            val known = HashMap<Pair<Long?, String>, Long>()
+            existing.forEach { known[it.parentId to norm(it.title)] = it.id }
             // The ids of the most recent node at each depth, so a deeper line is filed under the one above it.
             val trail = arrayOfNulls<Long>(SyllabusTree.MAX_DEPTH + 2)
             val nextPosition = HashMap<Long?, Int>()
@@ -222,9 +233,15 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
                 nextPosition[parent] = start + 1
                 return start
             }
-            items.forEach { item ->
+            items.forEachIndexed { index, item ->
                 val parent = if (item.depth == 0) parentId else trail[item.depth - 1] ?: parentId
-                val id = dao.insert(SyllabusNodeEntity(subjectId = subjectId, parentId = parent, title = item.title, position = position(parent)))
+                val match = known[parent to norm(item.title)]
+                val id = when {
+                    match != null -> match
+                    index in chosen -> dao.insert(SyllabusNodeEntity(subjectId = subjectId, parentId = parent, title = item.title, position = position(parent)))
+                        .also { known[parent to norm(item.title)] = it }
+                    else -> null
+                }
                 trail[item.depth] = id
                 for (deeper in item.depth + 1 until trail.size) trail[deeper] = null
             }
@@ -233,13 +250,27 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
     }
 
     companion object {
-        private const val MAX_SOURCE = 24_000
+        private const val MAX_SOURCE = 60_000
 
-        /** Neutral about the course: it only reshapes the text it is given. */
-        const val OUTLINE_PROMPT =
-            "Turn the syllabus text below into a plain outline. Write one item per line. Put units or modules at the left edge, " +
+        /**
+         * A whole session's papers hold many subjects, so the AI is told which one to read and to leave the rest out. It answers NONE
+         * when that subject is not in the text. Neutral about the course: it only reshapes the text it is given.
+         */
+        fun outlinePrompt(subject: String): String =
+            "The text below may hold the syllabus of several subjects, or a whole session's papers. Read ONLY the syllabus of the " +
+                "subject named \"$subject\" and ignore every other subject, department, rule, schedule and general note. " +
+                "Turn that subject's syllabus into a plain outline. Write one item per line. Put units or modules at the left edge, " +
                 "and indent each deeper level by two spaces (chapters, then topics, then subtopics; at most four levels). " +
                 "Keep the original wording and order, add nothing that is not in the text, and leave out marks, hours, credits and " +
-                "book lists. Do not number the lines, do not use bullets or Markdown, and write no explanation before or after.\n\nSyllabus text:\n"
+                "book lists. Do not number the lines, do not use bullets or Markdown, and write no explanation before or after. " +
+                "If the subject \"$subject\" is not in the text, answer with the single word NONE.\n\nText:\n"
+
+        /** At most [MAX_SOURCE] characters of [text]: from just before where [subject] is first named when the text is longer. */
+        fun sourceFor(text: String, subject: String): String {
+            if (text.length <= MAX_SOURCE) return text
+            val at = if (subject.isBlank()) -1 else text.indexOf(subject, ignoreCase = true)
+            val from = if (at < 0) 0 else (at - 500).coerceAtLeast(0)
+            return text.substring(from, minOf(text.length, from + MAX_SOURCE))
+        }
     }
 }

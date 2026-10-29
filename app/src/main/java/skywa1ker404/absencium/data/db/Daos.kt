@@ -198,6 +198,9 @@ interface NoteDao {
     @Query("UPDATE Notes_Table SET syllabus_node_id = :nodeId WHERE id = :id")
     suspend fun setSyllabusNode(id: Long, nodeId: Long?)
 
+    @Query("UPDATE Notes_Table SET title = :title, created_date = :createdDate WHERE id = :id")
+    suspend fun setTitleAndDate(id: Long, title: String, createdDate: Long)
+
     @Query("UPDATE Notes_Table SET syllabus_node_id = NULL WHERE syllabus_node_id IN (:nodeIds)")
     suspend fun clearSyllabusNodes(nodeIds: List<Long>)
 

@@ -50,4 +50,34 @@ class SyllabusTreeTest {
         assertEquals("Unit 1: Basics", items[0].title)
         assertEquals("Numbered unit", items.last().title)
     }
+
+    private fun titled(id: Long, parent: Long?, title: String) =
+        SyllabusNodeEntity(id = id, subjectId = 1, parentId = parent, title = title)
+
+    @Test fun duplicatesAreFoundUnderTheSameParentIgnoringCase() {
+        val existing = listOf(titled(1, null, "Unit 1"), titled(2, 1, "Limits"))
+        val items = SyllabusTree.parseOutline("unit  1\n  limits\n  Continuity\nUnit 2")
+        // "unit 1" and "limits" exist; "Continuity" goes under the existing Unit 1; "Unit 2" is new.
+        assertEquals(setOf(0, 1), SyllabusTree.duplicates(existing, items, null))
+    }
+
+    @Test fun theSameTitleUnderAnotherParentIsNotADuplicate() {
+        val existing = listOf(titled(1, null, "Unit 1"), titled(2, 1, "Basics"))
+        val items = SyllabusTree.parseOutline("Unit 2\n  Basics")
+        assertEquals(emptySet<Int>(), SyllabusTree.duplicates(existing, items, null))
+    }
+
+    @Test fun aRepeatedLineInTheOutlineCountsOnce() {
+        val items = SyllabusTree.parseOutline("Unit 1\n  A\n  A")
+        assertEquals(setOf(2), SyllabusTree.duplicates(emptyList(), items, null))
+    }
+
+    @Test fun parentAndSubtreeIndexes() {
+        val items = SyllabusTree.parseOutline("U1\n  C1\n    T1\n  C2\nU2")
+        assertEquals(1, SyllabusTree.parentIndex(items, 2))
+        assertEquals(0, SyllabusTree.parentIndex(items, 3))
+        assertEquals(null, SyllabusTree.parentIndex(items, 4))
+        assertEquals(listOf(0, 1, 2, 3), SyllabusTree.subtreeIndices(items, 0))
+        assertEquals(listOf(1, 2), SyllabusTree.subtreeIndices(items, 1))
+    }
 }

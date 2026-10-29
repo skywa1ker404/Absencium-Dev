@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -663,6 +664,7 @@ private fun AttendanceStatus.chipLabel(): String = when (this) {
  * subject whose notes to add. Once every absent subject has its notes the list folds away, and a
  * small arrow stays so it can be reopened.
  */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun TodayCard(
     data: CalendarData,
@@ -759,18 +761,20 @@ internal fun TodayCard(
                     )
                 }
                 if (uncollected.isNotEmpty() && !expanded) {
-                    Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(
+                        modifier = Modifier.padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
                         PillButton(
                             text = "Yes, I have them",
                             tonal = true,
                             compact = true,
-                            modifier = Modifier.weight(1f),
                             onClick = { viewModel.setNotesCollected(uncollected.map { it.subjectId }, today, true) },
                         )
                         PillButton(
                             text = "Add today's notes",
                             compact = true,
-                            modifier = Modifier.weight(1f),
                             onClick = { expanded = true },
                         )
                     }

@@ -375,25 +375,6 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 ShellSearchButton(backdrop = backdrop, onClick = { showSearch = true })
             }
 
-            // Pinned Subjects button, on the Home screen only: on the same row as the pill, to its left (pill 64dp tall, button 52dp).
-            // The AI Hub is reached from the Home quick actions and the profile.
-            if (tab == TAB_HOME) {
-                SlideAway(
-                    hidden = { compactState.value },
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 16.dp, bottom = bottomInset + 16.dp + 6.dp),
-                ) {
-                    ShellSearchButton(
-                        backdrop = backdrop,
-                        onClick = { navigator.navigate(SubjectsScreenDestination) },
-                        icon = AppIcons.Folder,
-                        description = "Subjects",
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                    )
-                }
-            }
-
             BottomPill(
                 tabs = Tabs,
                 selectedIndex = tab,

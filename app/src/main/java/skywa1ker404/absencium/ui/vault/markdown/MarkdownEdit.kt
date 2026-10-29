@@ -18,7 +18,14 @@ object MarkdownEdit {
      */
     fun toggleWrap(text: String, start: Int, end: Int, marker: String, placeholder: String): Edited {
         val kind = InlineStyle.kindFor(marker) ?: return plainWrap(text, start, end, marker, placeholder)
-        val (s0, e0) = clamp(text, start, end)
+        return perLine(text, start, end, mixedSkips = true, isOn = { t, a, b ->
+            val ws = InlineStyle.wraps(t)
+            val (fa, fb) = InlineStyle.fit(a, b, ws)
+            InlineStyle.host(ws, kind, fa, fb) != null
+        }) { t, a, b -> toggleOne(t, a, b, kind, marker, placeholder) }
+    }
+
+    private fun toggleOne(text: String, s0: Int, e0: Int, kind: EditKind, marker: String, placeholder: String): Edited {
         val ws = InlineStyle.wraps(text)
         val (s, e) = InlineStyle.fit(s0, e0, ws)
         // Code shows its text as typed: nothing else can style what is inside it.
@@ -26,6 +33,70 @@ object MarkdownEdit {
         val host = InlineStyle.host(ws, kind, s, e)
         if (host != null) return InlineStyle.release(text, host, s, e, ws)
         return InlineStyle.wrap(text, s, e, kind, marker, marker, placeholder, ws)
+    }
+
+    /** Where the words of the line holding [index] start: after its alignment tag, indent, heading mark, list marker or quote mark. -1 for a line with no words to style. */
+    private fun bodyStartOf(text: String, index: Int): Int {
+        val ls = lineStart(text, index)
+        val le = lineEnd(text, index)
+        val line = text.substring(ls, le)
+        if (line.trimStart().startsWith("```")) return -1
+        val p = parts(line)
+        if (isRuleText(p.body)) return -1
+        return ls + line.length - p.body.length
+    }
+
+    /**
+     * Runs [op] on each line the selection touches, on the words of the line only: a style must sit after the line's block prefix
+     * (or the live page would show the `## ` it hides), and a pair never spans a line break (the page reads one line at a time).
+     * Works from the last line to the first so the offsets of the lines still to do hold. With [mixedSkips], lines that are already
+     * in the style are left alone unless every line is.
+     */
+    private fun perLine(
+        text: String,
+        start: Int,
+        end: Int,
+        mixedSkips: Boolean = false,
+        isOn: (String, Int, Int) -> Boolean = { _, _, _ -> false },
+        op: (String, Int, Int) -> Edited,
+    ): Edited {
+        val (s, e) = clamp(text, start, end)
+        if (s == e) {
+            val body = bodyStartOf(text, s)
+            return op(text, if (body >= 0) maxOf(s, body) else s, if (body >= 0) maxOf(s, body) else e)
+        }
+        val ranges = ArrayList<Pair<Int, Int>>()
+        var pos = s
+        while (pos <= e) {
+            val le = lineEnd(text, pos)
+            val body = bodyStartOf(text, pos)
+            val a = if (body >= 0) maxOf(pos, body) else -1
+            val b = minOf(e, le)
+            if (a in 0 until b) ranges += a to b
+            if (le >= e) break
+            pos = le + 1
+        }
+        if (ranges.isEmpty()) return Edited(text, s, e)
+        if (ranges.size == 1) return op(text, ranges[0].first, ranges[0].second)
+        val allOn = ranges.all { isOn(text, it.first, it.second) }
+        var cur = text
+        var first = 0
+        var last = 0
+        var shift = 0
+        for ((i, r) in ranges.asReversed().withIndex()) {
+            if (mixedSkips && !allOn && isOn(cur, r.first, r.second)) {
+                if (i == 0) last = r.second
+                if (i == ranges.lastIndex) first = r.first
+                continue
+            }
+            val before = cur.length
+            val out = op(cur, r.first, r.second)
+            cur = out.text
+            if (i == 0) last = out.end
+            else shift += cur.length - before
+            if (i == ranges.lastIndex) first = out.start
+        }
+        return Edited(cur, first, last + shift)
     }
 
     private fun plainWrap(text: String, start: Int, end: Int, marker: String, placeholder: String): Edited {
@@ -195,7 +266,10 @@ object MarkdownEdit {
     fun setSize(text: String, start: Int, end: Int, sp: Int?, placeholder: String = "text"): Edited =
         setTag(text, start, end, EditKind.SIZE, sp?.coerceIn(8, 64)?.let { "{size:$it|" }, placeholder)
 
-    private fun setTag(text: String, start: Int, end: Int, kind: EditKind, open: String?, placeholder: String): Edited {
+    private fun setTag(text: String, start: Int, end: Int, kind: EditKind, open: String?, placeholder: String): Edited =
+        perLine(text, start, end) { t, a, b -> setTagOne(t, a, b, kind, open, placeholder) }
+
+    private fun setTagOne(text: String, start: Int, end: Int, kind: EditKind, open: String?, placeholder: String): Edited {
         val (s0, e0) = clamp(text, start, end)
         val ws = InlineStyle.wraps(text)
         val (s, e) = InlineStyle.fit(s0, e0, ws)

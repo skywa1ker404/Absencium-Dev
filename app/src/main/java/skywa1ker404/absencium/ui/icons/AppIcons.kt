@@ -337,6 +337,14 @@ object AppIcons {
         glyph("AlignLeft", "M15,15H3v2h12v-2zM15,7H3v2h12V7zM3,13h18v-2H3v2zM3,21h18v-2H3v2zM3,3v2h18V3H3z")
     }
 
+    val ViewList: ImageVector by lazy {
+        glyph("ViewList", "M3,14h4v-4H3v4zM3,19h4v-4H3v4zM3,9h4V5H3v4zM8,14h13v-4H8v4zM8,19h13v-4H8v4zM8,5v4h13V5H8z")
+    }
+
+    val ViewAgenda: ImageVector by lazy {
+        glyph("ViewAgenda", "M20,13H3c-0.55,0 -1,0.45 -1,1v6c0,0.55 0.45,1 1,1h17c0.55,0 1,-0.45 1,-1v-6c0,-0.55 -0.45,-1 -1,-1zM20,3H3c-0.55,0 -1,0.45 -1,1v6c0,0.55 0.45,1 1,1h17c0.55,0 1,-0.45 1,-1V4c0,-0.55 -0.45,-1 -1,-1z")
+    }
+
     val ListBulleted: ImageVector by lazy {
         glyph(
             "ListBulleted",

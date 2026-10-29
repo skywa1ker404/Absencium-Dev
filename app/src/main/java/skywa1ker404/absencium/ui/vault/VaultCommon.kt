@@ -220,11 +220,18 @@ fun GuideCard(
     /** Where the material is filed in the syllabus, shown under its type. */
     topic: String? = null,
     onFile: (() -> Unit)? = null,
+    selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val hue = hueFor(guide.guideType.ordinal.toLong())
     var menu by remember { mutableStateOf(false) }
-    AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick, container = hue.container.copy(alpha = 0.75f)) {
+    AppCard(
+        modifier = modifier.fillMaxWidth().then(if (selected) Modifier.border(2.dp, colors.primary, MaterialTheme.shapes.large) else Modifier),
+        onClick = onClick,
+        onLongClick = onLongClick,
+        container = hue.container.copy(alpha = 0.75f),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
                 modifier = Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(colors.surface.copy(alpha = 0.9f)),
@@ -256,6 +263,85 @@ fun GuideCard(
                     if (onFile != null) AppMenuItem(AppIcons.Folder, "File under a topic", { menu = false; onFile() })
                     AppMenuItem(AppIcons.Delete, "Remove", { menu = false; onDelete() }, destructive = true)
                 }
+            }
+        }
+    }
+}
+
+
+/** A note as one compact line (list mode): a dot in the topic's colour, the title, and the topic, date and status under it. */
+@Composable
+fun NoteRow(
+    note: NoteEntity,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    topic: String? = null,
+) {
+    val colors = MaterialTheme.colorScheme
+    val hue = hueFor(note.syllabusNodeId ?: note.id)
+    val date = remember(note.createdDate) {
+        java.time.Instant.ofEpochMilli(note.createdDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+            .format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy"))
+    }
+    AppCard(
+        modifier = modifier.fillMaxWidth().then(if (selected) Modifier.border(2.dp, colors.primary, MaterialTheme.shapes.large) else Modifier),
+        onClick = onClick,
+        onLongClick = onLongClick,
+        container = hue.container.copy(alpha = 0.6f),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.size(12.dp).clip(CircleShape).background(hue.accent))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    note.title.ifBlank { "Untitled note" },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = hue.onContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    listOfNotNull(topic, date).joinToString("  \u00b7  "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = hue.onContainer.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/** A piece of study material as one compact line (list mode). */
+@Composable
+fun GuideRow(
+    guide: GuideEntity,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    topic: String? = null,
+    selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+) {
+    val colors = MaterialTheme.colorScheme
+    val hue = hueFor(guide.guideType.ordinal.toLong())
+    AppCard(
+        modifier = modifier.fillMaxWidth().then(if (selected) Modifier.border(2.dp, colors.primary, MaterialTheme.shapes.large) else Modifier),
+        onClick = onClick,
+        onLongClick = onLongClick,
+        container = hue.container.copy(alpha = 0.6f),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Icon(guide.guideType.icon(), contentDescription = null, tint = hue.accent, modifier = Modifier.size(22.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(guide.fileName, style = MaterialTheme.typography.titleMedium, color = hue.onContainer, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    guide.guideType.label() + (topic?.let { "  \u00b7  $it" } ?: ""),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = hue.onContainer.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

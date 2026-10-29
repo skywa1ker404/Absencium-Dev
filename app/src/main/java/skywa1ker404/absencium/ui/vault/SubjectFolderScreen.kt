@@ -70,6 +70,7 @@ import com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDes
 import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.data.db.GuideEntity
+import skywa1ker404.absencium.data.db.NoteEntity
 import skywa1ker404.absencium.data.db.NoteStatus
 import skywa1ker404.absencium.data.share.ShareFormat
 import skywa1ker404.absencium.ui.components.AppCard
@@ -93,6 +94,12 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     var addEntry by remember { mutableStateOf(false) }
     var guideToDelete by remember { mutableStateOf<GuideEntity?>(null) }
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
+    var selectedGuideIds by remember { mutableStateOf(setOf<Long>()) }
+    // Cards (the rich tinted tiles) or a compact list, for the notes and for the study material.
+    var cardMode by rememberSaveable { mutableStateOf(true) }
+    var showEdit by remember { mutableStateOf(false) }
+    var showGuideTopic by remember { mutableStateOf(false) }
+    var confirmGuideDelete by remember { mutableStateOf(false) }
     var confirmBatchDelete by remember { mutableStateOf(false) }
     var showMove by remember { mutableStateOf(false) }
     var showShare by remember { mutableStateOf(false) }
@@ -141,44 +148,26 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     }
                     if (tab == 0 && subject != null) Icon(AppIcons.ExpandMore, contentDescription = "Filter notes by topic", tint = colors.onSurfaceVariant)
                 }
-                AppMenu(expanded = topicsOpen, onDismiss = { topicsOpen = false }) {
-                    AppMenuItem(AppIcons.Description, "All topics", { topicsOpen = false; topicFilter = null })
-                    val rows = SyllabusTree.rows(nodes, emptySet())
-                    if (rows.isNotEmpty()) AppMenuDivider()
-                    rows.forEach { row ->
-                        val chosen = topicFilter == row.node.id
-                        androidx.compose.material3.DropdownMenuItem(
-                            text = {
-                                Text(
-                                    row.node.title,
-                                    style = if (row.depth == 0) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyLarge,
-                                    color = if (chosen) colors.primary else colors.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            },
-                            onClick = { topicsOpen = false; topicFilter = row.node.id },
-                            modifier = Modifier.padding(start = (row.depth * 14).dp, end = 6.dp).clip(RoundedCornerShape(18.dp)),
-                            trailingIcon = if (chosen) ({ Icon(AppIcons.Check, contentDescription = null, tint = colors.primary) }) else null,
-                        )
-                    }
-                    AppMenuDivider()
-                    AppMenuItem(AppIcons.School, if (nodes.isEmpty()) "Build the syllabus" else "Open the syllabus", {
+                skywa1ker404.absencium.ui.syllabus.TopicMenu(
+                    expanded = topicsOpen,
+                    onDismiss = { topicsOpen = false },
+                    nodes = nodes,
+                    selectedId = topicFilter,
+                    noneLabel = "All topics",
+                    onPick = { topicsOpen = false; topicFilter = it },
+                    onOpenSyllabus = {
                         topicsOpen = false
                         navigator.navigate(SyllabusScreenDestination(subjectId = subjectId))
-                    })
-                }
+                    },
+                )
             }
         },
         overlay = {
             // Like the main screen: the same pill (it shrinks to icons while the list scrolls down) and the button above it on the right.
             Box(Modifier.fillMaxSize().navigationBarsPadding()) {
-                SlideAway(
-                    hidden = { pillScroll.compact.value },
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp + 64.dp + 12.dp),
-                ) {
+                Box(modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp + 64.dp + 12.dp)) {
                     androidx.compose.animation.AnimatedVisibility(
-                        visible = selectedIds.isEmpty() && subject != null,
+                        visible = !(selectedIds.isNotEmpty() || selectedGuideIds.isNotEmpty()) && subject != null,
                         enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
                         exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
                     ) {
@@ -197,6 +186,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                                 }
                             },
                             backdrop = LocalBackdrop.current,
+                            expanded = !pillScroll.compact.value,
                         )
                     }
                 }
@@ -205,7 +195,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     selectedIndex = tab,
                     compact = { pillScroll.compact.value },
                     backdrop = LocalBackdrop.current,
-                    onSelect = { tab = it; selectedIds = emptySet() },
+                    onSelect = { tab = it; selectedIds = emptySet(); selectedGuideIds = emptySet() },
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
                 )
             }
@@ -244,11 +234,15 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         // Selected notes that still exist (one may have been deleted or moved elsewhere while selected).
         val everyNote = active + finished
         val selected = everyNote.filter { it.id in selectedIds }
-        val selecting = selectedIds.isNotEmpty()
+        val selectedGuides = guides.filter { it.id in selectedGuideIds }
+        val selecting = selectedIds.isNotEmpty() || selectedGuideIds.isNotEmpty()
         fun toggle(id: Long) {
             selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
         }
-        BackHandler(enabled = selecting) { selectedIds = emptySet() }
+        fun toggleGuide(id: Long) {
+            selectedGuideIds = if (id in selectedGuideIds) selectedGuideIds - id else selectedGuideIds + id
+        }
+        BackHandler(enabled = selecting) { selectedIds = emptySet(); selectedGuideIds = emptySet() }
         val listState = rememberLazyListState()
 
         Box(Modifier.fillMaxSize()) {
@@ -266,7 +260,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
             item(key = "crumbs") {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = "Vault",
                         style = MaterialTheme.typography.labelLarge,
@@ -274,7 +268,17 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                         modifier = Modifier.clickable { navigator.navigateUp() },
                     )
                     Text("\u203a", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
-                    Text(subject.name, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, maxLines = 1)
+                    Text(subject.name, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, maxLines = 1, modifier = Modifier.weight(1f))
+                    if (tab != 2) {
+                        // Cards or a compact list, for the notes and the study material alike.
+                        IconButton(onClick = { cardMode = !cardMode }, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                if (cardMode) AppIcons.ViewList else AppIcons.ViewAgenda,
+                                contentDescription = if (cardMode) "Show as a list" else "Show as cards",
+                                tint = colors.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
             if (tab == 0) {
@@ -310,14 +314,34 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
             items(activeShown, key = { "note-${it.id}" }) { note ->
-                NoteCard(
-                    note,
-                    photoCount = loaded.attachmentsOf(note.id).size,
-                    selected = note.id in selectedIds,
-                    topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
-                    onLongClick = { toggle(note.id) },
-                    onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
-                )
+                if (cardMode) {
+                    if (cardMode) {
+                        NoteCard(
+                            note,
+                            photoCount = loaded.attachmentsOf(note.id).size,
+                            selected = note.id in selectedIds,
+                            topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
+                            onLongClick = { toggle(note.id) },
+                            onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
+                        )
+                    } else {
+                        NoteRow(
+                            note,
+                            selected = note.id in selectedIds,
+                            topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
+                            onLongClick = { toggle(note.id) },
+                            onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
+                        )
+                    }
+                } else {
+                    NoteRow(
+                        note,
+                        selected = note.id in selectedIds,
+                        topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
+                        onLongClick = { toggle(note.id) },
+                        onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
+                    )
+                }
             }
 
             item(key = "finished-title") { SectionTitle("Finished / Written Notes") }
@@ -393,15 +417,31 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                         if (ofType.isNotEmpty() && (materialFilter == -1 || materialFilter == type.ordinal)) {
                             if (materialFilter == -1) item(key = "type-${type.name}") { SectionTitle(type.sectionTitle()) }
                             items(ofType, key = { "guide-${it.id}" }) { guide ->
-                                GuideCard(
-                                    guide = guide,
-                                    topic = guide.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
-                                    onFile = { fileGuide = guide },
-                                    onClick = {
-                                        openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
-                                    },
-                                    onDelete = { guideToDelete = guide },
-                                )
+                                val guideTopic = guide.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") }
+                                val openIt = {
+                                    if (selecting) toggleGuide(guide.id)
+                                    else openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+                                    Unit
+                                }
+                                if (cardMode) {
+                                    GuideCard(
+                                        guide = guide,
+                                        topic = guideTopic,
+                                        onFile = { fileGuide = guide },
+                                        onClick = openIt,
+                                        onDelete = { guideToDelete = guide },
+                                        selected = guide.id in selectedGuideIds,
+                                        onLongClick = { toggleGuide(guide.id) },
+                                    )
+                                } else {
+                                    GuideRow(
+                                        guide = guide,
+                                        topic = guideTopic,
+                                        onClick = openIt,
+                                        selected = guide.id in selectedGuideIds,
+                                        onLongClick = { toggleGuide(guide.id) },
+                                    )
+                                }
                             }
                         }
                     }
@@ -515,19 +555,33 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     Box(
                         modifier = Modifier.padding(start = 4.dp).size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
                         contentAlignment = Alignment.Center,
-                    ) { Text("${selected.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary) }
+                    ) {
+                        Text(
+                            "${if (tab == 1) selectedGuides.size else selected.size}",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
                 },
                 trailingContent = {
-                    IconButton(onClick = { selectedIds = emptySet() }) { Icon(AppIcons.Close, contentDescription = "Cancel selection") }
+                    IconButton(onClick = { selectedIds = emptySet(); selectedGuideIds = emptySet() }) { Icon(AppIcons.Close, contentDescription = "Cancel selection") }
                 },
                 content = {
-                    SelectionAction(AppIcons.Check, if (allFinished) "Reopen" else "Finish") {
-                        viewModel.setNotesStatus(selected, if (allFinished) NoteStatus.ACTIVE else NoteStatus.FINISHED)
-                        selectedIds = emptySet()
+                    if (tab == 1) {
+                        // Study material: file it under a topic, or remove it.
+                        SelectionAction(AppIcons.Folder, "Topic") { showGuideTopic = true }
+                        SelectionAction(AppIcons.Delete, "Delete", destructive = true) { confirmGuideDelete = true }
+                    } else {
+                        // Edit (the title and the date) is for one note at a time.
+                        if (selected.size == 1) SelectionAction(AppIcons.Edit, "Edit") { showEdit = true }
+                        SelectionAction(AppIcons.Check, if (allFinished) "Reopen" else "Finish") {
+                            viewModel.setNotesStatus(selected, if (allFinished) NoteStatus.ACTIVE else NoteStatus.FINISHED)
+                            selectedIds = emptySet()
+                        }
+                        SelectionAction(AppIcons.Share, "Share") { showShare = true }
+                        SelectionAction(AppIcons.Folder, "Move") { showMove = true }
+                        SelectionAction(AppIcons.Delete, "Delete", destructive = true) { confirmBatchDelete = true }
                     }
-                    SelectionAction(AppIcons.Share, "Share") { showShare = true }
-                    SelectionAction(AppIcons.Folder, "Move") { showMove = true }
-                    SelectionAction(AppIcons.Delete, "Delete", destructive = true) { confirmBatchDelete = true }
                 },
             )
         }
@@ -604,6 +658,52 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         )
     }
 
+    if (showEdit) {
+        val note = (data?.notes.orEmpty()).firstOrNull { it.id in selectedIds }
+        if (note == null) {
+            showEdit = false
+        } else {
+            EditNoteDialog(
+                note = note,
+                onSave = { title, millis ->
+                    viewModel.editNote(note.id, title, millis)
+                    selectedIds = emptySet()
+                    showEdit = false
+                },
+                onDismiss = { showEdit = false },
+            )
+        }
+    }
+    if (showGuideTopic) {
+        SyllabusPickerDialog(
+            nodes = nodes,
+            current = null,
+            onPick = { picked ->
+                viewModel.setGuidesSyllabus(selectedGuideIds, picked)
+                selectedGuideIds = emptySet()
+                showGuideTopic = false
+            },
+            onDismiss = { showGuideTopic = false },
+            onOpenSyllabus = { showGuideTopic = false; navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) },
+        )
+    }
+    if (confirmGuideDelete) {
+        val victims = (data?.guides.orEmpty()).filter { it.id in selectedGuideIds }
+        AlertDialog(
+            onDismissRequest = { confirmGuideDelete = false },
+            title = { Text("Remove ${victims.size} ${if (victims.size == 1) "PDF" else "PDFs"}?") },
+            text = { Text("They are removed from the vault and from the notes folder.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteGuides(victims)
+                    selectedGuideIds = emptySet()
+                    confirmGuideDelete = false
+                }) { Text("Remove") }
+            },
+            dismissButton = { TextButton(onClick = { confirmGuideDelete = false }) { Text("Keep") } },
+        )
+    }
+
     val pending = guideToDelete
     if (pending != null) {
         AlertDialog(
@@ -645,3 +745,51 @@ private val FolderTabs = listOf(
     MainTab("Study material", AppIcons.Book),
     MainTab("Syllabus", AppIcons.School),
 )
+
+
+/** Renames one note and changes the date it is filed under. The time of day it was made at is kept. */
+@Composable
+private fun EditNoteDialog(note: NoteEntity, onSave: (title: String, createdMillis: Long) -> Unit, onDismiss: () -> Unit) {
+    val zone = remember { java.time.ZoneId.systemDefault() }
+    var title by remember(note.id) { mutableStateOf(note.title) }
+    var date by remember(note.id) { mutableStateOf(java.time.Instant.ofEpochMilli(note.createdDate).atZone(zone).toLocalDate()) }
+    var picking by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit entry") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                skywa1ker404.absencium.ui.components.AppTextField(
+                    value = title,
+                    onValueChange = { title = it.replace("\n", " ") },
+                    label = { Text("Title") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column {
+                        Text("Date", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(date.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy")), style = MaterialTheme.typography.titleMedium)
+                    }
+                    skywa1ker404.absencium.ui.components.PillButton(text = "Change date", tonal = true, compact = true, onClick = { picking = true })
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val time = java.time.Instant.ofEpochMilli(note.createdDate).atZone(zone).toLocalTime()
+                onSave(title, date.atTime(time).atZone(zone).toInstant().toEpochMilli())
+            }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+    skywa1ker404.absencium.ui.components.AnimatedPopup(if (picking) true else null) {
+        skywa1ker404.absencium.ui.components.DatePickerPopup(
+            initial = date,
+            title = "Pick a date",
+            onPicked = { date = it },
+            onDismiss = { picking = false },
+        )
+    }
+}

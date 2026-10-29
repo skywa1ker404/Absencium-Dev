@@ -109,4 +109,49 @@ object SyllabusTree {
         }
         return out
     }
+
+    /** The item above [index] that it sits inside (the nearest earlier item one level up), or null for a top-level item. */
+    fun parentIndex(items: List<OutlineItem>, index: Int): Int? {
+        val depth = items[index].depth
+        if (depth == 0) return null
+        for (i in index - 1 downTo 0) if (items[i].depth == depth - 1) return i
+        return null
+    }
+
+    /** [index] and every item inside it (the lines after it that are deeper). */
+    fun subtreeIndices(items: List<OutlineItem>, index: Int): List<Int> {
+        val out = arrayListOf(index)
+        var i = index + 1
+        while (i < items.size && items[i].depth > items[index].depth) { out += i; i++ }
+        return out
+    }
+
+    /**
+     * The items of [items] that would be duplicates once added below [under] (null for the top level): an item whose title
+     * (ignoring case and spacing) already sits under the same parent in [existing], or that repeats an earlier item of the list
+     * under the same parent. Children of a duplicate are compared with the children of the node it matched.
+     */
+    fun duplicates(existing: List<SyllabusNodeEntity>, items: List<OutlineItem>, under: Long?): Set<Int> {
+        fun norm(t: String) = t.trim().replace(Regex("\\s+"), " ").lowercase()
+        val known = HashMap<Pair<String, String>, String>()
+        for (n in existing) known[(n.parentId?.let { "e$it" } ?: "root") to norm(n.title)] = "e${n.id}"
+        val rootKey = under?.let { "e$it" } ?: "root"
+        val trail = arrayOfNulls<String>(MAX_DEPTH + 2)
+        val dup = HashSet<Int>()
+        items.forEachIndexed { i, item ->
+            val d = item.depth.coerceIn(0, MAX_DEPTH)
+            val parent = if (d == 0) rootKey else trail[d - 1] ?: rootKey
+            val key = parent to norm(item.title)
+            val hit = known[key]
+            if (hit != null) {
+                dup += i
+                trail[d] = hit
+            } else {
+                known[key] = "n$i"
+                trail[d] = "n$i"
+            }
+            for (deeper in d + 1 until trail.size) trail[deeper] = null
+        }
+        return dup
+    }
 }
