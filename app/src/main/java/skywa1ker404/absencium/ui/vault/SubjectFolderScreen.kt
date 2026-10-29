@@ -307,7 +307,13 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             item(key = "notes-title") { SectionTitle("Notes") }
             if (activeShown.isEmpty()) {
                 item(key = "notes-empty") {
-                    HintText(
+                    if (topicFilter == null && finished.isEmpty() && drafts.isEmpty()) {
+                        skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
+                            icon = AppIcons.Description,
+                            title = "This folder is empty",
+                            text = "Use New entry below to add the first note. Press and hold a note later to select several.",
+                        )
+                    } else HintText(
                         if (topicFilter != null) "No notes under this topic. Clear the topic to see every note."
                         else if (finished.isEmpty() && drafts.isEmpty()) "This folder is empty. Use New entry below, or press and hold a note later to select several."
                         else "No notes here right now. Notes you mark as finished move to the archive below.",

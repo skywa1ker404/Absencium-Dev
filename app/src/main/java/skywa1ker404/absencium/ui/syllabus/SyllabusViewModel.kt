@@ -177,7 +177,13 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
                 return@launch
             }
             try {
-                val read = container.textExtractor.extract(stored.path, stored.mimeType, stored.displayName) { step ->
+                val kind = skywa1ker404.absencium.data.ocr.FileKind.of(stored.mimeType, stored.displayName)
+                if (kind == skywa1ker404.absencium.data.ocr.FileKind.PDF) {
+                    _import.value = outlineFromPdf(stored.path)
+                    return@launch
+                }
+                // Word and text files are already text: they go straight to the outline step with no tidy-up request first.
+                val read = container.textExtractor.extract(stored.path, stored.mimeType, stored.displayName, tidy = false) { step ->
                     _import.value = OutlineImport.Working(step)
                 }
                 _import.value = when (read) {
@@ -190,6 +196,50 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
             } finally {
                 container.attachmentStore.delete(stored.path)
             }
+        }
+    }
+
+    /**
+     * Reads a PDF as small page pictures, a few pages per request, asking for this subject's outline from each batch, so a big
+     * session PDF does not have to travel as one huge upload. Batches that do not mention the subject answer NONE and add nothing.
+     */
+    private suspend fun outlineFromPdf(path: String): OutlineImport {
+        val connection = container.aiConnection()
+            ?: return OutlineImport.Problem("AI Features are off or not set up. You can still add the outline as typed text.", setupMissing = true)
+        val subject = _subjectName.value.ifEmpty { container.database.subjectDao().getById(subjectId)?.name.orEmpty() }
+        val extractor = container.textExtractor
+        return try {
+            val total = extractor.pdfPageCount(path)
+            val used = minOf(total, skywa1ker404.absencium.data.ocr.TextExtractor.MAX_PDF_PAGES)
+            val lines = StringBuilder()
+            for (from in 0 until used step skywa1ker404.absencium.data.ocr.TextExtractor.PDF_BATCH) {
+                val to = minOf(used, from + skywa1ker404.absencium.data.ocr.TextExtractor.PDF_BATCH)
+                _import.value = OutlineImport.Working("Reading pages ${from + 1} to $to of $total")
+                val reply = container.aiClient.generate(
+                    connection,
+                    outlinePrompt(subject).replace("Text:\n", "The pages are attached as pictures (pages ${from + 1} to $to of $total).") ,
+                    extractor.pdfImages(path, from, to),
+                    maxTokens = 8000,
+                )
+                if (!reply.trim().equals("NONE", ignoreCase = true)) lines.append(reply.trim()).append('\n')
+            }
+            val items = SyllabusTree.parseOutline(lines.toString())
+            when {
+                items.isEmpty() -> OutlineImport.Problem(
+                    "The text does not seem to contain a syllabus for $subject" +
+                        (if (total > used) " in its first $used pages" else "") + ". Check the subject name, or use a PDF of just its part.",
+                )
+                else -> OutlineImport.Ready(items)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: AiException) {
+            OutlineImport.Problem(e.message ?: "The AI request failed.")
+        } catch (e: java.io.IOException) {
+            OutlineImport.Problem(e.message ?: "The file could not be read.")
+        } catch (e: Exception) {
+            DebugLogger.e("Syllabus", "Reading the PDF outline failed", e)
+            OutlineImport.Problem("Something went wrong: ${e.message ?: e.javaClass.simpleName}")
         }
     }
 

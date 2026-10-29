@@ -163,16 +163,12 @@ fun VaultTab(
             }
             if (subjects.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    AppCard(modifier = Modifier.fillMaxWidth()) {
-                        Text("No folders yet", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "Each subject gets its own folder for notes, finished notes and guides.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp),
-                        )
-                        PillButton(text = "Add subjects", onClick = onManageSubjects)
-                    }
+                    skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
+                        icon = AppIcons.Folder,
+                        title = "No folders yet",
+                        text = "Each subject gets its own folder for notes, finished notes and guides.",
+                        action = { PillButton(text = "Add subjects", onClick = onManageSubjects) },
+                    )
                 }
             }
             itemsIndexed(subjects, key = { _, subject -> subject.id }) { index, subject ->

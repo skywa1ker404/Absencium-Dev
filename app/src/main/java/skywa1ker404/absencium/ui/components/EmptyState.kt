@@ -3,7 +3,7 @@ package skywa1ker404.absencium.ui.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -62,19 +62,21 @@ fun ExpressiveEmptyState(
     val colors = MaterialTheme.colorScheme
     val q = LocalQuality.current
     val haptic = LocalHapticFeedback.current
+    // The same shapes, in the same order, as the Material loading indicator.
     val shapes = remember {
         listOf(
-            MaterialShapes.Cookie12Sided,
-            MaterialShapes.Clover4Leaf,
-            MaterialShapes.Circle,
-            MaterialShapes.Cookie9Sided,
             MaterialShapes.SoftBurst,
+            MaterialShapes.Cookie9Sided,
+            MaterialShapes.Pentagon,
+            MaterialShapes.Pill,
+            MaterialShapes.Sunny,
+            MaterialShapes.Cookie4Sided,
+            MaterialShapes.Oval,
         )
     }
     var index by remember { mutableIntStateOf(0) }
     var from by remember { mutableIntStateOf(0) }
     val morphProgress = remember { Animatable(1f) }
-    val squash = remember { Animatable(1f) }
     // The badge keeps turning slowly anti-clockwise, and every 5 seconds it changes into the next shape with a springy squash.
     val spin = rememberInfiniteTransition(label = "emptySpin").animateFloat(
         initialValue = 0f,
@@ -82,6 +84,7 @@ fun ExpressiveEmptyState(
         animationSpec = infiniteRepeatable(tween(durationMillis = 24_000, easing = LinearEasing)),
         label = "emptySpinAngle",
     )
+    val step = remember { Animatable(0f) }
     LaunchedEffect(q) {
         if (!q.decorativeMotion) return@LaunchedEffect
         while (true) {
@@ -90,9 +93,10 @@ fun ExpressiveEmptyState(
             index = (index + 1) % shapes.size
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             morphProgress.snapTo(0f)
-            launch { morphProgress.animateTo(1f, q.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow)) }
-            squash.snapTo(0.78f)
-            squash.animateTo(1f, q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
+            // The loading indicator's own motion: a bouncy spring (damping 0.6, stiffness 200) that overshoots a little,
+            // with a quarter turn added to the badge on each change.
+            launch { morphProgress.animateTo(1f, spring(dampingRatio = 0.6f, stiffness = 200f)) }
+            step.animateTo(step.value - 90f, spring(dampingRatio = 0.6f, stiffness = 200f))
         }
     }
     val morph = remember(from, index) { Morph(shapes[from], shapes[index]) }
@@ -105,9 +109,7 @@ fun ExpressiveEmptyState(
             modifier = Modifier
                 .size(96.dp)
                 .graphicsLayer {
-                    scaleX = squash.value
-                    scaleY = 2f - squash.value
-                    rotationZ = if (q.decorativeMotion) spin.value else 0f
+                    rotationZ = if (q.decorativeMotion) spin.value + step.value else 0f
                 }
                 .clip(MorphShape(morph, morphProgress.value))
                 .background(colors.secondaryContainer),
@@ -117,7 +119,7 @@ fun ExpressiveEmptyState(
                 imageVector = icon,
                 contentDescription = null,
                 tint = colors.onSecondaryContainer,
-                modifier = Modifier.size(40.dp).graphicsLayer { rotationZ = if (q.decorativeMotion) -spin.value else 0f },
+                modifier = Modifier.size(40.dp).graphicsLayer { rotationZ = if (q.decorativeMotion) -(spin.value + step.value) else 0f },
             )
         }
         Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
@@ -131,7 +133,7 @@ fun ExpressiveEmptyState(
 private class MorphShape(private val morph: Morph, private val progress: Float) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val path = androidx.compose.ui.graphics.Path()
-        val cubics = morph.asCubics(progress.coerceIn(0f, 1f))
+        val cubics = morph.asCubics(progress)
         if (cubics.isNotEmpty()) {
             path.moveTo(cubics.first().anchor0X * size.width, cubics.first().anchor0Y * size.height)
             for (c in cubics) {

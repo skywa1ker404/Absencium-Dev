@@ -169,16 +169,12 @@ fun HomeTab(
         }
 
         if (data.subjects.none { it.isActive }) {
-            AppCard(modifier = Modifier.fillMaxWidth(), onClick = onManageSubjects) {
-                Text("Add your subjects", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Attendance, the timetable and exams all start from your subject list.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
-                PillButton(text = "Add subjects", onClick = onManageSubjects)
-            }
+            skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
+                icon = AppIcons.School,
+                title = "Add your subjects",
+                text = "Attendance, the timetable and exams all start from your subject list.",
+                action = { PillButton(text = "Add subjects", onClick = onManageSubjects) },
+            )
         } else {
             val watch = perSubject.filter { s -> s.percent?.let { it < threshold + APPROACHING_POINTS } == true }
             var watchOpen by rememberSaveable { mutableStateOf(false) }
@@ -300,6 +296,7 @@ fun HomeTab(
  * sentence that explains it, and the Present / Absent / Total counts. About 55 to 60 percent shorter than the
  * earlier stacked layout, with every number still on it.
  */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun AttendanceCard(
     overallPercent: Double?,
@@ -367,11 +364,17 @@ private fun AttendanceCard(
                         maxLines = 2,
                     )
                 }
+                // The pills wrap onto a second line when the card is narrow; the arrow keeps its own corner and never covers a pill.
                 Row(
+                    verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
                 ) {
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
                     CompactPill("Present $present", colors.primary, colors.onPrimary)
                     CompactPill(
                         "Absent ${(held - present).coerceAtLeast(0)}",
@@ -379,12 +382,12 @@ private fun AttendanceCard(
                         if (below) colors.onError else colors.onErrorContainer,
                     )
                     CompactPill("Total $held", colors.surface, colors.onSurface)
+                    }
                     if (hasWatch) {
-                        Spacer(Modifier.weight(1f))
                         // No text: a small arrow in the corner opens the subjects to watch.
                         Box(
                             modifier = Modifier
-                                .requiredSize(40.dp)
+                                .requiredSize(36.dp)
                                 .clip(CircleShape)
                                 .background(onContainer.copy(alpha = 0.22f))
                                 .clickable(onClick = onToggleWatch),
@@ -393,7 +396,7 @@ private fun AttendanceCard(
                             ExpandChevron(
                                 expanded = watchOpen,
                                 description = if (watchOpen) "Hide the subjects to watch" else "Show the subjects to watch",
-                                modifier = Modifier.requiredSize(28.dp),
+                                modifier = Modifier.requiredSize(26.dp),
                                 tint = onContainer,
                             )
                         }
