@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -383,16 +384,16 @@ private fun AttendanceCard(
                         // No text: a small arrow in the corner opens the subjects to watch.
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .requiredSize(40.dp)
                                 .clip(CircleShape)
-                                .background(onContainer.copy(alpha = 0.12f))
+                                .background(onContainer.copy(alpha = 0.22f))
                                 .clickable(onClick = onToggleWatch),
                             contentAlignment = Alignment.Center,
                         ) {
                             ExpandChevron(
                                 expanded = watchOpen,
                                 description = if (watchOpen) "Hide the subjects to watch" else "Show the subjects to watch",
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.requiredSize(28.dp),
                                 tint = onContainer,
                             )
                         }

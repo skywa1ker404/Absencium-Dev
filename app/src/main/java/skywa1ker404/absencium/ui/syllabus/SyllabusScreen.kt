@@ -521,7 +521,14 @@ private fun ImportDialog(
                     }
                     is OutlineImport.Working -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         LoadingIndicator(modifier = Modifier.size(40.dp))
-                        Text(state.step, style = MaterialTheme.typography.bodyMedium)
+                        Column {
+                            Text(state.step, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "A large file can take a minute or two. If your phone cannot reach the AI service this ends with a message; Cancel stops it now.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     is OutlineImport.Ready -> {
                         val fresh = state.items.size - dups.size

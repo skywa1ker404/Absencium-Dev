@@ -1,7 +1,11 @@
 package skywa1ker404.absencium.ui.components
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +34,9 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.graphics.shapes.Morph
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import skywa1ker404.absencium.ui.theme.LocalQuality
 
 /**
@@ -60,21 +66,30 @@ fun ExpressiveEmptyState(
         )
     }
     var index by remember { mutableIntStateOf(0) }
+    var from by remember { mutableIntStateOf(0) }
+    val morphProgress = remember { Animatable(1f) }
     val squash = remember { Animatable(1f) }
-    val turn = remember { Animatable(0f) }
+    // The badge keeps turning slowly anti-clockwise, and every 5 seconds it changes into the next shape with a springy squash.
+    val spin = rememberInfiniteTransition(label = "emptySpin").animateFloat(
+        initialValue = 0f,
+        targetValue = -360f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 24_000, easing = LinearEasing)),
+        label = "emptySpinAngle",
+    )
     LaunchedEffect(q) {
         if (!q.decorativeMotion) return@LaunchedEffect
         while (true) {
-            delay(2600)
+            delay(5000)
+            from = index
             index = (index + 1) % shapes.size
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            squash.snapTo(0.82f)
-            squash.animateTo(1f, q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
+            morphProgress.snapTo(0f)
+            launch { morphProgress.animateTo(1f, q.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow)) }
+            squash.snapTo(0.78f)
+            squash.animateTo(1f, q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
         }
     }
-    LaunchedEffect(index) {
-        if (q.decorativeMotion) turn.animateTo(index * 30f, q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow))
-    }
+    val morph = remember(from, index) { Morph(shapes[from], shapes[index]) }
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -86,9 +101,9 @@ fun ExpressiveEmptyState(
                 .graphicsLayer {
                     scaleX = squash.value
                     scaleY = 2f - squash.value
-                    rotationZ = turn.value
+                    rotationZ = if (q.decorativeMotion) spin.value else 0f
                 }
-                .clip(shapes[index].toShape())
+                .clip(morph.toShape(morphProgress.value))
                 .background(colors.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
@@ -96,7 +111,7 @@ fun ExpressiveEmptyState(
                 imageVector = icon,
                 contentDescription = null,
                 tint = colors.onSecondaryContainer,
-                modifier = Modifier.size(40.dp).graphicsLayer { rotationZ = -turn.value },
+                modifier = Modifier.size(40.dp).graphicsLayer { rotationZ = if (q.decorativeMotion) -spin.value else 0f },
             )
         }
         Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)

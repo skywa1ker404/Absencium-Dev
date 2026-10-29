@@ -156,6 +156,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var monthPicker by remember { mutableStateOf<MonthPickRequest?>(null) }
     var showDrafts by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
+    var viewGuide by remember { mutableStateOf<skywa1ker404.absencium.data.db.GuideEntity?>(null) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
     var editExam by remember { mutableStateOf<ExamEntity?>(null) }
     var editHoliday by remember { mutableStateOf<HolidayEntity?>(null) }
@@ -514,6 +515,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 )
             }
 
+            viewGuide?.let { skywa1ker404.absencium.ui.vault.GuideViewer(it, onClose = { viewGuide = null }) }
+
             AnimatedPopup(if (showSearch) true else null) {
                 SearchSheet(
                     calendar = loaded,
@@ -525,9 +528,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             navigator.navigate(NoteEditorScreenDestination(noteId = note.id))
                         }
                     },
-                    onOpenGuide = { guide ->
-                        openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
-                    },
+                    onOpenGuide = { guide -> viewGuide = guide },
                     onOpenExam = { openExam = it },
                 )
             }

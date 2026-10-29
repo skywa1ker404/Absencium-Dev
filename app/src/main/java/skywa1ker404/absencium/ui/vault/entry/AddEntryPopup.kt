@@ -214,6 +214,8 @@ fun AddEntryPopup(
                     }
     }
 
+    if (state.busy && state.busyStep != null) BusyDialog(state.busyStep.orEmpty(), onCancel = viewModel::cancelDocuments)
+
     if (pendingDocs.isNotEmpty()) {
         // The list is copied first: the dialog clears pendingDocs when it closes, before it calls the action.
         val docs = pendingDocs
@@ -928,4 +930,23 @@ private fun YouTubeStage(
             )
         }
     }
+}
+
+
+/** A long save (copying files, reading them with the AI) shown with what it is doing and a way out. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun BusyDialog(step: String, onCancel: () -> Unit) {
+    skywa1ker404.absencium.ui.components.AlertDialog(
+        onDismissRequest = {},
+        title = { Text("Working on it") },
+        text = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                androidx.compose.material3.LoadingIndicator(modifier = Modifier.size(44.dp))
+                Text(step, style = MaterialTheme.typography.bodyMedium)
+            }
+        },
+        confirmButton = {},
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onCancel) { Text("Cancel") } },
+    )
 }

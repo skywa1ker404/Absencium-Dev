@@ -346,3 +346,41 @@ fun GuideRow(
         }
     }
 }
+
+
+/**
+ * Opens a piece of study material inside the app (the same PDF viewer the notes use). A file picked from another app is copied
+ * to the cache first, because the viewer reads files. "Open in another app" stays in the top bar for anyone who wants it.
+ */
+@Composable
+fun GuideViewer(guide: GuideEntity, onClose: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val path by androidx.compose.runtime.produceState<String?>(null, guide.id, guide.localUri) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                if (guide.localUri.startsWith("content://")) {
+                    val target = File(context.cacheDir, "guide-${guide.id}.pdf")
+                    context.contentResolver.openInputStream(Uri.parse(guide.localUri))?.use { input ->
+                        target.outputStream().use { out -> input.copyTo(out) }
+                    }?.let { target.absolutePath }
+                } else {
+                    File(guide.localUri).takeIf { it.isFile }?.absolutePath
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+    val ready = path
+    if (ready != null) {
+        PdfViewerDialog(
+            path = ready,
+            name = guide.fileName,
+            onClose = onClose,
+            onExtract = null,
+            onOpenElsewhere = {
+                openGuide(context, guide)?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
+            },
+        )
+    }
+}

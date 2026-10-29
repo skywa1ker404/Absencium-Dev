@@ -107,6 +107,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     var materialFilter by rememberSaveable { mutableIntStateOf(-1) }
     var topicFilter by rememberSaveable { mutableStateOf<Long?>(null) }
     var fileGuide by remember { mutableStateOf<GuideEntity?>(null) }
+    var viewGuide by remember { mutableStateOf<GuideEntity?>(null) }
     val nodes by remember(subjectId) { viewModel.syllabusNodes(subjectId) }.collectAsStateWithLifecycle(emptyList())
     val colors = MaterialTheme.colorScheme
     val pillScroll = rememberPillScroll()
@@ -420,7 +421,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                                 val guideTopic = guide.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") }
                                 val openIt = {
                                     if (selecting) toggleGuide(guide.id)
-                                    else openGuide(context, guide)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+                                    else viewGuide = guide
                                     Unit
                                 }
                                 if (cardMode) {
@@ -588,6 +589,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         }
     }
 
+    viewGuide?.let { GuideViewer(it, onClose = { viewGuide = null }) }
     fileGuide?.let { guide ->
         SyllabusPickerDialog(
             nodes = nodes,
