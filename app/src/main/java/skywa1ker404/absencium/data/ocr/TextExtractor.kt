@@ -53,7 +53,7 @@ class TextExtractor(
     /** Whether this kind of file can be turned into text at all. */
     fun supports(kind: FileKind): Boolean = kind != FileKind.OTHER
 
-    suspend fun extract(path: String, mime: String, name: String, tidy: Boolean = true, onStep: (String) -> Unit = {}): Extracted =
+    suspend fun extract(path: String, mime: String, name: String, tidy: Boolean = true, onUpload: (Float) -> Unit = {}, onStep: (String) -> Unit = {}): Extracted =
         withContext(Dispatchers.IO) {
             val kind = FileKind.of(mime, name)
             val file = File(path)
@@ -61,7 +61,7 @@ class TextExtractor(
             if (!supports(kind)) return@withContext Extracted.Failed("Absencium cannot read text from this kind of file.")
             val conn = connection() ?: return@withContext Extracted.Failed("AI Features are off or not set up.", setupMissing = true)
             try {
-                val text = viaAi(conn, file, kind, mime, tidy, onStep)
+                val text = viaAi(conn, file, kind, mime, tidy, onUpload, onStep)
                 if (text.isBlank()) Extracted.Failed("No text was found in ${if (kind == FileKind.AUDIO) "that recording" else "that file"}.")
                 else Extracted.Text(text.trim())
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -83,7 +83,7 @@ class TextExtractor(
         else -> ""
     }
 
-    private suspend fun viaAi(conn: AiConnection, file: File, kind: FileKind, mime: String, tidy: Boolean, onStep: (String) -> Unit): String {
+    private suspend fun viaAi(conn: AiConnection, file: File, kind: FileKind, mime: String, tidy: Boolean, onUpload: (Float) -> Unit, onStep: (String) -> Unit): String {
         onStep("Sending to the AI")
         return when (kind) {
             FileKind.IMAGE -> {
@@ -91,15 +91,18 @@ class TextExtractor(
                 val bytes = ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray()
                 ai.generate(conn, IMAGE_PROMPT, listOf(AiImage("image/jpeg", Base64.encodeToString(bytes, Base64.NO_WRAP))))
             }
-            FileKind.PDF -> {
-                // A PDF is read as small page pictures, a few pages per request: sending the whole file (megabytes of base64)
-                // timed out on slow connections, while pictures of the pages go through quickly.
+            FileKind.PDF -> if (file.length() <= MAX_AI_FILE_BYTES) {
+                // The whole PDF goes up as one file, with its upload progress shown.
+                onStep("Uploading the PDF")
+                ai.generate(conn, PDF_PROMPT, listOf(AiImage("application/pdf", encode(file, "PDF"))), onUpload = onUpload)
+            } else {
+                // Too big to send whole: read the first pages as small pictures, a few at a time.
                 val total = pdfPageCount(file.absolutePath)
                 val used = minOf(total, MAX_PDF_PAGES)
                 val out = StringBuilder()
                 for (from in 0 until used step PDF_BATCH) {
                     val to = minOf(used, from + PDF_BATCH)
-                    onStep("Reading pages ${from + 1} to $to of $total")
+                    onStep("This PDF is large, reading pages ${from + 1} to $to of $total")
                     out.append(ai.generate(conn, PDF_PROMPT, pdfImages(file.absolutePath, from, to)).trim()).append("\n\n")
                 }
                 if (total > used) out.append("*Only the first $used of $total pages were read.*")

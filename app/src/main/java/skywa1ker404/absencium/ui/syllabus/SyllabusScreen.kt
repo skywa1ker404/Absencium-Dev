@@ -519,16 +519,20 @@ private fun ImportDialog(
                         }
                         if (!aiReady) HintText("AI Features are off or not set up, so only \"Use as typed\" works. Turn them on in Settings, AI Features.")
                     }
-                    is OutlineImport.Working -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        LoadingIndicator(modifier = Modifier.size(40.dp))
-                        Column {
-                            Text(state.step, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                "A large file can take a minute or two. If your phone cannot reach the AI service this ends with a message; Cancel stops it now.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    is OutlineImport.Working -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(state.step, style = MaterialTheme.typography.bodyMedium)
+                        // The upload is a wavy line that fills up; when nothing can be measured it waves on its own.
+                        if (state.progress != null) {
+                            LinearWavyProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth())
+                            Text("${(state.progress * 100).toInt()}%", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else {
+                            LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
                         }
+                        Text(
+                            "A large file can take a minute or two. If your phone cannot reach the AI service this ends with a message; Cancel stops it now.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                     is OutlineImport.Ready -> {
                         val fresh = state.items.size - dups.size

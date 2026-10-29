@@ -124,14 +124,15 @@ fun AddEntrySheet(
                 style = MaterialTheme.typography.headlineSmall,
             )
 
-            if (!editing) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!editing) Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ExpressiveChip(
                     selected = type == EntryType.EXAM,
                     onClick = {
                         type = EntryType.EXAM
                         priority = Priority.HIGH
                     },
-                    label = { Text("🚨 Scheduled Exam", maxLines = 1, softWrap = false) },
+                    label = { Text("Scheduled exam", style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                    modifier = Modifier.weight(1f),
                     shape = CircleShape,
                 )
                 ExpressiveChip(
@@ -140,7 +141,8 @@ fun AddEntrySheet(
                         type = EntryType.HOLIDAY
                         priority = Priority.LOW
                     },
-                    label = { Text("🏖️ College Holiday", maxLines = 1, softWrap = false) },
+                    label = { Text("College holiday", style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                    modifier = Modifier.weight(1f),
                     shape = CircleShape,
                 )
             }

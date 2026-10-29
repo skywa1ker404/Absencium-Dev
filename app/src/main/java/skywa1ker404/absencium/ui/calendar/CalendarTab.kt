@@ -761,20 +761,20 @@ internal fun TodayCard(
                     )
                 }
                 if (uncollected.isNotEmpty() && !expanded) {
-                    FlowRow(
-                        modifier = Modifier.padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
+                    Row(modifier = Modifier.padding(top = 8.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         PillButton(
                             text = "Yes, I have them",
                             tonal = true,
                             compact = true,
+                            maxLines = 2,
+                            modifier = Modifier.weight(1f),
                             onClick = { viewModel.setNotesCollected(uncollected.map { it.subjectId }, today, true) },
                         )
                         PillButton(
                             text = "Add today's notes",
                             compact = true,
+                            maxLines = 2,
+                            modifier = Modifier.weight(1f),
                             onClick = { expanded = true },
                         )
                     }

@@ -61,6 +61,8 @@ data class AddEntryState(
     val busy: Boolean = false,
     /** What a long save is doing right now (shown with a Cancel button), or null. */
     val busyStep: String? = null,
+    /** 0..1 while a file uploads to the AI, null when there is nothing to measure. */
+    val busyProgress: Float? = null,
     val message: String? = null,
     val youtubeUrl: String = "",
     val video: YouTubeVideo? = null,
@@ -530,7 +532,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     )
                 }
                 if (attachments.isEmpty()) {
-                    _state.update { it.copy(busy = false, busyStep = null, message = "None of the files could be read.") }
+                    _state.update { it.copy(busy = false, busyStep = null, busyProgress = null, message = "None of the files could be read.") }
                     return@launch
                 }
                 val title = if (attachments.size == 1) attachments[0].displayName.substringBeforeLast('.').ifBlank { "$subjectName file" } else "$subjectName files"
@@ -541,7 +543,10 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                         val kind = skywa1ker404.absencium.data.ocr.FileKind.of(a.mimeType, a.displayName)
                         if (kind == skywa1ker404.absencium.data.ocr.FileKind.OTHER) continue
                         _state.update { it.copy(busyStep = "Reading ${a.displayName} with the AI") }
-                        when (val r = container.textExtractor.extract(a.filePath, a.mimeType, a.displayName) { step ->
+                        when (val r = container.textExtractor.extract(
+                            a.filePath, a.mimeType, a.displayName,
+                            onUpload = { f -> _state.update { st -> st.copy(busyProgress = if (f >= 1f) null else f) } },
+                        ) { step ->
                             _state.update { st -> st.copy(busyStep = "${a.displayName}: $step") }
                         }) {
                             is skywa1ker404.absencium.data.ocr.Extracted.Text ->
@@ -550,7 +555,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                                 // Nothing is saved: the files are removed again and the student can retry or choose "Just attach".
                                 copied.forEach { store.delete(it) }
                                 _state.update {
-                                    it.copy(busy = false, busyStep = null, message = "${a.displayName}: ${r.message} Nothing was saved. Try again, or choose \"Just attach\" to add the file without its text.")
+                                    it.copy(busy = false, busyStep = null, busyProgress = null, message = "${a.displayName}: ${r.message} Nothing was saved. Try again, or choose \"Just attach\" to add the file without its text.")
                                 }
                                 return@launch
                             }
@@ -568,7 +573,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: Exception) {
                 DebugLogger.e("Vault", "Could not save the files", e)
                 copied.forEach { store.delete(it) }
-                _state.update { it.copy(busy = false, busyStep = null, message = "Could not save the files: ${e.message ?: e.javaClass.simpleName}") }
+                _state.update { it.copy(busy = false, busyStep = null, busyProgress = null, message = "Could not save the files: ${e.message ?: e.javaClass.simpleName}") }
             }
         }
     }
@@ -578,7 +583,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
     /** Stops a file save that is still copying or reading with the AI; the copies are removed. */
     fun cancelDocuments() {
         docsJob?.cancel()
-        _state.update { it.copy(busy = false, busyStep = null, message = "Cancelled. Nothing was saved.") }
+        _state.update { it.copy(busy = false, busyStep = null, busyProgress = null, message = "Cancelled. Nothing was saved.") }
     }
 
     // Audio

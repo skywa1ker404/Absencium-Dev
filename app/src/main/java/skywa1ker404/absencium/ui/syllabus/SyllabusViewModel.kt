@@ -24,7 +24,8 @@ import skywa1ker404.absencium.logging.DebugLogger
 /** Where reading a syllabus outline from text or a file stands. */
 sealed interface OutlineImport {
     data object Idle : OutlineImport
-    data class Working(val step: String) : OutlineImport
+    /** [progress] is 0..1 while a file is uploading, null when the step has no measurable progress. */
+    data class Working(val step: String, val progress: Float? = null) : OutlineImport
     /** The outline that was read, waiting for the student to accept it. */
     data class Ready(val items: List<SyllabusTree.OutlineItem>) : OutlineImport
     data class Problem(val message: String, val setupMissing: Boolean = false) : OutlineImport
@@ -209,27 +210,47 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
         val subject = _subjectName.value.ifEmpty { container.database.subjectDao().getById(subjectId)?.name.orEmpty() }
         val extractor = container.textExtractor
         return try {
-            val total = extractor.pdfPageCount(path)
-            val used = minOf(total, skywa1ker404.absencium.data.ocr.TextExtractor.MAX_PDF_PAGES)
+            val file = java.io.File(path)
             val lines = StringBuilder()
-            for (from in 0 until used step skywa1ker404.absencium.data.ocr.TextExtractor.PDF_BATCH) {
-                val to = minOf(used, from + skywa1ker404.absencium.data.ocr.TextExtractor.PDF_BATCH)
-                _import.value = OutlineImport.Working("Reading pages ${from + 1} to $to of $total")
+            var note = ""
+            if (file.length() <= skywa1ker404.absencium.data.ocr.TextExtractor.MAX_AI_FILE_BYTES) {
+                // The whole PDF goes up in one request, with the upload shown as a wavy progress line.
+                _import.value = OutlineImport.Working("Uploading the PDF", 0f)
+                val bytes = file.readBytes()
+                val pdf = skywa1ker404.absencium.data.ai.AiImage("application/pdf", android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
                 val reply = container.aiClient.generate(
                     connection,
-                    outlinePrompt(subject).replace("Text:\n", "The pages are attached as pictures (pages ${from + 1} to $to of $total).") ,
-                    extractor.pdfImages(path, from, to),
+                    outlinePrompt(subject).replace("Text:\n", "The syllabus document is attached as a PDF."),
+                    listOf(pdf),
                     maxTokens = 8000,
+                    onUpload = { f ->
+                        _import.value = if (f >= 1f) OutlineImport.Working("Uploaded. The AI is reading all the pages") else OutlineImport.Working("Uploading the PDF", f)
+                    },
                 )
-                if (!reply.trim().equals("NONE", ignoreCase = true)) lines.append(reply.trim()).append('\n')
+                if (!reply.trim().equals("NONE", ignoreCase = true)) lines.append(reply.trim())
+            } else {
+                // Too big to send whole: the first pages as small pictures, a few at a time.
+                val total = extractor.pdfPageCount(path)
+                val used = minOf(total, skywa1ker404.absencium.data.ocr.TextExtractor.MAX_PDF_PAGES)
+                val batch = skywa1ker404.absencium.data.ocr.TextExtractor.PDF_BATCH
+                for (from in 0 until used step batch) {
+                    val to = minOf(used, from + batch)
+                    _import.value = OutlineImport.Working("This PDF is large, reading pages ${from + 1} to $to of $total", from.toFloat() / used)
+                    val reply = container.aiClient.generate(
+                        connection,
+                        outlinePrompt(subject).replace("Text:\n", "The pages are attached as pictures (pages ${from + 1} to $to of $total)."),
+                        extractor.pdfImages(path, from, to),
+                        maxTokens = 8000,
+                    )
+                    if (!reply.trim().equals("NONE", ignoreCase = true)) lines.append(reply.trim()).append('\n')
+                }
+                if (total > used) note = " in its first $used pages"
             }
             val items = SyllabusTree.parseOutline(lines.toString())
-            when {
-                items.isEmpty() -> OutlineImport.Problem(
-                    "The text does not seem to contain a syllabus for $subject" +
-                        (if (total > used) " in its first $used pages" else "") + ". Check the subject name, or use a PDF of just its part.",
-                )
-                else -> OutlineImport.Ready(items)
+            if (items.isEmpty()) {
+                OutlineImport.Problem("The document does not seem to contain a syllabus for $subject$note. Check the subject name, or use a PDF of just its part.")
+            } else {
+                OutlineImport.Ready(items)
             }
         } catch (e: CancellationException) {
             throw e

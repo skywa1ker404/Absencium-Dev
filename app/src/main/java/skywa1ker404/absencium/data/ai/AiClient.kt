@@ -86,9 +86,11 @@ class AiClient(private val keyVault: ApiKeyVault) {
         images: List<AiImage> = emptyList(),
         videoUrl: String? = null,
         maxTokens: Int? = null,
+        /** Called with 0..1 while the request body is being uploaded, so a big file can show its progress. */
+        onUpload: ((Float) -> Unit)? = null,
     ): String {
         try {
-            val reply = generateRaw(connection, prompt, images, videoUrl, maxTokens)
+            val reply = generateRaw(connection, prompt, images, videoUrl, maxTokens, onUpload)
             history?.add(connection.model, prompt, reply, null, images.size)
             return reply
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -105,6 +107,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
         images: List<AiImage>,
         videoUrl: String?,
         maxTokens: Int?,
+        onUpload: ((Float) -> Unit)? = null,
     ): String =
         withContext(Dispatchers.IO) {
             val key = keyFor(connection)
@@ -143,7 +146,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                         "messages",
                         JSONArray().put(JSONObject().put("role", "user").put("content", content)),
                     )
-                    val reply = call("POST", "$base/chat/completions", openAiHeaders(key), body.toString())
+                    val reply = call("POST", "$base/chat/completions", openAiHeaders(key), body.toString(), onUpload)
                     parseOpenAiReply(reply)
                 }
 
@@ -165,7 +168,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                         "messages",
                         JSONArray().put(JSONObject().put("role", "user").put("content", content)),
                     )
-                    val reply = call("POST", "$base/messages", anthropicHeaders(key), body.toString())
+                    val reply = call("POST", "$base/messages", anthropicHeaders(key), body.toString(), onUpload)
                     parseAnthropicReply(reply)
                 }
 
@@ -189,7 +192,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                     if (maxTokens != null) body.put("generationConfig", JSONObject().put("maxOutputTokens", maxTokens))
                     val id = model.removePrefix("models/")
                     val url = "$base/models/$id:generateContent?key=${URLEncoder.encode(key.orEmpty(), "UTF-8")}"
-                    val reply = call("POST", url, emptyMap(), body.toString())
+                    val reply = call("POST", url, emptyMap(), body.toString(), onUpload)
                     parseGeminiReply(reply)
                 }
             }
@@ -336,7 +339,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
         return text
     }
 
-    private fun call(method: String, url: String, headers: Map<String, String>, body: String?): String {
+    private fun call(method: String, url: String, headers: Map<String, String>, body: String?, onUpload: ((Float) -> Unit)? = null): String {
         // The URL can carry an API key (Gemini), so only the host and path are logged.
         val shown = url.substringBefore('?')
         val connection = try {
@@ -347,12 +350,28 @@ class AiClient(private val keyVault: ApiKeyVault) {
         try {
             connection.requestMethod = method
             connection.connectTimeout = 20_000
-            connection.readTimeout = 120_000
+            val bytes = body?.toByteArray(Charsets.UTF_8)
+            // After a big upload the model may think for a while (a long PDF), so the wait for the answer is longer then.
+            connection.readTimeout = if (bytes != null && bytes.size > 1_000_000) 600_000 else 120_000
             headers.forEach { (name, value) -> connection.setRequestProperty(name, value) }
-            if (body != null) {
+            if (bytes != null) {
                 connection.doOutput = true
                 connection.setRequestProperty("Content-Type", "application/json")
-                connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+                if (onUpload != null) {
+                    // Streamed in pieces so the progress is real; without this the whole body is held back until it is all written.
+                    connection.setFixedLengthStreamingMode(bytes.size)
+                    connection.outputStream.use { out ->
+                        var sent = 0
+                        while (sent < bytes.size) {
+                            val n = minOf(UPLOAD_CHUNK, bytes.size - sent)
+                            out.write(bytes, sent, n)
+                            sent += n
+                            onUpload(sent.toFloat() / bytes.size)
+                        }
+                    }
+                } else {
+                    connection.outputStream.use { it.write(bytes) }
+                }
             }
             val code = connection.responseCode
             val stream = if (code in 200..299) connection.inputStream else connection.errorStream
@@ -393,6 +412,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
         const val TAG = "AiClient"
         const val ANTHROPIC_VERSION = "2023-06-01"
         const val MAX_PAGES = 10
+        const val UPLOAD_CHUNK = 32 * 1024
         const val GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image"
         const val OPENAI_IMAGE_MODEL = "gpt-image-1"
     }

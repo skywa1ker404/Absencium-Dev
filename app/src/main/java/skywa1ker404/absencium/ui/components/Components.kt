@@ -424,6 +424,8 @@ fun PillButton(
     loading: Boolean = false,
     tonal: Boolean = false,
     compact: Boolean = false,
+    /** More than one line lets a long label wrap inside a narrow button instead of being cut off. */
+    maxLines: Int = 1,
 ) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
@@ -446,13 +448,13 @@ fun PillButton(
             scaleY = scale
         }
         .then(glassModifier)
-    val padding = if (compact) PaddingValues(horizontal = 16.dp, vertical = 10.dp) else PaddingValues(horizontal = 28.dp, vertical = 14.dp)
+    val padding = if (compact) PaddingValues(horizontal = if (maxLines > 1) 12.dp else 16.dp, vertical = 10.dp) else PaddingValues(horizontal = 28.dp, vertical = 14.dp)
     val label: @Composable RowScope.() -> Unit = {
         if (loading) {
             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
             Spacer(modifier = Modifier.width(8.dp))
         }
-        Text(text = text, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+        Text(text = text, style = MaterialTheme.typography.labelLarge, maxLines = maxLines, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
     if (tonal) {
         FilledTonalButton(
