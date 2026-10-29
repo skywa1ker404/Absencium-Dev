@@ -2,6 +2,7 @@ package skywa1ker404.absencium.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -34,6 +35,12 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.graphics.shapes.Morph
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -103,7 +110,7 @@ fun ExpressiveEmptyState(
                     scaleY = 2f - squash.value
                     rotationZ = if (q.decorativeMotion) spin.value else 0f
                 }
-                .clip(morph.toShape(morphProgress.value))
+                .clip(MorphShape(morph, morphProgress.value))
                 .background(colors.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
@@ -117,5 +124,16 @@ fun ExpressiveEmptyState(
         Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
         Text(text, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
         if (action != null) Box(modifier = Modifier.padding(top = 6.dp)) { action() }
+    }
+}
+
+
+/** The outline of a [Morph] part of the way between its two shapes (0 is the first, 1 the second), scaled to fill the box. */
+private class MorphShape(private val morph: Morph, private val progress: Float) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val path = morph.asPath(progress.coerceIn(0f, 1f))
+        val matrix = android.graphics.Matrix().apply { setScale(size.width, size.height) }
+        path.transform(matrix)
+        return Outline.Generic(path.asComposePath())
     }
 }
