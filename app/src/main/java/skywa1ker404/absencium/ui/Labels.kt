@@ -25,9 +25,9 @@ fun ColorEngine.label(): String = when (this) {
 }
 
 fun ColorEngine.description(): String = when (this) {
-    ColorEngine.DEFAULT_PALETTE -> "Calm greens and warm earth tones, in light and dark"
-    ColorEngine.MONET_WALLPAPER -> "The colours of the wallpaper you picked in your phone's settings (Material You)"
-    ColorEngine.PRESET -> "Catppuccin, Dracula, Nord, Gruvbox and more"
+    ColorEngine.DEFAULT_PALETTE -> "Calm greens and earth tones"
+    ColorEngine.MONET_WALLPAPER -> "Colours from your wallpaper (Material You)"
+    ColorEngine.PRESET -> "Catppuccin, Dracula, Nord and more"
 }
 
 const val REQUIRES_ANDROID_12 = "Not supported by your Android version (needs Android 12 or newer)"
@@ -39,10 +39,7 @@ fun VisualQuality.label(): String = when (this) {
 }
 
 fun VisualQuality.description(): String = when (this) {
-    VisualQuality.PERFORMANCE ->
-        "Smoothest. Solid bars instead of glass, calmer animations. Every feature stays."
-    VisualQuality.LOW ->
-        "Keeps transparency, blur and colour overlays. Turns off the heavy shader effects: lens refraction, light bending and bouncy zoom motion."
-    VisualQuality.QUALITY ->
-        "The full look: real liquid glass that blurs and bends what is behind it (lens bending needs Android 13), and springy animations."
+    VisualQuality.PERFORMANCE -> "Smoothest. Solid bars and calmer motion."
+    VisualQuality.LOW -> "Keeps blur and colour. No shader effects."
+    VisualQuality.QUALITY -> "The full look: liquid glass and springy motion."
 }

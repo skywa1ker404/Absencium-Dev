@@ -1,6 +1,20 @@
 package skywa1ker404.absencium.ui.settings
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Switch
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import skywa1ker404.absencium.ui.theme.DefaultPalette
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -81,23 +95,43 @@ fun VisualQualityChoices(
     }
 }
 
-/** Theme mode choices, shared by Settings and the onboarding wizard. */
+/** Theme mode as four picture tiles (Light, Dark, OLED, Auto) with one helper line for the chosen one. */
 @Composable
 fun ThemeModeChoices(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    val c = MaterialTheme.colorScheme
+    val light = PreviewColors(Color(0xFFF4F4EF), Color(0xFFFFFFFF), Color(0xFF1B1C18), c.primary, c.secondary)
+    val dark = PreviewColors(Color(0xFF1E201C), Color(0xFF2E302B), Color(0xFFE4E3DB), c.primary, c.secondary)
+    val oled = PreviewColors(Color(0xFF0D0D0D), Color(0xFF1C1C1C), Color(0xFFE4E3DB), c.primary, c.secondary)
     SectionTitle("Theme mode")
-    ThemeMode.entries.forEach { mode ->
-        OptionCard(
-            title = mode.label(),
-            subtitle = mode.description(),
-            selected = selected == mode,
-            onClick = { onSelect(mode) },
-        )
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        ThemeMode.entries.forEach { mode ->
+            PreviewTile(
+                title = when (mode) {
+                    ThemeMode.LIGHT -> "Light"
+                    ThemeMode.DARK -> "Dark"
+                    ThemeMode.DARK_OLED -> "OLED"
+                    ThemeMode.SYSTEM_AUTO -> "Auto"
+                },
+                selected = selected == mode,
+                onClick = { onSelect(mode) },
+                modifier = Modifier.weight(1f),
+                aspect = 0.72f,
+            ) {
+                when (mode) {
+                    ThemeMode.LIGHT -> MiniScreen(light)
+                    ThemeMode.DARK -> MiniScreen(dark)
+                    ThemeMode.DARK_OLED -> MiniScreen(oled)
+                    ThemeMode.SYSTEM_AUTO -> SplitMiniScreen(light, dark)
+                }
+            }
+        }
     }
+    HintText(selected.description())
 }
 
 /**
- * Theme choices: Default Theme, Monet, Liquid Glass and Presets. Presets opens its own page of colour schemes;
- * picking one there applies and saves it at once.
+ * Theme choices as three picture tiles (Default, Monet, Presets) with one helper line, then a Liquid Glass switch with its own
+ * preview. Presets opens its own page of colour schemes; picking one there applies and saves it at once.
  */
 @Composable
 fun ColorEngineChoices(
@@ -108,46 +142,69 @@ fun ColorEngineChoices(
     onFrostedToggle: (Boolean) -> Unit,
 ) {
     var showPresets by remember { mutableStateOf(false) }
+    val isDark = isDarkTheme(settings)
+    val monet = monetPreview(isDark)
     SectionTitle("Theme")
-    listOf(ColorEngine.DEFAULT_PALETTE, ColorEngine.MONET_WALLPAPER).forEach { engine ->
-        val available = engine == ColorEngine.DEFAULT_PALETTE || isMonetAndBlurSupported
-        OptionCard(
-            title = engine.label(),
-            subtitle = if (available) engine.description() else "${engine.description()}\n$REQUIRES_ANDROID_12",
-            selected = settings.colorEngine == engine,
-            enabled = available,
-            onClick = { onSelect(engine) },
-        )
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        PreviewTile(
+            title = "Default",
+            selected = settings.colorEngine == ColorEngine.DEFAULT_PALETTE,
+            onClick = { onSelect(ColorEngine.DEFAULT_PALETTE) },
+            modifier = Modifier.weight(1f),
+        ) { MiniScreen((if (isDark) DefaultPalette.dark else DefaultPalette.light).previewColors()) }
+        PreviewTile(
+            title = "Monet",
+            selected = settings.colorEngine == ColorEngine.MONET_WALLPAPER,
+            enabled = monet != null && isMonetAndBlurSupported,
+            onClick = { onSelect(ColorEngine.MONET_WALLPAPER) },
+            modifier = Modifier.weight(1f),
+        ) { monet?.let { MiniScreen(it) } }
+        PreviewTile(
+            title = "Presets",
+            selected = settings.colorEngine == ColorEngine.PRESET,
+            onClick = { showPresets = true },
+            modifier = Modifier.weight(1f),
+        ) { MiniScreen(settings.themePreset.palette().variantFor(isDark).second.previewColors()) }
     }
-    OptionCard(
-        title = ColorEngine.PRESET.label(),
-        subtitle = if (settings.colorEngine == ColorEngine.PRESET) {
-            "${settings.themePreset.palette().name} \u2022 tap to change"
-        } else {
-            ColorEngine.PRESET.description()
+    HintText(
+        when (settings.colorEngine) {
+            ColorEngine.DEFAULT_PALETTE -> ColorEngine.DEFAULT_PALETTE.description()
+            ColorEngine.MONET_WALLPAPER ->
+                if (isMonetAndBlurSupported) ColorEngine.MONET_WALLPAPER.description() else REQUIRES_ANDROID_12
+            ColorEngine.PRESET -> "${settings.themePreset.palette().name}. Tap Presets to change."
         },
-        selected = settings.colorEngine == ColorEngine.PRESET,
-        onClick = { showPresets = true },
     )
-    SwitchCard(
-        title = "Liquid Glass",
-        subtitle = if (isMonetAndBlurSupported) {
-            "Frosted, see-through glass on every surface except the wallpaper, in the colours of the theme you picked. " +
-                "Shown in Quality mode; Performance mode keeps plain surfaces so the app stays smooth."
-        } else {
-            "Frosted glass over any theme.\n$REQUIRES_ANDROID_12"
-        },
-        checked = settings.liquidGlass,
-        enabled = isMonetAndBlurSupported && settings.visualQuality != VisualQuality.PERFORMANCE,
-        onCheckedChange = onGlassToggle,
-    )
+    val glassHelper = when {
+        !isMonetAndBlurSupported -> "Needs Android 12 or newer"
+        settings.visualQuality == VisualQuality.PERFORMANCE -> "Off in Performance mode"
+        else -> "Frosted, see-through surfaces over your theme"
+    }
+    val glassEnabled = isMonetAndBlurSupported && settings.visualQuality != VisualQuality.PERFORMANCE
+    AppCard(
+        modifier = Modifier.fillMaxWidth().alpha(if (glassEnabled) 1f else 0.5f),
+        onClick = if (glassEnabled) { { onGlassToggle(!settings.liquidGlass) } } else null,
+        highlighted = settings.liquidGlass,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Box(Modifier.size(60.dp).clip(RoundedCornerShape(18.dp))) { GlassPreview() }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Liquid Glass", style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Text(
+                    glassHelper,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                )
+            }
+            Switch(checked = settings.liquidGlass, onCheckedChange = null, enabled = glassEnabled)
+        }
+    }
     // Appears with the same springy expansion as the notes list on the Attendance tab, and folds away with Liquid Glass.
     Reveal(visible = settings.liquidGlass && isMonetAndBlurSupported) {
         GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
             SwitchCard(
-                title = "Apply frosted glass on other elements",
-                subtitle = "Also frost the profile, search, Add Entry, import and colour dialogs. " +
-                    "Turn it off to keep them solid when see-through glass makes them hard to read.",
+                title = "Frost popups too",
+                subtitle = "Profile, search, Add Entry and dialogs. Turn off if they are hard to read.",
                 checked = settings.frostedOverlays,
                 onCheckedChange = onFrostedToggle,
             )
@@ -156,7 +213,7 @@ fun ColorEngineChoices(
     if (showPresets) {
         PresetsPage(
             selected = settings.themePreset.takeIf { settings.colorEngine == ColorEngine.PRESET },
-            isDark = isDarkTheme(settings),
+            isDark = isDark,
             onSelect = onPresetSelected,
             onDismiss = { showPresets = false },
         )

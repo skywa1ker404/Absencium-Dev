@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -75,69 +77,36 @@ fun PresetsPage(
             val glassOn = LocalGlassEnabled.current
             val presets = (if (glassOn) listOf(ThemePreset.NO_COLOUR) else emptyList()) +
                 ThemePreset.entries.filter { it != ThemePreset.NO_COLOUR }
-            LazyColumn(
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 // "No colour" is offered only while Liquid Glass is on, and is listed first.
                 items(presets, key = { it.name }) { preset ->
-                    PresetRow(
-                        palette = preset.palette(),
-                        isDark = isDark,
-                        selected = preset == selected,
-                        onClick = { onSelect(preset) },
-                    )
+                    val palette = preset.palette()
+                    val (_, variant) = palette.variantFor(isDark)
+                    Column {
+                        PreviewTile(
+                            title = palette.name,
+                            selected = preset == selected,
+                            onClick = { onSelect(preset) },
+                            aspect = 1.25f,
+                        ) { MiniScreen(variant.previewColors()) }
+                        Text(
+                            text = palette.variants,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                    }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun PresetRow(palette: ThemePalette, isDark: Boolean, selected: Boolean, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val (_, variant) = palette.variantFor(isDark)
-    // The swatches show the scheme's own colours: its background, then its three accents.
-    val swatches = listOf(variant.background, variant.primary, variant.secondary, variant.tertiary)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .background(if (selected) colors.primaryContainer else colors.surfaceContainerHigh)
-            .clickable(onClick = onClick)
-            .semantics {
-                this.selected = selected
-                contentDescription = "${palette.name}, ${palette.variants}"
-            }
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = palette.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (selected) colors.onPrimaryContainer else colors.onSurface,
-            )
-            Text(
-                text = palette.variants,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant,
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            swatches.forEachIndexed { index, color ->
-                if (index > 0) Spacer(modifier = Modifier.width(6.dp))
-                Box(modifier = Modifier.size(28.dp).clip(CircleShape).background(color))
-            }
-        }
-        if (selected) {
-            Text(
-                text = "✓",
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.onPrimaryContainer,
-                modifier = Modifier.padding(start = 12.dp),
-            )
         }
     }
 }
