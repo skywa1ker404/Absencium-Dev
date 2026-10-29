@@ -209,3 +209,6 @@ Owner rule (2026-10-28): redesign these three (notes list, syllabus tree, study 
 - Selection toolbar: Edit only for one note; study material has its own selection (Topic, Delete); a list / card switch sits at the right of the breadcrumb on both tabs.
 - Next on the list: Vault grid (image 07), then Appearance, Attendance, Timetable day view, AI Hub, Settings hub, profile (with the syllabus card, TODOList 19.21), onboarding, editor toolbar, reading selection pill.
 
+
+### Update 2026-10-29, Vault (CI green `311f7de`)
+- Vault grid follows image 07: equal gradient tiles, frosted icon chip, count at the bottom. Next: Appearance.
