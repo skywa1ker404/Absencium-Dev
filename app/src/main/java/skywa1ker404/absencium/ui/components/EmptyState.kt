@@ -38,7 +38,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.graphics.shapes.Morph
@@ -131,9 +130,19 @@ fun ExpressiveEmptyState(
 /** The outline of a [Morph] part of the way between its two shapes (0 is the first, 1 the second), scaled to fill the box. */
 private class MorphShape(private val morph: Morph, private val progress: Float) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
-        val path = morph.asPath(progress.coerceIn(0f, 1f))
-        val matrix = android.graphics.Matrix().apply { setScale(size.width, size.height) }
-        path.transform(matrix)
-        return Outline.Generic(path.asComposePath())
+        val path = androidx.compose.ui.graphics.Path()
+        val cubics = morph.asCubics(progress.coerceIn(0f, 1f))
+        if (cubics.isNotEmpty()) {
+            path.moveTo(cubics.first().anchor0X * size.width, cubics.first().anchor0Y * size.height)
+            for (c in cubics) {
+                path.cubicTo(
+                    c.control0X * size.width, c.control0Y * size.height,
+                    c.control1X * size.width, c.control1Y * size.height,
+                    c.anchor1X * size.width, c.anchor1Y * size.height,
+                )
+            }
+            path.close()
+        }
+        return Outline.Generic(path)
     }
 }
