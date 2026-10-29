@@ -5,6 +5,10 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.IconButton
@@ -175,53 +179,15 @@ fun VaultTab(
                 val active = data.notesOf(subject.id, NoteStatus.ACTIVE).size
                 val finished = data.notesOf(subject.id, NoteStatus.FINISHED).size
                 val guides = data.guides.count { it.subjectId == subject.id }
-                // Folders take turns in the theme's tonal colours, like a stack of coloured folders.
-                val (container, onContainer) = when (index % 3) {
-                    0 -> colors.primaryContainer to colors.onPrimaryContainer
-                    1 -> colors.tertiaryContainer to colors.onTertiaryContainer
-                    else -> colors.secondaryContainer to colors.onSecondaryContainer
-                }
-                AppCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    container = container,
+                FolderTile(
+                    name = subject.name,
+                    notes = active,
+                    finished = finished,
+                    guides = guides,
+                    seed = subject.id,
+                    dot = subjectColor(subject.id),
                     onClick = { onOpenFolder(subject.id) },
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(onContainer.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(AppIcons.Folder, contentDescription = null, tint = onContainer)
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(subjectColor(subject.id)),
-                        )
-                    }
-                    Text(
-                        text = subject.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = onContainer,
-                        maxLines = 2,
-                        modifier = Modifier.padding(top = 14.dp),
-                    )
-                    Text(
-                        text = "$active ${if (active == 1) "note" else "notes"}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                        color = onContainer,
-                        modifier = Modifier.padding(top = 10.dp),
-                    )
-                    Text(
-                        text = "$finished finished · $guides ${if (guides == 1) "guide" else "guides"}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = onContainer.copy(alpha = 0.75f),
-                    )
-                }
+                )
             }
         }
 
@@ -248,6 +214,74 @@ fun VaultTab(
                     tint = if (reached) colors.onPrimary else colors.onSurface,
                 )
             }
+        }
+    }
+}
+
+/**
+ * One subject as a gradient tile (image 07): a soft two-tone wash of the theme's tonal colours, a frosted icon chip at the top left
+ * with the subject's colour dot, and the name with the note count at the bottom. Every tile is the same size; it springs when pressed.
+ */
+@Composable
+private fun FolderTile(
+    name: String,
+    notes: Int,
+    finished: Int,
+    guides: Int,
+    seed: Long,
+    dot: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+) {
+    val q = LocalQuality.current
+    val a = skywa1ker404.absencium.ui.components.hueFor(seed)
+    val b = skywa1ker404.absencium.ui.components.hueFor(seed + 2)
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (pressed) 0.95f else 1f,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "folderPress",
+    )
+    val ink = a.onContainer
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clip(RoundedCornerShape(28.dp))
+            .background(
+                androidx.compose.ui.graphics.Brush.linearGradient(
+                    listOf(a.container, androidx.compose.ui.graphics.lerp(a.container, b.container, 0.85f)),
+                ),
+            )
+            .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current, onClick = onClick)
+            .padding(16.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .size(44.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(AppIcons.Folder, contentDescription = null, tint = ink)
+            Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(10.dp).clip(CircleShape).background(dot))
+        }
+        Column(modifier = Modifier.align(Alignment.BottomStart)) {
+            Text(name, style = MaterialTheme.typography.titleMedium, color = ink, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(
+                "$notes ${if (notes == 1) "note" else "notes"}",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                color = ink,
+            )
+            Text(
+                "$finished finished \u00b7 $guides ${if (guides == 1) "guide" else "guides"}",
+                style = MaterialTheme.typography.labelSmall,
+                color = ink.copy(alpha = 0.75f),
+                maxLines = 1,
+            )
         }
     }
 }
