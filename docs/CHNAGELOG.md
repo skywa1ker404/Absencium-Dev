@@ -23,3 +23,5 @@ working on it
 - Changed: empty pages spin slowly and morph every 5 seconds; study material opens inside the app; reading a document with the AI shows progress with Cancel and saves nothing if the AI cannot be reached; the Home chevron is larger.
 - Fixed: PDFs are read as small page pictures in batches (they timed out as one big upload); empty Home, Vault and folder show the morphing badge, now moving like the loading indicator; the attendance arrow no longer covers a pill.
 - Changed: PDFs are uploaded whole with a wavy progress line; Present / Absent / Total and the notes buttons sit side by side; the calendar entry type buttons have no emojis.
+- Appearance: theme mode, theme and presets are picture tiles with a one-line helper; Liquid Glass has its own preview.
+- AI: failures show a bar on every screen with Copy; HTTP 500/502/503/504 are retried; the provider's reason is logged; Groq PDF and picture-count limits are respected; upload progress redraws less.
