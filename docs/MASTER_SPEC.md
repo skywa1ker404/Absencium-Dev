@@ -87,3 +87,11 @@ These were in the original text but are not in the plan, so nothing is built for
 
 ## Test expectations (kept from the original)
 Fresh install and onboarding without internet; export and restore with and without a password; wrong password, corrupted archive and unsupported version; missing attachments and low storage; process death during export or restore; no API key or secret in backups or logs; rapid taps; midnight, month and leap-day boundaries; upgrade with data. Tests are reported only if they ran; CI compiles and runs the JVM tests, and nothing is device-tested until the owner tests it.
+
+## Addendum 2026-10-29 (owner requests, see TODOList 19.15 to 19.21)
+- Extended action buttons fold to their icon while the list scrolls down; the pill shrinks only when the list really scrolls.
+- One topic menu is used wherever a note or material is filed or filtered; the editor shows the note's topic as a dropdown.
+- A single selected note can be renamed and re-dated from the selection toolbar; study material has the same long-press selection; Notes and Study material can be shown as cards or as a compact list.
+- Importing a syllabus outline reads only the chosen subject out of a longer document, lets the student choose what to import, and never adds a title that already sits under the same parent.
+- Planned for the profile (built when the profile is overhauled): a syllabus card showing the percent of the whole syllabus done; it opens a menu of every subject's syllabus with import, and the AI imports only the syllabus of subjects that already exist, each into its own folder.
+

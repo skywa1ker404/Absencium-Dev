@@ -200,3 +200,12 @@ Owner rule (2026-10-28): redesign these three (notes list, syllabus tree, study 
 - Home follows images 07 and 13 more closely: one bunk buffer card with a drawer under it for the subjects to watch (hidden by default), quick actions Attendance / Timetable / AI Hub, a pinned Subjects button beside the pill.
 - The owner's rule: read this file before every new UI task; every new element uses the Material 3 Expressive components and springs.
 
+### Update 2026-10-29, later (CI green `497da1f`)
+- Owner screenshots 28 to 33 (folder notes tab with the button half off screen, the editor header, the topic menu, the selection toolbar, the attendance card).
+- Extended buttons now follow the Material extended FAB pattern: icon plus label, the label folds away on scroll down and returns on scroll up (`ShellFab(expanded)`); the pill shrinks only when the list really scrolls. Used on the folder tabs and the Syllabus tree.
+- The Home pinned Subjects squircle from 2026-10-29 was removed again at the owner's request.
+- Topic menu redesigned: one component (`TopicMenu`), 48 dp rows with one leading slot (icon or level dot), indent per level, tinted chosen row with a tick, solid container, scrolls when long.
+- The editor header is the date, visible character count and save state on one line, with the topic as a dropdown chip under it.
+- Selection toolbar: Edit only for one note; study material has its own selection (Topic, Delete); a list / card switch sits at the right of the breadcrumb on both tabs.
+- Next on the list: Vault grid (image 07), then Appearance, Attendance, Timetable day view, AI Hub, Settings hub, profile (with the syllabus card, TODOList 19.21), onboarding, editor toolbar, reading selection pill.
+
