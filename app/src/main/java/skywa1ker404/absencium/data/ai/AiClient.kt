@@ -3,6 +3,10 @@ package skywa1ker404.absencium.data.ai
 import skywa1ker404.absencium.data.security.ApiKeyVault
 import skywa1ker404.absencium.logging.DebugLogger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -44,7 +48,10 @@ class AiImage(val mimeType: String, val base64: String) {
 }
 
 /** Something went wrong talking to the provider; [message] is written for the user. */
-class AiException(message: String) : Exception(message)
+class AiException(message: String, val httpCode: Int = 0) : Exception(message) {
+    /** True for answers that usually pass by themselves: the provider is busy or briefly down. */
+    val temporary: Boolean get() = httpCode == 500 || httpCode == 502 || httpCode == 503 || httpCode == 504
+}
 
 /**
  * A small HTTP client for the three request shapes Ask AI supports: OpenAI-compatible chat
@@ -55,6 +62,14 @@ class AiClient(private val keyVault: ApiKeyVault) {
 
     /** Every request and its answer is kept here for the AI Hub; set once by the app container. */
     var history: AiHistory? = null
+
+    private val _failures = MutableSharedFlow<String>(extraBufferCapacity = 4, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST)
+
+    /**
+     * One short line for every request that failed, so the app can show it wherever the student is, even after the
+     * screen that asked has been closed.
+     */
+    val failures: SharedFlow<String> = _failures.asSharedFlow()
 
     /** The models the provider offers, sorted by name. */
     suspend fun listModels(connection: AiConnection): List<AiModel> = withContext(Dispatchers.IO) {
@@ -97,6 +112,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
             throw e
         } catch (e: Exception) {
             history?.add(connection.model, prompt, null, e.message ?: e.javaClass.simpleName, images.size)
+            _failures.tryEmit(e.message ?: "The AI request failed.")
             throw e
         }
     }
@@ -117,6 +133,10 @@ class AiClient(private val keyVault: ApiKeyVault) {
             when (connection.style) {
                 ApiStyle.OPENAI_COMPATIBLE -> {
                     val content = JSONArray().put(JSONObject().put("type", "text").put("text", prompt))
+                    if (base.contains("groq", ignoreCase = true)) {
+                        if (images.any { it.isPdf }) throw AiException("Groq cannot read PDF files. Pick a Google Gemini or Claude model in Settings, AI & Integrations for PDFs.")
+                        if (images.size > GROQ_MAX_IMAGES) throw AiException("Groq takes at most $GROQ_MAX_IMAGES pictures in one request.")
+                    }
                     images.forEach {
                         when {
                             it.isPdf -> content.put(
@@ -146,7 +166,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                         "messages",
                         JSONArray().put(JSONObject().put("role", "user").put("content", content)),
                     )
-                    val reply = call("POST", "$base/chat/completions", openAiHeaders(key), body.toString(), onUpload)
+                    val reply = callRetrying("POST", "$base/chat/completions", openAiHeaders(key), body.toString(), onUpload)
                     parseOpenAiReply(reply)
                 }
 
@@ -168,7 +188,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                         "messages",
                         JSONArray().put(JSONObject().put("role", "user").put("content", content)),
                     )
-                    val reply = call("POST", "$base/messages", anthropicHeaders(key), body.toString(), onUpload)
+                    val reply = callRetrying("POST", "$base/messages", anthropicHeaders(key), body.toString(), onUpload)
                     parseAnthropicReply(reply)
                 }
 
@@ -192,7 +212,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                     if (maxTokens != null) body.put("generationConfig", JSONObject().put("maxOutputTokens", maxTokens))
                     val id = model.removePrefix("models/")
                     val url = "$base/models/$id:generateContent?key=${URLEncoder.encode(key.orEmpty(), "UTF-8")}"
-                    val reply = call("POST", url, emptyMap(), body.toString(), onUpload)
+                    val reply = callRetrying("POST", url, emptyMap(), body.toString(), onUpload)
                     parseGeminiReply(reply)
                 }
             }
@@ -339,6 +359,23 @@ class AiClient(private val keyVault: ApiKeyVault) {
         return text
     }
 
+    /** A POST that tries again, after a pause, when the provider says it is busy (HTTP 500, 502, 503 or 504). */
+    private suspend fun callRetrying(method: String, url: String, headers: Map<String, String>, body: String?, onUpload: ((Float) -> Unit)?): String {
+        // A big upload is not repeated more than once: sending it again costs minutes on a slow connection.
+        val retries = if (body != null && body.length > 1_000_000) 1 else 2
+        var attempt = 0
+        while (true) {
+            try {
+                return call(method, url, headers, body, onUpload)
+            } catch (e: AiException) {
+                if (!e.temporary || attempt >= retries) throw e
+                attempt++
+                DebugLogger.w(TAG, "$method ${url.substringBefore('?')} busy (HTTP ${e.httpCode}), trying again ($attempt of $retries)")
+                delay(2_000L * attempt)
+            }
+        }
+    }
+
     private fun call(method: String, url: String, headers: Map<String, String>, body: String?, onUpload: ((Float) -> Unit)? = null): String {
         // The URL can carry an API key (Gemini), so only the host and path are logged.
         val shown = url.substringBefore('?')
@@ -362,11 +399,17 @@ class AiClient(private val keyVault: ApiKeyVault) {
                     connection.setFixedLengthStreamingMode(bytes.size)
                     connection.outputStream.use { out ->
                         var sent = 0
+                        var reported = 0f
                         while (sent < bytes.size) {
                             val n = minOf(UPLOAD_CHUNK, bytes.size - sent)
                             out.write(bytes, sent, n)
                             sent += n
-                            onUpload(sent.toFloat() / bytes.size)
+                            // Reported in whole percents: a screen redrawn for every 32 KB piece would stutter during a big upload.
+                            val fraction = sent.toFloat() / bytes.size
+                            if (fraction - reported >= 0.01f || sent == bytes.size) {
+                                reported = fraction
+                                onUpload(fraction)
+                            }
                         }
                     }
                 } else {
@@ -377,7 +420,12 @@ class AiClient(private val keyVault: ApiKeyVault) {
             val stream = if (code in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.use { it.readBytes().toString(Charsets.UTF_8) }.orEmpty()
             DebugLogger.i(TAG, "$method $shown -> HTTP $code")
-            if (code !in 200..299) throw AiException(describeError(code, text))
+            if (code !in 200..299) {
+                val reason = describeError(code, text)
+                // The provider's own explanation (never the key) goes to the debug log, so a 400 can be told apart from another 400.
+                DebugLogger.w(TAG, "$method $shown rejected: $reason")
+                throw AiException(reason, code)
+            }
             return text
         } catch (e: AiException) {
             throw e
@@ -401,8 +449,12 @@ class AiClient(private val keyVault: ApiKeyVault) {
         val detail = message?.takeIf { it.isNotBlank() } ?: body.take(200).ifBlank { "no details" }
         val hint = when (code) {
             401, 403 -> " Check that your API key is correct and allowed to use this."
+            400 -> " The provider refused this request. If a file or photo was attached, the chosen model may not accept it or it may be too big."
             404 -> " Check the API URL and the model name."
+            408 -> " The provider timed out. Try again."
+            413 -> " The upload is too big for this provider."
             429 -> " Too many requests or the quota is used up."
+            500, 502, 503, 504 -> " The provider is busy or down right now, and it was tried again automatically. Wait a minute and retry, or pick another model."
             else -> ""
         }
         return "The provider answered HTTP $code: $detail.$hint"
@@ -413,6 +465,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
         const val ANTHROPIC_VERSION = "2023-06-01"
         const val MAX_PAGES = 10
         const val UPLOAD_CHUNK = 32 * 1024
+        const val GROQ_MAX_IMAGES = 5
         const val GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image"
         const val OPENAI_IMAGE_MODEL = "gpt-image-1"
     }

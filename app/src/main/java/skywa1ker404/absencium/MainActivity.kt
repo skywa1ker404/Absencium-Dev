@@ -108,6 +108,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     if (phase == AppPhase.APP) UndoHost(container.undoBus)
+                    if (phase == AppPhase.APP) skywa1ker404.absencium.ui.components.AiErrorHost(container.aiClient.failures)
                     // The in-app splash sits on top once per launch, in the chosen theme, then fades into the app.
                     var showSplash by rememberSaveable { mutableStateOf(true) }
                     if (showSplash) AppSplash(onFinished = { showSplash = false })

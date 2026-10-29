@@ -91,7 +91,7 @@ class TextExtractor(
                 val bytes = ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray()
                 ai.generate(conn, IMAGE_PROMPT, listOf(AiImage("image/jpeg", Base64.encodeToString(bytes, Base64.NO_WRAP))))
             }
-            FileKind.PDF -> if (file.length() <= MAX_AI_FILE_BYTES) {
+            FileKind.PDF -> if (file.length() <= MAX_AI_FILE_BYTES && takesPdfFiles(conn)) {
                 // The whole PDF goes up as one file, with its upload progress shown.
                 onStep("Uploading the PDF")
                 ai.generate(conn, PDF_PROMPT, listOf(AiImage("application/pdf", encode(file, "PDF"))), onUpload = onUpload)
@@ -118,6 +118,13 @@ class TextExtractor(
             }
             FileKind.OTHER -> ""
         }
+    }
+
+    /** Gemini, Claude, OpenAI and OpenRouter accept a PDF as a file; other OpenAI-style services (Groq and similar) only take pictures. */
+    private fun takesPdfFiles(conn: AiConnection): Boolean {
+        if (conn.style != skywa1ker404.absencium.data.ai.ApiStyle.OPENAI_COMPATIBLE) return true
+        val host = conn.baseUrl.lowercase()
+        return host.contains("api.openai.com") || host.contains("openrouter.ai")
     }
 
     /** How many pages the PDF has. Throws an [IOException] in plain words when it cannot be opened. */
@@ -178,7 +185,7 @@ class TextExtractor(
         const val MAX_AI_FILE_BYTES = 15_000_000L
         const val MAX_TIDY_CHARS = 60_000
         /** Pages sent together, the most pages read from one PDF, and the longest side of a page picture. */
-        const val PDF_BATCH = 6
+        const val PDF_BATCH = 5
         const val MAX_PDF_PAGES = 36
         const val PDF_EDGE = 1300
 
