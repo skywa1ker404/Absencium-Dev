@@ -58,7 +58,15 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
     val message by viewModel.message.collectAsStateWithLifecycle()
     val colors = MaterialTheme.colorScheme
 
-    var day by remember { mutableStateOf(DayOfWeek.MONDAY) }
+    val today = remember { java.time.LocalDate.now() }
+    // The time of day, refreshed every half minute so the lecture in progress moves on while the popup is open.
+    val clock by androidx.compose.runtime.produceState(java.time.LocalTime.now()) {
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            value = java.time.LocalTime.now()
+        }
+    }
+    var day by remember { mutableStateOf(today.dayOfWeek) }
     var subjectId by remember { mutableStateOf<Long?>(null) }
     var start by remember { mutableStateOf("") }
     var end by remember { mutableStateOf("") }
@@ -83,58 +91,32 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
             }
         }
 
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Saturday and Sunday only appear when they are not set as holidays in Settings.
-            weekDays.forEach { option ->
-                ExpressiveChip(
-                    selected = day == option,
-                    onClick = { day = option },
-                    label = { Text(option.getDisplayName(TextStyle.SHORT, Locale.getDefault())) },
-                    shape = CircleShape,
-                )
-            }
-        }
+        // Saturday and Sunday only appear when they are not set as holidays in Settings.
+        WeekStrip(days = weekDays, selected = day, today = today, onSelect = { day = it })
 
-        SectionTitle(day.full())
+        SectionTitle(day.full() + if (day == today.dayOfWeek) " \u00b7 today" else "")
         val slots = loaded.timetable.filter { it.dayOfWeek == day }.sortedBy { it.startTime }
         val subjectById = loaded.subjects.associateBy { it.id }
         if (slots.isEmpty()) {
             HintText("No lectures on ${day.full()}.")
         }
-        slots.forEach { slot ->
-            val subject = subjectById[slot.subjectId]
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(subjectColor(slot.subjectId)))
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
-                        Text(subject?.name ?: "Unknown subject", style = MaterialTheme.typography.titleMedium)
-                        val roomText = slot.roomNumber?.takeIf { it.isNotBlank() }
-                        Text(
-                            text = "${slot.startTime.hm()} to ${slot.endTime.hm()}" +
-                                (if (roomText != null) " · Room $roomText" else ""),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onSurfaceVariant,
-                        )
-                    }
-                    TextButton(
-                        onClick = {
-                            editing = slot
-                            sameEveryDay = false
-                            subjectId = slot.subjectId
-                            start = slot.startTime.hm()
-                            end = slot.endTime.hm()
-                            room = slot.roomNumber.orEmpty()
-                        },
-                    ) { Text("Edit") }
-                    TextButton(
-                        onClick = {
-                            if (editing?.id == slot.id) editing = null
-                            viewModel.deleteSlot(slot)
-                        },
-                    ) { Text("Remove") }
-                }
-            }
-        }
+        TimetableDay(
+            slots = slots,
+            subjectName = { subjectById[it]?.name ?: "Unknown subject" },
+            now = if (day == today.dayOfWeek) clock else null,
+            onEdit = { slot ->
+                editing = slot
+                sameEveryDay = false
+                subjectId = slot.subjectId
+                start = slot.startTime.hm()
+                end = slot.endTime.hm()
+                room = slot.roomNumber.orEmpty()
+            },
+            onDelete = { slot ->
+                if (editing?.id == slot.id) editing = null
+                viewModel.deleteSlot(slot)
+            },
+        )
 
         // The add form lives in a dropdown that is closed by default; changing a saved lecture opens it.
         val formOpen = addOpen || editing != null

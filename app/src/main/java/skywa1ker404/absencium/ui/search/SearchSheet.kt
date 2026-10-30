@@ -135,7 +135,7 @@ fun SearchSheet(
             AppTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Search notes, PDFs and exams") },
+                placeholder = { Text("Search notes, PDFs, exams", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 leadingIcon = { Icon(AppIcons.Search, contentDescription = null) },
                 trailingIcon = {
                     if (query.isNotEmpty()) {

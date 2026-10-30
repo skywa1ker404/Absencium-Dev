@@ -163,6 +163,116 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
         importJob = viewModelScope.launch { _import.value = outlineFromText(text) }
     }
 
+    /**
+     * Reads everything the student gave: one document, up to [MAX_PICTURES] pictures and/or typed text, each source on its own, and
+     * joins what they found into one outline (the same unit named in two sources appears once). If one source fails and another works,
+     * the outline from the working one is shown.
+     */
+    fun importSources(doc: Uri?, pictures: List<Uri>, text: String) {
+        if (doc == null && pictures.isEmpty()) {
+            importWithAi(text)
+            return
+        }
+        if (container.aiConnection() == null) {
+            _import.value = OutlineImport.Problem("AI Features are off or not set up. You can still paste the outline as text.", setupMissing = true)
+            return
+        }
+        importJob?.cancel()
+        _import.value = OutlineImport.Working("Reading what you picked")
+        importJob = viewModelScope.launch {
+            val kept = ArrayList<String>()
+            try {
+                val found = ArrayList<List<SyllabusTree.OutlineItem>>()
+                var problem: OutlineImport.Problem? = null
+                fun take(result: OutlineImport) {
+                    when (result) {
+                        is OutlineImport.Ready -> found += result.items
+                        is OutlineImport.Problem -> if (problem == null) problem = result
+                        else -> Unit
+                    }
+                }
+                if (doc != null) {
+                    _import.value = OutlineImport.Working("Reading the document")
+                    val stored = container.attachmentStore.import(doc)
+                    if (stored == null) {
+                        take(OutlineImport.Problem("That document could not be read."))
+                    } else {
+                        kept += stored.path
+                        take(outlineFromStored(stored.path, stored.mimeType, stored.displayName))
+                    }
+                }
+                if (pictures.isNotEmpty()) {
+                    _import.value = OutlineImport.Working("Reading the ${if (pictures.size == 1) "picture" else "${pictures.size} pictures"}")
+                    val paths = pictures.take(MAX_PICTURES).mapNotNull { uri -> container.attachmentStore.import(uri)?.path?.also { kept += it } }
+                    take(if (paths.isEmpty()) OutlineImport.Problem("The pictures could not be read.") else outlineFromPictures(paths))
+                }
+                if (text.isNotBlank()) {
+                    _import.value = OutlineImport.Working("Reading the typed text")
+                    take(outlineFromText(text))
+                }
+                val merged = SyllabusTree.mergeOutlines(found)
+                _import.value = when {
+                    merged.isNotEmpty() -> OutlineImport.Ready(merged)
+                    else -> problem ?: OutlineImport.Problem("No syllabus was found in what you picked.")
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLogger.e("Syllabus", "Reading the sources failed", e)
+                _import.value = OutlineImport.Problem("Something went wrong: ${e.message ?: e.javaClass.simpleName}")
+            } finally {
+                kept.forEach { container.attachmentStore.delete(it) }
+            }
+        }
+    }
+
+    /** One stored document as an outline: a PDF whole, a Word or text file as text. */
+    private suspend fun outlineFromStored(path: String, mime: String, name: String): OutlineImport {
+        val kind = skywa1ker404.absencium.data.ocr.FileKind.of(mime, name)
+        if (kind == skywa1ker404.absencium.data.ocr.FileKind.PDF) return outlineFromPdf(path)
+        val read = container.textExtractor.extract(path, mime, name, tidy = false) { step -> _import.value = OutlineImport.Working(step) }
+        return when (read) {
+            is Extracted.Failed -> OutlineImport.Problem(read.message, read.setupMissing)
+            is Extracted.Text -> outlineFromText(read.text)
+        }
+    }
+
+    /** Up to five pictures of the syllabus go up together in one request. */
+    private suspend fun outlineFromPictures(paths: List<String>): OutlineImport {
+        val connection = container.aiConnection()
+            ?: return OutlineImport.Problem("AI Features are off or not set up. You can still add the outline as typed text.", setupMissing = true)
+        val subject = _subjectName.value.ifEmpty { container.database.subjectDao().getById(subjectId)?.name.orEmpty() }
+        return try {
+            val images = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                paths.mapNotNull { path ->
+                    val bitmap = skywa1ker404.absencium.ui.vault.entry.ImageTools.decode(path, PICTURE_EDGE) ?: return@mapNotNull null
+                    val bytes = java.io.ByteArrayOutputStream().also { bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray()
+                    skywa1ker404.absencium.data.ai.AiImage("image/jpeg", android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
+                }
+            }
+            if (images.isEmpty()) return OutlineImport.Problem("The pictures could not be opened.")
+            val reply = container.aiClient.generate(
+                connection,
+                outlinePrompt(subject).replace("Text:\n", "The syllabus is in the attached ${if (images.size == 1) "picture" else "${images.size} pictures, in order"}."),
+                images,
+                maxTokens = 8000,
+                onUpload = { f -> _import.value = if (f >= 1f) OutlineImport.Working("Uploaded. The AI is reading the pictures") else OutlineImport.Working("Uploading the pictures", f) },
+            )
+            if (reply.trim().equals("NONE", ignoreCase = true)) {
+                return OutlineImport.Problem("The pictures do not seem to show a syllabus for $subject.")
+            }
+            val items = SyllabusTree.parseOutline(reply)
+            if (items.isEmpty()) OutlineImport.Problem("The AI did not find any units or topics in the pictures.") else OutlineImport.Ready(items)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: AiException) {
+            OutlineImport.Problem(e.message ?: "The AI request failed.")
+        } catch (e: Exception) {
+            DebugLogger.e("Syllabus", "Reading the pictures failed", e)
+            OutlineImport.Problem("Something went wrong: ${e.message ?: e.javaClass.simpleName}")
+        }
+    }
+
     /** Reads a picked document or photo with the AI, then turns what it says into an outline. */
     fun importFile(uri: Uri) {
         if (container.aiConnection() == null) {
@@ -323,6 +433,10 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
     companion object {
         private const val MAX_SOURCE = 60_000
 
+        /** The most pictures one import reads. */
+        const val MAX_PICTURES = 5
+        private const val PICTURE_EDGE = 1800
+
         /**
          * A whole session's papers hold many subjects, so the AI is told which one to read and to leave the rest out. It answers NONE
          * when that subject is not in the text. Neutral about the course: it only reshapes the text it is given.
@@ -333,7 +447,8 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
                 "Turn that subject's syllabus into a plain outline. Write one item per line. Put units or modules at the left edge, " +
                 "and indent each deeper level by two spaces (chapters, then topics, then subtopics; at most four levels). " +
                 "Keep the original wording and order, add nothing that is not in the text, and leave out marks, hours, credits and " +
-                "book lists. Do not number the lines, do not use bullets or Markdown, and write no explanation before or after. " +
+                "book lists. Keep every title short, at most about ten words: when a line is a long sentence that lists many things, " +
+                "use its main idea as the title and put the listed things as indented lines below it. Do not number the lines, do not use bullets or Markdown, and write no explanation before or after. " +
                 "If the subject \"$subject\" is not in the text, answer with the single word NONE.\n\nText:\n"
 
         /** At most [MAX_SOURCE] characters of [text]: from just before where [subject] is first named when the text is longer. */

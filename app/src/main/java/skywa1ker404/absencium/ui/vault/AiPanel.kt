@@ -130,7 +130,7 @@ fun AiPanel(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Box(modifier = Modifier.weight(1f).padding(vertical = 10.dp)) {
-                                if (prompt.isEmpty()) Text("Ask the AI to change or write something…", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant.copy(alpha = 0.7f))
+                                if (prompt.isEmpty()) Text("Ask the AI to change or write…", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant.copy(alpha = 0.7f), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                 BasicTextField(
                                     value = prompt,
                                     onValueChange = onPrompt,

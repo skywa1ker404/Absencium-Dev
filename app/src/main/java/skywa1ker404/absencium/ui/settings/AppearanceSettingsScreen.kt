@@ -203,7 +203,7 @@ fun ColorEngineChoices(
     Reveal(visible = settings.liquidGlass && isMonetAndBlurSupported) {
         GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
             SwitchCard(
-                title = "Frost popups too",
+                title = "Frosted Popups",
                 subtitle = "Profile, search, Add Entry and dialogs. Turn off if they are hard to read.",
                 checked = settings.frostedOverlays,
                 onCheckedChange = onFrostedToggle,

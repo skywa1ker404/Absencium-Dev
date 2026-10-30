@@ -68,6 +68,11 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.unit.dp
 import skywa1ker404.absencium.data.calendar.CalendarData
 import skywa1ker404.absencium.data.db.AttendanceStatus
@@ -270,9 +275,24 @@ private fun MonthCard(
             }
         }
         // The grid fades from one month to the next; the card (the size owner) animates the height change.
+        var swipe by remember { mutableFloatStateOf(0f) }
         AnimatedContent(
             targetState = month,
-            transitionSpec = { monthFade() },
+            transitionSpec = {
+                val forward = targetState > initialState
+                (fadeIn(tween(220, delayMillis = 60)) + slideInHorizontally(tween(260)) { if (forward) it / 5 else -it / 5 }) togetherWith
+                    (fadeOut(tween(100)) + slideOutHorizontally(tween(200)) { if (forward) -it / 5 else it / 5 }) using SizeTransform(clip = false) { _, _ -> snap() }
+            },
+            modifier = Modifier.pointerInput(Unit) {
+                // Swipe the month left or right to change it, like the arrows.
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        if (swipe < -70f) onNext() else if (swipe > 70f) onPrevious()
+                        swipe = 0f
+                    },
+                    onDragCancel = { swipe = 0f },
+                ) { _, amount -> swipe += amount }
+            },
             label = "monthGrid",
         ) { shown ->
             // Number of empty cells before the 1st so it lands under the right weekday.
@@ -314,6 +334,7 @@ private fun MonthCard(
             onShowAll = { showAllMonths = it },
             threshold = threshold,
             onOpenMonth = onOpenMonth,
+            latest = YearMonth.from(today),
         )
     }
 }
@@ -327,11 +348,16 @@ private fun MonthSummary(
     onShowAll: (Boolean) -> Unit,
     threshold: Int,
     onOpenMonth: (YearMonth) -> Unit,
+    latest: YearMonth,
 ) {
     val colors = MaterialTheme.colorScheme
-    val bars = remember(statusByDate, month) {
-        (5 downTo 0).map { back ->
-            val m = month.minusMonths(back.toLong())
+    val bars = remember(statusByDate, month, latest) {
+        // From the earliest month with marks (at least five before the viewed one) up to today or the viewed month.
+        val first = minOf(statusByDate.keys.minOrNull()?.let { YearMonth.from(it) } ?: month, month.minusMonths(5))
+        val last = maxOf(latest, month)
+        val span = java.time.temporal.ChronoUnit.MONTHS.between(first, last).toInt().coerceAtMost(59)
+        (span downTo 0).map { back ->
+            val m = last.minusMonths(back.toLong())
             val values = statusByDate.filterKeys { YearMonth.from(it) == m }.values
             val p = values.count { it == AttendanceStatus.PRESENT }
             val a = values.count { it == AttendanceStatus.ABSENT }
@@ -481,7 +507,17 @@ private fun DayCell(
                     val barHeight = size.height * 0.62f
                     val left = if (joinLeft) 0f else size.width / 2f
                     val right = if (joinRight) size.width else size.width / 2f
-                    drawRect(bar, topLeft = Offset(left, (size.height - barHeight) / 2f), size = Size(right - left, barHeight))
+                    if (glass && status != null) {
+                        // Under a see-through bead the band would show through as hard edges, so it is cut out where the bead is.
+                        val bead = androidx.compose.ui.graphics.Path().apply {
+                            addOval(androidx.compose.ui.geometry.Rect(center, if (isSelected) half else half * 0.86f))
+                        }
+                        clipPath(bead, androidx.compose.ui.graphics.ClipOp.Difference) {
+                            drawRect(bar, topLeft = Offset(left, (size.height - barHeight) / 2f), size = Size(right - left, barHeight))
+                        }
+                    } else {
+                        drawRect(bar, topLeft = Offset(left, (size.height - barHeight) / 2f), size = Size(right - left, barHeight))
+                    }
                 }
                 if (fill != Color.Transparent) {
                     val radius = if (isSelected || status == null) half else half * 0.86f

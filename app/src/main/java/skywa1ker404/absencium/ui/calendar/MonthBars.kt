@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +45,16 @@ class MonthBar(val month: YearMonth, val percent: Double?)
 internal fun MonthBars(bars: List<MonthBar>, selected: YearMonth, threshold: Int, onPick: (YearMonth) -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     val q = LocalQuality.current
-    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+    // Six months fit the width; earlier and later ones scroll sideways, and the viewed month is brought to the middle.
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    val slot = maxWidth / 6
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    val slotPx = with(androidx.compose.ui.platform.LocalDensity.current) { slot.roundToPx() }
+    androidx.compose.runtime.LaunchedEffect(selected, bars.size) {
+        val index = bars.indexOfFirst { it.month == selected }.coerceAtLeast(0)
+        scroll.animateScrollTo((index * slotPx - slotPx * 5 / 2).coerceAtLeast(0))
+    }
+    Row(modifier = Modifier.horizontalScroll(scroll), horizontalArrangement = Arrangement.Start) {
         bars.forEach { bar ->
             val on = bar.month == selected
             val fraction by animateFloatAsState(
@@ -62,6 +72,7 @@ internal fun MonthBars(bars: List<MonthBar>, selected: YearMonth, threshold: Int
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
+                    .width(slot)
                     .clip(RoundedCornerShape(18.dp))
                     .clickable { onPick(bar.month) }
                     .padding(horizontal = 4.dp, vertical = 2.dp)
@@ -105,6 +116,7 @@ internal fun MonthBars(bars: List<MonthBar>, selected: YearMonth, threshold: Int
                 )
             }
         }
+    }
     }
 }
 

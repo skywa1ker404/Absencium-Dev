@@ -131,6 +131,34 @@ object SyllabusTree {
      * (ignoring case and spacing) already sits under the same parent in [existing], or that repeats an earlier item of the list
      * under the same parent. Children of a duplicate are compared with the children of the node it matched.
      */
+    /**
+     * Joins outlines read from several sources (a document, a few pictures, typed text) into one. Two lines with the same title under the
+     * same parent become one line, and what is inside either stays inside it, so a unit that both the PDF and a photo mention appears once.
+     */
+    fun mergeOutlines(lists: List<List<OutlineItem>>): List<OutlineItem> {
+        class Node(val title: String) { val kids = LinkedHashMap<String, Node>() }
+        fun norm(t: String) = t.trim().replace(Regex("\\s+"), " ").lowercase()
+        val root = Node("")
+        for (items in lists) {
+            val trail = ArrayList<Node>()
+            for (item in items) {
+                val parent = if (item.depth == 0) root else trail.getOrNull(item.depth - 1) ?: root
+                val node = parent.kids.getOrPut(norm(item.title)) { Node(item.title) }
+                while (trail.size > item.depth) trail.removeAt(trail.lastIndex)
+                trail.add(node)
+            }
+        }
+        val out = ArrayList<OutlineItem>()
+        fun walk(node: Node, depth: Int) {
+            for (kid in node.kids.values) {
+                out += OutlineItem(depth, kid.title)
+                walk(kid, depth + 1)
+            }
+        }
+        walk(root, 0)
+        return out
+    }
+
     fun duplicates(existing: List<SyllabusNodeEntity>, items: List<OutlineItem>, under: Long?): Set<Int> {
         fun norm(t: String) = t.trim().replace(Regex("\\s+"), " ").lowercase()
         val known = HashMap<Pair<String, String>, String>()

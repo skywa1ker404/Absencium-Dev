@@ -23,6 +23,8 @@ enum class ThemePreset {
     SONOKAI,
     SYNTHWAVE_84,
     TOKYO_NIGHT,
+    SAGE_OXBLOOD,
+    ORCHID_EMBER,
 
     /** Plain grey, no hue at all. Offered only while Liquid Glass is on, so the glass itself is colourless. */
     NO_COLOUR,

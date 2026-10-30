@@ -61,8 +61,48 @@ fun ThemePreset.palette(): ThemePalette = when (this) {
     ThemePreset.SONOKAI -> Sonokai
     ThemePreset.SYNTHWAVE_84 -> SynthWave84
     ThemePreset.TOKYO_NIGHT -> TokyoNight
+    ThemePreset.SAGE_OXBLOOD -> SageOxblood
+    ThemePreset.ORCHID_EMBER -> OrchidEmber
     ThemePreset.NO_COLOUR -> NoColour
 }
+
+/**
+ * Built from three colours the owner chose, #A5A79B (sage), #E8D2B5 (sand) and #590907 (oxblood). Light: sand-tinted paper, oxblood
+ * as the main colour, sage and bronze as accents. Dark: a near-black oxblood-brown, sand as the main colour, sage as the second.
+ */
+private val SageOxblood = ThemePalette(
+    name = "Sage & Oxblood",
+    variants = "Night · Day",
+    dark = PaletteVariant(
+        background = c(0x1B1110), text = c(0xE8D2B5), textMuted = c(0xB7A48C), outline = c(0x6E5C55),
+        primary = c(0xE8D2B5), secondary = c(0xA5A79B), tertiary = c(0xC9605A), error = c(0xFF8A80),
+        primaryContainer = c(0x590907), secondaryContainer = c(0x3A3C35),
+    ),
+    light = PaletteVariant(
+        background = c(0xF7EEE1), text = c(0x2B1110), textMuted = c(0x6B5651), outline = c(0x8E7F76),
+        primary = c(0x590907), secondary = c(0x6A6D60), tertiary = c(0x8C6A45), error = c(0xB3261E),
+        primaryContainer = c(0xE8D2B5), secondaryContainer = c(0xDCDDD2),
+    ),
+)
+
+/**
+ * Built from three colours the owner chose, #E7B0DE (orchid), #400849 (deep purple) and #FF5A0A (ember orange). Dark: purple-black
+ * with ember orange as the main colour and orchid as the second. Light: pale orchid paper with deep purple as the main colour.
+ */
+private val OrchidEmber = ThemePalette(
+    name = "Orchid & Ember",
+    variants = "Night · Day",
+    dark = PaletteVariant(
+        background = c(0x1A0420), text = c(0xF3DCEE), textMuted = c(0xC9A5C2), outline = c(0x7A4F82),
+        primary = c(0xFF5A0A), secondary = c(0xE7B0DE), tertiary = c(0xB57BDB), error = c(0xFF7A8A),
+        primaryContainer = c(0x400849), secondaryContainer = c(0x5A2A62),
+    ),
+    light = PaletteVariant(
+        background = c(0xFBF1F8), text = c(0x2A0530), textMuted = c(0x6E4A75), outline = c(0x9A7AA0),
+        primary = c(0x400849), secondary = c(0xC83F00), tertiary = c(0x9C4A91), error = c(0xB3261E),
+        primaryContainer = c(0xE7B0DE), secondaryContainer = c(0xFFD9C7),
+    ),
+)
 
 private val Catppuccin = ThemePalette(
     name = "Catppuccin",

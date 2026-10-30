@@ -106,6 +106,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var materialFilter by rememberSaveable { mutableIntStateOf(-1) }
     var topicFilter by rememberSaveable { mutableStateOf<Long?>(null) }
+    var topicsOpen by remember { mutableStateOf(false) }
     var fileGuide by remember { mutableStateOf<GuideEntity?>(null) }
     var viewGuide by remember { mutableStateOf<GuideEntity?>(null) }
     val nodes by remember(subjectId) { viewModel.syllabusNodes(subjectId) }.collectAsStateWithLifecycle(emptyList())
@@ -125,7 +126,6 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         modifier = Modifier.nestedScroll(pillScroll.connection),
         titleContent = {
             // The subject's name is a button: it opens the topics of the syllabus, and picking one filters the notes under it.
-            var topicsOpen by remember { mutableStateOf(false) }
             Box {
                 Row(
                     modifier = Modifier
@@ -149,18 +149,6 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     }
                     if (tab == 0 && subject != null) Icon(AppIcons.ExpandMore, contentDescription = "Filter notes by topic", tint = colors.onSurfaceVariant)
                 }
-                skywa1ker404.absencium.ui.syllabus.TopicMenu(
-                    expanded = topicsOpen,
-                    onDismiss = { topicsOpen = false },
-                    nodes = nodes,
-                    selectedId = topicFilter,
-                    noneLabel = "All topics",
-                    onPick = { topicsOpen = false; topicFilter = it },
-                    onOpenSyllabus = {
-                        topicsOpen = false
-                        navigator.navigate(SyllabusScreenDestination(subjectId = subjectId))
-                    },
-                )
             }
         },
         overlay = {
@@ -198,6 +186,28 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     backdrop = LocalBackdrop.current,
                     onSelect = { tab = it; selectedIds = emptySet(); selectedGuideIds = emptySet() },
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+                )
+            }
+            // The topics as a side panel over everything, the pill included.
+            if (subject != null) {
+                val noteCounts = remember(loaded, nodes, subjectId) {
+                    val own = (loaded?.notesOf(subjectId, NoteStatus.ACTIVE).orEmpty() + loaded?.notesOf(subjectId, NoteStatus.FINISHED).orEmpty())
+                    val direct = own.groupingBy { it.syllabusNodeId }.eachCount()
+                    nodes.associate { n -> n.id to SyllabusTree.withDescendants(nodes, n.id).sumOf { direct[it] ?: 0 } } to own.size
+                }
+                skywa1ker404.absencium.ui.syllabus.TopicSidebar(
+                    visible = topicsOpen,
+                    onDismiss = { topicsOpen = false },
+                    subjectName = subject.name,
+                    nodes = nodes,
+                    counts = noteCounts.first,
+                    totalNotes = noteCounts.second,
+                    selectedId = topicFilter,
+                    onPick = { topicsOpen = false; topicFilter = it },
+                    onOpenSyllabus = {
+                        topicsOpen = false
+                        navigator.navigate(SyllabusScreenDestination(subjectId = subjectId))
+                    },
                 )
             }
             if (addEntry) {

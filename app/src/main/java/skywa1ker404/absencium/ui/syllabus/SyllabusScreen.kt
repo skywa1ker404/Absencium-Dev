@@ -65,6 +65,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.background
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
@@ -187,7 +190,7 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
             )
         } else {
             SectionTitle("Units, chapters and topics")
-            HintText("Tap a status to move it on. Tapping it on a unit or chapter sets everything inside it.")
+            HintText("Tap a circle to move a status on. On a unit or chapter it sets everything inside.")
         }
 
         // One card per unit; its chapters, topics and subtopics are rows inside it.
@@ -277,8 +280,7 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
             state = importState,
             aiReady = viewModel.aiReady(),
             onTyped = viewModel::importTyped,
-            onWithAi = viewModel::importWithAi,
-            onFile = viewModel::importFile,
+            onSources = viewModel::importSources,
             existing = nodes,
             subjectName = subjectName,
             onAccept = { items, chosen -> viewModel.insertOutline(items, chosen); showImport = false },
@@ -314,27 +316,31 @@ private fun SyllabusRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = (row.depth * 14).dp)
+            .padding(start = (row.depth * 12).dp)
             .then(
                 if (row.depth > 0) {
                     Modifier.drawBehind {
-                        drawLine(guide, Offset(0f, 0f), Offset(0f, size.height), strokeWidth = 2.dp.toPx())
+                        drawLine(guide, Offset(1.dp.toPx(), 4.dp.toPx()), Offset(1.dp.toPx(), size.height - 4.dp.toPx()), strokeWidth = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
                     }
                 } else {
                     Modifier
                 },
             )
-            .padding(start = if (row.depth > 0) 8.dp else 0.dp)
+            .padding(start = if (row.depth > 0) 6.dp else 0.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(enabled = row.hasChildren, onClick = onToggle),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         StatusMark(status = node.status, accent = hue.accent, onClick = onCycle)
-        Column(modifier = Modifier.weight(1f).padding(vertical = 8.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(vertical = 6.dp)) {
+            // A long title stops at three lines; the whole of it is in Rename. Units are medium-sized, never headline-sized.
             Text(
                 node.title,
-                style = if (row.depth == 0) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall,
+                style = if (row.depth == 0) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
+                fontWeight = if (row.depth == 0) FontWeight.SemiBold else FontWeight.Normal,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
                 color = hue.onContainer,
             )
             val line = buildString {
@@ -342,9 +348,15 @@ private fun SyllabusRow(
                 if (row.hasChildren) append(" \u00b7 ${(progress * 100).toInt()}%")
                 if (linked > 0) append(" \u00b7 $linked filed here")
             }
-            Text(line, style = MaterialTheme.typography.bodySmall, color = hue.onContainer.copy(alpha = 0.75f))
+            Text(line, style = MaterialTheme.typography.labelMedium, color = hue.onContainer.copy(alpha = 0.7f))
+            if (row.hasChildren) {
+                val shown by animateFloatAsState(progress, LocalQuality.current.spring(), label = "rowProgress")
+                Box(
+                    Modifier.padding(top = 5.dp).fillMaxWidth().height(4.dp).clip(CircleShape).background(hue.accent.copy(alpha = 0.18f)),
+                ) { Box(Modifier.fillMaxWidth(shown.coerceIn(0f, 1f)).height(4.dp).clip(CircleShape).background(hue.accent)) }
+            }
             node.details?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 3, color = hue.onContainer.copy(alpha = 0.75f))
+                Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis, color = hue.onContainer.copy(alpha = 0.75f), modifier = Modifier.padding(top = 2.dp))
             }
         }
         if (row.hasChildren) {
@@ -357,11 +369,11 @@ private fun SyllabusRow(
                 AppIcons.ExpandMore,
                 contentDescription = if (expanded) "Collapse" else "Expand",
                 tint = hue.onContainer,
-                modifier = Modifier.size(22.dp).rotate(-90f * (1f - turn)),
+                modifier = Modifier.size(20.dp).rotate(-90f * (1f - turn)),
             )
         }
         Box {
-            IconButton(onClick = { menu = true }) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = hue.onContainer) }
+            IconButton(onClick = { menu = true }, modifier = Modifier.size(36.dp)) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = hue.onContainer, modifier = Modifier.size(20.dp)) }
             AppMenu(expanded = menu, onDismiss = { menu = false }) {
                 if (row.depth < SyllabusTree.MAX_DEPTH) {
                     AppMenuItem(AppIcons.Add, "Add ${SyllabusTree.levelName(row.depth + 1).lowercase()}", { menu = false; onAddInside() })
@@ -401,14 +413,14 @@ private fun StatusMark(status: SyllabusStatus, accent: Color, onClick: () -> Uni
     }
     Box(
         modifier = Modifier
-            .size(44.dp)
+            .size(40.dp)
             .clip(CircleShape)
             .clickable(role = Role.Checkbox, onClickLabel = statusLabel(status), onClick = onClick)
             .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
             .semantics { contentDescription = statusLabel(status) },
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.size(28.dp)) {
+        Canvas(modifier = Modifier.size(24.dp)) {
             val stroke = 2.5.dp.toPx()
             drawCircle(accent, radius = size.minDimension / 2f - stroke / 2f, style = Stroke(stroke))
             if (fill > 0f) {
@@ -424,7 +436,7 @@ private fun StatusMark(status: SyllabusStatus, accent: Color, onClick: () -> Uni
             }
         }
         if (status == SyllabusStatus.COMPLETED) {
-            Icon(AppIcons.Check, contentDescription = null, tint = colors.surface, modifier = Modifier.size(16.dp))
+            Icon(AppIcons.Check, contentDescription = null, tint = colors.surface, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -465,8 +477,7 @@ private fun ImportDialog(
     state: OutlineImport,
     aiReady: Boolean,
     onTyped: (String) -> Unit,
-    onWithAi: (String) -> Unit,
-    onFile: (android.net.Uri) -> Unit,
+    onSources: (android.net.Uri?, List<android.net.Uri>, String) -> Unit,
     existing: List<SyllabusNodeEntity>,
     subjectName: String,
     onAccept: (List<SyllabusTree.OutlineItem>, Set<Int>) -> Unit,
@@ -474,21 +485,35 @@ private fun ImportDialog(
     onClose: () -> Unit,
 ) {
     var text by remember { mutableStateOf("") }
+    // What was picked: one document and up to five pictures; either, or both, are read together.
+    var doc by remember { mutableStateOf<android.net.Uri?>(null) }
+    var pictures by remember { mutableStateOf<List<android.net.Uri>>(emptyList()) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    fun nameOf(uri: android.net.Uri): String = try {
+        context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        }
+    } catch (e: Exception) {
+        null
+    } ?: "Document"
     // After the outline is read the student picks what to add. What is already in the syllabus is never offered twice.
     val found = (state as? OutlineImport.Ready)?.items.orEmpty()
     val dups = remember(state, existing) { SyllabusTree.duplicates(existing, found, null) }
     var chosen by remember(state) { mutableStateOf(found.indices.filter { it !in dups }.toSet()) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) onFile(uri) }
+    val docPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) doc = uri }
+    val picturePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        pictures = (pictures + uris).distinct().take(SyllabusViewModel.MAX_PICTURES)
+    }
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text("Import an outline") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 when (state) {
                     OutlineImport.Idle -> {
                         Text(
                             "Write or paste one title per line. Indent a line (two spaces) to put it inside the one above. " +
-                                "Or let your AI tidy a messy page, or read a PDF, photo or document.",
+                                "Or let your AI read one document and/or up to five pictures, with or without text.",
                             style = MaterialTheme.typography.bodySmall,
                         )
                         AppTextField(
@@ -498,25 +523,40 @@ private fun ImportDialog(
                             minLines = 5,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        // The two ways to read the text with help sit under the field; the dialog's own buttons stay short.
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        // One document and/or up to five pictures, read together by the AI.
+                        val picked = doc
+                        if (picked != null) {
+                            PickedChip(icon = AppIcons.Description, text = nameOf(picked), onRemove = { doc = null })
+                        } else {
                             PillButton(
-                                text = "File",
+                                text = "Choose a document",
                                 tonal = true,
                                 compact = true,
                                 enabled = aiReady,
-                                modifier = Modifier.weight(1f),
-                                onClick = { picker.launch(arrayOf("application/pdf", "text/*", "image/*", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) },
-                            )
-                            PillButton(
-                                text = "Tidy with AI",
-                                tonal = true,
-                                compact = true,
-                                enabled = aiReady && text.isNotBlank(),
-                                modifier = Modifier.weight(1f),
-                                onClick = { onWithAi(text) },
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { docPicker.launch(arrayOf("application/pdf", "text/*", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")) },
                             )
                         }
+                        pictures.forEachIndexed { i, uri ->
+                            PickedChip(icon = AppIcons.Image, text = "Picture ${i + 1}", onRemove = { pictures = pictures - uri })
+                        }
+                        if (pictures.size < SyllabusViewModel.MAX_PICTURES) {
+                            PillButton(
+                                text = if (pictures.isEmpty()) "Choose pictures (up to ${SyllabusViewModel.MAX_PICTURES})" else "Add more (${pictures.size} of ${SyllabusViewModel.MAX_PICTURES})",
+                                tonal = true,
+                                compact = true,
+                                enabled = aiReady,
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { picturePicker.launch("image/*") },
+                            )
+                        }
+                        PillButton(
+                            text = if (doc != null || pictures.isNotEmpty()) "Read with AI" else "Tidy the text with AI",
+                            compact = true,
+                            enabled = aiReady && (doc != null || pictures.isNotEmpty() || text.isNotBlank()),
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { onSources(doc, pictures, text) },
+                        )
                         if (!aiReady) HintText("AI Features are off or not set up, so only \"Use as typed\" works. Turn them on in Settings, AI Features.")
                     }
                     is OutlineImport.Working -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -600,4 +640,19 @@ private fun ImportDialog(
         },
         dismissButton = { TextButton(onClick = if (state is OutlineImport.Ready) onBack else onClose) { Text(if (state is OutlineImport.Ready) "Back" else "Cancel") } },
     )
+}
+
+/** A chosen document or picture with a way to take it off again. */
+@Composable
+private fun PickedChip(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, onRemove: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(CircleShape).background(colors.secondaryContainer).padding(start = 14.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = colors.onSecondaryContainer, modifier = Modifier.size(20.dp))
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = colors.onSecondaryContainer, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        IconButton(onClick = onRemove, modifier = Modifier.size(40.dp)) { Icon(AppIcons.Close, contentDescription = "Remove", tint = colors.onSecondaryContainer, modifier = Modifier.size(18.dp)) }
+    }
 }
