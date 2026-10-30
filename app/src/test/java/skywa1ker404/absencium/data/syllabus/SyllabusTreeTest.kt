@@ -80,4 +80,14 @@ class SyllabusTreeTest {
         assertEquals(listOf(0, 1, 2, 3), SyllabusTree.subtreeIndices(items, 0))
         assertEquals(listOf(1, 2), SyllabusTree.subtreeIndices(items, 1))
     }
+
+    @Test fun outlinesFromTwoSourcesJoinIntoOneWithSharedUnitsOnce() {
+        val pdf = SyllabusTree.parseOutline("Cell\n  Membrane\nTissues")
+        val photo = SyllabusTree.parseOutline("cell\n  Nucleus\nBones\n  Skull")
+        val merged = SyllabusTree.mergeOutlines(listOf(pdf, photo))
+        assertEquals(
+            listOf(0 to "Cell", 1 to "Membrane", 1 to "Nucleus", 0 to "Tissues", 0 to "Bones", 1 to "Skull"),
+            merged.map { it.depth to it.title },
+        )
+    }
 }

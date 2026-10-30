@@ -27,3 +27,6 @@ working on it
 - AI: failures show a bar on every screen with Copy; HTTP 500/502/503/504 are retried; the provider's reason is logged; Groq PDF and picture-count limits are respected; upload progress redraws less.
 - Fixed: AI answers are formatted instead of raw Markdown; the ask bar is never behind the keyboard; blocks added from inside a code block go below it.
 - Attendance: hatched days off, Present / Absent / Total tiles, last-6-months capsule chart.
+- Syllabus: calmer layout; topic side panel in folders; import from one document and/or up to five pictures.
+- Attendance: scrollable month chart, swipe between months, no lines through glass day beads. Timetable: week strip and a highlighted current lecture.
+- Themes: Sage & Oxblood and Orchid & Ember presets. AI Hub: a chat.
