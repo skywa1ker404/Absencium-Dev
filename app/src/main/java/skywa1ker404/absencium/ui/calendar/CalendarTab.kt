@@ -90,6 +90,7 @@ import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.NavCard
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.components.drawHatch
+import androidx.compose.ui.graphics.drawscope.clipPath
 import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.components.SectionTitle
 import skywa1ker404.absencium.ui.components.SemiGauge
@@ -372,7 +373,6 @@ private fun MonthSummary(
         }
         Text("Last 6 months", style = MaterialTheme.typography.titleSmall, color = colors.onSurface, modifier = Modifier.padding(top = 4.dp, start = 4.dp))
         MonthBars(bars = bars, selected = month, threshold = threshold, onPick = onOpenMonth)
-        }
     }
 }
 
@@ -488,7 +488,7 @@ private fun DayCell(
                     val oval = androidx.compose.ui.graphics.Path().apply {
                         addOval(androidx.compose.ui.geometry.Rect(center, half * 0.92f))
                     }
-                    androidx.compose.ui.graphics.drawscope.clipPath(oval) {
+                    clipPath(oval) {
                         drawHatch(colors.onTertiaryContainer.copy(alpha = 0.28f), spacing = 4.dp, strokeWidth = 1.dp)
                     }
                 }
