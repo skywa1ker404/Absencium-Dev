@@ -25,3 +25,5 @@ working on it
 - Changed: PDFs are uploaded whole with a wavy progress line; Present / Absent / Total and the notes buttons sit side by side; the calendar entry type buttons have no emojis.
 - Appearance: theme mode, theme and presets are picture tiles with a one-line helper; Liquid Glass has its own preview.
 - AI: failures show a bar on every screen with Copy; HTTP 500/502/503/504 are retried; the provider's reason is logged; Groq PDF and picture-count limits are respected; upload progress redraws less.
+- Fixed: AI answers are formatted instead of raw Markdown; the ask bar is never behind the keyboard; blocks added from inside a code block go below it.
+- Attendance: hatched days off, Present / Absent / Total tiles, last-6-months capsule chart.

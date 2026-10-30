@@ -213,3 +213,4 @@ Owner rule (2026-10-28): redesign these three (notes list, syllabus tree, study 
 ### Update 2026-10-29, Vault (CI green `311f7de`)
 - Vault grid follows image 07: equal gradient tiles, frosted icon chip, count at the bottom. Next: Appearance.
 - Appearance (done 2026-10-30, 19.26): picture tiles for theme mode, theme and presets (mini screen drawn in each scheme's own colours), Liquid Glass row with a glass preview, one-line titles and one helper line. Next: Attendance, Timetable day view, AI Hub, Settings hub, profile.
+- Attendance (done 2026-10-30, 19.29): hatched off days, stat tiles, capsule month chart (images 08 and 04). Next: Timetable day view (11), AI Hub as chat (05, 13), Settings hub, profile.
