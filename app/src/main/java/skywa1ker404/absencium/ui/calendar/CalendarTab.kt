@@ -483,15 +483,6 @@ private fun DayCell(
                     val right = if (joinRight) size.width else size.width / 2f
                     drawRect(bar, topLeft = Offset(left, (size.height - barHeight) / 2f), size = Size(right - left, barHeight))
                 }
-                if (isOff && status == null) {
-                    // A holiday or weekend off is hatched (image 08), over its soft warm tint.
-                    val oval = androidx.compose.ui.graphics.Path().apply {
-                        addOval(androidx.compose.ui.geometry.Rect(center, half * 0.92f))
-                    }
-                    clipPath(oval) {
-                        drawHatch(colors.onTertiaryContainer.copy(alpha = 0.28f), spacing = 4.dp, strokeWidth = 1.dp)
-                    }
-                }
                 if (fill != Color.Transparent) {
                     val radius = if (isSelected || status == null) half else half * 0.86f
                     if (glass) {
@@ -511,6 +502,15 @@ private fun DayCell(
                         )
                     } else {
                         drawCircle(fill, radius = radius)
+                    }
+                }
+                if (isOff && status == null) {
+                    // A holiday or weekend off is hatched (image 08), over its soft warm tint.
+                    val oval = androidx.compose.ui.graphics.Path().apply {
+                        addOval(androidx.compose.ui.geometry.Rect(center, half * 0.92f))
+                    }
+                    clipPath(oval) {
+                        drawHatch(colors.onTertiaryContainer.copy(alpha = 0.28f), spacing = 4.dp, strokeWidth = 1.dp)
                     }
                 }
                 if (isSelected) {
