@@ -85,6 +85,8 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
         }
         val subjects = loaded.subjects.filter { it.isActive }
         val weekDays = loaded.timetableDays()
+        // Opened on a weekend that is a holiday: start on the first working day instead of a day that is not in the strip.
+        androidx.compose.runtime.LaunchedEffect(weekDays) { if (weekDays.isNotEmpty() && day !in weekDays) day = weekDays.first() }
         if (message != null) {
             AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true, onClick = { viewModel.clearMessage() }) {
                 Text(message.orEmpty(), style = MaterialTheme.typography.bodyMedium)
