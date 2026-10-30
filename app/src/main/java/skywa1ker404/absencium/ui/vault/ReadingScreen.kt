@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -399,7 +400,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
 
             // Bottom: the answer popup, the question bar and the Edit button.
             Column(
-                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().padding(12.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().imePadding().padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 val shown = answer
@@ -440,11 +441,11 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                                 IconButton(onClick = { aiJob?.cancel(); answer = null }) { Icon(AppIcons.Close, contentDescription = "Close", tint = colors.onSurface) }
                             }
                             if (!answerMinimised) {
-                                Column(modifier = Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState()).padding(bottom = 8.dp)) {
+                                Column(modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState()).padding(bottom = 8.dp)) {
                                     when {
                                         card.loading -> Text("Thinking...", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                                         card.error != null -> Text(card.error, style = MaterialTheme.typography.bodyMedium, color = colors.error)
-                                        else -> SelectionContainer { Text(card.text.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface) }
+                                        else -> SelectionContainer { AiMarkdown(card.text.orEmpty()) }
                                     }
                                 }
                             }
@@ -454,6 +455,8 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                 }
 
                 if (askOpen && !focus) {
+                    // A solid pill: the note text scrolling underneath must not show through the field.
+                    Surface(shape = RoundedCornerShape(28.dp), color = colors.surfaceContainerHigh, tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
                     AppTextField(
                         value = question,
                         onValueChange = { question = it },
@@ -470,6 +473,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                         },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    }
                 }
                 if (!focus) {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {

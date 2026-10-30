@@ -218,6 +218,11 @@ fun MarkdownPreview(
     }
 }
 
+/** An AI answer as formatted text (bold, lists, headings), read-only. The model writes Markdown; showing its stars and dashes raw looks broken. */
+@Composable
+fun AiMarkdown(text: String, modifier: Modifier = Modifier) =
+    MarkdownPreview(text = text, onToggleCheck = {}, onOpenLink = {}, modifier = modifier)
+
 private fun Align.toTextAlign(): TextAlign = when (this) {
     Align.START -> TextAlign.Start
     Align.CENTER -> TextAlign.Center

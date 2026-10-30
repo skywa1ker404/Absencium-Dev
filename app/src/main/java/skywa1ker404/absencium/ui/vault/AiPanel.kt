@@ -153,7 +153,8 @@ fun AiPanel(
                             )
                         }
 
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // While an answer waits for Replace / Insert / Discard the action chips fold away, so the panel stays short.
+                        if (state.result == null) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             AiAction.entries.forEach { action ->
                                 val short = action.tooShort(state.sourceLength)
                                 Row(
@@ -210,11 +211,9 @@ fun AiPanel(
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHighest).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        result,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.heightIn(max = 180.dp).verticalScroll(rememberScrollState()),
-                    )
+                    Box(modifier = Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState())) {
+                        AiMarkdown(result)
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         if (state.canReplace) ResultButton("Replace", state.resultReplaces) { onUse(); onReplace() }
                         ResultButton("Insert below", !state.resultReplaces || !state.canReplace) { onUse(); onInsert() }

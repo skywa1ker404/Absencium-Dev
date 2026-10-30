@@ -301,10 +301,19 @@ fun MediaPanel(
 ) {
     GlassCard(modifier) {
         Row(modifier = Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Tool("Pictures from your phone", { onUse(); onGallery() }, icon = AppIcons.Image)
-            Tool("Camera", { onUse(); onCamera() }, icon = AppIcons.PhotoCamera)
-            Tool("Scan a document", { onUse(); onScan() }, icon = AppIcons.DocumentScanner)
+            LabeledTool("Gallery", "Pictures from your phone", AppIcons.Image) { onUse(); onGallery() }
+            LabeledTool("Camera", "Camera", AppIcons.PhotoCamera) { onUse(); onCamera() }
+            LabeledTool("Scan", "Scan a document", AppIcons.DocumentScanner) { onUse(); onScan() }
         }
+    }
+}
+
+/** A tool with its short name under it, for the panels where an icon alone is a guess. */
+@Composable
+private fun LabeledTool(shortName: String, description: String, icon: ImageVector, onClick: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 6.dp)) {
+        Tool(description, onClick, icon = icon)
+        Text(shortName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
     }
 }
 
@@ -322,12 +331,12 @@ fun AddPanel(
 ) {
     GlassCard(modifier) {
         Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Tool("Doodle canvas", { onUse(); onDoodle() }, icon = AppIcons.Brush)
-            Tool("Table", { onUse(); onTable() }, icon = AppIcons.Table)
-            Tool("Record audio", { onUse(); onRecord() }, icon = AppIcons.Mic)
-            Tool("Audio files", { onUse(); onAudioFiles() }, icon = AppIcons.AudioFile)
-            Tool("Link a note", { onUse(); onLinkNote() }, icon = AppIcons.Link)
-            Tool("Code block", { onUse(); onCodeBlock() }, icon = AppIcons.Code)
+            LabeledTool("Doodle", "Doodle canvas", AppIcons.Brush) { onUse(); onDoodle() }
+            LabeledTool("Table", "Table", AppIcons.Table) { onUse(); onTable() }
+            LabeledTool("Record", "Record audio", AppIcons.Mic) { onUse(); onRecord() }
+            LabeledTool("Audio", "Audio files", AppIcons.AudioFile) { onUse(); onAudioFiles() }
+            LabeledTool("Link", "Link a note", AppIcons.Link) { onUse(); onLinkNote() }
+            LabeledTool("Code", "Code block", AppIcons.Code) { onUse(); onCodeBlock() }
         }
     }
 }

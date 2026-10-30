@@ -89,6 +89,7 @@ import skywa1ker404.absencium.ui.components.ExpressiveChip
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.NavCard
 import skywa1ker404.absencium.ui.icons.AppIcons
+import skywa1ker404.absencium.ui.components.drawHatch
 import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.components.SectionTitle
 import skywa1ker404.absencium.ui.components.SemiGauge
@@ -150,6 +151,7 @@ fun CalendarTab(
                 )
             },
             onSelect = { selectedIso = it.toString() },
+            onOpenMonth = { monthOffset = ChronoUnit.MONTHS.between(YearMonth.from(today), it).toInt() },
         )
 
         DayPanel(
@@ -204,6 +206,7 @@ private fun MonthCard(
     onNext: () -> Unit,
     onTitleClick: () -> Unit,
     onSelect: (LocalDate) -> Unit,
+    onOpenMonth: (YearMonth) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val firstDay = WeekFields.of(Locale.getDefault()).firstDayOfWeek
@@ -309,6 +312,7 @@ private fun MonthCard(
             showAll = showAllMonths,
             onShowAll = { showAllMonths = it },
             threshold = threshold,
+            onOpenMonth = onOpenMonth,
         )
     }
 }
@@ -321,8 +325,18 @@ private fun MonthSummary(
     showAll: Boolean,
     onShowAll: (Boolean) -> Unit,
     threshold: Int,
+    onOpenMonth: (YearMonth) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
+    val bars = remember(statusByDate, month) {
+        (5 downTo 0).map { back ->
+            val m = month.minusMonths(back.toLong())
+            val values = statusByDate.filterKeys { YearMonth.from(it) == m }.values
+            val p = values.count { it == AttendanceStatus.PRESENT }
+            val a = values.count { it == AttendanceStatus.ABSENT }
+            MonthBar(m, if (p + a == 0) null else p * 100.0 / (p + a))
+        }
+    }
     val counted = remember(statusByDate, month, showAll) {
         statusByDate.filterKeys { showAll || YearMonth.from(it) == month }.values
     }
@@ -347,17 +361,17 @@ private fun MonthSummary(
             captionColor = colors.onSurfaceVariant,
             caption = "of marked days present",
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val q = LocalQuality.current
             val presentShown by animateIntAsState(present, q.spring(), label = "presentCount")
             val absentShown by animateIntAsState(absent, q.spring(), label = "absentCount")
             val totalShown by animateIntAsState(total, q.spring(), label = "totalCount")
-            StatPill("Present: $presentShown", colors.primaryContainer, colors.onPrimaryContainer)
-            StatPill("Absent: $absentShown", colors.errorContainer, colors.onErrorContainer)
-            StatPill("Total: $totalShown", colors.surfaceContainerHighest, colors.onSurface)
+            StatTile("Present", presentShown.toString(), colors.primaryContainer, colors.onPrimaryContainer, Modifier.weight(1f))
+            StatTile("Absent", absentShown.toString(), colors.errorContainer, colors.onErrorContainer, Modifier.weight(1f))
+            StatTile("Total", totalShown.toString(), colors.surfaceContainerHighest, colors.onSurface, Modifier.weight(1f))
+        }
+        Text("Last 6 months", style = MaterialTheme.typography.titleSmall, color = colors.onSurface, modifier = Modifier.padding(top = 4.dp, start = 4.dp))
+        MonthBars(bars = bars, selected = month, threshold = threshold, onPick = onOpenMonth)
         }
     }
 }
@@ -468,6 +482,15 @@ private fun DayCell(
                     val left = if (joinLeft) 0f else size.width / 2f
                     val right = if (joinRight) size.width else size.width / 2f
                     drawRect(bar, topLeft = Offset(left, (size.height - barHeight) / 2f), size = Size(right - left, barHeight))
+                }
+                if (isOff && status == null) {
+                    // A holiday or weekend off is hatched (image 08), over its soft warm tint.
+                    val oval = androidx.compose.ui.graphics.Path().apply {
+                        addOval(androidx.compose.ui.geometry.Rect(center, half * 0.92f))
+                    }
+                    androidx.compose.ui.graphics.drawscope.clipPath(oval) {
+                        drawHatch(colors.onTertiaryContainer.copy(alpha = 0.28f), spacing = 4.dp, strokeWidth = 1.dp)
+                    }
                 }
                 if (fill != Color.Transparent) {
                     val radius = if (isSelected || status == null) half else half * 0.86f

@@ -326,14 +326,28 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         if (text.isBlank()) {
             apply(Edited(template.body, template.body.length, template.body.length))
         } else {
+            val moved = MarkdownEdit.leaveFence(text, selEnd)
+            if (moved != null) {
+                apply(MarkdownEdit.insert(moved.text, moved.end, moved.end, template.body))
+                return
+            }
             val at = selEnd
             val lead = if (at == 0 || text[at - 1] == '\n') "" else "\n"
             apply(MarkdownEdit.insert(text, at, at, lead + template.body))
         }
     }
 
+    /**
+     * Runs a block-level edit (list, checkbox, table, picture, code block). From inside a code block it first steps out below the closing
+     * fence, so the new block is never swallowed by the code.
+     */
+    fun onPage(edit: (text: String, start: Int, end: Int) -> Edited) {
+        val moved = MarkdownEdit.leaveFence(text, selEnd)
+        if (moved == null) apply(edit(text, selStart, selEnd)) else apply(edit(moved.text, moved.start, moved.end))
+    }
+
     /** Puts [token] lines on the page at the cursor. */
-    fun insertBlock(token: String) = apply(NoteBlocks.insertEmbed(text, selEnd, token))
+    fun insertBlock(token: String) = onPage { t, _, e -> NoteBlocks.insertEmbed(t, e, token) }
 
     var viewing by remember { mutableStateOf<AttachmentEntity?>(null) }
     var cropping by remember { mutableStateOf<AttachmentEntity?>(null) }
@@ -610,20 +624,20 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                         )
                         EditorPanel.TEXT, EditorPanel.NONE -> TextPanel(
                             onWrap = { marker, placeholder -> apply(MarkdownEdit.toggleWrap(text, s, e, marker, placeholder)) },
-                            onHeading = { apply(MarkdownEdit.heading(text, s, e, it)) },
+                            onHeading = { level -> onPage { t, a, b -> MarkdownEdit.heading(t, a, b, level) } },
                             onColor = { apply(MarkdownEdit.setColor(text, s, e, it)) },
                             onSize = { apply(MarkdownEdit.setSize(text, s, e, it)) },
                             onInsert = { apply(MarkdownEdit.insert(text, s, e, it)) },
-                            onDivider = { apply(NoteBlocks.insertEmbed(text, e, it)) },
+                            onDivider = { token -> onPage { t, _, b -> NoteBlocks.insertEmbed(t, b, token) } },
                             onTemplate = { insertTemplate(it) },
                             onUse = ::hideKeyboard,
                         )
                         EditorPanel.LISTS -> ListsPanel(
                             onAlign = { apply(MarkdownEdit.setAlign(text, s, e, it)) },
-                            onBullet = { apply(MarkdownEdit.bullet(text, s, e)) },
-                            onNumbered = { apply(MarkdownEdit.numbered(text, s, e)) },
-                            onLettered = { apply(MarkdownEdit.lettered(text, s, e)) },
-                            onQuote = { apply(MarkdownEdit.quote(text, s, e)) },
+                            onBullet = { onPage { t, a, b -> MarkdownEdit.bullet(t, a, b) } },
+                            onNumbered = { onPage { t, a, b -> MarkdownEdit.numbered(t, a, b) } },
+                            onLettered = { onPage { t, a, b -> MarkdownEdit.lettered(t, a, b) } },
+                            onQuote = { onPage { t, a, b -> MarkdownEdit.quote(t, a, b) } },
                             onUse = ::hideKeyboard,
                         )
                         EditorPanel.MEDIA -> MediaPanel(
@@ -655,7 +669,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                             onRecord = { panel = EditorPanel.RECORD },
                             onAudioFiles = { panel = EditorPanel.NONE; audioPicker.launch("audio/*") },
                             onLinkNote = { panel = EditorPanel.NONE; showLinkPicker = true },
-                            onCodeBlock = { panel = EditorPanel.NONE; apply(MarkdownEdit.codeBlock(text, s, e)) },
+                            onCodeBlock = { panel = EditorPanel.NONE; onPage { t, a, b -> MarkdownEdit.codeBlock(t, a, b) } },
                             onUse = ::hideKeyboard,
                         )
                     }
@@ -664,7 +678,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                 EditorToolbar(
                     panel = panel,
                     onPanel = { panel = it },
-                    onCheck = { apply(MarkdownEdit.checklist(text, selStart, selEnd)) },
+                    onCheck = { onPage { t, a, b -> MarkdownEdit.checklist(t, a, b) } },
                     onUse = ::hideKeyboard,
                 )
             }

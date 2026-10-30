@@ -231,6 +231,36 @@ object MarkdownEdit {
         return Edited(text.substring(0, s) + snippet + text.substring(e), s + snippet.length, s + snippet.length)
     }
 
+    /**
+     * When [pos] sits inside a fenced code block, the text with a fresh empty line after the block's closing fence and the cursor on it, so
+     * a list, checkbox, table or picture lands beside the code instead of inside it. Null when the cursor is not in a code block.
+     * A fence that is never closed is closed at the end of the text.
+     */
+    fun leaveFence(text: String, pos: Int): Edited? {
+        var open = -1
+        var offset = 0
+        for (line in text.split("\n")) {
+            val end = offset + line.length
+            if (line.trimStart().startsWith("```")) {
+                if (open < 0) {
+                    open = offset
+                } else {
+                    if (pos > open && pos <= end) {
+                        val out = text.substring(0, end) + "\n" + text.substring(end)
+                        return Edited(out, end + 1, end + 1)
+                    }
+                    open = -1
+                }
+            }
+            offset = end + 1
+        }
+        if (open >= 0 && pos > open) {
+            val out = text.trimEnd('\n') + "\n```\n"
+            return Edited(out, out.length, out.length)
+        }
+        return null
+    }
+
     /** A fenced code block around the selection (or an empty one at the cursor). */
     fun codeBlock(text: String, start: Int, end: Int): Edited {
         val (s, e) = clamp(text, start, end)

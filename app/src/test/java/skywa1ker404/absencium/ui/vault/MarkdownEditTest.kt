@@ -214,4 +214,22 @@ class MarkdownEditTest {
     @Test fun aMixedSelectionStylesOnlyTheLinesThatLackIt() {
         assertEquals("**one**\n**two**", MarkdownEdit.toggleWrap("**one**\ntwo", 0, 11, "**", "bold").text)
     }
+
+    @Test fun aCursorInsideACodeBlockStepsOutBelowTheFence() {
+        val text = "```\ncode\n```\nafter"
+        val r = MarkdownEdit.leaveFence(text, 6)!!
+        assertEquals("```\ncode\n```\n\nafter", r.text)
+        assertEquals(r.text.indexOf("\n\nafter") + 1, r.start)
+    }
+
+    @Test fun aCursorOutsideACodeBlockStaysPut() {
+        assertEquals(null, MarkdownEdit.leaveFence("```\ncode\n```\nafter", 18))
+        assertEquals(null, MarkdownEdit.leaveFence("plain", 2))
+    }
+
+    @Test fun anUnclosedCodeBlockIsClosedWhenAnythingIsAddedBelow() {
+        val r = MarkdownEdit.leaveFence("```\ncode", 6)!!
+        assertEquals("```\ncode\n```\n", r.text)
+        assertEquals(r.text.length, r.start)
+    }
 }
