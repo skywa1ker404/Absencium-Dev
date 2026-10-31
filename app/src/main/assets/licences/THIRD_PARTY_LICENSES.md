@@ -75,6 +75,10 @@ with the repository's own path data because their earlier path data could not be
 Material's "edit_note" (Material Icons has no "draft" icon). The Apache-2.0 text is in
 [licenses/Material-Icons-Apache-2.0.txt](licenses/Material-Icons-Apache-2.0.txt).
 
+Added 2026-10-31: Refresh, Menu, ContentCopy, PushPin, Send and Settings are the same Material filled glyphs (Apache-2.0). Their
+path data was typed from the set's published paths, not copied from a checkout, so each must be compared with the repository before
+1.0.0 (pre-1.0 audit item).
+
 ## Artwork in the README
 
 `.github/hero.png`, `.github/showcase.png` and `.github/badge_obtainium.png` are original illustrations drawn for this
