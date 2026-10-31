@@ -74,8 +74,10 @@ fun ExpressiveEmptyState(
             MaterialShapes.Oval,
         )
     }
-    var index by remember { mutableIntStateOf(0) }
-    var from by remember { mutableIntStateOf(0) }
+    // Every empty page starts on a different shape, so two empty pages in a row do not look the same.
+    val start = remember { kotlin.random.Random.nextInt(shapes.size) }
+    var index by remember { mutableIntStateOf(start) }
+    var from by remember { mutableIntStateOf(start) }
     val morphProgress = remember { Animatable(1f) }
     // The badge keeps turning slowly anti-clockwise, and every 5 seconds it changes into the next shape with a springy squash.
     val spin = rememberInfiniteTransition(label = "emptySpin").animateFloat(

@@ -261,12 +261,12 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
             if (reply.trim().equals("NONE", ignoreCase = true)) {
                 return OutlineImport.Problem("The pictures do not seem to show a syllabus for $subject.")
             }
-            val items = SyllabusTree.parseOutline(reply)
+            val items = SyllabusTree.parseReply(reply)
             if (items.isEmpty()) OutlineImport.Problem("The AI did not find any units or topics in the pictures.") else OutlineImport.Ready(items)
         } catch (e: CancellationException) {
             throw e
         } catch (e: AiException) {
-            OutlineImport.Problem(e.message ?: "The AI request failed.")
+            OutlineImport.Problem(skywa1ker404.absencium.data.ai.AI_FAILED_INLINE)
         } catch (e: Exception) {
             DebugLogger.e("Syllabus", "Reading the pictures failed", e)
             OutlineImport.Problem("Something went wrong: ${e.message ?: e.javaClass.simpleName}")
@@ -321,7 +321,7 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
         val extractor = container.textExtractor
         return try {
             val file = java.io.File(path)
-            val lines = StringBuilder()
+            val replies = ArrayList<String>()
             var note = ""
             if (file.length() <= skywa1ker404.absencium.data.ocr.TextExtractor.MAX_AI_FILE_BYTES) {
                 // The whole PDF goes up in one request, with the upload shown as a wavy progress line.
@@ -337,26 +337,36 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
                         _import.value = if (f >= 1f) OutlineImport.Working("Uploaded. The AI is reading all the pages") else OutlineImport.Working("Uploading the PDF", f)
                     },
                 )
-                if (!reply.trim().equals("NONE", ignoreCase = true)) lines.append(reply.trim())
+                if (!reply.trim().equals("NONE", ignoreCase = true)) replies += reply.trim()
             } else {
                 // Too big to send whole: the first pages as small pictures, a few at a time.
                 val total = extractor.pdfPageCount(path)
                 val used = minOf(total, skywa1ker404.absencium.data.ocr.TextExtractor.MAX_PDF_PAGES)
-                val batch = skywa1ker404.absencium.data.ocr.TextExtractor.PDF_BATCH
-                for (from in 0 until used step batch) {
+                var batch = container.aiClient.imageLimit(connection, skywa1ker404.absencium.data.ocr.TextExtractor.PDF_BATCH)
+                var from = 0
+                while (from < used) {
                     val to = minOf(used, from + batch)
                     _import.value = OutlineImport.Working("This PDF is large, reading pages ${from + 1} to $to of $total", from.toFloat() / used)
-                    val reply = container.aiClient.generate(
-                        connection,
-                        outlinePrompt(subject).replace("Text:\n", "The pages are attached as pictures (pages ${from + 1} to $to of $total)."),
-                        extractor.pdfImages(path, from, to),
-                        maxTokens = 8000,
-                    )
-                    if (!reply.trim().equals("NONE", ignoreCase = true)) lines.append(reply.trim()).append('\n')
+                    try {
+                        val reply = container.aiClient.generate(
+                            connection,
+                            outlinePrompt(subject).replace("Text:\n", "The pages are attached as pictures (pages ${from + 1} to $to of $total)."),
+                            extractor.pdfImages(path, from, to),
+                            maxTokens = 8000,
+                            adaptiveImages = true,
+                        )
+                        if (!reply.trim().equals("NONE", ignoreCase = true)) replies += reply.trim()
+                        from = to
+                    } catch (e: AiException) {
+                        // The model takes fewer pictures than this: the batch shrinks to its limit and these pages go again.
+                        val limit = e.maxImages
+                        if (limit == null || limit >= to - from) throw e
+                        batch = limit
+                    }
                 }
                 if (total > used) note = " in its first $used pages"
             }
-            val items = SyllabusTree.parseOutline(lines.toString())
+            val items = SyllabusTree.mergeOutlines(replies.map { SyllabusTree.parseReply(it) })
             if (items.isEmpty()) {
                 OutlineImport.Problem("The document does not seem to contain a syllabus for $subject$note. Check the subject name, or use a PDF of just its part.")
             } else {
@@ -365,7 +375,7 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
         } catch (e: CancellationException) {
             throw e
         } catch (e: AiException) {
-            OutlineImport.Problem(e.message ?: "The AI request failed.")
+            OutlineImport.Problem(skywa1ker404.absencium.data.ai.AI_FAILED_INLINE)
         } catch (e: java.io.IOException) {
             OutlineImport.Problem(e.message ?: "The file could not be read.")
         } catch (e: Exception) {
@@ -383,12 +393,12 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
             if (reply.trim().equals("NONE", ignoreCase = true)) {
                 return OutlineImport.Problem("The text does not seem to contain a syllabus for $subject. Check the subject name, or paste just its part.")
             }
-            val items = SyllabusTree.parseOutline(reply)
+            val items = SyllabusTree.parseReply(reply)
             if (items.isEmpty()) OutlineImport.Problem("The AI did not find any units or topics in that text.") else OutlineImport.Ready(items)
         } catch (e: CancellationException) {
             throw e
         } catch (e: AiException) {
-            OutlineImport.Problem(e.message ?: "The AI request failed.")
+            OutlineImport.Problem(skywa1ker404.absencium.data.ai.AI_FAILED_INLINE)
         } catch (e: Exception) {
             DebugLogger.e("Syllabus", "Reading the outline failed", e)
             OutlineImport.Problem("Something went wrong: ${e.message ?: e.javaClass.simpleName}")
@@ -444,11 +454,13 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
         fun outlinePrompt(subject: String): String =
             "The text below may hold the syllabus of several subjects, or a whole session's papers. Read ONLY the syllabus of the " +
                 "subject named \"$subject\" and ignore every other subject, department, rule, schedule and general note. " +
-                "Turn that subject's syllabus into a plain outline. Write one item per line. Put units or modules at the left edge, " +
-                "and indent each deeper level by two spaces (chapters, then topics, then subtopics; at most four levels). " +
-                "Keep the original wording and order, add nothing that is not in the text, and leave out marks, hours, credits and " +
-                "book lists. Keep every title short, at most about ten words: when a line is a long sentence that lists many things, " +
-                "use its main idea as the title and put the listed things as indented lines below it. Do not number the lines, do not use bullets or Markdown, and write no explanation before or after. " +
+                "Answer with JSON only, no Markdown and no explanation: {\"items\":[{\"title\":\"...\",\"children\":[{\"title\":\"...\",\"children\":[...]}]}]}. " +
+                "The top level holds the units or modules in order. Inside a unit go its chapters or headings, inside those its topics, and inside " +
+                "those any subtopics (at most four levels in all). Leave \"children\" out for a line with nothing under it. " +
+                "Keep the original wording and order and add nothing that is not in the text. Include ONLY what is taught: leave out the course " +
+                "code, hours, credits, scope, course objectives, outcomes, prerequisites, marks, assessment, reference and book lists. " +
+                "Keep every title short, at most about ten words: when a line is a long sentence that lists many things, use its main idea " +
+                "as the title and make each listed thing a child. Keep labels such as \"Unit I\" at the start of a title. " +
                 "If the subject \"$subject\" is not in the text, answer with the single word NONE.\n\nText:\n"
 
         /** At most [MAX_SOURCE] characters of [text]: from just before where [subject] is first named when the text is longer. */

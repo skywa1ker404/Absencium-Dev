@@ -176,7 +176,8 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
     fun focuserFor(i: Int) = focusers.getOrPut(i) { FocusRequester() }
 
     var title by remember(note.id) { mutableStateOf(note.title) }
-    var text by remember(note.id) { mutableStateOf(note.bodyText) }
+    // A picture line cut in two by an older version is joined again as the note opens.
+    var text by remember(note.id) { mutableStateOf(NoteBlocks.repair(note.bodyText)) }
     var selStart by remember(note.id) { mutableIntStateOf(note.bodyText.length) }
     var selEnd by remember(note.id) { mutableIntStateOf(note.bodyText.length) }
     var focusPart by remember(note.id) { mutableIntStateOf(-1) }
@@ -1122,12 +1123,11 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         ShareHost(viewModel)
         if (showShare) {
             ShareFormatDialog(
-                formats = listOf(ShareFormat.PDF, ShareFormat.MARKDOWN, ShareFormat.TEXT, ShareFormat.ZIP),
-                onPick = { format ->
+                onPick = { format, theme ->
                     showShare = false
                     // What is on screen, even if the automatic save has not run yet.
                     val current = note.copy(title = cleanTitle(title), bodyText = text)
-                    viewModel.share(listOf(current), format)
+                    viewModel.share(listOf(current), format, theme)
                 },
                 onDismiss = { showShare = false },
             )

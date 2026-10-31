@@ -67,7 +67,7 @@ class TextExtractor(
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: AiException) {
-                Extracted.Failed(e.message ?: "The AI request failed.")
+                Extracted.Failed(skywa1ker404.absencium.data.ai.AI_FAILED_INLINE)
             } catch (e: IOException) {
                 Extracted.Failed(e.message ?: "The file could not be read.")
             } catch (e: Exception) {
@@ -100,10 +100,20 @@ class TextExtractor(
                 val total = pdfPageCount(file.absolutePath)
                 val used = minOf(total, MAX_PDF_PAGES)
                 val out = StringBuilder()
-                for (from in 0 until used step PDF_BATCH) {
-                    val to = minOf(used, from + PDF_BATCH)
+                // A model that takes fewer pictures than PDF_BATCH says so in its error; the batch then shrinks to that and the pages go again.
+                var batch = ai.imageLimit(conn, PDF_BATCH)
+                var from = 0
+                while (from < used) {
+                    val to = minOf(used, from + batch)
                     onStep("This PDF is large, reading pages ${from + 1} to $to of $total")
-                    out.append(ai.generate(conn, PDF_PROMPT, pdfImages(file.absolutePath, from, to)).trim()).append("\n\n")
+                    try {
+                        out.append(ai.generate(conn, PDF_PROMPT, pdfImages(file.absolutePath, from, to), adaptiveImages = true).trim()).append("\n\n")
+                        from = to
+                    } catch (e: AiException) {
+                        val limit = e.maxImages
+                        if (limit == null || limit >= to - from) throw e
+                        batch = limit
+                    }
                 }
                 if (total > used) out.append("*Only the first $used of $total pages were read.*")
                 out.toString()

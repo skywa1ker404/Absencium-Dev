@@ -493,8 +493,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
     ShareHost(viewModel)
     if (showShare) {
         ShareFormatDialog(
-            formats = listOf(ShareFormat.PDF, ShareFormat.MARKDOWN, ShareFormat.TEXT, ShareFormat.ZIP),
-            onPick = { format -> showShare = false; viewModel.share(listOf(note), format) },
+            onPick = { format, theme -> showShare = false; viewModel.share(listOf(note), format, theme) },
             onDismiss = { showShare = false },
         )
     }

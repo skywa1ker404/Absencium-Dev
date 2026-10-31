@@ -30,3 +30,12 @@ working on it
 - Syllabus: calmer layout; topic side panel in folders; import from one document and/or up to five pictures.
 - Attendance: scrollable month chart, swipe between months, no lines through glass day beads. Timetable: week strip and a highlighted current lecture.
 - Themes: Sage & Oxblood and Orchid & Ember presets. AI Hub: a chat.
+
+## 2026-10-31 (development, not device-tested)
+- Fixed: the syllabus import builds a proper nested tree and leaves out course details; rows are smaller; tapping a unit shows only that unit.
+- Fixed: "The provider's reply was empty." (Gemini thinking tokens used up the reply; empty replies are retried and explained).
+- Fixed: an AI error shows once, at the bottom, for 5 seconds, and swipes away left or right.
+- Fixed: the date picker in Edit entry, the absent-date choice, the "Kind of notes" layouts, image / table / style markers breaking when typing next to them, a random shape on empty pages, the folder pill on empty pages, the drafts pull-down inside a folder (that subject only), the shadow under the main button, rotation reset in the photo editor.
+- Changed: the AI Hub is now **Absencium AI**, a chat with a sidebar of chats, a model chooser, pin / rename / delete / share, edit and copy on your messages, and (only where you allow it) suggestions that change your timetable, exams, holidays, attendance, subjects and notes after you tap Apply.
+- Changed: every AI provider keeps its own API key; AI & Integrations lists your providers, tests a connection and switches in one tap.
+- Changed: sharing a note offers PDF (with a Themed PDF toggle) and a greyed-out Sharewave.

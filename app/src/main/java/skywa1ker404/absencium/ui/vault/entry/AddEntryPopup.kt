@@ -303,6 +303,12 @@ private fun SubjectStage(
                     }
                 }
                 DateRow("Pick a custom date…", false) { onPickCustom() }
+                Text(
+                    if (selectedDate == null) "The notes are filed under today."
+                    else "The notes are filed under this day, and if it is a logged absence it is marked as notes collected.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
                 if (absences.isEmpty()) {
                     Text(
                         "No absent days are logged for this subject. You can continue without a date or pick any date.",

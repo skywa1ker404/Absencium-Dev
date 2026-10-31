@@ -110,4 +110,6 @@ dependencies {
     implementation(libs.filekit.dialogs.compose)
 
     testImplementation(libs.junit)
+    // The Android stubs do not implement org.json, so unit tests of code that parses JSON need a real copy (Android's own, Apache-2.0; test-only, not in the APK).
+    testImplementation("com.vaadin.external.google:android-json:0.0.20131108.vaadin1")
 }

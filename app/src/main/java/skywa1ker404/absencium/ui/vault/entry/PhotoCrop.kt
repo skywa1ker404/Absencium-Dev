@@ -367,6 +367,11 @@ fun PhotoCropDialog(
                     CropIcon("Flip vertical", icon = AppIcons.FlipVertical, selected = transform.flipVertical) {
                         transform = transform.copy(flipVertical = !transform.flipVertical)
                     }
+                    // Puts the photo back as it was opened: no turns, no flips, no tilt.
+                    CropIcon("Reset rotation", icon = AppIcons.Refresh) {
+                        transform = PhotoTransform()
+                        crop = Rect.Zero
+                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(

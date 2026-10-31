@@ -43,6 +43,8 @@ class ShareService(private val context: Context) {
         notes: List<NoteEntity>,
         attachmentsOf: (Long) -> List<AttachmentEntity>,
         format: ShareFormat,
+        /** The colours of a themed PDF, or null for the plain white page. */
+        theme: PdfTheme? = null,
     ): Result<PreparedShare> = withContext(Dispatchers.IO) {
         try {
             require(notes.isNotEmpty()) { "Nothing to share." }
@@ -57,7 +59,12 @@ class ShareService(private val context: Context) {
             var skipped = 0
             val file: File
             val displayName: String
-            if (format == ShareFormat.ZIP || notes.size > 1) {
+            if (format == ShareFormat.PDF && notes.size > 1) {
+                // Several entries as PDF travel as one ZIP holding a PDF each.
+                displayName = "Absencium notes.zip"
+                file = File(dir, displayName)
+                writePdfZip(file, notes, attachmentsOf, theme ?: PdfTheme.Plain)
+            } else if (format == ShareFormat.ZIP || notes.size > 1) {
                 displayName = if (notes.size == 1) ExportNames.fileName(notes[0].title, "zip") else "Absencium notes.zip"
                 file = File(dir, displayName)
                 skipped = writeZip(file, notes, attachmentsOf, includePhotos = format == ShareFormat.ZIP)
@@ -67,12 +74,7 @@ class ShareService(private val context: Context) {
                 file = File(dir, displayName)
                 when (format) {
                     ShareFormat.PDF -> {
-                        val attachments = attachmentsOf(note.id)
-                        file.outputStream().use {
-                            PdfNoteRenderer.render(note.title, MarkdownParse.blocks(note.bodyText), it) { embed ->
-                                attachments.firstOrNull { a -> a.id == embed.id }?.let { a -> skywa1ker404.absencium.ui.vault.entry.ImageTools.decode(a.filePath, 1600) }
-                            }
-                        }
+                        file.outputStream().use { writePdf(it, note, attachmentsOf(note.id), theme ?: PdfTheme.Plain) }
                     }
                     ShareFormat.MARKDOWN -> file.writeText(ExportNames.markdown(note.title, note.tags, ExportNames.portableMarkdown(note.bodyText) { _, _ -> null }))
                     ShareFormat.TEXT -> file.writeText(ExportNames.plainText(note.title, note.tags, note.bodyText))
@@ -91,6 +93,25 @@ class ShareService(private val context: Context) {
         } catch (e: Exception) {
             DebugLogger.e(TAG, "Export failed", e)
             Result.failure(IOException("The export could not be prepared. See debug.log for details."))
+        }
+    }
+
+    private fun writePdf(out: java.io.OutputStream, note: NoteEntity, attachments: List<AttachmentEntity>, theme: PdfTheme) {
+        PdfNoteRenderer.render(note.title, MarkdownParse.blocks(note.bodyText), out, theme) { embed ->
+            attachments.firstOrNull { a -> a.id == embed.id }?.let { a -> skywa1ker404.absencium.ui.vault.entry.ImageTools.decode(a.filePath, 1600) }
+        }
+    }
+
+    private fun writePdfZip(target: File, notes: List<NoteEntity>, attachmentsOf: (Long) -> List<AttachmentEntity>, theme: PdfTheme) {
+        val names = ExportNames.unique(notes.map { ExportNames.fileName(it.title, "pdf") })
+        ZipOutputStream(target.outputStream().buffered()).use { zip ->
+            notes.forEachIndexed { index, note ->
+                zip.putNextEntry(ZipEntry(names[index]))
+                // The PDF is rendered into memory first: the renderer closes nothing it does not own, and the entry must stay open.
+                val bytes = java.io.ByteArrayOutputStream().also { writePdf(it, note, attachmentsOf(note.id), theme) }.toByteArray()
+                zip.write(bytes)
+                zip.closeEntry()
+            }
         }
     }
 

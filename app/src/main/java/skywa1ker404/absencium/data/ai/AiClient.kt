@@ -47,8 +47,14 @@ class AiImage(val mimeType: String, val base64: String) {
     val isAudio: Boolean get() = mimeType.startsWith("audio/")
 }
 
+/**
+ * What a screen shows inline when a request failed. The reason itself is spelled out once, in the card at the bottom of the screen
+ * (see AiErrorHost), so it is not repeated next to the button.
+ */
+const val AI_FAILED_INLINE = "The AI request failed. The reason is shown at the bottom of the screen."
+
 /** Something went wrong talking to the provider; [message] is written for the user. */
-class AiException(message: String, val httpCode: Int = 0) : Exception(message) {
+class AiException(message: String, val httpCode: Int = 0, val maxImages: Int? = null) : Exception(message) {
     /** True for answers that usually pass by themselves: the provider is busy or briefly down. */
     val temporary: Boolean get() = httpCode == 500 || httpCode == 502 || httpCode == 503 || httpCode == 504
 }
@@ -70,6 +76,11 @@ class AiClient(private val keyVault: ApiKeyVault) {
      * screen that asked has been closed.
      */
     val failures: SharedFlow<String> = _failures.asSharedFlow()
+
+    private val imageLimits = HashMap<String, Int>()
+
+    /** How many pictures one request to [connection]'s model may carry: [default], or less once the provider has said so. */
+    fun imageLimit(connection: AiConnection, default: Int): Int = minOf(default, imageLimits["${connection.style}|${connection.model}"] ?: default)
 
     /** The models the provider offers, sorted by name. */
     suspend fun listModels(connection: AiConnection): List<AiModel> = withContext(Dispatchers.IO) {
@@ -103,16 +114,27 @@ class AiClient(private val keyVault: ApiKeyVault) {
         maxTokens: Int? = null,
         /** Called with 0..1 while the request body is being uploaded, so a big file can show its progress. */
         onUpload: ((Float) -> Unit)? = null,
+        /** True when the caller can send fewer pictures at a time if the model says it takes fewer; the failure is then not announced. */
+        adaptiveImages: Boolean = false,
+        /** False for a chat message: the chat keeps its own transcript, so it is not repeated in the list of prompts the app made. */
+        record: Boolean = true,
     ): String {
         try {
             val reply = generateRaw(connection, prompt, images, videoUrl, maxTokens, onUpload)
-            history?.add(connection.model, prompt, reply, null, images.size)
+            if (record) history?.add(connection.model, prompt, reply, null, images.size)
             return reply
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            history?.add(connection.model, prompt, null, e.message ?: e.javaClass.simpleName, images.size)
-            _failures.tryEmit(e.message ?: "The AI request failed.")
+            if (record) history?.add(connection.model, prompt, null, e.message ?: e.javaClass.simpleName, images.size)
+            val limit = (e as? AiException)?.maxImages
+            if (adaptiveImages && limit != null && images.size > limit) {
+                // The model takes fewer pictures than were sent. The limit is remembered and the caller sends smaller batches,
+                // so this is not a failure worth a card.
+                imageLimits["${connection.style}|${connection.model}"] = limit
+            } else {
+                _failures.tryEmit(e.message ?: "The AI request failed.")
+            }
             throw e
         }
     }
@@ -208,18 +230,26 @@ class AiClient(private val keyVault: ApiKeyVault) {
                             ),
                         )
                     }
+                    // No output cap for Gemini: its hidden thinking is counted inside maxOutputTokens, so a cap meant for the visible
+                    // answer could be used up by the thinking and leave an empty reply.
                     val body = JSONObject().put("contents", JSONArray().put(JSONObject().put("parts", parts)))
-                    if (maxTokens != null) body.put("generationConfig", JSONObject().put("maxOutputTokens", maxTokens))
                     val id = model.removePrefix("models/")
                     val url = "$base/models/$id:generateContent?key=${URLEncoder.encode(key.orEmpty(), "UTF-8")}"
-                    val reply = callRetrying("POST", url, emptyMap(), body.toString(), onUpload)
-                    parseGeminiReply(reply)
+                    var result = parseGemini(callRetrying("POST", url, emptyMap(), body.toString(), onUpload))
+                    // An empty answer with a normal stop is a known hiccup of the flash models: once more usually works.
+                    if (result.text.isBlank() && result.retryable) {
+                        DebugLogger.w(TAG, "Gemini returned no text (${result.summary()}), asking once more")
+                        delay(1_500)
+                        result = parseGemini(callRetrying("POST", url, emptyMap(), body.toString(), onUpload))
+                    }
+                    if (result.text.isBlank()) throw AiException(result.problem())
+                    result.text
                 }
             }
         }
 
     private fun keyFor(connection: AiConnection): String? {
-        val key = keyVault.read()
+        val key = keyVault.read(connection.provider)
         if (connection.provider.keyRequired && key.isNullOrBlank()) {
             throw AiException("Save your API key first (Settings, AI & Integrations, API key).")
         }
@@ -348,15 +378,39 @@ class AiClient(private val keyVault: ApiKeyVault) {
             }
         }
 
-    private fun parseGeminiReply(body: String): String {
-        val json = JSONObject(body)
-        val parts = json.optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")
-        val text = parts?.let { p -> (0 until p.length()).joinToString("") { p.getJSONObject(it).optString("text") } }.orEmpty()
-        if (text.isBlank()) {
-            val blocked = json.optJSONObject("promptFeedback")?.optString("blockReason", "").orEmpty()
-            throw AiException(if (blocked.isNotBlank()) "Gemini blocked the request ($blocked)." else "The provider's reply was empty.")
+    /** What Gemini sent back: the visible text and why it stopped. */
+    private class GeminiResult(
+        val text: String,
+        val finish: String,
+        val blocked: String,
+        val thoughtTokens: Int,
+    ) {
+        val retryable: Boolean get() = blocked.isBlank() && (finish.isBlank() || finish == "STOP" || finish == "OTHER")
+        fun summary(): String = "finish=${finish.ifBlank { "none" }}, blocked=${blocked.ifBlank { "no" }}, thinking tokens=$thoughtTokens"
+        fun problem(): String = when {
+            blocked.isNotBlank() -> "Gemini blocked the request ($blocked). Try another model or rephrase."
+            finish == "MAX_TOKENS" -> "Gemini ran out of room before it wrote an answer (it used $thoughtTokens tokens thinking). Try a smaller input or another model."
+            finish in setOf("SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION", "IMAGE_SAFETY") ->
+                "Gemini's safety filter stopped the answer ($finish). Try other wording or another model."
+            else -> "Gemini sent back no text (${summary()}). Try again or pick another model."
         }
-        return text
+    }
+
+    private fun parseGemini(body: String): GeminiResult {
+        val json = JSONObject(body)
+        val candidate = json.optJSONArray("candidates")?.optJSONObject(0)
+        val parts = candidate?.optJSONObject("content")?.optJSONArray("parts")
+        // Thought summaries are marked "thought": true; only the real answer is kept.
+        val text = parts?.let { p ->
+            (0 until p.length()).joinToString("") { i ->
+                val part = p.getJSONObject(i)
+                if (part.optBoolean("thought", false)) "" else part.optString("text")
+            }
+        }.orEmpty()
+        val finish = candidate?.optString("finishReason", "").orEmpty()
+        val blocked = json.optJSONObject("promptFeedback")?.optString("blockReason", "").orEmpty()
+        val thoughts = json.optJSONObject("usageMetadata")?.optInt("thoughtsTokenCount", 0) ?: 0
+        return GeminiResult(text, finish, blocked, thoughts)
     }
 
     /** A POST that tries again, after a pause, when the provider says it is busy (HTTP 500, 502, 503 or 504). */
@@ -424,7 +478,8 @@ class AiClient(private val keyVault: ApiKeyVault) {
                 val reason = describeError(code, text)
                 // The provider's own explanation (never the key) goes to the debug log, so a 400 can be told apart from another 400.
                 DebugLogger.w(TAG, "$method $shown rejected: $reason")
-                throw AiException(reason, code)
+                val maxImages = Regex("up to (\\d+) images?", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)?.toIntOrNull()
+                throw AiException(reason, code, maxImages)
             }
             return text
         } catch (e: AiException) {

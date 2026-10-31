@@ -25,7 +25,7 @@ import skywa1ker404.absencium.ui.containerViewModel
 
 /** Entries that were saved with Save to Drafts, as a popup. Tap one to keep editing it. */
 @Composable
-fun DraftsPopup(onDismiss: () -> Unit, onOpenDraft: (NoteEntity) -> Unit) {
+fun DraftsPopup(onDismiss: () -> Unit, onOpenDraft: (NoteEntity) -> Unit, subjectId: Long? = null) {
     val viewModel = containerViewModel { VaultViewModel(it) }
     val data by viewModel.data.collectAsStateWithLifecycle()
     var toDelete by remember { mutableStateOf<NoteEntity?>(null) }
@@ -39,10 +39,12 @@ fun DraftsPopup(onDismiss: () -> Unit, onOpenDraft: (NoteEntity) -> Unit) {
             return@PopupBody
         }
         val names = loaded.subjects.associate { it.id to it.name }
-        if (loaded.drafts.isEmpty()) {
+        // Opened from a subject folder, only that subject's drafts are listed.
+        val shown = if (subjectId == null) loaded.drafts else loaded.drafts.filter { it.subjectId == subjectId }
+        if (shown.isEmpty()) {
             HintText("No drafts. When you leave a new entry unfinished, choose Save to Drafts to keep it here.")
         }
-        loaded.drafts.forEach { draft ->
+        shown.forEach { draft ->
             AppCard(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { onOpenDraft(draft) },

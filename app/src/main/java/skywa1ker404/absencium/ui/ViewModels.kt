@@ -191,30 +191,129 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
 // AI key vault
 // ---------------------------------------------------------------------------------------------
 
-data class AiKeyUiState(val hasKey: Boolean = false, val lastFour: String? = null, val message: String? = null)
+/** One provider the student has set up: where it is, which model, and whether a key is saved for it. */
+data class ProviderRow(
+    val provider: skywa1ker404.absencium.data.ai.AiProvider,
+    val hasKey: Boolean,
+    val lastFour: String?,
+    val baseUrl: String,
+    val model: String,
+    val style: skywa1ker404.absencium.data.ai.ApiStyle,
+    val active: Boolean,
+) {
+    /** True when this provider could answer right now: URL and model saved, and a key if it needs one. */
+    val complete: Boolean get() = baseUrl.isNotBlank() && model.isNotBlank() && (!provider.keyRequired || hasKey)
+}
 
-class AiKeyViewModel(private val container: AppContainer) : ViewModel() {
+/**
+ * Every provider the student set up, with its own key (kept in the encrypted vault) and its own URL and model, and which one is in
+ * use. Switching provider never asks for a key again.
+ */
+class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
 
     private val vault = container.apiKeyVault
+    private val profiles = container.aiProfiles
+    private val refresh = MutableStateFlow(0)
 
-    private val _state = MutableStateFlow(AiKeyUiState(vault.hasKey(), vault.lastFour()))
-    val state: StateFlow<AiKeyUiState> = _state.asStateFlow()
+    val rows: StateFlow<List<ProviderRow>> = kotlinx.coroutines.flow.combine(container.settingsState, refresh) { settings, _ -> build(settings) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), build(container.settingsState.value))
 
-    fun save(key: String) {
+    private fun build(settings: skywa1ker404.absencium.data.settings.AppSettings?): List<ProviderRow> =
+        skywa1ker404.absencium.data.ai.AiProvider.entries.mapNotNull { provider ->
+            val active = settings?.aiProvider == provider && settings.aiConnectionSaved
+            val saved = profiles.get(provider)
+            if (!active && !vault.hasKey(provider) && saved == null) return@mapNotNull null
+            val profile = profileFor(provider, settings)
+            ProviderRow(provider, vault.hasKey(provider), vault.lastFour(provider), profile.baseUrl, profile.model, profile.style, active)
+        }
+
+    /** What is saved for [provider], or its defaults. The provider in use is read from the settings, which hold the truth for it. */
+    fun profileFor(
+        provider: skywa1ker404.absencium.data.ai.AiProvider,
+        settings: skywa1ker404.absencium.data.settings.AppSettings? = container.settingsState.value,
+    ): skywa1ker404.absencium.data.ai.AiProfile =
+        if (settings != null && settings.aiProvider == provider && settings.aiConnectionSaved) {
+            skywa1ker404.absencium.data.ai.AiProfile(provider, settings.aiBaseUrl.ifBlank { provider.defaultBaseUrl }, settings.aiModel, settings.effectiveAiStyle)
+        } else {
+            profiles.get(provider) ?: skywa1ker404.absencium.data.ai.AiProfile(provider, provider.defaultBaseUrl, "", provider.style)
+        }
+
+    fun keyHint(provider: skywa1ker404.absencium.data.ai.AiProvider): String? = if (vault.hasKey(provider)) vault.lastFour(provider) else null
+
+    /**
+     * Saves the provider (and its key when one was typed). With [use] it also becomes the provider in use; the first provider set up
+     * always does. [onDone] gets null on success or a message.
+     */
+    fun save(
+        provider: skywa1ker404.absencium.data.ai.AiProvider,
+        baseUrl: String,
+        model: String,
+        style: skywa1ker404.absencium.data.ai.ApiStyle,
+        key: String,
+        use: Boolean,
+        onDone: (String?) -> Unit,
+    ) {
         viewModelScope.launch {
-            val ok = withContext(Dispatchers.IO) { vault.save(key) }
-            _state.value = if (ok) {
-                AiKeyUiState(hasKey = true, lastFour = vault.lastFour(), message = "Key saved, encrypted on this device.")
-            } else {
-                _state.value.copy(message = "Could not save the key. See debug.log for details.")
+            val failure = withContext(Dispatchers.IO) {
+                if (key.isNotBlank() && !vault.save(provider, key)) {
+                    "Could not save the key. See debug.log for details."
+                } else {
+                    profiles.save(skywa1ker404.absencium.data.ai.AiProfile(provider, baseUrl, model, style))
+                    null
+                }
             }
+            if (failure == null) {
+                val current = container.settingsState.value
+                if (use || current == null || !current.aiConnectionSaved || current.aiProvider == provider) {
+                    container.settingsRepository.setAiConnection(provider, baseUrl, model, style)
+                }
+                DebugLogger.i("AI", "Provider saved: ${provider.name} url=$baseUrl model=$model")
+                refresh.update { it + 1 }
+            }
+            onDone(failure)
         }
     }
 
-    fun clear() {
+    /** Saves a typed key first, then runs [block] (fetching models and testing both need it in the vault). */
+    fun withKey(provider: skywa1ker404.absencium.data.ai.AiProvider, key: String, block: () -> Unit) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { vault.clear() }
-            _state.value = AiKeyUiState(message = "Key removed.")
+            if (key.isNotBlank()) withContext(Dispatchers.IO) { vault.save(provider, key) }
+            refresh.update { it + 1 }
+            block()
+        }
+    }
+
+    /** Makes [provider] the one in use, with the URL and model saved for it. */
+    fun use(provider: skywa1ker404.absencium.data.ai.AiProvider) {
+        val profile = profileFor(provider)
+        if (profile.baseUrl.isBlank() || profile.model.isBlank()) return
+        viewModelScope.launch { container.settingsRepository.setAiConnection(provider, profile.baseUrl, profile.model, profile.style) }
+    }
+
+    /** Forgets the provider: its key and its saved URL and model. If it was in use, another complete provider takes over. */
+    fun remove(provider: skywa1ker404.absencium.data.ai.AiProvider) {
+        viewModelScope.launch {
+            val wasActive = container.settingsState.value?.aiProvider == provider
+            withContext(Dispatchers.IO) {
+                vault.clear(provider)
+                profiles.remove(provider)
+            }
+            refresh.update { it + 1 }
+            if (wasActive) rows.value.firstOrNull { it.provider != provider && it.complete }?.let { use(it.provider) }
+        }
+    }
+
+    /** Sends one tiny request to check the URL, key and model together. */
+    fun test(connection: skywa1ker404.absencium.data.ai.AiConnection, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                container.aiClient.generate(connection, "Reply with the single word OK.", record = false)
+                onResult(true, "Connected. ${connection.model} answered.")
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                onResult(false, skywa1ker404.absencium.data.ai.AI_FAILED_INLINE)
+            }
         }
     }
 }
@@ -378,4 +477,14 @@ class TestLabViewModel(private val container: AppContainer) : ViewModel() {
         return "Passed. Wrote and read back \"$readBack\". Files in the test folder: ${files.joinToString()}. " +
             "Location: ${folder.displayPath}"
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Absencium AI permissions
+// ---------------------------------------------------------------------------------------------
+
+/** Which parts of the app's data Absencium AI may use. */
+class AiPermissionsViewModel(private val container: AppContainer) : ViewModel() {
+    val allowed: StateFlow<Set<skywa1ker404.absencium.data.ai.AiScope>> = container.aiPermissions.allowed
+    fun set(scope: skywa1ker404.absencium.data.ai.AiScope, on: Boolean) = container.aiPermissions.set(scope, on)
 }

@@ -90,13 +90,15 @@ class VaultRepository(private val database: AbsenciumDatabase) {
         attachments: List<AttachmentEntity>,
     ): Long {
         val now = System.currentTimeMillis()
+        // Notes made for a chosen day are filed under that day (at the time of day they were made), so the choice shows in the list too.
+        val filedAt = absentDate?.atTime(java.time.LocalTime.now())?.atZone(java.time.ZoneId.systemDefault())?.toInstant()?.toEpochMilli() ?: now
         return database.entryDao().createWithAttachments(
             NoteEntity(
                 subjectId = subjectId,
                 title = title,
                 bodyText = body,
                 status = NoteStatus.ACTIVE,
-                createdDate = now,
+                createdDate = filedAt,
                 kind = kind,
                 absentDate = absentDate,
                 updatedAt = now,

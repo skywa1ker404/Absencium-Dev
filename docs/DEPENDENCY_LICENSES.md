@@ -211,5 +211,6 @@ they place no licence obligation on the APK. Licences read from each project's o
 |---|---|---|
 | `junit:junit:4.13.2` | Eclipse Public License 1.0 | Test runner. EPL-1.0 is not GPL-compatible for combined distribution, which is why it must never move to `implementation`. |
 | `org.hamcrest:hamcrest-core:1.3` | BSD-3-Clause | Pulled in by JUnit 4.13.2. |
+| `com.vaadin.external.google:android-json:0.0.20131108.vaadin1` | Apache-2.0 (a repackaging of Android's own `org.json`) | Added 2026-10-31 so unit tests can parse JSON (the Android stubs throw "not mocked"). Test-only; to be re-checked against its POM once CI resolves it. |
 
 Status: licences above are from the Maven coordinates' published terms and are **to be re-checked against the real POMs once CI resolves them** (the workspace cannot reach Maven Central).

@@ -8,13 +8,39 @@ enum class NoteLength(val label: String, val guide: String, val maxTokens: Int) 
 }
 
 /** The kind of notes wanted. */
-enum class NoteTemplate(val label: String, val guide: String) {
-    FULL("Full note", "A complete, well-organised note on the topic, with the sections the topic needs."),
-    KEY_DETAILS("Key details, line by line", "One short, self-contained fact per line, grouped under small headings. No paragraphs."),
-    SUMMARY("Summary", "A compact summary a student can read in two minutes, with the few things that must be remembered highlighted."),
-    PYQ("Previous year questions", "Questions of the kind this exam usually asks, grouped by marks, each with a model answer and the point where marks are earned."),
-    LAST_MINUTE("Last-minute exam preparation", "Rapid revision: formulas, definitions, diagrams to practise, mnemonics, common traps, and a checklist to tick off."),
-    PRACTICAL("Practical observation notes", "Aim, apparatus, theory, procedure, an observation table to fill in, calculation, result, precautions and viva questions."),
+enum class NoteTemplate(val label: String, val guide: String, val layout: String) {
+    FULL("Full note", "A complete, well-organised note on the topic, with the sections the topic needs.", ""),
+    KEY_DETAILS(
+        "Key details, line by line",
+        "One short, self-contained fact per line, grouped under small headings. No paragraphs.",
+        "Write ONLY short headings (\"## \") and, under each, one fact per line as a \"- \" bullet of at most 15 words. No paragraphs, no introduction, no conclusion, " +
+            "no tables. Put the single most important fact of each heading in ==highlight==. Group the facts in the order a student would learn them.",
+    ),
+    SUMMARY(
+        "Summary",
+        "A compact summary a student can read in two minutes, with the few things that must be remembered highlighted.",
+        "Write a compact summary that can be read in two minutes: a title, one short overview paragraph, then at most 8 bullets, then a final heading \"Must remember\" with " +
+            "the 3 to 5 facts that matter most, each in ==highlight==. No long sections, no derivations, no worked examples. The length setting only decides how much detail each bullet gets, never more than one page.",
+    ),
+    PYQ(
+        "Previous year questions",
+        "Questions of the kind this exam usually asks, grouped by marks, each with a model answer and the point where marks are earned.",
+        "Write a question bank, not notes. Group by marks with headings (\"## Very short (1-2 marks)\", \"## Short (3-5 marks)\", \"## Long (8+ marks)\"). Each question is a numbered line in **bold**, " +
+            "followed by a model answer sized to the marks, then a line \"Marks are earned for:\" with the 2 to 4 points an examiner looks for. Do not invent exam years or paper names. Finish with a \"Most repeated topics\" bullet list.",
+    ),
+    LAST_MINUTE(
+        "Last-minute exam preparation",
+        "Rapid revision: formulas, definitions, diagrams to practise, mnemonics, common traps, and a checklist to tick off.",
+        "Write a one-sitting rapid-revision sheet with exactly these headings, skipping one only if it truly does not apply: \"## Definitions to know cold\", \"## Formulas and facts\", " +
+            "\"## Mnemonics\", \"## Diagrams to practise drawing\" (name them, do not draw), \"## Common traps\" (in red), \"## Tick before you walk in\" (a \"- [ ] \" checklist). Everything is one line each. No explanations longer than a sentence.",
+    ),
+    PRACTICAL(
+        "Practical observation notes",
+        "Aim, apparatus, theory, procedure, an observation table to fill in, calculation, result, precautions and viva questions.",
+        "Write a practical record in this exact order of headings: \"## Aim\", \"## Apparatus / materials\", \"## Theory\" (short), \"## Procedure\" (numbered steps), " +
+            "\"## Observations\" (an EMPTY table with the right columns and 5 blank rows for the student to fill in), \"## Calculation\" (the formulas with each symbol defined), " +
+            "\"## Result\", \"## Precautions\", \"## Viva questions\" (6 to 8 with one-line answers).",
+    ),
 }
 
 /** Where in the student's course this belongs, taken from their syllabus tree. */
@@ -123,12 +149,13 @@ object NotePrompts {
         Defaults, used only where the student's text says nothing different:
         Length: ${b.length.label} (${b.length.guide}). This length is a requirement, not a hint: do not stop early, do not summarise where the student asked for depth, and keep going until the topic is fully covered at that size.
         Kind of notes: ${b.template.label}. ${b.template.guide}
+        ${if (b.template.layout.isEmpty()) "" else "MANDATORY LAYOUT for this kind of notes (it replaces the section menu and the feature list below; follow it exactly, and only the student's own typed request can change it): ${b.template.layout}"}
         ${syllabusPart(b.syllabus)}
         $EDITOR
 
-        $SECTION_MENU
+        ${if (b.template.layout.isEmpty()) SECTION_MENU else ""}
 
-        $FEATURES
+        ${if (b.template.layout.isEmpty()) FEATURES else ""}
 
         ${extras(b)}
 

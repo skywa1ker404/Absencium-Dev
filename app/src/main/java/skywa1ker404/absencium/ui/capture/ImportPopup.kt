@@ -137,12 +137,12 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
 
     private fun aiIsReady(): Boolean {
         val settings = container.settingsState.value ?: return false
-        return aiUsable(settings, container.apiKeyVault.hasKey())
+        return aiUsable(settings, container.activeKeySaved())
     }
 
     private fun connection(): AiConnection? {
         val s = container.settingsState.value ?: return null
-        if (!aiUsable(s, container.apiKeyVault.hasKey())) return null
+        if (!aiUsable(s, container.activeKeySaved())) return null
         return AiConnection(s.aiProvider, s.effectiveAiStyle, s.aiBaseUrl, s.aiModel)
     }
 
@@ -174,7 +174,7 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: AiException) {
-                _state.update { it.copy(stage = ImportStage.SOURCE, message = e.message) }
+                _state.update { it.copy(stage = ImportStage.SOURCE, message = skywa1ker404.absencium.data.ai.AI_FAILED_INLINE) }
             } catch (e: Exception) {
                 DebugLogger.e("Import", "Could not read the files", e)
                 _state.update { it.copy(stage = ImportStage.SOURCE, message = "Could not read that file. See debug.log for details.") }
@@ -285,7 +285,7 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
         } catch (e: CancellationException) {
             throw e
         } catch (e: AiException) {
-            _state.update { it.copy(stage = ImportStage.SOURCE, message = e.message) }
+            _state.update { it.copy(stage = ImportStage.SOURCE, message = skywa1ker404.absencium.data.ai.AI_FAILED_INLINE) }
         } catch (e: Exception) {
             DebugLogger.e("Import", "AI request failed", e)
             _state.update { it.copy(stage = ImportStage.SOURCE, message = "Something went wrong. See debug.log for details.") }

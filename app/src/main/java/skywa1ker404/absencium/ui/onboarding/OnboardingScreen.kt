@@ -67,7 +67,7 @@ import skywa1ker404.absencium.data.settings.AppSettings
 import skywa1ker404.absencium.data.settings.ColorEngine
 import skywa1ker404.absencium.data.settings.ThemeMode
 import skywa1ker404.absencium.data.settings.VisualQuality
-import skywa1ker404.absencium.ui.AiKeyViewModel
+import skywa1ker404.absencium.ui.AiProvidersViewModel
 import skywa1ker404.absencium.ui.REQUIRES_ANDROID_12
 import skywa1ker404.absencium.ui.StorageViewModel
 import skywa1ker404.absencium.ui.components.AnimatedPopup
@@ -88,8 +88,7 @@ import skywa1ker404.absencium.ui.containerViewModel
 import skywa1ker404.absencium.ui.description
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.label
-import skywa1ker404.absencium.ui.settings.AiConnectionSection
-import skywa1ker404.absencium.ui.settings.AiKeySection
+import skywa1ker404.absencium.ui.settings.AiProviderForm
 import skywa1ker404.absencium.ui.settings.AskAiToggle
 import skywa1ker404.absencium.ui.settings.GlassBlurSlider
 import skywa1ker404.absencium.ui.settings.MomentumToggle
@@ -97,7 +96,6 @@ import skywa1ker404.absencium.ui.settings.PresetsPage
 import skywa1ker404.absencium.ui.settings.SettingsViewModel
 import skywa1ker404.absencium.ui.settings.StorageLocationSection
 import skywa1ker404.absencium.ui.settings.StorageModuleToggles
-import skywa1ker404.absencium.ui.settings.aiReady
 import skywa1ker404.absencium.ui.settings.rememberSettingsViewModel
 import skywa1ker404.absencium.ui.splash.AbsenciumMark
 import skywa1ker404.absencium.ui.splash.ThemedStage
@@ -138,10 +136,10 @@ private const val ExpandTravelPx = 60f
 fun OnboardingScreen() {
     val settingsViewModel = rememberSettingsViewModel()
     val storageViewModel = containerViewModel { StorageViewModel(it) }
-    val aiKeyViewModel = containerViewModel { AiKeyViewModel(it) }
+    val aiProvidersViewModel = containerViewModel { AiProvidersViewModel(it) }
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
     val storage by storageViewModel.state.collectAsStateWithLifecycle()
-    val keyState by aiKeyViewModel.state.collectAsStateWithLifecycle()
+    val providerRows by aiProvidersViewModel.rows.collectAsStateWithLifecycle()
 
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val scope = rememberCoroutineScope()
@@ -252,10 +250,13 @@ fun OnboardingScreen() {
                                 }
                                 3 -> {
                                     PageHeader("AI Features", "Optional. Connect an AI to explain notes and read photos. You can set this up later in Settings.")
-                                    AskAiToggle(settings, settingsViewModel, ready = aiReady(settings, keyState.hasKey))
-                                    AiConnectionSection(settings, settingsViewModel)
-                                    SectionTitle("API key")
-                                    AiKeySection(aiKeyViewModel)
+                                    AskAiToggle(settings, settingsViewModel, ready = providerRows.any { it.active && it.complete })
+                                    AiProviderForm(
+                                        initial = remember { providerRows.firstOrNull { it.active }?.provider },
+                                        viewModel = aiProvidersViewModel,
+                                        onDone = {},
+                                        saveLabel = "Save provider",
+                                    )
                                 }
                                 else -> {
                                     PageHeader("Optional modules", "All off by default. Turn on what you want; each can be changed later in Settings.")

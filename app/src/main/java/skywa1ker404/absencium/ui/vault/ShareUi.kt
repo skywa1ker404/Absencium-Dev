@@ -1,6 +1,31 @@
 package skywa1ker404.absencium.ui.vault
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconToggleButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import skywa1ker404.absencium.data.share.PdfTheme
+import skywa1ker404.absencium.ui.components.PillButton
+import skywa1ker404.absencium.ui.icons.AppIcons
+import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,37 +53,98 @@ fun ShareHost(viewModel: VaultViewModel) {
     }
 }
 
-private fun ShareFormat.hint(): String = when (this) {
-    ShareFormat.PDF -> "Formatted pages, readable anywhere. Photos are not included."
-    ShareFormat.MARKDOWN -> "The text with its formatting marks, for other note apps."
-    ShareFormat.TEXT -> "The text only, as a .txt file."
-    ShareFormat.ZIP -> "Markdown files plus the photos of each entry, in one ZIP."
-}
-
-/** Asks which format to share in. */
+/**
+ * Share or export a note. The only real choice is PDF, with a toggle button for a themed PDF (the page takes the app's current
+ * light or dark theme and colours, so what is shared looks like what is on screen). Sharewave, the planned way to hand a note to
+ * another Absencium, is shown greyed out until it exists.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShareFormatDialog(formats: List<ShareFormat>, onPick: (ShareFormat) -> Unit, onDismiss: () -> Unit) {
+fun ShareFormatDialog(onPick: (ShareFormat, PdfTheme?) -> Unit, onDismiss: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val q = LocalQuality.current
+    var themed by remember { mutableStateOf(false) }
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val press by animateFloatAsState(
+        targetValue = if (pressed) 0.88f else 1f,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "themedPress",
+    )
     AlertDialog(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(28.dp),
-        title = { Text("Share as") },
+        shape = RoundedCornerShape(32.dp),
+        title = { Text("Share or export") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                formats.forEach { format ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(14.dp))
-                            .clickable { onPick(format) }
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(colors.surfaceContainerHigh)
+                        .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(AppIcons.Description, contentDescription = null, tint = colors.primary, modifier = Modifier.size(28.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("PDF", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            if (themed) "Themed PDF: the page uses your current theme, light or dark, with its colours."
+                            else "Plain pages, readable anywhere. Photos and doodles are included, recordings are not.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    FilledIconToggleButton(
+                        checked = themed,
+                        onCheckedChange = { themed = it },
+                        interactionSource = interaction,
+                        modifier = Modifier.graphicsLayer { scaleX = press; scaleY = press }.semantics { contentDescription = "Themed PDF" },
+                        colors = IconButtonDefaults.filledIconToggleButtonColors(
+                            containerColor = colors.surfaceContainerHighest,
+                            contentColor = colors.onSurfaceVariant,
+                            checkedContainerColor = colors.primary,
+                            checkedContentColor = colors.onPrimary,
+                        ),
                     ) {
-                        Text(format.label, style = MaterialTheme.typography.titleSmall)
-                        Text(format.hint(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(AppIcons.Palette, contentDescription = null)
+                    }
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .alpha(0.4f)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(colors.surfaceContainerHigh)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .semantics { contentDescription = "Sharewave, not available yet" },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(AppIcons.Share, contentDescription = null, modifier = Modifier.size(28.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Sharewave", style = MaterialTheme.typography.titleMedium)
+                        Text("Send a note straight to another Absencium. Coming later.", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
         },
-        confirmButton = {},
+        confirmButton = {
+            PillButton(
+                text = "Share PDF",
+                onClick = {
+                    val theme = if (themed) PdfTheme(
+                        background = colors.background.toArgb(),
+                        text = colors.onBackground.toArgb(),
+                        shade = colors.surfaceContainerHigh.toArgb(),
+                        line = colors.outline.toArgb(),
+                        highlight = lerp(colors.background, colors.primary, 0.35f).toArgb(),
+                    ) else null
+                    onPick(ShareFormat.PDF, theme)
+                },
+            )
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

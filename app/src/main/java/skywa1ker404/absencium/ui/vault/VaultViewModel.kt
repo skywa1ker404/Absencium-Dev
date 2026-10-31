@@ -142,10 +142,10 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     val pendingShare: StateFlow<PreparedShare?> = _pendingShare.asStateFlow()
 
     /** Builds a file from [notes] in [format] (several notes, or a ZIP, make a ZIP). The result appears in [pendingShare]. */
-    fun share(notes: List<NoteEntity>, format: ShareFormat) {
+    fun share(notes: List<NoteEntity>, format: ShareFormat, theme: skywa1ker404.absencium.data.share.PdfTheme? = null) {
         viewModelScope.launch {
             val snapshot = data.value
-            val result = container.shareService.prepare(notes, { id -> snapshot?.attachmentsOf(id).orEmpty() }, format)
+            val result = container.shareService.prepare(notes, { id -> snapshot?.attachmentsOf(id).orEmpty() }, format, theme)
             result.onSuccess { _pendingShare.value = it }
                 .onFailure { _message.value = it.message ?: "The export could not be prepared." }
         }
@@ -223,7 +223,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     /** Sends [request] to the AI the user set up and gives the answer to [onResult] on the main thread. Returns the job so it can be cancelled. */
     fun askAi(request: String, onResult: (AiOutcome) -> Unit): kotlinx.coroutines.Job {
         val settings = container.settingsState.value
-        if (settings == null || !skywa1ker404.absencium.ui.settings.aiUsable(settings, container.apiKeyVault.hasKey())) {
+        if (settings == null || !skywa1ker404.absencium.ui.settings.aiUsable(settings, container.activeKeySaved())) {
             onResult(AiOutcome(setupMissing = true))
             return viewModelScope.launch { }
         }
@@ -235,7 +235,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: skywa1ker404.absencium.data.ai.AiException) {
-                onResult(AiOutcome(error = e.message ?: "The AI request failed."))
+                onResult(AiOutcome(error = skywa1ker404.absencium.data.ai.AI_FAILED_INLINE))
             } catch (e: Exception) {
                 DebugLogger.e("Vault", "The AI request failed", e)
                 onResult(AiOutcome(error = "Something went wrong: ${e.message ?: e.javaClass.simpleName}"))

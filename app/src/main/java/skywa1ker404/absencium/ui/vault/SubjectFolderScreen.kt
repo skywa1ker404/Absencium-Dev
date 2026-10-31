@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.vault
 
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.graphicsLayer
 import skywa1ker404.absencium.ui.main.BottomPill
 import skywa1ker404.absencium.ui.main.MainTab
 import skywa1ker404.absencium.ui.main.SlideAway
@@ -98,6 +99,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     // Cards (the rich tinted tiles) or a compact list, for the notes and for the study material.
     var cardMode by rememberSaveable { mutableStateOf(true) }
     var showEdit by remember { mutableStateOf(false) }
+    var showDrafts by remember { mutableStateOf(false) }
     var showGuideTopic by remember { mutableStateOf(false) }
     var confirmGuideDelete by remember { mutableStateOf(false) }
     var confirmBatchDelete by remember { mutableStateOf(false) }
@@ -255,11 +257,16 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         }
         BackHandler(enabled = selecting) { selectedIds = emptySet(); selectedGuideIds = emptySet() }
         val listState = rememberLazyListState()
+        // Pulling down while already at the top opens this folder's drafts, like the Vault page does for all of them.
+        val draftPull = rememberDraftPull(
+            atTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 },
+            onOpen = { showDrafts = true },
+        )
 
-        Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().nestedScroll(draftPull.connection)) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().verticalScrollbar(listState, colors.onSurfaceVariant),
+            modifier = Modifier.fillMaxSize().graphicsLayer { translationY = draftPull.pull * 0.6f }.verticalScrollbar(listState, colors.onSurfaceVariant),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 172.dp),
         ) {
@@ -516,7 +523,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                         AppCard(
                             modifier = Modifier.fillMaxWidth(),
                             container = hue.container.copy(alpha = 0.75f),
-                            onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId)) },
+                            onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = subjectId, rootId = unit.id)) },
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Box(
@@ -550,6 +557,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
         }
+        DraftPullBadge(draftPull)
         androidx.compose.animation.AnimatedVisibility(
             visible = selecting,
             modifier = Modifier.align(Alignment.TopCenter),
@@ -605,6 +613,16 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         }
     }
 
+    skywa1ker404.absencium.ui.components.AnimatedPopup(if (showDrafts) true else null) {
+        DraftsPopup(
+            subjectId = subjectId,
+            onDismiss = { showDrafts = false },
+            onOpenDraft = { draft ->
+                showDrafts = false
+                navigator.navigate(com.ramcosta.composedestinations.generated.destinations.NewEntryScreenDestination(subjectId = draft.subjectId, draftId = draft.id))
+            },
+        )
+    }
     viewGuide?.let { GuideViewer(it, onClose = { viewGuide = null }) }
     fileGuide?.let { guide ->
         SyllabusPickerDialog(
@@ -619,12 +637,10 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
     if (showShare) {
         val toShare = remember(selectedIds, data) { (data?.notes.orEmpty()).filter { it.id in selectedIds } }
         ShareFormatDialog(
-            // One entry can be a PDF, Markdown or text file; several always travel as a ZIP.
-            formats = if (toShare.size == 1) listOf(ShareFormat.PDF, ShareFormat.MARKDOWN, ShareFormat.TEXT, ShareFormat.ZIP)
-            else listOf(ShareFormat.MARKDOWN, ShareFormat.ZIP),
-            onPick = { format ->
+            // One entry is a PDF; several travel as a ZIP holding a PDF each.
+            onPick = { format, theme ->
                 showShare = false
-                viewModel.share(toShare, format)
+                viewModel.share(toShare, format, theme)
                 selectedIds = emptySet()
             },
             onDismiss = { showShare = false },
@@ -772,7 +788,9 @@ private fun EditNoteDialog(note: NoteEntity, onSave: (title: String, createdMill
     var title by remember(note.id) { mutableStateOf(note.title) }
     var date by remember(note.id) { mutableStateOf(java.time.Instant.ofEpochMilli(note.createdDate).atZone(zone).toLocalDate()) }
     var picking by remember { mutableStateOf(false) }
-    AlertDialog(
+    // The date chooser is a card in the app's own popup layer, which sits below a dialog window; the dialog steps aside while it is
+    // open (title and date are kept) so the chooser is not hidden behind it.
+    if (!picking) AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit entry") },
         text = {

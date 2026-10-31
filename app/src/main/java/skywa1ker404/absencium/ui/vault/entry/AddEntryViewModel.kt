@@ -257,7 +257,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         val current = _state.value
         if (current.pictures.isEmpty() || current.extractStep == ExtractStep.RUNNING) return
         val settings = container.settingsState.value ?: return
-        if (!aiUsable(settings, container.apiKeyVault.hasKey())) {
+        if (!aiUsable(settings, container.activeKeySaved())) {
             _state.update { it.copy(extractSetupMissing = true, extractError = null) }
             return
         }
@@ -279,7 +279,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: AiException) {
-                _state.update { it.copy(extractStep = ExtractStep.IDLE, extractError = failureText(e.message)) }
+                _state.update { it.copy(extractStep = ExtractStep.IDLE, extractError = failureText(skywa1ker404.absencium.data.ai.AI_FAILED_INLINE)) }
             } catch (e: Exception) {
                 DebugLogger.e("Extract", "Text extraction failed", e)
                 _state.update { it.copy(extractStep = ExtractStep.IDLE, extractError = failureText(e.message ?: e.javaClass.simpleName)) }
@@ -411,7 +411,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         if (current.youtubeStep != YouTubeStep.IDLE || current.subjectId == 0L) return
         val settings = container.settingsState.value ?: return
         val transcript = current.pastedTranscript.trim().ifEmpty { null }
-        val ready = aiUsable(settings, container.apiKeyVault.hasKey())
+        val ready = aiUsable(settings, container.activeKeySaved())
         if (!ready && !skipAi) {
             _state.update { it.copy(aiSetupMissing = true, youtubeError = null) }
             return
@@ -454,7 +454,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: AiException) {
-                _state.update { it.copy(youtubeStep = YouTubeStep.IDLE, youtubeError = e.message) }
+                _state.update { it.copy(youtubeStep = YouTubeStep.IDLE, youtubeError = skywa1ker404.absencium.data.ai.AI_FAILED_INLINE) }
             } catch (e: YouTubeException) {
                 _state.update { it.copy(youtubeStep = YouTubeStep.IDLE, youtubeError = e.message) }
             } catch (e: Exception) {
@@ -631,7 +631,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         if (current.busy || current.subjectId == 0L) return
         if (current.transcribe) {
             val settings = container.settingsState.value
-            if (settings == null || !aiUsable(settings, container.apiKeyVault.hasKey())) {
+            if (settings == null || !aiUsable(settings, container.activeKeySaved())) {
                 _state.update { it.copy(message = "Turning a recording into text needs an AI. Set one up in Settings, AI & Integrations, or switch the option off.") }
                 return
             }
@@ -726,7 +726,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             return
         }
         val settings = container.settingsState.value ?: return
-        if (!aiUsable(settings, container.apiKeyVault.hasKey())) {
+        if (!aiUsable(settings, container.activeKeySaved())) {
             _state.update { it.copy(aiSetupMissing2 = true, aiError = null) }
             return
         }
@@ -836,7 +836,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: AiException) {
-                _state.update { it.copy(aiRunning = false, aiError = e.message) }
+                _state.update { it.copy(aiRunning = false, aiError = skywa1ker404.absencium.data.ai.AI_FAILED_INLINE) }
             } catch (e: Throwable) {
                 // Errors (not only exceptions) are shown instead of ending the app; the stack trace goes to debug.log.
                 DebugLogger.e("Vault", "The AI task failed", e)

@@ -11,9 +11,76 @@ object NoteBlocks {
     fun token(kind: EmbedKind, id: Long, widthPercent: Int = 100, align: Align = Align.CENTER): String =
         "{{${kind.name.lowercase()}:$id|${widthPercent.coerceIn(10, 100)}|${align.name.lowercase()}}}"
 
+    private val styled = setOf(EditKind.BOLD, EditKind.ITALIC, EditKind.STRIKE, EditKind.UNDERLINE, EditKind.HIGHLIGHT, EditKind.COLOR, EditKind.SIZE, EditKind.LINK, EditKind.CODE)
+
+    /**
+     * Where a block may safely go when the cursor is at [cursor]. A block is a whole line, so it must never cut something in two:
+     * inside a picture/recording line, a table, a half-written `{{...}}`, a formatting marker or a styled run (bold, colour, size...)
+     * the block goes after the end of that line instead, so nothing is split and no stray `**`, `{size:30|` or `r}}` is left behind.
+     */
+    fun safeCursor(text: String, cursor: Int): Int {
+        val at = cursor.coerceIn(0, text.length)
+        val lineStart = if (at == 0) 0 else text.lastIndexOf('\n', at - 1) + 1
+        val lineEnd = text.indexOf('\n', at).let { if (it < 0) text.length else it }
+        val line = text.substring(lineStart, lineEnd)
+        val strictlyInside = at > lineStart && at < lineEnd
+        if (isEmbed(line)) return if (strictlyInside) lineEnd else at
+        if (line.trimStart().startsWith("|")) {
+            val previousIsTable = lineStart > 0 && text.substring(0, lineStart - 1).substringAfterLast('\n').trimStart().startsWith("|")
+            // In front of the first row nothing is cut; anywhere else in a table the block goes after the whole table.
+            if (at == lineStart && !previousIsTable) return at
+            var end = lineEnd
+            while (end < text.length) {
+                val nextEnd = text.indexOf('\n', end + 1).let { if (it < 0) text.length else it }
+                if (text.substring(end + 1, nextEnd).trimStart().startsWith("|")) end = nextEnd else break
+            }
+            return end
+        }
+        if (!strictlyInside) return at
+        val local = at - lineStart
+        val open = line.lastIndexOf("{{", (local - 1).coerceAtLeast(0))
+        if (open in 0 until local && line.indexOf("}}", open) !in 0 until local) return lineEnd
+        val inside = EditStyle.ranges(text).any { r -> (r.kind == EditKind.MARKER || r.kind in styled) && r.start < at && at < r.end }
+        return if (inside) lineEnd else at
+    }
+
+    /**
+     * Repairs a picture line that an older version cut in two by inserting a block in the middle of it (`{{image:1|76|cente`, a table,
+     * then `r}}`): the two halves are joined again and the block between them stays where it is. Text that needs no repair is returned as is.
+     */
+    fun repair(text: String): String {
+        if (!text.contains("{{")) return text
+        val lines = linesOf(text)
+        var changed = false
+        var i = 0
+        val head = Regex("^\\{\\{(image|doodle|audio):\\d{1,18}[|a-z0-9]*$")
+        val tailPart = Regex("^[|a-z0-9]*\\}\\}$")
+        while (i < lines.size) {
+            val line = lines[i].trim()
+            if (head.matches(line) && !isEmbed(line)) {
+                var j = i + 1
+                while (j < lines.size && j <= i + 60 && !tailPart.matches(lines[j].trim())) {
+                    if (!lines[j].trimStart().startsWith("|") && lines[j].isNotBlank()) { j = -1; break }
+                    j++
+                }
+                if (j in (i + 1) until lines.size && isEmbed(line + lines[j].trim())) {
+                    val whole = line + lines[j].trim()
+                    val between = lines.subList(i + 1, j).toList()
+                    repeat(j - i + 1) { lines.removeAt(i) }
+                    lines.addAll(i, between + whole)
+                    changed = true
+                    i += between.size + 1
+                    continue
+                }
+            }
+            i++
+        }
+        return if (changed) lines.joinToString("\n") else text
+    }
+
     /** Puts [token] on a line of its own at the cursor, splitting the line it lands in. The cursor ends on the line after it. */
     fun insertEmbed(text: String, cursor: Int, token: String): Edited {
-        val at = cursor.coerceIn(0, text.length)
+        val at = safeCursor(text, cursor)
         val before = text.substring(0, at)
         val after = text.substring(at)
         val lead = if (before.isEmpty() || before.endsWith("\n")) "" else "\n"

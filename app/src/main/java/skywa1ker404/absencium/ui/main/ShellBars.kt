@@ -61,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -509,7 +510,7 @@ fun ShellFabMenu(
                             if (backdrop != null) {
                                 Modifier.floatingGlass(backdrop, CircleShape)
                             } else {
-                                Modifier.clip(CircleShape).background(colors.primaryContainer)
+                                Modifier.shadow(4.dp, CircleShape).clip(CircleShape).background(colors.primaryContainer)
                             },
                         )
                         .clickable(enabled = expanded) { action.onClick() }
@@ -538,7 +539,7 @@ fun ShellFabMenu(
                     if (backdrop != null) {
                         Modifier.floatingGlass(backdrop, CircleShape)
                     } else {
-                        Modifier.clip(CircleShape).background(colors.primary)
+                        Modifier.shadow(8.dp, CircleShape).clip(CircleShape).background(colors.primary)
                     },
                 )
                 .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onToggle)
@@ -718,13 +719,15 @@ class PillScroll {
     private var travelled = 0f
 
     val connection = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-        // Only scrolling the list really did counts: a page too short to scroll must not shrink the bar.
-        override fun onPostScroll(
+                override fun onPostScroll(
             consumed: androidx.compose.ui.geometry.Offset,
             available: androidx.compose.ui.geometry.Offset,
             source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
         ): androidx.compose.ui.geometry.Offset {
-            val dy = consumed.y
+            // A finger drag counts even on a page too short to scroll (an empty folder), so the bar still shrinks and grows back.
+            val dy = if (consumed.y != 0f) consumed.y
+            else if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) available.y
+            else 0f
             if (dy == 0f) return androidx.compose.ui.geometry.Offset.Zero
             if (travelled * dy < 0f) travelled = 0f
             travelled += dy

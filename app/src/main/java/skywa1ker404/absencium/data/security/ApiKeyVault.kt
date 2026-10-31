@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.core.content.edit
+import skywa1ker404.absencium.data.ai.AiProvider
 import skywa1ker404.absencium.logging.DebugLogger
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -13,18 +14,47 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Stores the user's AI API key encrypted with an AES-256-GCM key that lives in the Android
- * Keystore. Only the encrypted bytes are written to app storage; the key never leaves the
- * Keystore. The plain key is never written to debug.log.
+ * Stores the user's AI API keys, one per provider, each encrypted with an AES-256-GCM key that lives in the Android
+ * Keystore. Only the encrypted bytes are written to app storage; the key never leaves the Keystore. A plain key is never written
+ * to debug.log. Having a key saved for several providers is what lets the student switch between them without typing a key again.
  */
 class ApiKeyVault(context: Context) {
 
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun hasKey(): Boolean = prefs.contains(KEY_CIPHERTEXT)
+    /**
+     * Before keys were kept per provider there was one key. It belongs to the provider that was set up then, which only the
+     * settings know; this tells the vault which one (null while the settings are still loading).
+     */
+    var legacyOwner: () -> AiProvider? = { null }
 
-    /** Encrypts and stores [apiKey]. Returns false, after logging the reason, on failure. */
-    fun save(apiKey: String): Boolean {
+    private fun cipherKey(provider: AiProvider) = "key_ct_${provider.name}"
+    private fun lastKey(provider: AiProvider) = "key_l4_${provider.name}"
+
+    /** Moves the single key of an older version to the provider it was saved for. */
+    private fun adopt(provider: AiProvider) {
+        val legacy = prefs.getString(KEY_CIPHERTEXT, null) ?: return
+        if (legacyOwner() != provider) return
+        prefs.edit {
+            if (!prefs.contains(cipherKey(provider))) {
+                putString(cipherKey(provider), legacy)
+                prefs.getString(KEY_LAST_FOUR, null)?.let { putString(lastKey(provider), it) }
+            }
+            remove(KEY_CIPHERTEXT)
+            remove(KEY_LAST_FOUR)
+        }
+    }
+
+    fun hasKey(provider: AiProvider): Boolean {
+        adopt(provider)
+        return prefs.contains(cipherKey(provider))
+    }
+
+    /** The providers a key is saved for. */
+    fun providersWithKey(): List<AiProvider> = AiProvider.entries.filter { hasKey(it) }
+
+    /** Encrypts and stores [apiKey] for [provider]. Returns false, after logging the reason, on failure. */
+    fun save(provider: AiProvider, apiKey: String): Boolean {
         val trimmed = apiKey.trim()
         if (trimmed.isEmpty()) return false
         return try {
@@ -32,10 +62,10 @@ class ApiKeyVault(context: Context) {
             cipher.init(Cipher.ENCRYPT_MODE, secretKey())
             val encrypted = cipher.iv + cipher.doFinal(trimmed.toByteArray(Charsets.UTF_8))
             prefs.edit {
-                putString(KEY_CIPHERTEXT, Base64.encodeToString(encrypted, Base64.NO_WRAP))
-                putString(KEY_LAST_FOUR, trimmed.takeLast(4))
+                putString(cipherKey(provider), Base64.encodeToString(encrypted, Base64.NO_WRAP))
+                putString(lastKey(provider), trimmed.takeLast(4))
             }
-            DebugLogger.i(TAG, "API key saved (encrypted)")
+            DebugLogger.i(TAG, "API key for ${provider.name} saved (encrypted)")
             true
         } catch (e: Exception) {
             DebugLogger.e(TAG, "Could not encrypt and save the API key", e)
@@ -43,9 +73,10 @@ class ApiKeyVault(context: Context) {
         }
     }
 
-    /** The decrypted key, or null if none is stored or it could not be decrypted. */
-    fun read(): String? {
-        val stored = prefs.getString(KEY_CIPHERTEXT, null) ?: return null
+    /** The decrypted key of [provider], or null if none is stored or it could not be decrypted. */
+    fun read(provider: AiProvider): String? {
+        adopt(provider)
+        val stored = prefs.getString(cipherKey(provider), null) ?: return null
         return try {
             val bytes = Base64.decode(stored, Base64.NO_WRAP)
             val iv = bytes.copyOfRange(0, IV_BYTES)
@@ -59,15 +90,19 @@ class ApiKeyVault(context: Context) {
         }
     }
 
-    /** The last four characters of the stored key, for showing "saved" without revealing it. */
-    fun lastFour(): String? = prefs.getString(KEY_LAST_FOUR, null)
+    /** The last four characters of the key saved for [provider], for showing "saved" without revealing it. */
+    fun lastFour(provider: AiProvider): String? {
+        adopt(provider)
+        return prefs.getString(lastKey(provider), null)
+    }
 
-    fun clear() {
+    fun clear(provider: AiProvider) {
+        adopt(provider)
         prefs.edit {
-            remove(KEY_CIPHERTEXT)
-            remove(KEY_LAST_FOUR)
+            remove(cipherKey(provider))
+            remove(lastKey(provider))
         }
-        DebugLogger.i(TAG, "API key removed")
+        DebugLogger.i(TAG, "API key for ${provider.name} removed")
     }
 
     private fun secretKey(): SecretKey {

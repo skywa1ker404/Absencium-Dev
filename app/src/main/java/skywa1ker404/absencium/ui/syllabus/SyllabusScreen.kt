@@ -104,7 +104,7 @@ private fun statusLabel(status: SyllabusStatus) = when (status) {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Destination<RootGraph>
 @Composable
-fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
+fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Long? = null) {
     val viewModel = containerViewModel { SyllabusViewModel(it, subjectId) }
     val nodes by viewModel.nodes.collectAsStateWithLifecycle()
     val counts by viewModel.linkCounts.collectAsStateWithLifecycle()
@@ -116,8 +116,21 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
     var deleting by remember { mutableStateOf<SyllabusNodeEntity?>(null) }
     var showImport by remember { mutableStateOf(false) }
 
-    val rows = remember(nodes, collapsed) { SyllabusTree.rows(nodes, collapsed) }
-    val overall = remember(nodes) { SyllabusTree.progress(nodes, null) }
+    // Opened from a unit card, the screen shows that unit's own tree and nothing else; the unit becomes the top of the tree.
+    val scoped = remember(nodes, rootId) {
+        if (rootId == null) {
+            nodes
+        } else {
+            val inside = SyllabusTree.withDescendants(nodes, rootId).toSet()
+            nodes.filter { it.id in inside }.map { if (it.id == rootId) it.copy(parentId = null) else it }
+        }
+    }
+    LaunchedEffect(rootId, nodes.isEmpty(), scoped.isEmpty()) {
+        // The unit was deleted from here: go back to the list.
+        if (rootId != null && nodes.isNotEmpty() && scoped.isEmpty()) navigator.navigateUp()
+    }
+    val rows = remember(scoped, collapsed) { SyllabusTree.rows(scoped, collapsed) }
+    val overall = remember(scoped) { SyllabusTree.progress(scoped, null) }
     val animatedOverall by animateFloatAsState(
         targetValue = overall,
         animationSpec = LocalQuality.current.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
@@ -127,7 +140,7 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
     val pillScroll = skywa1ker404.absencium.ui.main.rememberPillScroll()
 
     ScreenScaffold(
-        title = "Syllabus",
+        title = if (rootId == null) "Syllabus" else "Unit",
         onBack = { navigator.navigateUp() },
         modifier = Modifier.nestedScroll(pillScroll.connection),
         overlay = {
@@ -141,17 +154,19 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    ShellFab(
-                        icon = AppIcons.AutoAwesome,
-                        label = "Import outline",
-                        onClick = { viewModel.dismissImport(); showImport = true },
-                        backdrop = LocalBackdrop.current,
-                        expanded = !pillScroll.compact.value,
-                    )
+                    if (rootId == null) {
+                        ShellFab(
+                            icon = AppIcons.AutoAwesome,
+                            label = "Import outline",
+                            onClick = { viewModel.dismissImport(); showImport = true },
+                            backdrop = LocalBackdrop.current,
+                            expanded = !pillScroll.compact.value,
+                        )
+                    }
                     ShellFab(
                         icon = AppIcons.Add,
-                        label = "Add unit",
-                        onClick = { editing = Editing.Add(null, SyllabusTree.levelName(0)) },
+                        label = if (rootId == null) "Add unit" else "Add chapter",
+                        onClick = { editing = Editing.Add(rootId, SyllabusTree.levelName(if (rootId == null) 0 else 1)) },
                         backdrop = LocalBackdrop.current,
                         expanded = !pillScroll.compact.value,
                     )
@@ -161,14 +176,20 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
     ) {
         val headHue = hueFor(0)
         AppCard(modifier = Modifier.fillMaxWidth().bounceIn(0), container = headHue.container.copy(alpha = 0.75f)) {
-            Text(subjectName.ifEmpty { "Subject" }, style = MaterialTheme.typography.titleMedium, color = headHue.onContainer)
-            if (nodes.isEmpty()) {
+            Text(
+                if (rootId == null) subjectName.ifEmpty { "Subject" } else scoped.firstOrNull { it.id == rootId }?.title.orEmpty(),
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                color = headHue.onContainer,
+            )
+            if (scoped.isEmpty()) {
                 Text("No syllabus yet", style = MaterialTheme.typography.bodyMedium, color = headHue.onContainer.copy(alpha = 0.8f))
             } else {
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("${(overall * 100).toInt()}%", style = MaterialTheme.typography.displayMedium, color = headHue.onContainer)
+                    Text("${(overall * 100).toInt()}%", style = MaterialTheme.typography.displaySmall, color = headHue.onContainer)
                     Text(
-                        "of the syllabus studied",
+                        if (rootId == null) "of the syllabus studied" else "of this unit studied",
                         style = MaterialTheme.typography.titleMedium,
                         color = headHue.onContainer.copy(alpha = 0.8f),
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -183,7 +204,7 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
             }
         }
 
-        if (nodes.isEmpty()) {
+        if (scoped.isEmpty()) {
             HintText(
                 "Add the units of this subject, then the chapters and topics inside them. Notes and study material can be filed under " +
                     "any of them. You can also paste an outline or pick a file and let your AI turn it into a tree.",
@@ -211,7 +232,7 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator) {
                             SyllabusRow(
                                 row = row,
                                 hue = hue,
-                                progress = SyllabusTree.progress(nodes, row.node.id),
+                                progress = SyllabusTree.progress(scoped, row.node.id),
                                 linked = counts[row.node.id] ?: 0,
                                 expanded = row.node.id !in collapsed,
                                 onToggle = { collapsed = if (row.node.id in collapsed) collapsed - row.node.id else collapsed + row.node.id },
@@ -333,11 +354,11 @@ private fun SyllabusRow(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         StatusMark(status = node.status, accent = hue.accent, onClick = onCycle)
-        Column(modifier = Modifier.weight(1f).padding(vertical = 6.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(vertical = 4.dp)) {
             // A long title stops at three lines; the whole of it is in Rename. Units are medium-sized, never headline-sized.
             Text(
                 node.title,
-                style = if (row.depth == 0) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
+                style = if (row.depth == 0) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
                 fontWeight = if (row.depth == 0) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
@@ -373,7 +394,7 @@ private fun SyllabusRow(
             )
         }
         Box {
-            IconButton(onClick = { menu = true }, modifier = Modifier.size(36.dp)) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = hue.onContainer, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = hue.onContainer, modifier = Modifier.size(20.dp)) }
             AppMenu(expanded = menu, onDismiss = { menu = false }) {
                 if (row.depth < SyllabusTree.MAX_DEPTH) {
                     AppMenuItem(AppIcons.Add, "Add ${SyllabusTree.levelName(row.depth + 1).lowercase()}", { menu = false; onAddInside() })
@@ -413,14 +434,14 @@ private fun StatusMark(status: SyllabusStatus, accent: Color, onClick: () -> Uni
     }
     Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(34.dp)
             .clip(CircleShape)
             .clickable(role = Role.Checkbox, onClickLabel = statusLabel(status), onClick = onClick)
             .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
             .semantics { contentDescription = statusLabel(status) },
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.size(24.dp)) {
+        Canvas(modifier = Modifier.size(22.dp)) {
             val stroke = 2.5.dp.toPx()
             drawCircle(accent, radius = size.minDimension / 2f - stroke / 2f, style = Stroke(stroke))
             if (fill > 0f) {

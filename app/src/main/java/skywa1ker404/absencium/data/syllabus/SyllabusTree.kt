@@ -110,6 +110,68 @@ object SyllabusTree {
         return out
     }
 
+    /**
+     * Reads the AI's answer to the outline request. The answer is meant to be nested JSON (`{"items":[{"title":"..","children":[..]}]}`),
+     * which keeps the structure exact; when it is not, the indented-text reader is used instead. Lines that are not syllabus content
+     * (course code, hours, scope, objectives, outcomes, references) are dropped either way.
+     */
+    fun parseReply(reply: String): List<OutlineItem> {
+        val fromJson = parseJson(reply)
+        return tidy(if (fromJson.isNotEmpty()) fromJson else parseOutline(reply))
+    }
+
+    private fun parseJson(reply: String): List<OutlineItem> {
+        val start = reply.indexOf('{')
+        val end = reply.lastIndexOf('}')
+        if (start < 0 || end <= start) return emptyList()
+        val out = ArrayList<OutlineItem>()
+        fun walk(array: org.json.JSONArray?, depth: Int) {
+            if (array == null) return
+            for (i in 0 until array.length()) {
+                val node = array.opt(i)
+                val title: String
+                val kids: org.json.JSONArray?
+                when (node) {
+                    is org.json.JSONObject -> { title = node.optString("title").trim(); kids = node.optJSONArray("children") }
+                    is String -> { title = node.trim(); kids = null }
+                    else -> continue
+                }
+                val clean = title.replace(marker, "").trim().take(120)
+                if (clean.isEmpty()) continue
+                out += OutlineItem(depth.coerceAtMost(MAX_DEPTH), clean)
+                walk(kids, depth + 1)
+            }
+        }
+        return try {
+            val root = org.json.JSONObject(reply.substring(start, end + 1))
+            walk(root.optJSONArray("items") ?: root.optJSONArray("units"), 0)
+            out
+        } catch (e: org.json.JSONException) {
+            emptyList()
+        }
+    }
+
+    private val notContent = Regex(
+        "^(course\\s*code|hours?\\b|total\\s+hours|credits?\\b|scope\\s*[:\\-]|course\\s+(objectives?|outcomes?|description)|learning\\s+(objectives?|outcomes?)|" +
+            "prerequisites?|pre-?requisites?|reference|text\\s*books?|suggested\\s+reading|marks\\b|evaluation|assessment\\s+scheme)",
+        RegexOption.IGNORE_CASE,
+    )
+
+    /** Removes the lines that describe the course instead of teaching it, along with everything written under them. */
+    fun tidy(items: List<OutlineItem>): List<OutlineItem> {
+        val out = ArrayList<OutlineItem>()
+        var skipBelow = -1
+        for (item in items) {
+            if (skipBelow >= 0) {
+                if (item.depth > skipBelow) continue
+                skipBelow = -1
+            }
+            if (notContent.containsMatchIn(item.title)) { skipBelow = item.depth; continue }
+            out += item
+        }
+        return out
+    }
+
     /** The item above [index] that it sits inside (the nearest earlier item one level up), or null for a top-level item. */
     fun parentIndex(items: List<OutlineItem>, index: Int): Int? {
         val depth = items[index].depth

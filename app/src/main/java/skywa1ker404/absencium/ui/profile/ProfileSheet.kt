@@ -159,7 +159,7 @@ fun ProfileSheet(
 
             NavCard(
                 icon = AppIcons.AutoAwesome,
-                title = "AI Hub",
+                title = "Absencium AI",
                 subtitle = if (settings.askAiEnabled) "Every AI request and answer, kept on this phone" else "AI Features are off. Turn them on in Settings, or ignore this.",
                 onClick = onOpenAiHub,
             )

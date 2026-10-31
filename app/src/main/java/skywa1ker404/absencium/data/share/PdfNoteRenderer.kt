@@ -26,16 +26,28 @@ import java.io.OutputStream
  * line by line instead of being cut. The page follows the note: headings, lists, alignment, colours, sizes, highlights, tables
  * with borders, and pictures and doodles at their size and alignment. Recordings are left out (a PDF cannot play them).
  */
+/**
+ * The colours of a themed PDF, taken from the app's current theme (so light or dark and the chosen colours carry over). [Plain] is the
+ * ordinary white page with black text.
+ */
+class PdfTheme(val background: Int, val text: Int, val shade: Int, val line: Int, val highlight: Int) {
+    companion object {
+        val Plain = PdfTheme(0xFFFFFFFF.toInt(), 0xFF000000.toInt(), 0xFFEDEDED.toInt(), 0xFF9E9E9E.toInt(), 0xFFFFE066.toInt())
+    }
+}
+
 object PdfNoteRenderer {
     private const val PAGE_W = 595
     private const val PAGE_H = 842
     private const val MARGIN = 48
 
     /** [picture] gives the bitmap of a picture or doodle block, or null when its file is gone (the block is then skipped). */
-    fun render(title: String, blocks: List<Block>, out: OutputStream, picture: (Block.Embed) -> Bitmap? = { null }) {
+    @Synchronized
+    fun render(title: String, blocks: List<Block>, out: OutputStream, theme: PdfTheme = PdfTheme.Plain, picture: (Block.Embed) -> Bitmap? = { null }) {
         val doc = PdfDocument()
+        highlightColor = theme.highlight
         try {
-            val pager = Pager(doc)
+            val pager = Pager(doc, theme)
             val heading = title.trim()
             if (heading.isNotEmpty()) pager.text(SpannableStringBuilder(heading).also { it.setSpan(StyleSpan(Typeface.BOLD), 0, it.length, 0) }, 24f, 0, 10f)
             for (block in blocks) {
@@ -64,6 +76,9 @@ object PdfNoteRenderer {
         }
     }
 
+    /** The highlight colour of the page being drawn; render calls are serialised, so one value is enough. */
+    private var highlightColor = 0xFFFFE066.toInt()
+
     private fun prefixed(prefix: String, spans: List<Span>): SpannableStringBuilder =
         SpannableStringBuilder(prefix).also { it.append(styled(spans, 12f)) }
 
@@ -87,14 +102,14 @@ object PdfNoteRenderer {
             if (span.code) sb.setSpan(TypefaceSpan("monospace"), start, end, 0)
             if (span.strike) sb.setSpan(StrikethroughSpan(), start, end, 0)
             if (span.link != null || span.underline) sb.setSpan(UnderlineSpan(), start, end, 0)
-            if (span.highlight) sb.setSpan(android.text.style.BackgroundColorSpan(0xFFFFE066.toInt()), start, end, 0)
+            if (span.highlight) sb.setSpan(android.text.style.BackgroundColorSpan(highlightColor), start, end, 0)
             span.sizeSp?.let { sb.setSpan(android.text.style.RelativeSizeSpan((it * 0.75f / base).coerceIn(0.4f, 6f)), start, end, 0) }
             span.color?.let { sb.setSpan(android.text.style.ForegroundColorSpan(0xFF000000.toInt() or it), start, end, 0) }
         }
         return sb
     }
 
-    private class Pager(private val doc: PdfDocument) {
+    private class Pager(private val doc: PdfDocument, private val theme: PdfTheme) {
         private val width = PAGE_W - 2 * MARGIN
         private val contentHeight = (PAGE_H - 2 * MARGIN).toFloat()
         private var pageNumber = 0
@@ -108,6 +123,8 @@ object PdfNoteRenderer {
             val p = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNumber).create())
             page = p
             canvas = p.canvas
+            // A themed page is painted edge to edge in the theme's background.
+            if (theme.background != PdfTheme.Plain.background) p.canvas.drawColor(theme.background)
             y = 0f
         }
 
@@ -115,7 +132,7 @@ object PdfNoteRenderer {
             if (text.isEmpty()) return
             if (page == null) newPage()
             if (y > 0f) y += topGap
-            val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = size }
+            val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = size; color = theme.text }
             val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, (width - indent).coerceAtLeast(60))
                 .setAlignment(when (align) { Align.START -> Layout.Alignment.ALIGN_NORMAL; Align.CENTER -> Layout.Alignment.ALIGN_CENTER; Align.END -> Layout.Alignment.ALIGN_OPPOSITE })
                 .setLineSpacing(0f, 1.15f)
@@ -142,7 +159,7 @@ object PdfNoteRenderer {
                 }
                 val c = canvas ?: return
                 if (shade || bar) {
-                    val back = Paint().apply { color = if (shade) 0xFFF0F0F0.toInt() else 0xFF9E9E9E.toInt() }
+                    val back = Paint().apply { color = if (shade) theme.shade else theme.line }
                     val top = MARGIN + y
                     if (shade) c.drawRect((MARGIN + indent - 4).toFloat(), top, (MARGIN + width).toFloat(), top + endBottom - consumed, back)
                     else c.drawRect((MARGIN + indent - 10).toFloat(), top, (MARGIN + indent - 7).toFloat(), top + endBottom - consumed, back)
@@ -187,13 +204,13 @@ object PdfNoteRenderer {
             if (page == null) newPage()
             val cellW = width.toFloat() / columns
             val pad = 4f
-            val line = Paint().apply { color = 0xFF9E9E9E.toInt(); style = Paint.Style.STROKE; strokeWidth = 0.6f }
-            val shade = Paint().apply { color = 0xFFEDEDED.toInt() }
+            val line = Paint().apply { color = theme.line; style = Paint.Style.STROKE; strokeWidth = 0.6f }
+            val shade = Paint().apply { color = theme.shade }
             rows.forEachIndexed { r, row ->
                 val bold = hasHeader && r == 0
                 val layouts = (0 until columns).map { col ->
                     val content = header(row.getOrNull(col) ?: SpannableStringBuilder(), bold)
-                    val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 11f }
+                    val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 11f; color = theme.text }
                     StaticLayout.Builder.obtain(content, 0, content.length, paint, (cellW - 2 * pad).toInt().coerceAtLeast(20)).build()
                 }
                 val rowH = (layouts.maxOf { it.height } + 2 * pad).coerceAtMost(contentHeight)
@@ -218,7 +235,7 @@ object PdfNoteRenderer {
             if (page == null) newPage()
             if (y + 16f > contentHeight) newPage()
             val c = canvas ?: return
-            val paint = Paint().apply { strokeWidth = 0.8f; color = 0xFF888888.toInt() }
+            val paint = Paint().apply { strokeWidth = 0.8f; color = theme.line }
             c.drawLine(MARGIN.toFloat(), MARGIN + y + 8f, (MARGIN + width).toFloat(), MARGIN + y + 8f, paint)
             y += 16f
         }

@@ -164,7 +164,7 @@ fun HomeTab(
                 QuickAction(AppIcons.CalendarMonth, "Attendance", hueFor(0), onLogAttendance, Modifier.bounceIn(0))
                 QuickAction(AppIcons.Schedule, "Timetable", hueFor(1), onOpenTimetable, Modifier.bounceIn(60))
                 // Subjects has its own pinned button beside the pill on this screen; the AI Hub takes the third place.
-                if (onOpenAiHub != null) QuickAction(AppIcons.AutoAwesome, "AI Hub", hueFor(2), onOpenAiHub, Modifier.bounceIn(120))
+                if (onOpenAiHub != null) QuickAction(AppIcons.AutoAwesome, "Absencium AI", hueFor(2), onOpenAiHub, Modifier.bounceIn(120))
             }
         }
 
