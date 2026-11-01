@@ -88,10 +88,10 @@ fun PlusSheet(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Tile(AppIcons.Image, "Photos", Modifier.weight(1f)) { onDismiss(); onPhotos() }
                 Tile(AppIcons.Description, "Files", Modifier.weight(1f)) { onDismiss(); onFiles() }
-                Tile(AppIcons.Book, "Notes and material", Modifier.weight(1f)) { onDismiss(); onNotes() }
+                Tile(AppIcons.Book, "Notes", Modifier.weight(1f)) { onDismiss(); onNotes() }
             }
-            HintText("Pictures, PDFs, text files, recordings and short videos (recordings and videos need a Gemini model). Notes and study material you pick are sent to the AI, nothing else.")
-            ToggleRow(AppIcons.Search, "Web search", if (canSearch) "Looks things up and shows its sources" else "Needs a Gemini, Claude or OpenRouter model", chat.webSearch && canSearch, canSearch, onWeb)
+            HintText("Pictures, PDFs, text files, recordings and short videos (recordings and videos need a Gemini model). Notes and study material you pick here are sent to the AI. It can also ask to read one itself; you approve each read.")
+            ToggleRow(AppIcons.Search, "Web search", if (canSearch) "Looks things up and shows its sources (OpenRouter charges credits for it)" else "Needs a Gemini, Claude or OpenRouter model", chat.webSearch && canSearch, canSearch, onWeb)
             ToggleRow(AppIcons.Lightbulb, "Thinking", "Reasons for longer before answering (Gemini, Claude, OpenAI reasoning models)", chat.thinking, true, onThinking)
             ToggleRow(AppIcons.School, "Study mode", "Teaches step by step and checks you understood", chat.study, true, onStudy)
             if (chat.study) {
@@ -126,7 +126,7 @@ private fun Tile(icon: ImageVector, label: String, modifier: Modifier, onClick: 
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(icon, contentDescription = null, tint = colors.onSurface)
-        Text(label, style = MaterialTheme.typography.labelLarge)
+        Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 

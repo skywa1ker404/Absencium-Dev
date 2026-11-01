@@ -364,10 +364,26 @@ class AiClient(private val keyVault: ApiKeyVault) {
                     val openAi = base.contains("api.openai.com", ignoreCase = true)
                     // Extra reasoning only where the service takes it (OpenAI's reasoning models); others would refuse the field.
                     if (options.thinking && openAi && Regex("^(o\\d|gpt-5)").containsMatchIn(model)) body.put("reasoning_effort", "medium")
-                    // OpenRouter searches the web through its web plugin and returns the pages as citations.
-                    if (options.webSearch && base.contains("openrouter", ignoreCase = true)) body.put("plugins", JSONArray().put(JSONObject().put("id", "web")))
-                    val raw = callRetrying("POST", "$base/chat/completions", openAiHeaders(key), body.toString(), null)
-                    ChatReply(parseOpenAiReply(raw), openAiSources(raw), tokensIn = usageOf(raw, "usage", "prompt_tokens"), tokensOut = usageOf(raw, "usage", "completion_tokens"))
+                    // OpenRouter searches the web through its web plugin and returns the pages as citations. The plugin is paid per search, so
+                    // an account without credits is refused (HTTP 402): the question is then asked again without it and the answer says so.
+                    val webPlugin = options.webSearch && base.contains("openrouter", ignoreCase = true)
+                    if (webPlugin) body.put("plugins", JSONArray().put(JSONObject().put("id", "web")))
+                    var withoutWeb = false
+                    val raw = try {
+                        callRetrying("POST", "$base/chat/completions", openAiHeaders(key), body.toString(), null)
+                    } catch (e: AiException) {
+                        if (!webPlugin || e.message?.contains("402") != true) throw e
+                        body.remove("plugins")
+                        withoutWeb = true
+                        callRetrying("POST", "$base/chat/completions", openAiHeaders(key), body.toString(), null)
+                    }
+                    val answer = parseOpenAiReply(raw)
+                    ChatReply(
+                        if (withoutWeb) answer.trimEnd() + "\n\n*Web search on OpenRouter needs credits on your account, so this answer comes from the model's own knowledge.*" else answer,
+                        openAiSources(raw),
+                        tokensIn = usageOf(raw, "usage", "prompt_tokens"),
+                        tokensOut = usageOf(raw, "usage", "completion_tokens"),
+                    )
                 }
 
                 ApiStyle.ANTHROPIC -> {
