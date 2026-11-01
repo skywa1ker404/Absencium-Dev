@@ -63,6 +63,10 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
     val subjects: StateFlow<List<SubjectEntity>> =
         container.database.subjectDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Everything the chat can link to by name: subjects, notes and study material. */
+    val vault: StateFlow<skywa1ker404.absencium.data.vault.VaultData> =
+        container.vaultRepository.data.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), skywa1ker404.absencium.data.vault.VaultData())
+
     /** The notes that can be attached to a question, with the subject each belongs to. */
     val noteChoices: StateFlow<List<PickItem>> = container.vaultRepository.data.map { vault ->
         vault.notes.filter { it.deletedAt == null }.sortedByDescending { it.updatedAt }.map { PickItem(it.id, it.title, it.subjectId) }

@@ -120,7 +120,7 @@ fun TopicSidebar(
             shape = RoundedCornerShape(topEnd = 36.dp, bottomEnd = 36.dp),
             color = colors.surfaceContainerLow,
             tonalElevation = 6.dp,
-            shadowElevation = 12.dp,
+            shadowElevation = 0.dp,
         ) {
             Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                 Row(

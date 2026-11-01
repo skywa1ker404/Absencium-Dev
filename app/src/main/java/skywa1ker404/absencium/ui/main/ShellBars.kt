@@ -61,7 +61,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -445,7 +444,7 @@ fun ShellFab(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp, focusedElevation = 0.dp, hoveredElevation = 0.dp),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
         interactionSource = interaction,
     ) {
@@ -510,7 +509,7 @@ fun ShellFabMenu(
                             if (backdrop != null) {
                                 Modifier.floatingGlass(backdrop, CircleShape)
                             } else {
-                                Modifier.shadow(4.dp, CircleShape).clip(CircleShape).background(colors.primaryContainer)
+                                Modifier.clip(CircleShape).background(colors.primaryContainer)
                             },
                         )
                         .clickable(enabled = expanded) { action.onClick() }
@@ -539,7 +538,7 @@ fun ShellFabMenu(
                     if (backdrop != null) {
                         Modifier.floatingGlass(backdrop, CircleShape)
                     } else {
-                        Modifier.shadow(8.dp, CircleShape).clip(CircleShape).background(colors.primary)
+                        Modifier.clip(CircleShape).background(colors.primary)
                     },
                 )
                 .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onToggle)

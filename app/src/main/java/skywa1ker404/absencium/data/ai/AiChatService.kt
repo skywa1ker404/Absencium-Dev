@@ -95,10 +95,11 @@ class AiChatService(
                 if (turns.isEmpty()) return@launch
                 val reply = client.chat(connection, AiChatPrompt.system(context.copy(study = chat.study, level = chat.level, webSearch = searching)), turns, ChatOptions(searching, chat.thinking, context.temperature))
                 val parsed = AiActionParser.split(reply.text)
-                val shown = parsed.text.ifBlank { if (parsed.actions.isNotEmpty()) "Here is what I suggest." else reply.text.trim() }
+                val (withoutQuiz, quiz) = AiQuiz.extract(parsed.text)
+                val shown = withoutQuiz.ifBlank { if (quiz != null) "Here is your quiz." else if (parsed.actions.isNotEmpty()) "Here is what I suggest." else reply.text.trim() }
                 if (memoryAllowed() && !chat.incognito) parsed.remembered.forEach { memory.add(it.text, if (it.chatOnly) chatId else null) }
                 if (shown.isBlank() && parsed.actions.isEmpty()) throw AiException("The model sent back an empty answer.")
-                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }, sources = reply.sources))
+                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }, sources = reply.sources, quiz = quiz))
                 finished(chatId, shown, ok = true)
             } catch (e: CancellationException) {
                 throw e

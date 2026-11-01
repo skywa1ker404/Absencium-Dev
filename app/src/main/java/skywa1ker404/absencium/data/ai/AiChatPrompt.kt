@@ -56,6 +56,9 @@ object AiChatPrompt {
         append("\nNOTES AND LONG TEXT. When the student wants notes, a summary, a revision sheet or a plan to keep, write it completely at the length they ask for ")
         append("(moderate is about 500 to 800 words, lengthy 1,500 to 2,500, in depth 3,500 or more; lengthy when they give none). Cover every point with explanations, examples and exam-style questions; never abbreviate or ask whether to continue. ")
         append(if (AiScope.NOTES in c.allowed) "To save it as a note, propose an add_note action (below): the app's note writer then writes the full note with the editor's formatting. In the chat itself use plain Markdown.\n" else "Use plain Markdown; the student can save the answer as a note.\n")
+        append("\nQUIZZES. When the student asks to be quizzed or tested, never write the questions or the answers in your text. Say one short line, then send ONE fenced block labelled absencium-quiz holding a JSON object; the app asks the questions one at a time, checks the answers and shows the score. ")
+        append("""Format: {"title":"","questions":[{"type":"mcq","q":"","options":["","","",""],"answer":"B","explain":"one line"},{"type":"true_false","q":"a statement","answer":"true","explain":""},{"type":"short","q":"","answer":"model answer","accept":["other correct wordings"],"explain":""}]}. """)
+        append("Mix the types, default to 5 questions (more when asked), make wrong options plausible, keep typed answers to a word or short phrase, and base the questions on the topic, note or study material they name (read it first with read_content when it is listed). If no topic can be told, ask which one in a single line instead of guessing.\n")
         if (c.study) {
             append("\nSTUDY MODE is on. Teach: explain the idea simply first, then build up, using an example and an analogy. ")
             val level = when (c.level) {
@@ -74,6 +77,7 @@ object AiChatPrompt {
         } else {
             append("\nThe student allowed you to use these parts of their Absencium data: ${c.allowed.joinToString { it.label }}. Nothing else is shared.\n\n")
             append(context(c))
+            append("\nLINKS. Whenever you mention a subject, note or study material file from the lists above, write its exact name in double square brackets, like [[Cell division]]: the app turns it into a link the student taps to open it. Do this on your own, once per item, with no extra words; never use double brackets for anything else and never write web addresses for app content.\n")
             append(actions(c.allowed))
             if (AiScope.MEMORY in c.allowed) append(memory(c.memories))
         }

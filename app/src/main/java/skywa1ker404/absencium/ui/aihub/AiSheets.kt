@@ -106,7 +106,7 @@ fun PlusSheet(
             Text("Try", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, start = 4.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 listOf(
-                    "Quiz me" to "Make a 10-question quiz with answers and explanations from the attached notes or files: ",
+                    "Quiz me" to "Quiz me with 8 mixed questions (multiple choice, true or false, typed answers) on the attached notes or files: ",
                     "Summarise" to "Summarise the attached note or file clearly, with the key points and what to revise: ",
                     "Improve my note" to "Rewrite and improve the attached note: fix mistakes, organise it with headings, and keep everything correct: ",
                     "Revision plan" to "Make a day-by-day revision plan from my syllabus and exam dates for: ",

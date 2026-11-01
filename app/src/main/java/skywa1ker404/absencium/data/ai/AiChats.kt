@@ -35,6 +35,8 @@ data class ChatMessage(
     val attachments: List<ChatAttachment> = emptyList(),
     /** A message only the model sees (the result of a read the student approved): sent with the next request, never drawn in the chat. */
     val hidden: Boolean = false,
+    /** The raw JSON of a quiz the assistant set (see [AiQuiz]); the chat draws it as an interactive card. */
+    val quiz: String? = null,
 )
 
 /** A conversation. [provider] and [model] are set when the student picked another model for this chat than the default one. */
@@ -77,6 +79,7 @@ object AiChatsJson {
                 messages.put(
                     JSONObject().put("id", m.id).put("role", m.role.name).put("text", m.text).put("time", m.time)
                         .put("model", m.model).put("failed", m.failed).put("hidden", m.hidden)
+                        .apply { m.quiz?.let { put("quiz", it) } }
                         .apply {
                             m.actions?.let { put("actions", it) }
                             if (m.doneActions.isNotEmpty()) put("done", m.doneActions.joinToString(","))
@@ -136,6 +139,7 @@ object AiChatsJson {
                         model = m.optString("model"),
                         failed = m.optBoolean("failed"),
                         hidden = m.optBoolean("hidden"),
+                        quiz = if (m.has("quiz")) m.optString("quiz") else null,
                         actions = if (m.has("actions")) m.optString("actions") else null,
                         doneActions = m.optString("done").split(',').mapNotNull { it.trim().toIntOrNull() }.toSet(),
                         sources = m.optJSONArray("sources")?.let { a ->

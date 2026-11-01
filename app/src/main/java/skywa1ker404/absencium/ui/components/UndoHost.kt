@@ -64,7 +64,7 @@ fun UndoHost(bus: UndoBus, modifier: Modifier = Modifier) {
                     shape = RoundedCornerShape(28.dp),
                     color = MaterialTheme.colorScheme.inverseSurface,
                     contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-                    shadowElevation = 6.dp,
+                    shadowElevation = 0.dp,
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

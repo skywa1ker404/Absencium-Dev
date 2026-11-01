@@ -118,6 +118,7 @@ fun AssistantMessage(
     onSaveAsNote: () -> Unit,
     onApply: (List<Pair<Int, AiAction>>) -> Unit,
     onDismiss: (Int) -> Unit,
+    onOpenLink: (String) -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -137,7 +138,8 @@ fun AssistantMessage(
             }
             return@Column
         }
-        SelectionContainer { AiMarkdown(message.text) }
+        SelectionContainer { AiMarkdown(message.text, onOpenLink = onOpenLink) }
+        message.quiz?.let { QuizCard(it) }
         if (message.sources.isNotEmpty()) Sources(message)
         val actions = remember(message.actions) { message.actions?.let { AiActionParser.parse(it) }.orEmpty() }
         val visible = actions.withIndex().filter { it.value.scope in allowed }

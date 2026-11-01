@@ -47,7 +47,7 @@ fun AppMenu(
         shape = RoundedCornerShape(28.dp),
         containerColor = if (glass && !solid) colors.surfaceContainerHigh.copy(alpha = 0.94f) else colors.surfaceContainerHigh,
         tonalElevation = 0.dp,
-        shadowElevation = 10.dp,
+        shadowElevation = 0.dp,
         border = BorderStroke(0.6.dp, Color.White.copy(alpha = if (glass) 0.18f else 0.08f)),
         content = content,
     )

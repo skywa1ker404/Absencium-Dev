@@ -90,7 +90,7 @@ fun AiErrorHost(failures: Flow<String>, modifier: Modifier = Modifier) {
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                shadowElevation = 6.dp,
+                shadowElevation = 0.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .onSizeChanged { width = it.width.coerceAtLeast(1) }

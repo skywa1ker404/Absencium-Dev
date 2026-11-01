@@ -26,7 +26,6 @@ import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.isRuntimeShaderSupported
-import com.kyant.backdrop.shadow.Shadow
 import skywa1ker404.absencium.ui.theme.LocalGlassBlur
 import skywa1ker404.absencium.ui.theme.LocalGlassEnabled
 import skywa1ker404.absencium.ui.theme.LocalQuality
@@ -84,7 +83,7 @@ fun Modifier.floatingGlass(
             },
             // Popups use the plain, even edge of Kyant's dialog; bars keep the angled light of the original look.
             highlight = if (bordered && quality.glassHighlight) ({ if (denseVeil) Highlight.Plain else Highlight.Default }) else null,
-            shadow = if (bordered && quality.glassHighlight && useLens) ({ Shadow.Default }) else null,
+            shadow = null,
             // Plain glass: no colour of its own, only a faint light or dark veil so it reads on any content.
             onDrawSurface = { drawRect(veil) },
         )

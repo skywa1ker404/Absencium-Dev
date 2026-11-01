@@ -66,6 +66,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ReadingScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SubjectFolderScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.data.ai.AiScope
 import skywa1ker404.absencium.data.ai.ChatMessage
@@ -112,6 +114,21 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
     val noteChoices by viewModel.noteChoices.collectAsStateWithLifecycle()
     val materialChoices by viewModel.materialChoices.collectAsStateWithLifecycle()
+    val vault by viewModel.vault.collectAsStateWithLifecycle()
+    var viewGuide by remember { mutableStateOf<skywa1ker404.absencium.data.db.GuideEntity?>(null) }
+    // A [[name]] in an answer opens that note, study material file or subject.
+    val openLink: (String) -> Unit = { name ->
+        val key = name.trim()
+        val note = vault.notes.firstOrNull { it.deletedAt == null && it.title.trim().equals(key, ignoreCase = true) }
+        val guide = vault.guides.firstOrNull { it.fileName.trim().equals(key, ignoreCase = true) || it.fileName.substringBeforeLast('.').trim().equals(key, ignoreCase = true) }
+        val subject = vault.subjects.firstOrNull { it.name.trim().equals(key, ignoreCase = true) }
+        when {
+            note != null -> navigator.navigate(ReadingScreenDestination(noteId = note.id))
+            guide != null -> viewGuide = guide
+            subject != null -> navigator.navigate(SubjectFolderScreenDestination(subjectId = subject.id))
+        }
+    }
+    viewGuide?.let { skywa1ker404.absencium.ui.vault.GuideViewer(it, onClose = { viewGuide = null }) }
     val connection = remember(settings, chat.provider, chat.model, chats) { viewModel.connection(chat) }
     val ready = connection != null
     val colors = MaterialTheme.colorScheme
@@ -381,6 +398,7 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
                                     onSaveAsNote = { savingNote = message },
                                     onApply = { items -> viewModel.apply(message.id, items) },
                                     onDismiss = { index -> viewModel.dismiss(message.id, index) },
+                                    onOpenLink = openLink,
                                 )
                             }
                         }
@@ -514,7 +532,7 @@ private fun EmptyChat(name: String, allowed: Set<AiScope>, incognito: Boolean, o
     val colors = MaterialTheme.colorScheme
     val suggestions = buildList<Triple<ImageVector, String, String>> {
         add(Triple(AppIcons.Lightbulb, "Explain a topic simply", "Explain this simply, with one example: "))
-        add(Triple(AppIcons.Quiz, "Quiz me on my notes", "Ask me 5 short quiz questions about: "))
+        add(Triple(AppIcons.Quiz, "Quiz me on my notes", "Quiz me on what I should revise next. "))
         add(Triple(AppIcons.Draft, "Write notes for a chapter", "Write lengthy, well formatted notes on: "))
         if (AiScope.EXAMS in allowed) add(Triple(AppIcons.Schedule, "Plan my revision", "Make a revision plan from my syllabus and exam dates."))
         else add(Triple(AppIcons.Summarize, "Summarise something", "Summarise the key points of: "))
