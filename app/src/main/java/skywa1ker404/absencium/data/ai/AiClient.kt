@@ -363,7 +363,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                     options.maxTokens?.let { body.put("max_tokens", it) }
                     val openAi = base.contains("api.openai.com", ignoreCase = true)
                     // Extra reasoning only where the service takes it (OpenAI's reasoning models); others would refuse the field.
-                    if (options.thinking && openAi && Regex("^(o\\d|gpt-5)").containsMatchIn(model)) body.put("reasoning_effort", "high")
+                    if (options.thinking && openAi && Regex("^(o\\d|gpt-5)").containsMatchIn(model)) body.put("reasoning_effort", "medium")
                     // OpenRouter searches the web through its web plugin and returns the pages as citations.
                     if (options.webSearch && base.contains("openrouter", ignoreCase = true)) body.put("plugins", JSONArray().put(JSONObject().put("id", "web")))
                     val raw = callRetrying("POST", "$base/chat/completions", openAiHeaders(key), body.toString(), null)
@@ -388,7 +388,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                     val limit = options.maxTokens ?: if (options.thinking) 24_000 else 16_000
                     val body = JSONObject().put("model", model).put("max_tokens", limit).put("system", system).put("messages", messages)
                     if (options.thinking) {
-                        body.put("thinking", JSONObject().put("type", "enabled").put("budget_tokens", 10_000))
+                        body.put("thinking", JSONObject().put("type", "enabled").put("budget_tokens", 6_000))
                     } else {
                         options.temperature?.let { body.put("temperature", it) }
                     }
@@ -417,8 +417,8 @@ class AiClient(private val keyVault: ApiKeyVault) {
                     if (options.thinking) {
                         // Gemini 3 takes a level, Gemini 2.5 a token budget; other models are left on their own setting.
                         when {
-                            model.contains("gemini-3", ignoreCase = true) -> config.put("thinkingConfig", JSONObject().put("thinkingLevel", "high"))
-                            model.contains("gemini-2.5", ignoreCase = true) -> config.put("thinkingConfig", JSONObject().put("thinkingBudget", 12_288))
+                            model.contains("gemini-3", ignoreCase = true) -> config.put("thinkingConfig", JSONObject().put("thinkingLevel", "medium"))
+                            model.contains("gemini-2.5", ignoreCase = true) -> config.put("thinkingConfig", JSONObject().put("thinkingBudget", 8_192))
                         }
                     }
                     body.put("generationConfig", config)

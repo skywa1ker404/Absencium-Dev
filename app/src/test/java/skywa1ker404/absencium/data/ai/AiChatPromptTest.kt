@@ -27,7 +27,9 @@ class AiChatPromptTest {
         assertFalse(prompt.contains("Physics"))
         assertFalse(prompt.contains("holding a JSON array"))
         assertTrue(prompt.contains("cannot see or change anything"))
-        assertTrue(prompt.contains("Help with anything"))
+        assertTrue(prompt.contains("versatile assistant"))
+        assertFalse(prompt.contains("{color:"))
+        assertTrue(prompt.contains("first sentence"))
     }
 
     @Test fun onlyAllowedPartsAreSharedAndNoteTextNeverIs() {

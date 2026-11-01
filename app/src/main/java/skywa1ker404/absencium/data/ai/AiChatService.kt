@@ -132,15 +132,31 @@ class AiChatService(
         if (idle) onBusy(false)
     }
 
+    /**
+     * The conversation as turns, kept small so a long chat does not cost more with every question: the newest [FULL_TURNS] messages go in full,
+     * older ones are shortened, anything beyond [MAX_TURNS] is left out, and files are sent again only for the two newest messages that have them.
+     */
     private suspend fun turnsOf(chat: AiChat): List<ChatTurn> {
         var budget = MAX_SENT_BYTES
+        var filesLeft = FILE_MESSAGES
         val turns = ArrayList<ChatTurn>()
+        var seen = 0
         // Newest first, so the files of the latest questions are the ones kept when the total is too big to send again.
         for (message in chat.messages.asReversed()) {
             if (message.failed) continue
+            if (seen >= MAX_TURNS) break
+            val old = seen >= FULL_TURNS
+            seen++
             var text = message.text
+            if (old && text.length > OLD_TURN_CHARS) text = text.take(OLD_TURN_CHARS).trimEnd() + " …"
             val images = ArrayList<AiImage>()
+            val sendFiles = message.attachments.isNotEmpty() && filesLeft > 0
+            if (sendFiles) filesLeft--
             for (file in message.attachments) {
+                if (!sendFiles) {
+                    text += "\n[Attached \"${file.name}\" earlier in this chat.]"
+                    continue
+                }
                 val part = attachments.part(file)
                 if (part == null) {
                     text += "\n[Attached \"${file.name}\", no longer stored.]"
@@ -223,5 +239,13 @@ class AiChatService(
 
         /** The most base64 text of files sent again with one request. */
         private const val MAX_SENT_BYTES = 24_000_000
+
+        /** Messages sent in full, the most that are sent at all, and how many characters an older message keeps. */
+        private const val FULL_TURNS = 8
+        private const val MAX_TURNS = 30
+        private const val OLD_TURN_CHARS = 700
+
+        /** Messages whose attached files are sent again with a new question. */
+        private const val FILE_MESSAGES = 2
     }
 }

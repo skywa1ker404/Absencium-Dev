@@ -32,6 +32,8 @@ object AiNoteCleaner {
     private val display = Regex("""\$\$(.+?)\$\$|\\\[(.+?)\\\]""", RegexOption.DOT_MATCHES_ALL)
     private val inline = Regex("""\\\((.+?)\\\)|(?<![\\\w$])\$([^$\n]+?)\$(?![\w$])""")
 
+    /** A tag's closer. The brace is escaped: Android's regex engine rejects a bare `}` (the JVM accepts it), which crashed the app. */
+    private val closer = Regex("""\|\}""")
     private val tagOpen = Regex("""\{(?:color:#?[0-9A-Fa-f]{6}|size:\d{1,2})\|""")
 
     /**
@@ -53,7 +55,7 @@ object AiNoteCleaner {
             val bodyStart = open.range.last + 1
             val rest = out.substring(bodyStart)
             val nested = tagOpen.findAll(rest).count()
-            val closers = Regex("""\|}""").findAll(rest).count()
+            val closers = closer.findAll(rest).count()
             if (closers <= nested) {
                 var lone = -1
                 var j = bodyStart
