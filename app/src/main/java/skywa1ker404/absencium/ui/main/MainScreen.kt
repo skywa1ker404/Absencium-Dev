@@ -249,7 +249,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onOpenAttendance = { tab = TAB_ATTENDS },
                             onLogAttendance = { showAttendancePopup = true },
                             onOpenTimetable = { showTimetable = true },
-                            onOpenAiHub = if (settings.askAiEnabled) ({ navigator.navigate(AiHubScreenDestination) }) else null,
+                            onOpenAiHub = if (settings.askAiEnabled) ({ navigator.navigate(AiHubScreenDestination()) }) else null,
                         )
 
                         current == TAB_ATTENDS -> CalendarTab(
@@ -549,7 +549,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     },
                     onOpenAiHub = {
                         showProfile = false
-                        navigator.navigate(AiHubScreenDestination)
+                        navigator.navigate(AiHubScreenDestination())
                     },
                 )
             }

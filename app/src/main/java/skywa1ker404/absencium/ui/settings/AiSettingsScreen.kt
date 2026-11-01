@@ -54,7 +54,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
     val ready = active != null && active.complete
 
     ScreenScaffold(title = "AI & Integrations", onBack = { navigator.navigateUp() }) {
-        StatusCard(settings.askAiEnabled, ready, active, onOpen = { navigator.navigate(AiHubScreenDestination) })
+        StatusCard(settings.askAiEnabled, ready, active, onOpen = { navigator.navigate(AiHubScreenDestination()) })
         AskAiToggle(settings, settingsViewModel, ready = ready)
 
         SectionTitle("Your providers")
