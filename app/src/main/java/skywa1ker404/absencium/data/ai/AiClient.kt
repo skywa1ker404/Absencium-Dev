@@ -47,6 +47,25 @@ class AiImage(val mimeType: String, val base64: String) {
     val isAudio: Boolean get() = mimeType.startsWith("audio/")
 }
 
+/** One turn of a conversation sent to the model. A turn may carry pictures or PDFs. */
+data class ChatTurn(val role: ChatRole, val text: String, val images: List<AiImage> = emptyList())
+
+/** A web page the answer was grounded on (only when web search was on). */
+data class ChatSource(val title: String, val url: String)
+
+/** The answer of [AiClient.chat]: the text and the sources it used, if any. */
+/** Per-request switches of a chat: the internet, extra reasoning, and the model's own limits. */
+data class ChatOptions(val webSearch: Boolean = false, val thinking: Boolean = false, val temperature: Double? = null, val maxTokens: Int? = null)
+
+data class ChatReply(
+    val text: String,
+    val sources: List<ChatSource> = emptyList(),
+    /** The model that really answered, which is another one when a limit sent the question to a saved key or provider that still had room. */
+    val model: String = "",
+    val tokensIn: Long = 0,
+    val tokensOut: Long = 0,
+)
+
 /**
  * What a screen shows inline when a request failed. The reason itself is spelled out once, in the card at the bottom of the screen
  * (see AiErrorHost), so it is not repeated next to the button.
@@ -57,6 +76,9 @@ const val AI_FAILED_INLINE = "The AI request failed. The reason is shown at the 
 class AiException(message: String, val httpCode: Int = 0, val maxImages: Int? = null) : Exception(message) {
     /** True for answers that usually pass by themselves: the provider is busy or briefly down. */
     val temporary: Boolean get() = httpCode == 500 || httpCode == 502 || httpCode == 503 || httpCode == 504
+
+    /** True when the key ran out of quota or is rate limited, so another saved key or provider may still answer. */
+    val limitReached: Boolean get() = httpCode == 429 || (httpCode == 403 && message.orEmpty().contains("quota", ignoreCase = true))
 }
 
 /**
@@ -68,6 +90,12 @@ class AiClient(private val keyVault: ApiKeyVault) {
 
     /** Every request and its answer is kept here for the AI Hub; set once by the app container. */
     var history: AiHistory? = null
+
+    /** Per-provider token statistics; set once by the app container. */
+    var usage: AiUsage? = null
+
+    /** Other usable providers (each with its saved model), tried by [chat] when every saved key of the chosen one hit its limit. */
+    var fallbacks: () -> List<AiConnection> = { emptyList() }
 
     private val _failures = MutableSharedFlow<String>(extraBufferCapacity = 4, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST)
 
@@ -247,6 +275,225 @@ class AiClient(private val keyVault: ApiKeyVault) {
                 }
             }
         }
+
+    /**
+     * A real conversation: a system prompt kept apart from the turns, every earlier turn in its own role (so the model sees the chat the
+     * way a chat app would send it), and optionally web search with sources (Gemini only; other styles ignore it). Failures are announced
+     * by the bar at the bottom of the screen, like every other request.
+     */
+    suspend fun chat(connection: AiConnection, system: String, turns: List<ChatTurn>, options: ChatOptions = ChatOptions()): ChatReply {
+        try {
+            return withFailover(connection, system, turns, options)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _failures.tryEmit(e.message ?: "The AI request failed.")
+            throw e
+        }
+    }
+
+    /**
+     * Tries every saved key of the chosen provider in turn, and when all of them have hit their limit the other providers that have a key
+     * (each with its saved model). Only a rate or quota limit moves on; any other failure is the real answer.
+     */
+    private suspend fun withFailover(connection: AiConnection, system: String, turns: List<ChatTurn>, options: ChatOptions): ChatReply {
+        if (connection.provider.keyRequired && keyVault.keyCount(connection.provider) == 0) keyFor(connection)
+        var last: AiException? = null
+        val candidates = listOf(connection) + fallbacks().filter { it.provider != connection.provider }
+        for (candidate in candidates) {
+            val keys: List<String?> = if (candidate.provider.keyRequired) keyVault.usableKeys(candidate.provider) else listOf(keyVault.read(candidate.provider))
+            if (keys.isEmpty()) {
+                last = last ?: AiException("Every saved ${candidate.provider.label} key has reached its limit. Try again later or add another key.", 429)
+                continue
+            }
+            for (key in keys) {
+                try {
+                    val reply = chatRaw(candidate, system, turns, options, key)
+                    usage?.record(candidate.provider, reply.tokensIn, reply.tokensOut)
+                    return reply.copy(model = candidate.model)
+                } catch (e: AiException) {
+                    if (!e.limitReached) throw e
+                    last = e
+                    if (key != null) keyVault.markLimited(key)
+                    DebugLogger.w(TAG, "${candidate.provider.label} key hit its limit, trying the next one")
+                }
+            }
+        }
+        throw last ?: AiException("No AI key is available.")
+    }
+
+    private suspend fun chatRaw(connection: AiConnection, system: String, turns: List<ChatTurn>, options: ChatOptions, key: String?): ChatReply =
+        withContext(Dispatchers.IO) {
+            val base = connection.baseUrl.trim().trimEnd('/')
+            val model = connection.model.trim()
+            if (model.isEmpty()) throw AiException("Choose a model in Settings, AI & Integrations first.")
+            if (connection.style != ApiStyle.GEMINI && turns.any { t -> t.images.any { it.isAudio || it.mimeType.startsWith("video/") } }) {
+                throw AiException("Recordings and videos need a Google Gemini model. Pick one for this chat, or remove the file.")
+            }
+            when (connection.style) {
+                ApiStyle.OPENAI_COMPATIBLE -> {
+                    val messages = JSONArray().put(JSONObject().put("role", "system").put("content", system))
+                    turns.forEach { turn ->
+                        val role = if (turn.role == ChatRole.USER) "user" else "assistant"
+                        if (turn.images.isEmpty()) {
+                            messages.put(JSONObject().put("role", role).put("content", turn.text))
+                        } else {
+                            if (base.contains("groq", ignoreCase = true)) {
+                                if (turn.images.any { it.isPdf }) throw AiException("Groq cannot read PDF files. Pick a Google Gemini or Claude model for PDFs.")
+                                if (turn.images.size > GROQ_MAX_IMAGES) throw AiException("Groq takes at most $GROQ_MAX_IMAGES pictures in one request.")
+                            }
+                            val content = JSONArray().put(JSONObject().put("type", "text").put("text", turn.text))
+                            turn.images.forEach {
+                                content.put(
+                                    if (it.isPdf) {
+                                        JSONObject().put("type", "file").put(
+                                            "file",
+                                            JSONObject().put("filename", "document.pdf").put("file_data", "data:application/pdf;base64,${it.base64}"),
+                                        )
+                                    } else {
+                                        JSONObject().put("type", "image_url").put("image_url", JSONObject().put("url", "data:${it.mimeType};base64,${it.base64}"))
+                                    },
+                                )
+                            }
+                            messages.put(JSONObject().put("role", role).put("content", content))
+                        }
+                    }
+                    val body = JSONObject().put("model", model).put("messages", messages)
+                    options.temperature?.let { body.put("temperature", it) }
+                    options.maxTokens?.let { body.put("max_tokens", it) }
+                    val openAi = base.contains("api.openai.com", ignoreCase = true)
+                    // Extra reasoning only where the service takes it (OpenAI's reasoning models); others would refuse the field.
+                    if (options.thinking && openAi && Regex("^(o\\d|gpt-5)").containsMatchIn(model)) body.put("reasoning_effort", "high")
+                    // OpenRouter searches the web through its web plugin and returns the pages as citations.
+                    if (options.webSearch && base.contains("openrouter", ignoreCase = true)) body.put("plugins", JSONArray().put(JSONObject().put("id", "web")))
+                    val raw = callRetrying("POST", "$base/chat/completions", openAiHeaders(key), body.toString(), null)
+                    ChatReply(parseOpenAiReply(raw), openAiSources(raw), tokensIn = usageOf(raw, "usage", "prompt_tokens"), tokensOut = usageOf(raw, "usage", "completion_tokens"))
+                }
+
+                ApiStyle.ANTHROPIC -> {
+                    val messages = JSONArray()
+                    turns.forEach { turn ->
+                        val content = JSONArray()
+                        turn.images.forEach {
+                            content.put(
+                                JSONObject().put("type", if (it.isPdf) "document" else "image").put(
+                                    "source",
+                                    JSONObject().put("type", "base64").put("media_type", it.mimeType).put("data", it.base64),
+                                ),
+                            )
+                        }
+                        content.put(JSONObject().put("type", "text").put("text", turn.text))
+                        messages.put(JSONObject().put("role", if (turn.role == ChatRole.USER) "user" else "assistant").put("content", content))
+                    }
+                    val limit = options.maxTokens ?: if (options.thinking) 24_000 else 16_000
+                    val body = JSONObject().put("model", model).put("max_tokens", limit).put("system", system).put("messages", messages)
+                    if (options.thinking) {
+                        body.put("thinking", JSONObject().put("type", "enabled").put("budget_tokens", 10_000))
+                    } else {
+                        options.temperature?.let { body.put("temperature", it) }
+                    }
+                    if (options.webSearch) {
+                        body.put("tools", JSONArray().put(JSONObject().put("type", "web_search_20250305").put("name", "web_search").put("max_uses", 5)))
+                    }
+                    val raw = callRetrying("POST", "$base/messages", anthropicHeaders(key), body.toString(), null)
+                    ChatReply(parseAnthropicReply(raw), anthropicSources(raw), tokensIn = usageOf(raw, "usage", "input_tokens"), tokensOut = usageOf(raw, "usage", "output_tokens"))
+                }
+
+                ApiStyle.GEMINI -> {
+                    val contents = JSONArray()
+                    turns.forEach { turn ->
+                        val parts = JSONArray().put(JSONObject().put("text", turn.text))
+                        turn.images.forEach {
+                            parts.put(JSONObject().put("inline_data", JSONObject().put("mime_type", it.mimeType).put("data", it.base64)))
+                        }
+                        contents.put(JSONObject().put("role", if (turn.role == ChatRole.USER) "user" else "model").put("parts", parts))
+                    }
+                    val body = JSONObject()
+                        .put("system_instruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", system))))
+                        .put("contents", contents)
+                    if (options.webSearch) body.put("tools", JSONArray().put(JSONObject().put("google_search", JSONObject())))
+                    val config = JSONObject().put("maxOutputTokens", options.maxTokens ?: 32_768)
+                    options.temperature?.let { config.put("temperature", it) }
+                    if (options.thinking) {
+                        // Gemini 3 takes a level, Gemini 2.5 a token budget; other models are left on their own setting.
+                        when {
+                            model.contains("gemini-3", ignoreCase = true) -> config.put("thinkingConfig", JSONObject().put("thinkingLevel", "high"))
+                            model.contains("gemini-2.5", ignoreCase = true) -> config.put("thinkingConfig", JSONObject().put("thinkingBudget", 12_288))
+                        }
+                    }
+                    body.put("generationConfig", config)
+                    val id = model.removePrefix("models/")
+                    val url = "$base/models/$id:generateContent?key=${URLEncoder.encode(key.orEmpty(), "UTF-8")}"
+                    var raw = callRetrying("POST", url, emptyMap(), body.toString(), null)
+                    var result = parseGemini(raw)
+                    if (result.text.isBlank() && result.retryable) {
+                        DebugLogger.w(TAG, "Gemini returned no text (${result.summary()}), asking once more")
+                        delay(1_500)
+                        raw = callRetrying("POST", url, emptyMap(), body.toString(), null)
+                        result = parseGemini(raw)
+                    }
+                    if (result.text.isBlank()) throw AiException(result.problem())
+                    ChatReply(
+                        result.text, geminiSources(raw),
+                        tokensIn = usageOf(raw, "usageMetadata", "promptTokenCount"),
+                        tokensOut = usageOf(raw, "usageMetadata", "candidatesTokenCount") + usageOf(raw, "usageMetadata", "thoughtsTokenCount"),
+                    )
+                }
+            }
+        }
+
+    private fun usageOf(body: String, group: String, field: String): Long = try {
+        JSONObject(body).optJSONObject(group)?.optLong(field, 0L) ?: 0L
+    } catch (e: Exception) {
+        0L
+    }
+
+    private fun openAiSources(body: String): List<ChatSource> = try {
+        val notes = JSONObject(body).optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optJSONArray("annotations")
+        if (notes == null) emptyList() else {
+            (0 until notes.length()).mapNotNull { i ->
+                val cite = notes.optJSONObject(i)?.optJSONObject("url_citation") ?: return@mapNotNull null
+                val link = cite.optString("url")
+                if (link.isBlank()) null else ChatSource(cite.optString("title").ifBlank { link }, link)
+            }.distinctBy { it.url }
+        }
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    private fun anthropicSources(body: String): List<ChatSource> = try {
+        val content = JSONObject(body).optJSONArray("content")
+        val found = ArrayList<ChatSource>()
+        if (content != null) {
+            for (i in 0 until content.length()) {
+                val block = content.optJSONObject(i) ?: continue
+                if (block.optString("type") != "web_search_tool_result") continue
+                val results = block.optJSONArray("content") ?: continue
+                for (k in 0 until results.length()) {
+                    val r = results.optJSONObject(k) ?: continue
+                    val link = r.optString("url")
+                    if (link.isNotBlank()) found += ChatSource(r.optString("title").ifBlank { link }, link)
+                }
+            }
+        }
+        found.distinctBy { it.url }
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    /** The pages Gemini's search used, from the grounding data of an answer. Titles are the site names; links are Google's redirects. */
+    private fun geminiSources(body: String): List<ChatSource> = try {
+        val chunks = JSONObject(body).optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("groundingMetadata")?.optJSONArray("groundingChunks")
+        if (chunks == null) emptyList() else {
+            (0 until chunks.length()).mapNotNull { i ->
+                val web = chunks.optJSONObject(i)?.optJSONObject("web") ?: return@mapNotNull null
+                val link = web.optString("uri")
+                if (link.isBlank()) null else ChatSource(web.optString("title").ifBlank { link }, link)
+            }.distinctBy { it.url }
+        }
+    } catch (e: Exception) {
+        emptyList()
+    }
 
     private fun keyFor(connection: AiConnection): String? {
         val key = keyVault.read(connection.provider)
@@ -443,7 +690,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
             connection.connectTimeout = 20_000
             val bytes = body?.toByteArray(Charsets.UTF_8)
             // After a big upload the model may think for a while (a long PDF), so the wait for the answer is longer then.
-            connection.readTimeout = if (bytes != null && bytes.size > 1_000_000) 600_000 else 120_000
+            connection.readTimeout = if (bytes != null && bytes.size > 1_000_000) 600_000 else 300_000
             headers.forEach { (name, value) -> connection.setRequestProperty(name, value) }
             if (bytes != null) {
                 connection.doOutput = true

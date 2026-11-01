@@ -23,6 +23,8 @@ class AiActionRunner(
     private val calendar: CalendarRepository,
     private val vault: VaultRepository,
     private val subjects: SubjectRepository,
+    /** Writes a note from a brief (the app's note writer); returns editor markup, or null when the model could not write it. */
+    private val noteWriter: suspend (brief: String, subject: String, length: NoteLength) -> String? = { _, _, _ -> null },
 ) {
     suspend fun apply(action: AiAction): ActionResult = try {
         run(action)
@@ -39,7 +41,11 @@ class AiActionRunner(
 
             is AiAction.AddNote -> {
                 val subject = subject(action.subject) ?: return missing(action.subject)
-                vault.saveNote(0, subject.id, action.title, action.body, NoteStatus.ACTIVE)
+                val body = action.body.ifBlank {
+                    noteWriter(action.brief.ifBlank { action.title }, subject.name, action.length)
+                        ?: return ActionResult(false, "The note could not be written. Check the AI connection and try again.")
+                }
+                vault.saveNote(0, subject.id, action.title, body, NoteStatus.ACTIVE)
                 ActionResult(true, "Added the note to ${subject.name}.")
             }
 
@@ -88,6 +94,20 @@ class AiActionRunner(
                 if (database.holidayDao().getForDate(action.date) != null) return ActionResult(false, "That day already has a holiday.")
                 calendar.addHoliday(action.date, action.title, true, Priority.LOW)
                 ActionResult(true, "Holiday added.")
+            }
+
+            // Memories are saved by the chat itself and never reach the runner; this keeps the branch total.
+            is AiAction.Remember -> ActionResult(true, "Remembered.")
+
+            is AiAction.SetSyllabusStatus -> {
+                val subject = subject(action.subject) ?: return missing(action.subject)
+                val nodes = database.syllabusDao().observeAll().first().filter { it.subjectId == subject.id }
+                val matches = nodes.filter { it.title.equals(action.topic.trim(), ignoreCase = true) }
+                    .ifEmpty { nodes.filter { it.title.contains(action.topic.trim(), ignoreCase = true) } }
+                val node = matches.singleOrNull()
+                    ?: return ActionResult(false, if (matches.isEmpty()) "No syllabus topic matches \"${action.topic}\"." else "Several topics match \"${action.topic}\".")
+                database.syllabusDao().update(node.copy(status = action.status, updatedAt = System.currentTimeMillis()))
+                ActionResult(true, "Syllabus updated.")
             }
 
             is AiAction.SetAttendance -> {

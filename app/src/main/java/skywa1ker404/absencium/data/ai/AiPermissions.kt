@@ -13,7 +13,9 @@ enum class AiScope(val label: String, val blurb: String) {
     EXAMS("Exams", "Exam dates and rooms. It can propose adding or changing an exam."),
     HOLIDAYS("Holidays", "Your holidays. It can propose adding one."),
     ATTENDANCE("Attendance", "Present and absent counts and days. It can propose marking a day."),
-    NOTES("Notes", "The titles of your notes (never their text). It can propose a new note."),
+    SYLLABUS("Syllabus", "Your units, chapters and topics with their progress. It can propose marking a topic started or done."),
+    MEMORY("Memory", "What it remembers about you in every chat (your course, goals, how you like answers). You can view, edit and delete it."),
+    NOTES("Notes", "The titles of your notes (never their text). It can propose a new note, which the app's note writer then writes in full."),
 }
 
 /**

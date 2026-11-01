@@ -1,37 +1,47 @@
 package skywa1ker404.absencium.ui.aihub
 
-import androidx.compose.runtime.mutableStateMapOf
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import skywa1ker404.absencium.AppContainer
 import skywa1ker404.absencium.data.ai.ActionResult
 import skywa1ker404.absencium.data.ai.AiAction
-import skywa1ker404.absencium.data.ai.AiActionParser
+import skywa1ker404.absencium.data.ai.AiAssistants
 import skywa1ker404.absencium.data.ai.AiChat
-import skywa1ker404.absencium.data.ai.AiChatPrompt
+import skywa1ker404.absencium.data.ai.AiChatService
 import skywa1ker404.absencium.data.ai.AiConnection
 import skywa1ker404.absencium.data.ai.AiHistoryEntry
+import skywa1ker404.absencium.data.ai.AiNoteCleaner
 import skywa1ker404.absencium.data.ai.AiProvider
 import skywa1ker404.absencium.data.ai.AiScope
+import skywa1ker404.absencium.data.ai.AssistantProfile
+import skywa1ker404.absencium.data.ai.ChatAttachment
 import skywa1ker404.absencium.data.ai.ChatMessage
 import skywa1ker404.absencium.data.ai.ChatRole
+import skywa1ker404.absencium.data.ai.MemoryItem
+import skywa1ker404.absencium.data.ai.ProviderUsage
+import skywa1ker404.absencium.data.db.NoteStatus
+import skywa1ker404.absencium.data.db.SubjectEntity
 import skywa1ker404.absencium.data.settings.AppSettings
 import skywa1ker404.absencium.logging.DebugLogger
+import java.io.File
 
-/** The state of Absencium AI: the open chat, the list of chats, and the one answer being waited for. */
+/**
+ * The state of Absencium AI as one screen sees it. Answers are written by [AiChatService] on the app's own scope, so nothing here is
+ * cancelled when the student opens another chat, leaves the screen or closes the app; this class only starts them and shows them.
+ */
 class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
     private val store = container.aiChats
+    private val service = container.aiChatService
 
     val settings: StateFlow<AppSettings?> = container.settingsState
     val chats: StateFlow<List<AiChat>> = store.chats
@@ -39,6 +49,25 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
 
     /** Prompts the app itself made (notes, syllabus, homework). Shown read-only in the sidebar. */
     val appPrompts: StateFlow<List<AiHistoryEntry>> = container.aiHistory.entries
+
+    val memories: StateFlow<List<MemoryItem>> = container.aiMemory.items
+    val assistants: StateFlow<List<AssistantProfile>> = container.aiAssistants.all
+    val usage: StateFlow<List<ProviderUsage>> = container.aiUsage.rows
+
+    /** Chats being answered right now, and chats with an answer not yet looked at. */
+    val busyChats: StateFlow<Set<Long>> = service.pending
+    val unread: StateFlow<Set<Long>> = service.unread
+    val results: StateFlow<Map<String, ActionResult>> = service.results
+    val working: StateFlow<Set<String>> = service.working
+
+    val subjects: StateFlow<List<SubjectEntity>> =
+        container.database.subjectDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The notes that can be attached to a question: id, title, and the name of their subject. */
+    val noteChoices: StateFlow<List<Triple<Long, String, String>>> = combine(container.vaultRepository.data, subjects) { vault, subjects ->
+        val names = subjects.associate { it.id to it.name }
+        vault.notes.filter { it.deletedAt == null }.sortedByDescending { it.updatedAt }.map { Triple(it.id, it.title, names[it.subjectId].orEmpty()) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _draft = MutableStateFlow(store.blank())
     private val _currentId = MutableStateFlow(_draft.value.id)
@@ -48,156 +77,221 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
         chats.firstOrNull { it.id == id } ?: draft.copy(id = id)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, _draft.value)
 
-    private val _pending = MutableStateFlow(false)
-    val pending: StateFlow<Boolean> = _pending.asStateFlow()
-    private var job: Job? = null
+    /** True while the open chat is being answered. */
+    val pending: StateFlow<Boolean> = combine(service.pending, _currentId) { busy, id -> id in busy }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    /** What happened to each change card this session, so a card can say "Applied" or why it was refused. */
-    val results = mutableStateMapOf<String, ActionResult>()
+    /** Files chosen for the next message. */
+    private val _files = MutableStateFlow<List<ChatAttachment>>(emptyList())
+    val files: StateFlow<List<ChatAttachment>> = _files
 
-    fun connection(chat: AiChat = current.value): AiConnection? = container.aiConnectionFor(chat.provider?.let { runCatching { AiProvider.valueOf(it) }.getOrNull() }, chat.model)
+    /** A short plain message about the last thing that did not work (a file that could not be added) or worked (a note saved). */
+    private val _notice = MutableStateFlow<String?>(null)
+    val notice: StateFlow<String?> = _notice
+
+    private var visible = false
+
+    fun clearNotice() {
+        _notice.value = null
+    }
+
+    /** Tells the service whether the student is looking at the open chat, so a finished answer elsewhere can be announced. */
+    fun setVisible(on: Boolean) {
+        visible = on
+        service.setViewing(if (on) _currentId.value else null)
+    }
+
+    fun connection(chat: AiChat = current.value): AiConnection? =
+        container.aiConnectionFor(chat.provider?.let { runCatching { AiProvider.valueOf(it) }.getOrNull() }, chat.model)
 
     /** The connection of [provider] with the model saved for it, for fetching its model list. */
     fun connectionForProvider(provider: AiProvider): AiConnection? = container.aiConnectionFor(provider, null)
-
-    fun ready(): Boolean = connection() != null
 
     /** The providers that can answer right now, each with the model saved for it. */
     fun usableProviders(): List<Pair<AiProvider, String>> = AiProvider.entries.mapNotNull { p ->
         container.aiConnectionFor(p, null)?.let { p to it.model }
     }
 
+    /** Whether the model of the open chat can search the web (Gemini, Claude, OpenRouter). */
+    fun canSearch(): Boolean = connection()?.let { AiChatService.canSearch(it) } ?: false
+
     fun newChat() {
-        cancel()
         _draft.value = store.blank()
-        _currentId.value = _draft.value.id
+        _files.value = emptyList()
+        switchTo(_draft.value.id)
     }
 
     fun open(id: Long) {
         if (id == _currentId.value) return
-        cancel()
+        _files.value = emptyList()
+        switchTo(id)
+    }
+
+    private fun switchTo(id: Long) {
         _currentId.value = id
+        if (visible) service.setViewing(id)
     }
 
-    fun rename(title: String) {
-        val chat = current.value
-        if (chat.messages.isNotEmpty()) store.rename(chat.id, title)
+    fun rename(title: String, id: Long = current.value.id) {
+        if (store.get(id) != null) store.rename(id, title)
     }
 
-    fun togglePin() {
-        val chat = current.value
-        if (chat.messages.isNotEmpty()) store.pin(chat.id, !chat.pinned)
-    }
+    fun togglePin(id: Long = current.value.id) = store.get(id)?.let { store.pin(id, !it.pinned) }
+    fun toggleArchive(id: Long = current.value.id) = store.get(id)?.let { store.archive(id, !it.archived) }
 
     fun delete(id: Long = current.value.id) {
+        service.stop(id)
+        container.aiMemory.forgetChat(id)
         store.delete(id)
         if (id == _currentId.value) newChat()
     }
 
-    /** Uses [model] of [provider] for this chat only. */
-    fun setModel(provider: AiProvider, model: String) {
+    /** Changes a setting of the open chat; before its first message it changes the draft. */
+    private fun change(block: (AiChat) -> AiChat) {
         val chat = current.value
-        if (chat.messages.isEmpty()) {
-            _draft.update { it.copy(provider = provider.name, model = model) }
-        } else {
-            store.put(chat.copy(provider = provider.name, model = model))
+        if (chat.messages.isEmpty()) _draft.update { block(it.copy(id = chat.id)) } else store.put(block(chat))
+    }
+
+    /** Uses [model] of [provider] for this chat only. */
+    fun setModel(provider: AiProvider, model: String) = change { it.copy(provider = provider.name, model = model) }
+
+    fun setWebSearch(on: Boolean) = change { it.copy(webSearch = on) }
+    fun setStudy(on: Boolean) = change { it.copy(study = on) }
+    fun setThinking(on: Boolean) = change { it.copy(thinking = on) }
+    fun setLevel(level: String) = change { it.copy(level = level) }
+
+    /** Gives the open chat an assistant profile (or none), and its preferred model when it has one that is ready. */
+    fun setAssistant(profile: AssistantProfile?) {
+        change { it.copy(assistant = profile?.id.orEmpty()) }
+        val provider = profile?.provider?.let { runCatching { AiProvider.valueOf(it) }.getOrNull() }
+        if (provider != null && profile.model != null && container.aiConnectionFor(provider, profile.model) != null) setModel(provider, profile.model)
+    }
+
+    fun saveAssistant(profile: AssistantProfile) = container.aiAssistants.save(profile)
+    fun deleteAssistant(id: String) = container.aiAssistants.delete(id)
+    fun exportAssistants(): String = container.aiAssistants.export()
+    fun importAssistants(text: String): Int = container.aiAssistants.import(text)
+
+    fun setScope(scope: AiScope, on: Boolean) = container.aiPermissions.set(scope, on)
+
+    fun addMemory(text: String, thisChatOnly: Boolean) {
+        container.aiMemory.add(text, if (thisChatOnly) current.value.id else null)
+    }
+
+    fun updateMemory(id: Long, text: String) = container.aiMemory.update(id, text)
+    fun deleteMemory(id: Long) = container.aiMemory.delete(id)
+    fun clearMemory() = container.aiMemory.clear()
+
+    // ---- files ----
+
+    fun addFiles(uris: List<Uri>) {
+        viewModelScope.launch {
+            for (uri in uris.take(MAX_FILES - _files.value.size)) {
+                val result = container.aiAttachments.import(uri)
+                result.attachment?.let { file -> _files.update { it + file } }
+                result.error?.let { _notice.value = it }
+            }
         }
     }
 
+    /** Attaches the text of the chosen notes, so the question is answered from them (only notes the student picks are ever sent). */
+    fun attachNotes(ids: Set<Long>) {
+        viewModelScope.launch {
+            val notes = container.vaultRepository.data.first().notes.filter { it.id in ids }
+            for (note in notes.take(MAX_FILES - _files.value.size)) {
+                try {
+                    val dir = File(container.appContext.filesDir, "ai_attachments").also { it.mkdirs() }
+                    val file = File(dir, "note-${note.id}-${System.nanoTime()}.txt")
+                    file.writeText("${note.title}\n\n${note.bodyText}")
+                    _files.update { it + ChatAttachment("${note.title}.txt", "text/plain", file.absolutePath) }
+                } catch (e: Exception) {
+                    DebugLogger.e("AbsenciumAi", "A note could not be attached", e)
+                    _notice.value = "That note could not be attached."
+                }
+            }
+        }
+    }
+
+    fun removeFile(file: ChatAttachment) {
+        _files.update { it - file }
+        container.aiAttachments.discard(file)
+    }
+
+    // ---- sending ----
+
     /**
-     * Sends [text]. With [replaceFrom] the message with that id and everything after it is dropped first, which is how editing a
-     * question works: the conversation continues from the new wording.
+     * Sends [text] (with the chosen files). With [replaceFrom] the message with that id and everything after it is dropped first, which
+     * is how editing a question works: the conversation continues from the new wording, with the files it had.
      */
     fun send(text: String, replaceFrom: Long? = null) {
         val message = text.trim()
-        if (message.isEmpty() || _pending.value) return
         val chat = current.value
-        val connection = connection(chat) ?: return
+        if (chat.id in busyChats.value) return
+        val replaced = replaceFrom?.let { id -> chat.messages.firstOrNull { it.id == id } }
+        val attachments = _files.value + replaced?.attachments.orEmpty()
+        if (message.isEmpty() && attachments.isEmpty()) return
+        if (connection(chat) == null) return
         val kept = if (replaceFrom == null) chat.messages else chat.messages.takeWhile { it.id != replaceFrom }
+        _files.value = emptyList()
+        submit(chat, kept, message.ifEmpty { "Look at the attached file." }, attachments)
+    }
+
+    private fun submit(chat: AiChat, kept: List<ChatMessage>, text: String, attachments: List<ChatAttachment>) {
         val now = System.currentTimeMillis()
-        val user = ChatMessage(id = now, role = ChatRole.USER, text = message, time = now)
-        val withUser = chat.copy(messages = kept + user, updated = now)
-        store.put(withUser)
-        _currentId.value = withUser.id
-        answer(withUser, connection, kept, message)
+        val id = maxOf(now, (kept.maxOfOrNull { it.id } ?: 0L) + 1)
+        val user = ChatMessage(id = id, role = ChatRole.USER, text = text, time = now, attachments = attachments)
+        val saved = chat.copy(messages = kept + user, updated = now)
+        store.put(saved)
+        _currentId.value = saved.id
+        if (visible) service.setViewing(saved.id)
+        service.answer(saved.id)
     }
 
-    /** Asks again for the last answer: drops it (and a failed attempt) and sends the question that led to it. */
+    /** Asks again for the last answer: drops it (and a failed attempt) and sends the question that led to it, with its files. */
     fun regenerate() {
-        if (_pending.value) return
         val chat = current.value
+        if (chat.id in busyChats.value || connection(chat) == null) return
         val lastUser = chat.messages.lastOrNull { it.role == ChatRole.USER } ?: return
-        send(lastUser.text, replaceFrom = lastUser.id)
+        submit(chat, chat.messages.takeWhile { it.id != lastUser.id }, lastUser.text, lastUser.attachments)
     }
 
-    private fun answer(chat: AiChat, connection: AiConnection, earlier: List<ChatMessage>, message: String) {
-        _pending.value = true
-        job = viewModelScope.launch {
+    /** Asks the last question again with [model] of [provider] instead (this chat keeps it from then on). */
+    fun retryWith(provider: AiProvider, model: String) {
+        setModel(provider, model)
+        regenerate()
+    }
+
+    /** Asks the model to carry on from where its last answer stopped. */
+    fun continueAnswer() {
+        val chat = current.value
+        if (chat.id in busyChats.value || connection(chat) == null) return
+        submit(chat, chat.messages, "Continue exactly where you stopped, without repeating anything.", emptyList())
+    }
+
+    fun stop() = service.stop(current.value.id)
+
+    // ---- cards ----
+
+    fun apply(messageId: Long, items: List<Pair<Int, AiAction>>) = service.apply(current.value.id, messageId, items)
+    fun dismiss(messageId: Long, index: Int) = service.dismiss(current.value.id, messageId, index)
+
+    // ---- notes ----
+
+    /** Saves an answer as a note of [subjectId], cleaned into the editor's markup. */
+    fun saveAsNote(message: ChatMessage, subjectId: Long) {
+        viewModelScope.launch {
             try {
-                val allowedNow = container.aiPermissions.allowed.value
-                val calendar = if (allowedNow.isEmpty()) skywa1ker404.absencium.data.calendar.CalendarData() else container.calendarRepository.data.first()
-                val notes = if (AiScope.NOTES in allowedNow) container.vaultRepository.data.first().notes else emptyList()
-                val prompt = AiChatPrompt.build(
-                    allowed = allowedNow,
-                    calendar = calendar,
-                    notes = notes,
-                    history = earlier.filter { !it.failed && it.text.isNotBlank() }.map { it.role to it.text },
-                    message = message,
-                )
-                val reply = container.aiClient.generate(connection, prompt, record = false)
-                val parsed = AiActionParser.split(reply)
-                val shown = parsed.text.ifBlank { if (parsed.actions.isNotEmpty()) "Here is what I suggest." else reply.trim() }
-                append(chat.id, ChatMessage(System.currentTimeMillis(), ChatRole.ASSISTANT, shown, System.currentTimeMillis(), connection.model, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }))
-            } catch (e: CancellationException) {
-                throw e
+                val body = AiNoteCleaner.clean(message.text)
+                val question = current.value.messages.lastOrNull { it.role == ChatRole.USER && it.id < message.id }?.text.orEmpty()
+                val heading = body.lineSequence().map { it.trim().trimStart('#', ' ').trim() }.firstOrNull { it.isNotEmpty() }
+                val title = (heading ?: question).replace(Regex("[*_=+~`]"), "").take(80).ifBlank { "AI note" }
+                container.vaultRepository.saveNote(0, subjectId, title, body, NoteStatus.ACTIVE)
+                _notice.value = "Saved as a note."
             } catch (e: Exception) {
-                // The reason is announced by the bar at the bottom of the screen; the chat only marks that this one failed.
-                DebugLogger.e("AbsenciumAi", "A chat answer failed", e)
-                append(chat.id, ChatMessage(System.currentTimeMillis(), ChatRole.ASSISTANT, "", System.currentTimeMillis(), connection.model, failed = true))
-            } finally {
-                _pending.value = false
+                DebugLogger.e("AbsenciumAi", "An answer could not be saved as a note", e)
+                _notice.value = "That could not be saved as a note."
             }
         }
-    }
-
-    private fun append(chatId: Long, message: ChatMessage) {
-        val chat = store.get(chatId) ?: return
-        // Ids are the time of day in milliseconds; an instant failure could land in the same one as the question, and list keys must differ.
-        val id = maxOf(message.id, (chat.messages.maxOfOrNull { it.id } ?: 0L) + 1)
-        store.put(chat.copy(messages = chat.messages + message.copy(id = id), updated = System.currentTimeMillis()))
-    }
-
-    fun cancel() {
-        job?.cancel()
-        _pending.value = false
-    }
-
-    /** Applies one proposed change after the student tapped Apply. */
-    fun apply(messageId: Long, index: Int, action: AiAction) {
-        val chatId = current.value.id
-        viewModelScope.launch {
-            val result = container.aiActionRunner.apply(action)
-            results["$messageId:$index"] = result
-            if (result.ok) store.markActionDone(chatId, messageId, index)
-        }
-    }
-
-    /** Applies several proposed changes in order (a new subject must exist before a note is added to it). */
-    fun applyAll(messageId: Long, items: List<Pair<Int, AiAction>>) {
-        val chatId = current.value.id
-        viewModelScope.launch {
-            for ((index, action) in items) {
-                val result = container.aiActionRunner.apply(action)
-                results["$messageId:$index"] = result
-                if (result.ok) store.markActionDone(chatId, messageId, index)
-            }
-        }
-    }
-
-    /** Marks a card as handled without changing anything. */
-    fun dismiss(messageId: Long, index: Int) {
-        store.markActionDone(current.value.id, messageId, index)
-        results.remove("$messageId:$index")
     }
 
     fun deleteAppPrompt(time: Long) = container.aiHistory.remove(time)
@@ -208,7 +302,7 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
         (if (it.role == ChatRole.USER) "You: " else "Absencium AI: ") + it.text
     }
 
-    override fun onCleared() {
-        job?.cancel()
+    private companion object {
+        const val MAX_FILES = 8
     }
 }

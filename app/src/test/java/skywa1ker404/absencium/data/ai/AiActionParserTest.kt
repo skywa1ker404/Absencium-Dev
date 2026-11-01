@@ -62,4 +62,34 @@ class AiActionParserTest {
         assertEquals(DayOfWeek.THURSDAY, AiActionParser.day("Thu"))
         assertNull(AiActionParser.day("t"))
     }
+
+    @Test
+    fun `a label on the first line or a json fence still counts`() {
+        val first = AiActionParser.split("Done.\n```\nabsencium-actions\n[{\"type\":\"add_holiday\",\"date\":\"2026-01-02\",\"title\":\"Break\"}]\n```")
+        assertEquals("Done.", first.text)
+        assertEquals(1, first.actions.size)
+        val json = AiActionParser.split("Here.\n```json\n[{\"type\":\"add_subject\",\"name\":\"Chemistry\"}]\n```")
+        assertEquals("Here.", json.text)
+        assertEquals(listOf<AiAction>(AiAction.AddSubject("Chemistry")), json.actions)
+    }
+
+    @Test
+    fun `a bare list at the end and a cut off labelled block are handled`() {
+        val bare = AiActionParser.split("Adding it.\n[{\"type\":\"add_subject\",\"name\":\"Maths\"}]")
+        assertEquals("Adding it.", bare.text)
+        assertEquals(1, bare.actions.size)
+        val cut = AiActionParser.split("Plan.\n```absencium-actions\n[{\"type\":\"add_note\",\"subject\":\"Phy")
+        assertEquals("Plan.", cut.text)
+        assertTrue(cut.actions.isEmpty())
+    }
+
+    @Test
+    fun `a note names its brief and length and memories never become cards`() {
+        val parsed = AiActionParser.split(
+            "Sure.\n```absencium-actions\n[{\"type\":\"add_note\",\"subject\":\"Physics\",\"title\":\"Optics\",\"brief\":\"All of optics\",\"length\":\"in depth\"},{\"type\":\"remember\",\"text\":\"Studies physics\"},{\"type\":\"set_syllabus_status\",\"subject\":\"Physics\",\"topic\":\"Lenses\",\"status\":\"completed\"}]\n```",
+        )
+        assertEquals(2, parsed.actions.size)
+        assertEquals(AiAction.AddNote("Physics", "Optics", "", "All of optics", NoteLength.IN_DEPTH), parsed.actions[0])
+        assertEquals(listOf(AiAction.Remember("Studies physics")), parsed.remembered)
+    }
 }

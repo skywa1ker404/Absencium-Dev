@@ -3,6 +3,7 @@ package skywa1ker404.absencium.data.ai
 import org.json.JSONArray
 import org.json.JSONObject
 import skywa1ker404.absencium.data.db.AttendanceStatus
+import skywa1ker404.absencium.data.db.SyllabusStatus
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -21,9 +22,26 @@ sealed interface AiAction {
         override fun describe() = "Add the subject \"$name\""
     }
 
-    data class AddNote(val subject: String, val title: String, val body: String) : AiAction {
+    /** A new note. When [body] is empty the app's note writer writes it from [brief] after the student applies it, at the given [length]. */
+    data class AddNote(val subject: String, val title: String, val body: String, val brief: String = "", val length: NoteLength = NoteLength.LENGTHY) : AiAction {
         override val scope = AiScope.NOTES
-        override fun describe() = "Add the note \"$title\" to $subject"
+        override fun describe() = if (body.isBlank()) {
+            "Write the note \"$title\" in $subject (${length.label.lowercase()}, written by the note writer)"
+        } else {
+            "Add the note \"$title\" to $subject"
+        }
+    }
+
+    /** Something durable to remember about the student. Saved by the chat itself (when Memory is allowed), never shown as a card. */
+    data class Remember(val text: String, val chatOnly: Boolean = false) : AiAction {
+        override val scope = AiScope.MEMORY
+        override fun describe() = "Remember: $text"
+    }
+
+    /** Marks the syllabus topic whose title is [topic] (inside [subject]) as not started, in progress or completed. */
+    data class SetSyllabusStatus(val subject: String, val topic: String, val status: SyllabusStatus) : AiAction {
+        override val scope = AiScope.SYLLABUS
+        override fun describe() = "Mark \"$topic\" in $subject as ${status.name.lowercase().replace('_', ' ')}"
     }
 
     data class AddSlot(val day: DayOfWeek, val subject: String, val start: LocalTime, val end: LocalTime, val room: String?) : AiAction {
@@ -82,31 +100,79 @@ sealed interface AiAction {
 fun dayName(day: DayOfWeek): String = day.getDisplayName(TextStyle.FULL, Locale.getDefault())
 
 /** The assistant's answer with its proposed changes taken out. [json] is kept so the cards can be shown again later. */
-data class ParsedReply(val text: String, val json: String?, val actions: List<AiAction>)
+data class ParsedReply(val text: String, val json: String?, val actions: List<AiAction>, val remembered: List<AiAction.Remember> = emptyList())
 
 /**
- * Finds the block of changes the assistant was told to append to its answer, a fenced block labelled `absencium-actions`
- * holding a JSON array. Anything that is not understood is dropped, never guessed.
+ * Finds the changes the assistant proposed and takes them out of the answer text. Models do not always follow the requested form, so any
+ * fenced block that holds a JSON list of known changes counts (labelled absencium-actions, json, or labelled by a first line inside the
+ * fence), and so does a bare list at the very end. Blocks labelled absencium-actions are always hidden, even when they cannot be read.
+ * Anything that is not understood is dropped, never guessed.
  */
 object AiActionParser {
-    private const val FENCE = "```absencium-actions"
+    private const val LABEL = "absencium-actions"
+    private val fence = Regex("```[ \\t]*([A-Za-z0-9_-]*)[ \\t]*\\r?\\n(.*?)(```|\\z)", RegexOption.DOT_MATCHES_ALL)
 
     fun split(reply: String): ParsedReply {
-        val start = reply.lastIndexOf(FENCE)
-        if (start < 0) return ParsedReply(reply.trim(), null, emptyList())
-        val bodyStart = start + FENCE.length
-        val end = reply.indexOf("```", bodyStart)
-        val json = (if (end < 0) reply.substring(bodyStart) else reply.substring(bodyStart, end)).trim()
-        val text = (reply.substring(0, start) + (if (end < 0) "" else reply.substring(end + 3))).trim()
-        return ParsedReply(text, json, parse(json))
+        var text = reply
+        val found = ArrayList<JSONArray>()
+        for (match in fence.findAll(reply).toList().asReversed()) {
+            var body = match.groupValues[2].trim()
+            var labelled = match.groupValues[1].equals(LABEL, ignoreCase = true)
+            if (body.lineSequence().firstOrNull()?.trim().equals(LABEL, ignoreCase = true)) {
+                labelled = true
+                body = body.substringAfter('\n', "").trim()
+            }
+            val array = toArray(body)
+            if (array == null || parse(array.toString()).isEmpty()) {
+                if (labelled) text = text.removeRange(match.range)
+                continue
+            }
+            found += array
+            text = text.removeRange(match.range)
+        }
+        found.reverse()
+        if (found.isEmpty()) {
+            // A bare list at the very end of the answer, with no fence around it.
+            val start = reply.lastIndexOf("[{").takeIf { it >= 0 } ?: reply.lastIndexOf("[\n{")
+            val end = reply.lastIndexOf(']')
+            if (start >= 0 && end > start && reply.substring(end + 1).isBlank()) {
+                val array = toArray(reply.substring(start, end + 1))
+                if (array != null && parse(array.toString()).isNotEmpty()) {
+                    found += array
+                    text = reply.substring(0, start)
+                }
+            }
+        }
+        // Memories are kept apart from the cards: they are saved by the chat, so they never need a card.
+        val cards = JSONArray()
+        val remembered = ArrayList<AiAction.Remember>()
+        for (a in found) {
+            for (i in 0 until a.length()) {
+                val o = a.optJSONObject(i) ?: continue
+                when (val action = runCatching { one(o) }.getOrNull()) {
+                    null -> Unit
+                    is AiAction.Remember -> remembered += action
+                    else -> cards.put(o)
+                }
+            }
+        }
+        val json = if (cards.length() > 0) cards.toString() else null
+        text = text.replace(Regex("\n{3,}"), "\n\n").trim()
+        return ParsedReply(text, json, if (json == null) emptyList() else parse(json), remembered)
+    }
+
+    private fun toArray(body: String): JSONArray? = try {
+        when {
+            body.startsWith("[") -> JSONArray(body)
+            body.startsWith("{") -> JSONArray().put(JSONObject(body))
+            else -> null
+        }
+    } catch (e: Exception) {
+        null
     }
 
     fun parse(json: String): List<AiAction> {
-        val array = try {
-            JSONArray(json)
-        } catch (e: Exception) {
-            return emptyList()
-        }
+        val array = toArray(json.trim()) ?: return emptyList()
         return (0 until array.length()).mapNotNull { i -> array.optJSONObject(i)?.let { runCatching { one(it) }.getOrNull() } }
     }
 
@@ -114,7 +180,15 @@ object AiActionParser {
         fun str(key: String) = o.optString(key).trim().takeIf { it.isNotEmpty() && it != "null" }
         return when (str("type")?.lowercase()) {
             "add_subject" -> AiAction.AddSubject(str("name") ?: return null)
-            "add_note" -> AiAction.AddNote(str("subject") ?: return null, str("title") ?: return null, o.optString("body"))
+            "remember" -> AiAction.Remember(str("text") ?: return null, o.optBoolean("chat_only"))
+            "add_note" -> AiAction.AddNote(
+                str("subject") ?: return null, str("title") ?: return null, o.optString("body").let { if (it == "null") "" else it },
+                str("brief") ?: "", noteLength(str("length")),
+            )
+            "set_syllabus_status" -> AiAction.SetSyllabusStatus(
+                str("subject") ?: return null, str("topic") ?: return null,
+                runCatching { SyllabusStatus.valueOf(str("status")!!.uppercase().replace(' ', '_')) }.getOrNull() ?: return null,
+            )
             "add_timetable" -> AiAction.AddSlot(
                 day(str("day")) ?: return null, str("subject") ?: return null,
                 time(str("start")) ?: return null, time(str("end")) ?: return null, str("room"),
@@ -136,6 +210,12 @@ object AiActionParser {
             )
             else -> null
         }
+    }
+
+    fun noteLength(text: String?): NoteLength = when (text?.lowercase()?.replace(' ', '_')) {
+        "moderate", "short" -> NoteLength.MODERATE
+        "in_depth", "indepth", "deep", "detailed" -> NoteLength.IN_DEPTH
+        else -> NoteLength.LENGTHY
     }
 
     fun day(text: String?): DayOfWeek? {

@@ -3,99 +3,223 @@ package skywa1ker404.absencium.data.ai
 import skywa1ker404.absencium.data.calendar.CalendarData
 import skywa1ker404.absencium.data.db.AttendanceStatus
 import skywa1ker404.absencium.data.db.NoteEntity
+import skywa1ker404.absencium.data.db.SyllabusNodeEntity
+import skywa1ker404.absencium.data.db.SyllabusStatus
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+
+/** Everything the chat needs to know about the student, gathered by the chat service and turned into text here (pure, so it can be tested). */
+data class ChatContext(
+    val allowed: Set<AiScope> = emptySet(),
+    val calendar: CalendarData = CalendarData(),
+    val notes: List<NoteEntity> = emptyList(),
+    val syllabus: List<SyllabusNodeEntity> = emptyList(),
+    val thresholdPercent: Int = 75,
+    val studentName: String? = null,
+    val study: Boolean = false,
+    val webSearch: Boolean = false,
+    /** Study mode difficulty: "", "beginner", "school", "college" or "expert". */
+    val level: String = "",
+    /** What the student remembered for this question (global memories and this chat's own), when Memory is allowed. */
+    val memories: List<MemoryItem> = emptyList(),
+    /** Custom instructions of the assistant profile this chat uses. */
+    val instructions: String = "",
+    val temperature: Double? = null,
+    val today: LocalDate = LocalDate.now(),
+)
 
 /**
- * Builds what Absencium AI is sent with each chat message: who it is, which parts of the app it may use (only those the student
- * allowed), the app data of those parts, how to propose a change, and the conversation so far. Pure text, so it can be tested.
+ * The system instruction Absencium AI is given. It is a capable general assistant first; the app's data is extra context it may use, and
+ * only the parts the student allowed are ever included. Notes' text is never included, only their titles.
  */
 object AiChatPrompt {
-    private const val MAX_HISTORY_CHARS = 6_000
     private const val MAX_LINES = 40
+    private const val MAX_SYLLABUS_LINES = 80
 
-    fun build(
-        allowed: Set<AiScope>,
-        calendar: CalendarData,
-        notes: List<NoteEntity>,
-        history: List<Pair<ChatRole, String>>,
-        message: String,
-        today: LocalDate = LocalDate.now(),
-    ): String = buildString {
-        append("You are Absencium AI, the study assistant inside Absencium, an offline student app. ")
-        append("Answer clearly and briefly, in Markdown. Today is $today (${dayName(today.dayOfWeek)}).\n")
-        if (allowed.isEmpty()) {
-            append("You cannot see or change anything in the app. If asked to, say the student can allow it in Settings, AI & Integrations.\n")
+    fun system(c: ChatContext): String = buildString {
+        append("You are Absencium AI, a brilliant, versatile assistant built into the Absencium student app. ")
+        append("Help with anything the student asks: studying, explaining and solving problems in any subject, writing, coding, planning, advice or general knowledge. ")
+        append("Never limit yourself to the app's data, and never refuse or deflect because something is not in the app. ")
+        append("Think the problem through before answering. Be accurate, thorough and complete at the depth the question deserves: ")
+        append("short for simple questions, step by step for hard ones, with worked examples where they help. ")
+        append("Do not introduce yourself or mention being offline or being an app, unless asked. Do not pad answers or end with generic offers. ")
+        append("Answer in the language the student writes in. Use Markdown: short headings, lists, tables and code blocks where they help. ")
+        append("Write maths in plain text or Unicode (x², √, ∫, ≤); do not use LaTeX. If you are unsure of a fact, say so instead of guessing.\n")
+        append("Today is ${c.today} (${c.today.dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }}).")
+        c.studentName?.takeIf { it.isNotBlank() }?.let { append(" The student's name is $it.") }
+        append('\n')
+        if (c.instructions.isNotBlank()) append("\nCUSTOM INSTRUCTIONS FROM THE STUDENT (follow them in every answer):\n").append(c.instructions.trim()).append('\n')
+        append("\nWRITING NOTES, SUMMARIES AND STUDY MATERIAL. When the student asks for notes, a summary, a revision sheet, a worked solution to keep, a plan or any long text, ")
+        append("write it completely and at the length they ask for: moderate is about 500 to 800 words, lengthy 1,500 to 2,500, in depth 3,500 or more; with no length given, write lengthy notes. ")
+        append("Never shorten it, never write 'and so on' or leave sections for later, and never ask whether to continue: cover every point with explanations, examples and exam-style questions. ")
+        append("Use the Absencium note markup below for such text (headings, bold key terms, highlights, tables, checklists, quotes, [[Note title]] links), so it can be saved as a note unchanged.\n")
+        if (c.study) {
+            append("\nSTUDY MODE is on. Teach: explain the idea simply first, then build up, using an example and an analogy. ")
+            val level = when (c.level) {
+                "beginner" -> "a complete beginner: plain words, no assumed background"
+                "school" -> "a school student: simple language with everyday examples"
+                "college" -> "a college student: proper terms, derivations and worked examples"
+                "expert" -> "an expert: rigorous, concise, with edge cases and references to the theory"
+                else -> null
+            }
+            append(if (level != null) "Pitch it for $level. Adjust at once when they say it is too easy or too hard. " else "Match the difficulty to the student's level (ask once if you cannot tell, or adjust when they say it is too easy or hard). ")
+            append("End with one short question or exercise that checks understanding, and say what to do next.\n")
+        }
+        if (c.webSearch) append("\nWeb search is on: use it for anything recent or factual that may have changed, and base the answer on what you find.\n")
+        if (c.allowed.isEmpty()) {
+            append("\nYou cannot see or change anything in the student's Absencium data. Mention that they can allow it in Settings, AI & Integrations, only when it would genuinely help.\n")
         } else {
-            append("The student allowed you to use these parts of the app: ${allowed.joinToString { it.label }}. Nothing else is available to you.\n\n")
-            append(context(allowed, calendar, notes, today))
-            append("\nTo propose a change, finish your answer with ONE fenced block labelled absencium-actions holding a JSON array, and only for allowed parts. ")
-            append("The student sees each change as a card and decides; never say a change has been made. Use subject names exactly as listed. Dates are YYYY-MM-DD, times HH:mm, days MONDAY..SUNDAY. Types:\n")
-            val types = buildList {
-                if (AiScope.SUBJECTS in allowed) add("""{"type":"add_subject","name":""}""")
-                if (AiScope.NOTES in allowed) add("""{"type":"add_note","subject":"","title":"","body":"markdown"}""")
-                if (AiScope.TIMETABLE in allowed) {
-                    add("""{"type":"add_timetable","day":"MONDAY","subject":"","start":"09:00","end":"10:00","room":""}""")
-                    add("""{"type":"update_timetable","subject":"","day":"MONDAY","match_start":"09:00","new_day":"","start":"","end":"","room":""} (leave out what stays the same)""")
-                }
-                if (AiScope.EXAMS in allowed) {
-                    add("""{"type":"add_exam","subject":"","date":"","title":"","room":"","weightage":0}""")
-                    add("""{"type":"update_exam","match":"title or subject","title":"","date":"","room":""} (leave out what stays the same)""")
-                }
-                if (AiScope.HOLIDAYS in allowed) add("""{"type":"add_holiday","date":"","title":""}""")
-                if (AiScope.ATTENDANCE in allowed) add("""{"type":"set_attendance","subject":"","date":"","status":"PRESENT|ABSENT|CANCELLED"}""")
-            }
-            types.forEach { append("- ").append(it).append('\n') }
-            append("If a subject does not exist yet, add it first in the same array.\n")
+            append("\nThe student allowed you to use these parts of their Absencium data: ${c.allowed.joinToString { it.label }}. Nothing else is shared.\n\n")
+            append(context(c))
+            append(actions(c.allowed))
+            if (AiScope.MEMORY in c.allowed) append(memory(c.memories))
         }
-        if (history.isNotEmpty()) {
-            append("\nConversation so far:\n")
-            var used = 0
-            val kept = ArrayList<Pair<ChatRole, String>>()
-            for (item in history.asReversed()) {
-                val length = minOf(item.second.length, 1_500)
-                if (used + length > MAX_HISTORY_CHARS && kept.isNotEmpty()) break
-                used += length
-                kept += item
-            }
-            kept.reverse()
-            kept.forEach { (role, text) -> append(if (role == ChatRole.USER) "Student: " else "Assistant: ").append(text.take(1_500)).append("\n") }
-        }
-        append("\nStudent: ").append(message)
+        append("\nApp facts, when asked: Absencium keeps notes, attendance, timetable, exams, syllabus and study materials on the student's device. ")
+        append("Notes are written in this markup:\n").append(NotePrompts.EDITOR.trim()).append('\n')
     }
 
-    fun context(allowed: Set<AiScope>, data: CalendarData, notes: List<NoteEntity>, today: LocalDate): String = buildString {
+    private fun memory(items: List<MemoryItem>): String = buildString {
+        if (items.isNotEmpty()) {
+            append("\nWHAT YOU REMEMBER ABOUT THE STUDENT (use it naturally where it helps; never recite it):\n")
+            items.forEach { append("- ").append(it.text).append('\n') }
+        }
+        append("\nTo remember something durable and useful about the student for later chats (their course, year, goals, strengths and weak spots, how they like answers), ")
+        append("add {\"type\":\"remember\",\"text\":\"one short sentence\"} to the absencium-actions block; add \"chat_only\":true when it only matters for this conversation. ")
+        append("It is saved by itself and needs no card: never mention it unless asked, and never save one-off requests, secrets, passwords or other people's private details.\n")
+    }
+
+    private fun actions(allowed: Set<AiScope>): String = buildString {
+        append("\nCHANGING THE APP. Only when the student asks you to add, change or mark something (or you want to remember something), end your answer with ONE fenced block labelled absencium-actions ")
+        append("holding a JSON array, and only for the allowed parts. The student sees each change as a card and decides, so never say a change has been made; say what you propose. ")
+        append("Use subject and topic names exactly as listed. Dates YYYY-MM-DD, times HH:mm, days MONDAY..SUNDAY. Types:\n")
+        val types = buildList {
+            if (AiScope.SUBJECTS in allowed) add("""{"type":"add_subject","name":""}""")
+            if (AiScope.NOTES in allowed) {
+                add("""{"type":"add_note","subject":"","title":"","brief":"what the note must cover","length":"moderate|lengthy|in_depth"}""")
+                add("""(for add_note leave "body" out: the app's note writer then writes the full note from your brief. Only put "body" for a note of a few lines)""")
+            }
+            if (AiScope.TIMETABLE in allowed) {
+                add("""{"type":"add_timetable","day":"MONDAY","subject":"","start":"09:00","end":"10:00","room":""}""")
+                add("""{"type":"update_timetable","subject":"","day":"MONDAY","match_start":"09:00","new_day":"","start":"","end":"","room":""} (leave out what stays the same)""")
+            }
+            if (AiScope.EXAMS in allowed) {
+                add("""{"type":"add_exam","subject":"","date":"","title":"","room":"","weightage":0}""")
+                add("""{"type":"update_exam","match":"title or subject","title":"","date":"","room":""} (leave out what stays the same)""")
+            }
+            if (AiScope.HOLIDAYS in allowed) add("""{"type":"add_holiday","date":"","title":""}""")
+            if (AiScope.ATTENDANCE in allowed) add("""{"type":"set_attendance","subject":"","date":"","status":"PRESENT|ABSENT|CANCELLED"}""")
+            if (AiScope.SYLLABUS in allowed) add("""{"type":"set_syllabus_status","subject":"","topic":"","status":"NOT_STARTED|IN_PROGRESS|COMPLETED"}""")
+        }
+        types.forEach { append("- ").append(it).append('\n') }
+        append("If a subject does not exist yet, add it first in the same array.\n")
+    }
+
+    fun context(c: ChatContext): String = buildString {
+        val data = c.calendar
+        val today = c.today
         val names = data.subjects.associate { it.id to it.name }
         append("APP DATA (read-only snapshot)\n")
         if (names.isNotEmpty()) append("Subjects: ").append(names.values.joinToString(", ")).append('\n')
-        if (AiScope.TIMETABLE in allowed) {
+        if (AiScope.TIMETABLE in c.allowed) {
+            val holidays = data.holidays.associateBy { it.date }
+            fun day(date: LocalDate, label: String) {
+                val lectures = data.timetable.filter { it.dayOfWeek == date.dayOfWeek }.sortedBy { it.startTime }
+                val off = holidays[date]
+                val line = when {
+                    off != null -> "holiday (${off.title})"
+                    lectures.isEmpty() -> "no lectures"
+                    else -> lectures.joinToString("; ") { "${it.startTime}-${it.endTime} ${names[it.subjectId].orEmpty()}" + (it.roomNumber?.let { r -> " room $r" } ?: "") }
+                }
+                append("$label ($date): $line\n")
+            }
+            day(today, "Today")
+            day(today.plusDays(1), "Tomorrow")
             val lines = data.timetable.sortedWith(compareBy({ it.dayOfWeek }, { it.startTime })).take(MAX_LINES)
                 .map { "${it.dayOfWeek} ${it.startTime}-${it.endTime} ${names[it.subjectId].orEmpty()}" + (it.roomNumber?.let { r -> " room $r" } ?: "") }
-            if (lines.isNotEmpty()) append("Timetable:\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
+            if (lines.isNotEmpty()) append("Weekly timetable:\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
         }
-        if (AiScope.EXAMS in allowed) {
-            val lines = data.exams.filter { !it.date.isBefore(today) }.sortedBy { it.date }.take(MAX_LINES)
-                .map { "${it.date} ${it.title} (${names[it.subjectId].orEmpty()})" + (it.room?.let { r -> " room $r" } ?: "") }
+        if (AiScope.EXAMS in c.allowed) {
+            val lines = data.exams.filter { !it.date.isBefore(today) }.sortedBy { it.date }.take(MAX_LINES).map {
+                val days = ChronoUnit.DAYS.between(today, it.date)
+                "${it.date} (${if (days == 0L) "today" else "in $days days"}) ${it.title} (${names[it.subjectId].orEmpty()})" +
+                    (it.room?.let { r -> " room $r" } ?: "")
+            }
             if (lines.isNotEmpty()) append("Upcoming exams:\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
         }
-        if (AiScope.HOLIDAYS in allowed) {
+        if (AiScope.HOLIDAYS in c.allowed) {
             val lines = data.holidays.filter { !it.date.isBefore(today) }.sortedBy { it.date }.take(MAX_LINES).map { "${it.date} ${it.title}" }
             if (lines.isNotEmpty()) append("Upcoming holidays:\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
         }
-        if (AiScope.ATTENDANCE in allowed) {
+        if (AiScope.ATTENDANCE in c.allowed) {
             val lines = data.subjects.mapNotNull { s ->
                 val rows = data.attendance.filter { it.subjectId == s.id }
-                if (rows.isEmpty()) null else {
-                    val present = rows.count { it.status == AttendanceStatus.PRESENT }
-                    val absent = rows.count { it.status == AttendanceStatus.ABSENT }
-                    "${s.name}: $present present, $absent absent"
-                }
+                if (rows.isEmpty()) null else attendanceLine(s.name, rows.count { it.status == AttendanceStatus.PRESENT }, rows.count { it.status == AttendanceStatus.ABSENT }, c.thresholdPercent)
             }
+            append("Required attendance: ${c.thresholdPercent}%\n")
             if (lines.isNotEmpty()) append("Attendance:\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
         }
-        if (AiScope.NOTES in allowed) {
-            val lines = notes.filter { it.deletedAt == null }.sortedByDescending { it.updatedAt }.take(MAX_LINES)
-                .map { "${names[it.subjectId].orEmpty()}: ${it.title}" }
-            if (lines.isNotEmpty()) append("Recent note titles:\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
+        if (AiScope.SYLLABUS in c.allowed) {
+            val text = syllabus(c.syllabus, names)
+            if (text.isNotBlank()) append("Syllabus (status per topic):\n").append(text)
         }
+        if (AiScope.NOTES in c.allowed) {
+            val lines = c.notes.filter { it.deletedAt == null }.sortedByDescending { it.updatedAt }.take(MAX_LINES)
+                .map { "${names[it.subjectId].orEmpty()}: ${it.title}" }
+            if (lines.isNotEmpty()) append("Recent note titles (the text of notes is not shared):\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
+        }
+    }
+
+    /** "Physics: 18 present, 4 absent, 81.8% (needs 75%): can skip 2 more lectures." */
+    fun attendanceLine(name: String, present: Int, absent: Int, threshold: Int): String {
+        val total = present + absent
+        val pct = if (total == 0) 0.0 else present * 100.0 / total
+        val head = "$name: $present present, $absent absent, ${"%.1f".format(pct)}% (needs $threshold%)"
+        if (total == 0) return head
+        return if (pct >= threshold) {
+            val skip = if (threshold <= 0) Int.MAX_VALUE else (present * 100.0 / threshold - total).toInt().coerceAtLeast(0)
+            head + if (skip == Int.MAX_VALUE) "" else ": can miss $skip more lectures"
+        } else {
+            val need = if (threshold >= 100) null else Math.ceil((threshold * total - 100.0 * present) / (100 - threshold)).toInt()
+            head + if (need == null) ": below the requirement" else ": short, must attend the next $need lectures in a row"
+        }
+    }
+
+    private fun syllabus(nodes: List<SyllabusNodeEntity>, names: Map<Long, String>): String = buildString {
+        var lines = 0
+        for ((subjectId, name) in names) {
+            val all = nodes.filter { it.subjectId == subjectId }
+            if (all.isEmpty() || lines >= MAX_SYLLABUS_LINES) continue
+            val parents = all.map { it.parentId }.toSet()
+            val leaves = all.filter { it.id !in parents }
+            append("- $name: ${leaves.count { it.status == SyllabusStatus.COMPLETED }}/${leaves.size} topics completed\n")
+            lines++
+            fun walk(parent: Long?, depth: Int) {
+                for (node in all.filter { it.parentId == parent }.sortedBy { it.position }) {
+                    if (lines >= MAX_SYLLABUS_LINES) return
+                    append("  ".repeat(depth + 1)).append("- ").append(node.title).append(" [").append(node.status.name.lowercase().replace('_', ' ')).append("]\n")
+                    lines++
+                    walk(node.id, depth + 1)
+                }
+            }
+            walk(null, 0)
+        }
+    }
+}
+
+/** Shapes a stored conversation into turns every provider accepts: no empty turns, starts with the student, and roles alternate. */
+object ChatTurns {
+    fun normalize(turns: List<ChatTurn>): List<ChatTurn> {
+        val out = ArrayList<ChatTurn>()
+        for (turn in turns) {
+            if (turn.text.isBlank() && turn.images.isEmpty()) continue
+            if (out.isEmpty() && turn.role != ChatRole.USER) continue
+            val last = out.lastOrNull()
+            if (last != null && last.role == turn.role) {
+                out[out.lastIndex] = last.copy(text = (last.text + "\n\n" + turn.text).trim(), images = last.images + turn.images)
+            } else {
+                out += turn
+            }
+        }
+        return out
     }
 }

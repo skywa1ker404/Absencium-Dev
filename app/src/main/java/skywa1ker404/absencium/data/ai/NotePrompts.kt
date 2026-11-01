@@ -86,7 +86,8 @@ data class NoteBrief(
  */
 object NotePrompts {
 
-    private val EDITOR = """
+    /** What the notes editor can draw. The chat quotes it so its answers can be saved as notes without losing their look. */
+    internal val EDITOR = """
         Write only with the formatting below. It is what the student's notes editor shows; nothing else renders.
         - Title and headings: a line starting with "# ", "## " or "### ".
         - Emphasis: **bold** for key terms, *italic* for names and foreign words, ==highlight== for the one fact to remember, ++underline++ for a label, ~~strike~~ only for a wrong idea being corrected.

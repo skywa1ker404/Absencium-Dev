@@ -53,16 +53,100 @@ class ApiKeyVault(context: Context) {
     /** The providers a key is saved for. */
     fun providersWithKey(): List<AiProvider> = AiProvider.entries.filter { hasKey(it) }
 
+    private fun encrypt(plain: String): String {
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey())
+        return Base64.encodeToString(cipher.iv + cipher.doFinal(plain.toByteArray(Charsets.UTF_8)), Base64.NO_WRAP)
+    }
+
+    private fun decrypt(stored: String): String? = try {
+        val bytes = Base64.decode(stored, Base64.NO_WRAP)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.DECRYPT_MODE, secretKey(), GCMParameterSpec(TAG_BITS, bytes.copyOfRange(0, IV_BYTES)))
+        String(cipher.doFinal(bytes.copyOfRange(IV_BYTES, bytes.size)), Charsets.UTF_8)
+    } catch (e: Exception) {
+        DebugLogger.e(TAG, "Could not decrypt a stored API key", e)
+        null
+    }
+
+    private fun extraCipher(provider: AiProvider, slot: Int) = "xkey_ct_${provider.name}_$slot"
+    private fun extraLast(provider: AiProvider, slot: Int) = "xkey_l4_${provider.name}_$slot"
+
+    /** Slots of the extra keys in use, in order. The first key of a provider is stored as before; up to [MAX_EXTRA] more sit in slots 1..[MAX_EXTRA]. */
+    private fun extraSlots(provider: AiProvider): List<Int> = (1..MAX_EXTRA).filter { prefs.contains(extraCipher(provider, it)) }
+
+    /** How many keys are saved for [provider] (the main one plus extras that are tried when it hits its limit). */
+    fun keyCount(provider: AiProvider): Int = (if (hasKey(provider)) 1 else 0) + extraSlots(provider).size
+
+    /** The last four characters of every key saved for [provider], the main one first. */
+    fun lastFours(provider: AiProvider): List<String> =
+        listOfNotNull(lastFour(provider)) + extraSlots(provider).mapNotNull { prefs.getString(extraLast(provider, it), null) }
+
+    /** Every key of [provider], decrypted, the main one first. */
+    fun keys(provider: AiProvider): List<String> =
+        listOfNotNull(read(provider)) + extraSlots(provider).mapNotNull { prefs.getString(extraCipher(provider, it), null)?.let(::decrypt) }
+
+    /** Adds another key for [provider], tried when the earlier ones hit their limit. Returns false when it is empty, a duplicate, or there is no room. */
+    fun addKey(provider: AiProvider, apiKey: String): Boolean {
+        val trimmed = apiKey.trim()
+        if (trimmed.isEmpty() || keys(provider).any { it == trimmed }) return false
+        if (!hasKey(provider)) return save(provider, trimmed)
+        val slot = (1..MAX_EXTRA).firstOrNull { !prefs.contains(extraCipher(provider, it)) } ?: return false
+        return try {
+            prefs.edit {
+                putString(extraCipher(provider, slot), encrypt(trimmed))
+                putString(extraLast(provider, slot), trimmed.takeLast(4))
+            }
+            true
+        } catch (e: Exception) {
+            DebugLogger.e(TAG, "Could not encrypt and save the extra API key", e)
+            false
+        }
+    }
+
+    /** Removes the key at [index] of [lastFours]. Removing the main key promotes the next one. */
+    fun removeKey(provider: AiProvider, index: Int) {
+        val slots = extraSlots(provider)
+        if (index == 0) {
+            val next = slots.firstOrNull()
+            if (next == null) {
+                clear(provider)
+            } else {
+                prefs.edit {
+                    putString(cipherKey(provider), prefs.getString(extraCipher(provider, next), null))
+                    putString(lastKey(provider), prefs.getString(extraLast(provider, next), null))
+                    remove(extraCipher(provider, next))
+                    remove(extraLast(provider, next))
+                }
+            }
+        } else {
+            slots.getOrNull(index - 1)?.let { slot -> prefs.edit { remove(extraCipher(provider, slot)); remove(extraLast(provider, slot)) } }
+        }
+    }
+
+    private val limitedUntil = HashMap<String, Long>()
+
+    /** Remembers that [apiKey] hit its limit, so it is skipped for [millis] while other keys are tried. */
+    @Synchronized
+    fun markLimited(apiKey: String, millis: Long = LIMIT_COOLDOWN_MS) {
+        limitedUntil[apiKey] = System.currentTimeMillis() + millis
+    }
+
+    /** The keys of [provider] that are not resting after hitting a limit, the main one first. */
+    @Synchronized
+    fun usableKeys(provider: AiProvider): List<String> {
+        val now = System.currentTimeMillis()
+        return keys(provider).filter { (limitedUntil[it] ?: 0L) <= now }
+    }
+
     /** Encrypts and stores [apiKey] for [provider]. Returns false, after logging the reason, on failure. */
     fun save(provider: AiProvider, apiKey: String): Boolean {
         val trimmed = apiKey.trim()
         if (trimmed.isEmpty()) return false
         return try {
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey())
-            val encrypted = cipher.iv + cipher.doFinal(trimmed.toByteArray(Charsets.UTF_8))
+            val encrypted = encrypt(trimmed)
             prefs.edit {
-                putString(cipherKey(provider), Base64.encodeToString(encrypted, Base64.NO_WRAP))
+                putString(cipherKey(provider), encrypted)
                 putString(lastKey(provider), trimmed.takeLast(4))
             }
             DebugLogger.i(TAG, "API key for ${provider.name} saved (encrypted)")
@@ -77,17 +161,7 @@ class ApiKeyVault(context: Context) {
     fun read(provider: AiProvider): String? {
         adopt(provider)
         val stored = prefs.getString(cipherKey(provider), null) ?: return null
-        return try {
-            val bytes = Base64.decode(stored, Base64.NO_WRAP)
-            val iv = bytes.copyOfRange(0, IV_BYTES)
-            val body = bytes.copyOfRange(IV_BYTES, bytes.size)
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.DECRYPT_MODE, secretKey(), GCMParameterSpec(TAG_BITS, iv))
-            String(cipher.doFinal(body), Charsets.UTF_8)
-        } catch (e: Exception) {
-            DebugLogger.e(TAG, "Could not decrypt the stored API key", e)
-            null
-        }
+        return decrypt(stored)
     }
 
     /** The last four characters of the key saved for [provider], for showing "saved" without revealing it. */
@@ -101,6 +175,10 @@ class ApiKeyVault(context: Context) {
         prefs.edit {
             remove(cipherKey(provider))
             remove(lastKey(provider))
+            for (slot in 1..MAX_EXTRA) {
+                remove(extraCipher(provider, slot))
+                remove(extraLast(provider, slot))
+            }
         }
         DebugLogger.i(TAG, "API key for ${provider.name} removed")
     }
@@ -124,6 +202,8 @@ class ApiKeyVault(context: Context) {
 
     private companion object {
         const val TAG = "KeyVault"
+        const val MAX_EXTRA = 8
+        const val LIMIT_COOLDOWN_MS = 10 * 60 * 1000L
         const val PREFS_NAME = "absencium_key_vault"
         const val KEY_CIPHERTEXT = "api_key_ciphertext"
         const val KEY_LAST_FOUR = "api_key_last_four"

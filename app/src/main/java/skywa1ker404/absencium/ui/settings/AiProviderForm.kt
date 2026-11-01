@@ -127,6 +127,34 @@ fun AiProviderForm(
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         )
+        if (keyTail != null) {
+            var extra by remember(provider) { mutableStateOf(viewModel.extraKeys(provider)) }
+            var more by remember(provider) { mutableStateOf("") }
+            extra.forEachIndexed { i, tail ->
+                androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text("Extra key ending in $tail", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    androidx.compose.material3.TextButton(onClick = { viewModel.removeKey(provider, i + 1); extra = viewModel.extraKeys(provider) }) { Text("Remove") }
+                }
+            }
+            AppTextField(
+                value = more,
+                onValueChange = { more = it },
+                label = { Text("Add another key (optional)") },
+                supportingText = { Text("Tried automatically when the key above reaches its limit. When every key of ${provider.label} has, other providers with a key take over.") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
+            if (more.isNotBlank()) {
+                PillButton(
+                    text = "Add key",
+                    onClick = { if (viewModel.addKey(provider, more)) { more = ""; extra = viewModel.extraKeys(provider) } },
+                    tonal = true, compact = true, modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
         AppTextField(
             value = model,
             onValueChange = { model = it; error = null; testResult = null },

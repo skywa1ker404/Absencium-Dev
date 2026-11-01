@@ -240,6 +240,17 @@ class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
 
     fun keyHint(provider: skywa1ker404.absencium.data.ai.AiProvider): String? = if (vault.hasKey(provider)) vault.lastFour(provider) else null
 
+    val usage: StateFlow<List<skywa1ker404.absencium.data.ai.ProviderUsage>> = container.aiUsage.rows
+
+    fun resetUsage() = container.aiUsage.reset()
+
+    /** The last four characters of the extra keys saved for [provider] (the main one is not listed). */
+    fun extraKeys(provider: skywa1ker404.absencium.data.ai.AiProvider): List<String> = vault.lastFours(provider).drop(1)
+
+    fun addKey(provider: skywa1ker404.absencium.data.ai.AiProvider, key: String): Boolean = vault.addKey(provider, key)
+
+    fun removeKey(provider: skywa1ker404.absencium.data.ai.AiProvider, index: Int) = vault.removeKey(provider, index)
+
     /**
      * Saves the provider (and its key when one was typed). With [use] it also becomes the provider in use; the first provider set up
      * always does. [onDone] gets null on success or a message.

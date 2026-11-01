@@ -11,8 +11,15 @@ import java.io.File
 
 enum class ChatRole { USER, ASSISTANT }
 
+/** A file sent with a message, kept in the app's private storage so it can be shown again and sent again with later questions. */
+data class ChatAttachment(val name: String, val mime: String, val path: String) {
+    val isImage: Boolean get() = mime.startsWith("image/")
+    val isAudio: Boolean get() = mime.startsWith("audio/")
+    val isVideo: Boolean get() = mime.startsWith("video/")
+}
+
 /**
- * One message of a chat. [actions] is the raw JSON of the changes the assistant proposed (shown as cards the student confirms),
+ * One message of a chat. [sources] are the web pages an answer was grounded on, [attachments] the files sent with a question. [actions] is the raw JSON of the changes the assistant proposed (shown as cards the student confirms),
  * [doneActions] the positions of those already applied or dismissed, so a card does not come back after the app restarts.
  */
 data class ChatMessage(
@@ -24,6 +31,8 @@ data class ChatMessage(
     val failed: Boolean = false,
     val actions: String? = null,
     val doneActions: Set<Int> = emptySet(),
+    val sources: List<ChatSource> = emptyList(),
+    val attachments: List<ChatAttachment> = emptyList(),
 )
 
 /** A conversation. [provider] and [model] are set when the student picked another model for this chat than the default one. */
@@ -36,6 +45,18 @@ data class AiChat(
     val provider: String? = null,
     val model: String? = null,
     val messages: List<ChatMessage> = emptyList(),
+    /** Web search is on for this chat (needs a model that can search). */
+    val webSearch: Boolean = false,
+    /** Study mode: the AI teaches step by step instead of only giving answers. */
+    val study: Boolean = false,
+    /** Extra reasoning before answering (Gemini, Claude and OpenAI reasoning models). */
+    val thinking: Boolean = false,
+    /** Hidden from the main list, kept and searchable under Archived. */
+    val archived: Boolean = false,
+    /** Study mode difficulty: "", "beginner", "school", "college" or "expert". */
+    val level: String = "",
+    /** The id of the assistant profile this chat uses, or empty for the plain assistant. */
+    val assistant: String = "",
 ) {
     /** What the sidebar shows: the title, or the start of the first message while the chat has no name yet. */
     val label: String
@@ -55,12 +76,23 @@ object AiChatsJson {
                         .apply {
                             m.actions?.let { put("actions", it) }
                             if (m.doneActions.isNotEmpty()) put("done", m.doneActions.joinToString(","))
+                            if (m.sources.isNotEmpty()) {
+                                put("sources", JSONArray().apply { m.sources.forEach { src -> put(JSONObject().put("title", src.title).put("url", src.url)) } })
+                            }
+                            if (m.attachments.isNotEmpty()) {
+                                put(
+                                    "attachments",
+                                    JSONArray().apply { m.attachments.forEach { a -> put(JSONObject().put("name", a.name).put("mime", a.mime).put("path", a.path)) } },
+                                )
+                            }
                         },
                 )
             }
             array.put(
                 JSONObject().put("id", chat.id).put("title", chat.title).put("pinned", chat.pinned)
                     .put("created", chat.created).put("updated", chat.updated)
+                    .put("web", chat.webSearch).put("study", chat.study).put("thinking", chat.thinking).put("archived", chat.archived)
+                    .put("level", chat.level).put("assistant", chat.assistant)
                     .apply {
                         chat.provider?.let { put("provider", it) }
                         chat.model?.let { put("model", it) }
@@ -84,6 +116,12 @@ object AiChatsJson {
                 updated = o.optLong("updated"),
                 provider = if (o.has("provider")) o.optString("provider") else null,
                 model = if (o.has("model")) o.optString("model") else null,
+                webSearch = o.optBoolean("web"),
+                study = o.optBoolean("study"),
+                thinking = o.optBoolean("thinking"),
+                archived = o.optBoolean("archived"),
+                level = o.optString("level"),
+                assistant = o.optString("assistant"),
                 messages = (0 until messages.length()).map { j ->
                     val m = messages.getJSONObject(j)
                     ChatMessage(
@@ -95,6 +133,12 @@ object AiChatsJson {
                         failed = m.optBoolean("failed"),
                         actions = if (m.has("actions")) m.optString("actions") else null,
                         doneActions = m.optString("done").split(',').mapNotNull { it.trim().toIntOrNull() }.toSet(),
+                        sources = m.optJSONArray("sources")?.let { a ->
+                            (0 until a.length()).mapNotNull { k -> a.optJSONObject(k)?.let { o -> ChatSource(o.optString("title"), o.optString("url")) } }
+                        }.orEmpty(),
+                        attachments = m.optJSONArray("attachments")?.let { a ->
+                            (0 until a.length()).mapNotNull { k -> a.optJSONObject(k)?.let { o -> ChatAttachment(o.optString("name"), o.optString("mime"), o.optString("path")) } }
+                        }.orEmpty(),
                     )
                 },
             )
@@ -128,6 +172,7 @@ class AiChats(context: Context) {
 
     fun rename(id: Long, title: String) = update(id) { it.copy(title = title.trim().take(80)) }
     fun pin(id: Long, pinned: Boolean) = update(id) { it.copy(pinned = pinned) }
+    fun archive(id: Long, archived: Boolean) = update(id) { it.copy(archived = archived) }
     fun delete(id: Long) = change { list -> list.filterNot { it.id == id } }
 
     /** Marks the action card at [index] of message [messageId] as handled. */

@@ -58,6 +58,7 @@ fun ExpressiveEmptyState(
     text: String,
     modifier: Modifier = Modifier,
     action: (@Composable () -> Unit)? = null,
+    titleStyle: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.titleLarge,
 ) {
     val colors = MaterialTheme.colorScheme
     val q = LocalQuality.current
@@ -124,8 +125,8 @@ fun ExpressiveEmptyState(
                 modifier = Modifier.size(40.dp).graphicsLayer { rotationZ = if (q.decorativeMotion) -(spin.value + step.value) else 0f },
             )
         }
-        Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
-        Text(text, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
+        Text(title, style = titleStyle, textAlign = TextAlign.Center)
+        if (text.isNotBlank()) Text(text, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
         if (action != null) Box(modifier = Modifier.padding(top = 6.dp)) { action() }
     }
 }

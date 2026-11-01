@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.data.ai
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,27 +20,45 @@ class AiChatPromptTest {
     )
     private val notes = listOf(NoteEntity(subjectId = 1, title = "Secret title", bodyText = "private body text"))
 
-    @Test fun withNothingAllowedTheAiSeesNoAppData() {
-        val prompt = AiChatPrompt.build(emptySet(), data, notes, emptyList(), "hi", today)
+    private fun ctx(allowed: Set<AiScope>) = ChatContext(allowed = allowed, calendar = data, notes = notes, today = today)
+
+    @Test fun withNothingAllowedTheAiSeesNoAppDataButStaysGeneral() {
+        val prompt = AiChatPrompt.system(ctx(emptySet()))
         assertFalse(prompt.contains("Physics"))
-        assertFalse(prompt.contains("absencium-actions holding"))
+        assertFalse(prompt.contains("holding a JSON array"))
         assertTrue(prompt.contains("cannot see or change anything"))
+        assertTrue(prompt.contains("Help with anything"))
     }
 
     @Test fun onlyAllowedPartsAreSharedAndNoteTextNeverIs() {
-        val prompt = AiChatPrompt.build(setOf(AiScope.SUBJECTS, AiScope.TIMETABLE, AiScope.NOTES), data, notes, emptyList(), "hi", today)
+        val prompt = AiChatPrompt.system(ctx(setOf(AiScope.SUBJECTS, AiScope.TIMETABLE, AiScope.NOTES)))
         assertTrue(prompt.contains("MONDAY 09:00-10:00 Physics room B12"))
         assertTrue(prompt.contains("Secret title"))
         assertFalse(prompt.contains("private body text"))
         assertTrue(prompt.contains("add_timetable"))
         assertFalse(prompt.contains("add_exam"))
         assertFalse(prompt.contains("set_attendance"))
+        assertTrue(prompt.contains("Today (2026-10-31)"))
     }
 
-    @Test fun theConversationAndTheNewQuestionCloseThePrompt() {
-        val prompt = AiChatPrompt.build(emptySet(), data, notes, listOf(ChatRole.USER to "What is torque?", ChatRole.ASSISTANT to "A turning force."), "And power?", today)
-        assertTrue(prompt.contains("Student: What is torque?"))
-        assertTrue(prompt.contains("Assistant: A turning force."))
-        assertTrue(prompt.trimEnd().endsWith("Student: And power?"))
+    @Test fun studyAndWebSearchAreOnlyMentionedWhenOn() {
+        assertFalse(AiChatPrompt.system(ctx(emptySet())).contains("STUDY MODE"))
+        assertTrue(AiChatPrompt.system(ctx(emptySet()).copy(study = true, webSearch = true)).let { it.contains("STUDY MODE") && it.contains("Web search is on") })
+    }
+
+    @Test fun attendanceLinesSayHowManyCanBeMissedOrMustBeAttended() {
+        assertTrue(AiChatPrompt.attendanceLine("Physics", 18, 2, 75).contains("can miss 4 more"))
+        assertTrue(AiChatPrompt.attendanceLine("Maths", 6, 4, 75).contains("must attend the next 6 lectures"))
+    }
+
+    @Test fun turnsStartWithTheStudentAndAlternate() {
+        val turns = ChatTurns.normalize(
+            listOf(
+                ChatTurn(ChatRole.ASSISTANT, "stray"), ChatTurn(ChatRole.USER, "a"), ChatTurn(ChatRole.USER, "b"),
+                ChatTurn(ChatRole.ASSISTANT, " "), ChatTurn(ChatRole.ASSISTANT, "c"), ChatTurn(ChatRole.USER, "d"),
+            ),
+        )
+        assertEquals(listOf(ChatRole.USER, ChatRole.ASSISTANT, ChatRole.USER), turns.map { it.role })
+        assertEquals("a\n\nb", turns[0].text)
     }
 }

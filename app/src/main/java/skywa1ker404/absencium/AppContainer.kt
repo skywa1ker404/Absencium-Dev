@@ -3,6 +3,7 @@ package skywa1ker404.absencium
 import android.content.Context
 import skywa1ker404.absencium.data.settings.AppSettings
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
@@ -54,10 +55,18 @@ class AppContainer(context: Context) {
     val shareService: skywa1ker404.absencium.data.share.ShareService by lazy { skywa1ker404.absencium.data.share.ShareService(appContext) }
     val backupManager = BackupManager(appContext)
     val aiHistory = skywa1ker404.absencium.data.ai.AiHistory(appContext)
-    val aiClient = AiClient(apiKeyVault).also { it.history = aiHistory }
+    val aiUsage = skywa1ker404.absencium.data.ai.AiUsage(appContext)
+    val aiClient = AiClient(apiKeyVault).also {
+        it.history = aiHistory
+        it.usage = aiUsage
+        // When every saved key of the chosen provider hit its limit, other providers with a key take over.
+        it.fallbacks = { skywa1ker404.absencium.data.ai.AiProvider.entries.mapNotNull { p -> aiConnectionFor(p, null) } }
+    }
     /** The chats of Absencium AI and which parts of the app's data it may use. Both stay on this phone. */
     val aiChats = skywa1ker404.absencium.data.ai.AiChats(appContext)
     val aiPermissions = skywa1ker404.absencium.data.ai.AiPermissions(appContext)
+    val aiMemory = skywa1ker404.absencium.data.ai.AiMemory(appContext)
+    val aiAssistants = skywa1ker404.absencium.data.ai.AiAssistants(appContext)
         /** Finds or draws the images AI notes ask for (both optional, off by default). */
     val diagramService: skywa1ker404.absencium.data.ai.DiagramService by lazy { skywa1ker404.absencium.data.ai.DiagramService(aiClient) }
     /** True when a key is saved for the provider in use. */
@@ -113,7 +122,65 @@ class AppContainer(context: Context) {
     }
     /** Applies the changes Absencium AI proposed once the student confirms them. */
     val aiActionRunner: skywa1ker404.absencium.data.ai.AiActionRunner by lazy {
-        skywa1ker404.absencium.data.ai.AiActionRunner(database, calendarRepository, vaultRepository, subjectRepository)
+        skywa1ker404.absencium.data.ai.AiActionRunner(database, calendarRepository, vaultRepository, subjectRepository) { brief, subject, length ->
+            // A note the chat proposed is written by the same note writer as the Add Entry screen, at the length the chat chose.
+            val connection = aiConnection() ?: return@AiActionRunner null
+            runCatching {
+                val raw = aiClient.generate(
+                    connection,
+                    skywa1ker404.absencium.data.ai.NotePrompts.notes(skywa1ker404.absencium.data.ai.NoteBrief(request = brief, subject = subject, length = length)),
+                    maxTokens = length.maxTokens,
+                    record = false,
+                )
+                skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(raw).takeIf { it.isNotBlank() }
+            }.getOrNull()
+        }
+    }
+
+    /** Files attached to chat messages (copies in the app's private storage). */
+    val aiAttachments = skywa1ker404.absencium.data.ai.AiAttachments(appContext)
+
+    /**
+     * Answers chats on the app's own scope, so an answer keeps being written when the student leaves the chat, the screen or the app.
+     * A foreground service keeps the process alive while any answer is in flight.
+     */
+    val aiChatService: skywa1ker404.absencium.data.ai.AiChatService by lazy {
+        skywa1ker404.absencium.data.ai.AiChatService(
+            scope = appScope,
+            chats = aiChats,
+            client = aiClient,
+            attachments = aiAttachments,
+            actionRunner = { aiActionRunner },
+            connectionFor = { chat -> aiConnectionFor(chat.provider?.let { runCatching { skywa1ker404.absencium.data.ai.AiProvider.valueOf(it) }.getOrNull() }, chat.model) },
+            contextFor = { chat -> loadChatContext(chat) },
+            memory = aiMemory,
+            memoryAllowed = { skywa1ker404.absencium.data.ai.AiScope.MEMORY in aiPermissions.allowed.value },
+            onBusy = { busy -> skywa1ker404.absencium.data.ai.AiWorkService.setBusy(appContext, busy) },
+        )
+    }
+
+    /** What Absencium AI may know about the student right now: only the parts of the app they allowed. */
+    private suspend fun loadChatContext(chat: skywa1ker404.absencium.data.ai.AiChat): skywa1ker404.absencium.data.ai.ChatContext {
+        val allowed = aiPermissions.allowed.value
+        val calendar = if (allowed.isEmpty()) skywa1ker404.absencium.data.calendar.CalendarData() else calendarRepository.data.first()
+        val notes = if (skywa1ker404.absencium.data.ai.AiScope.NOTES in allowed) vaultRepository.data.first().notes else emptyList()
+        val syllabus = if (skywa1ker404.absencium.data.ai.AiScope.SYLLABUS in allowed) database.syllabusDao().observeAll().first() else emptyList()
+        val settings = settingsState.value
+        return skywa1ker404.absencium.data.ai.ChatContext(
+            allowed = allowed,
+            calendar = calendar,
+            notes = notes,
+            syllabus = syllabus,
+            thresholdPercent = settings?.attendanceThresholdPercent ?: 75,
+            studentName = settings?.displayName?.takeIf { it.isNotBlank() },
+            memories = if (skywa1ker404.absencium.data.ai.AiScope.MEMORY in allowed) {
+                aiMemory.relevant(chat.messages.lastOrNull { it.role == skywa1ker404.absencium.data.ai.ChatRole.USER }?.text.orEmpty(), chat.id)
+            } else {
+                emptyList()
+            },
+            instructions = aiAssistants.find(chat.assistant)?.instructions.orEmpty(),
+            temperature = aiAssistants.find(chat.assistant)?.temperature,
+        )
     }
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.subjectDao(), database.subjectCascadeDao()) }
 }

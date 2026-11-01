@@ -49,6 +49,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
     val rows by providersViewModel.rows.collectAsStateWithLifecycle()
     val allowed by permissionsViewModel.allowed.collectAsStateWithLifecycle()
+    val usage by providersViewModel.usage.collectAsStateWithLifecycle()
     val active = rows.firstOrNull { it.active }
     val ready = active != null && active.complete
 
@@ -68,6 +69,24 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
             )
         }
         PillButton(text = "Add a provider", onClick = { navigator.navigate(AiProviderScreenDestination()) }, tonal = rows.isNotEmpty())
+
+        SectionTitle("Token usage")
+        if (usage.isEmpty()) {
+            HintText("Nothing counted yet. Each answer's tokens are added here, per provider, as the provider reports them. Counts stay on this phone.")
+        } else {
+            AppCard(modifier = Modifier.fillMaxWidth()) {
+                usage.forEach { row ->
+                    Column(Modifier.padding(vertical = 4.dp)) {
+                        Text(row.provider.label, style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "${row.requests} answers · ${"%,d".format(row.tokensIn)} in · ${"%,d".format(row.tokensOut)} out · ${"%,d".format(row.tokensToday)} today",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                PillButton(text = "Reset counts", onClick = providersViewModel::resetUsage, tonal = true, compact = true, modifier = Modifier.padding(top = 6.dp))
+            }
+        }
 
         SectionTitle("What Absencium AI can use")
         HintText("Everything is off until you allow it. It sees only what you allow, and every change it suggests waits for your tap on Apply. Note text is never sent, only titles.")

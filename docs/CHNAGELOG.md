@@ -39,3 +39,10 @@ working on it
 - Changed: the AI Hub is now **Absencium AI**, a chat with a sidebar of chats, a model chooser, pin / rename / delete / share, edit and copy on your messages, and (only where you allow it) suggestions that change your timetable, exams, holidays, attendance, subjects and notes after you tap Apply.
 - Changed: every AI provider keeps its own API key; AI & Integrations lists your providers, tests a connection and switches in one tap.
 - Changed: sharing a note offers PDF (with a Themed PDF toggle) and a greyed-out Sharewave.
+
+## 2026-11-01 (development, not device-tested)
+- Changed: Absencium AI answers keep being written when you open another chat, leave the screen or close the app (a small "AI answers in progress" notification shows only while one is being written). A finished answer you have not seen shows a dot in the chat list.
+- Changed: Absencium AI is a general assistant first: it no longer limits itself to your app data, answers in depth, and writes notes at the length you ask in the app's own note format (long notes come from the note writer, not a short chat reply).
+- Added: optional Web search with sources (Gemini, Claude, OpenRouter), optional Thinking, optional Memory across chats (view, edit, delete), assistants with presets and import / export, study mode difficulty, files in a question (pictures, PDFs, text, recordings, videos, notes), Retry with another model, Continue, Archive, Save as note, token usage per provider, extra API keys per provider with automatic switching when one hits its limit.
+- Changed: new chat screen, full-screen chat list and "+" sheet after the reference screenshots.
+- Planned: a notification when an answer is ready while you are elsewhere; tapping it opens that chat (see TODOList 5.6).
