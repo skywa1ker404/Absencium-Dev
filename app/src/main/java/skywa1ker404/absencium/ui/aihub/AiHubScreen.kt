@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -109,6 +111,7 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
     val assistants by viewModel.assistants.collectAsStateWithLifecycle()
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
     val noteChoices by viewModel.noteChoices.collectAsStateWithLifecycle()
+    val materialChoices by viewModel.materialChoices.collectAsStateWithLifecycle()
     val connection = remember(settings, chat.provider, chat.model, chats) { viewModel.connection(chat) }
     val ready = connection != null
     val colors = MaterialTheme.colorScheme
@@ -170,6 +173,7 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
         title = "Absencium AI",
         onBack = { navigator.navigateUp() },
         scrollable = false,
+        contentUnderBars = true,
         overlay = {
             AiSidebar(
                 visible = sidebar,
@@ -192,7 +196,13 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
         },
         customTopBar = {
             Row(
-                modifier = Modifier.fillMaxWidth().statusBarsPadding().height(64.dp).padding(horizontal = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // A soft fade of the page colour: the chat dissolves under the buttons instead of meeting a hard block.
+                    .background(Brush.verticalGradient(0f to colors.background.copy(alpha = 0.92f), 0.75f to colors.background.copy(alpha = 0.6f), 1f to Color.Transparent))
+                    .statusBarsPadding()
+                    .height(64.dp)
+                    .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -212,7 +222,20 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
                     modifier = Modifier.height(48.dp).clip(CircleShape).background(colors.surfaceContainerHigh).padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = { viewModel.newChat(); input = ""; editingId = null }) { Icon(AppIcons.Edit, contentDescription = "New chat") }
+                    // An empty page offers an incognito chat (not saved, no memory); once there is a conversation the button starts a new chat.
+                    IconButton(onClick = {
+                        when {
+                            !saved && !chat.incognito -> viewModel.setIncognito(true)
+                            !saved -> viewModel.setIncognito(false)
+                            else -> { viewModel.newChat(); input = ""; editingId = null }
+                        }
+                    }) {
+                        when {
+                            chat.incognito -> Icon(AppIcons.Incognito, contentDescription = "Leave the incognito chat", tint = colors.primary)
+                            !saved -> Icon(AppIcons.Incognito, contentDescription = "Start an incognito chat")
+                            else -> Icon(AppIcons.Edit, contentDescription = "New chat")
+                        }
+                    }
                     Box {
                         IconButton(onClick = { menu = true }) { Icon(AppIcons.MoreVert, contentDescription = "More") }
                         AppMenu(expanded = menu, onDismiss = { menu = false }) {
@@ -236,7 +259,12 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
         },
         bottomBar = {
             Column(
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Brush.verticalGradient(0f to Color.Transparent, 0.4f to colors.background.copy(alpha = 0.7f), 1f to colors.background.copy(alpha = 0.95f)))
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (!ready) {
@@ -305,21 +333,31 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
             }
         },
     ) {
+        val bars = skywa1ker404.absencium.ui.components.LocalScaffoldPadding.current
         Box(Modifier.fillMaxSize()) {
-            if (pending) Glow()
             if (!saved && !pending) {
-                EmptyChat(name = settings?.displayName.orEmpty(), allowed = allowed, onPick = { input = it })
+                Box(Modifier.fillMaxSize().padding(top = bars.calculateTopPadding(), bottom = bars.calculateBottomPadding())) {
+                    EmptyChat(name = settings?.displayName.orEmpty(), allowed = allowed, incognito = chat.incognito, onPick = { input = it })
+                }
             } else {
                 val last = chat.messages.lastOrNull()
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     reverseLayout = true,
-                    contentPadding = PaddingValues(vertical = 12.dp, horizontal = 4.dp),
+                    contentPadding = PaddingValues(
+                        top = bars.calculateTopPadding() + 8.dp,
+                        bottom = bars.calculateBottomPadding() + 8.dp,
+                        start = 4.dp,
+                        end = 4.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
                     if (pending) {
                         item(key = "pending") {
-                            LoadingIndicator(modifier = Modifier.size(44.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                LoadingIndicator(modifier = Modifier.size(40.dp))
+                                ShimmerText(if (chat.webSearch) "Searching and thinking" else "Thinking")
+                            }
                         }
                     } else if (last != null && last.role == ChatRole.USER) {
                         item(key = "no-answer") { NoAnswerYet(onRetry = viewModel::regenerate) }
@@ -373,7 +411,13 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
         )
     }
     if (notePicker) {
-        NotePickerDialog(choices = noteChoices, onAttach = { ids -> notePicker = false; viewModel.attachNotes(ids) }, onDismiss = { notePicker = false })
+        ContentPickerDialog(
+            subjects = subjects.map { it.id to it.name },
+            notes = noteChoices,
+            materials = materialChoices,
+            onAttach = { noteIds, materialIds -> notePicker = false; viewModel.attachNotes(noteIds); viewModel.attachMaterials(materialIds) },
+            onDismiss = { notePicker = false },
+        )
     }
     if (memoryDialog) {
         MemoryDialog(
@@ -444,22 +488,29 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
     }
 }
 
-/** A soft glow along the top while an answer is being written, in the theme's own colour. */
+/** A line of text with a light sweep passing over it while an answer is being written, in the theme's own colours. */
 @Composable
-private fun Glow() {
+private fun ShimmerText(text: String) {
     val colors = MaterialTheme.colorScheme
-    val alpha by rememberInfiniteTransition(label = "glow").animateFloat(
-        initialValue = 0.10f,
-        targetValue = 0.32f,
-        animationSpec = infiniteRepeatable(tween(1800), RepeatMode.Reverse),
-        label = "glowAlpha",
+    val sweep by rememberInfiniteTransition(label = "shimmer").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1500, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "shimmerSweep",
     )
-    Box(Modifier.fillMaxWidth().height(260.dp).background(Brush.verticalGradient(listOf(colors.primary.copy(alpha = alpha), Color.Transparent))))
+    val width = with(androidx.compose.ui.platform.LocalDensity.current) { 220.dp.toPx() }
+    val brush = Brush.horizontalGradient(
+        colors = listOf(colors.onSurfaceVariant, colors.onSurface, colors.onSurfaceVariant),
+        startX = sweep * width * 1.6f - width * 0.6f,
+        endX = sweep * width * 1.6f,
+    )
+    Text("$text...", style = MaterialTheme.typography.titleMedium.copy(brush = brush))
 }
 
-/** The empty chat: a morphing badge, a big greeting, and suggestions as plain rows with icons above the box (only ones that fit what is allowed). */
+/** The empty chat: a morphing badge and a big greeting, with the suggestions as plain rows below when there is room (never over the greeting). */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EmptyChat(name: String, allowed: Set<AiScope>, onPick: (String) -> Unit) {
+private fun EmptyChat(name: String, allowed: Set<AiScope>, incognito: Boolean, onPick: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
     val suggestions = buildList<Triple<ImageVector, String, String>> {
         add(Triple(AppIcons.Lightbulb, "Explain a topic simply", "Explain this simply, with one example: "))
@@ -467,25 +518,39 @@ private fun EmptyChat(name: String, allowed: Set<AiScope>, onPick: (String) -> U
         add(Triple(AppIcons.Draft, "Write notes for a chapter", "Write lengthy, well formatted notes on: "))
         if (AiScope.EXAMS in allowed) add(Triple(AppIcons.Schedule, "Plan my revision", "Make a revision plan from my syllabus and exam dates."))
         else add(Triple(AppIcons.Summarize, "Summarise something", "Summarise the key points of: "))
-        if (AiScope.ATTENDANCE in allowed) add(Triple(AppIcons.Tasks, "How is my attendance?", "How is my attendance, and which subject needs care?"))
+        if (AiScope.ATTENDANCE in allowed) {
+            add(Triple(AppIcons.Tasks, "How is my attendance?", "Show my attendance for each subject: the percentage and whether it is safe or below the required percentage. Only call a subject a concern if it is below the requirement."))
+        }
     }
-    Box(Modifier.fillMaxSize()) {
-        ExpressiveEmptyState(
-            icon = AppIcons.AutoAwesome,
-            title = if (name.isBlank()) "What's on your mind?" else "Hi $name, what's on your mind?",
-            text = "",
-            titleStyle = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.align(Alignment.Center),
-        )
-        Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(bottom = 8.dp)) {
-            suggestions.forEach { (icon, label, start) ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable { onPick(start) }.padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    Icon(icon, contentDescription = null, tint = colors.onSurface)
-                    Text(label, style = MaterialTheme.typography.titleMedium)
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val imeOpen = WindowInsets.isImeVisible
+        // The suggestions only show when the page is tall enough for them and the keyboard is closed.
+        val room = maxHeight > 560.dp && !imeOpen
+        Column(Modifier.fillMaxSize()) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                ExpressiveEmptyState(
+                    icon = if (incognito) AppIcons.Incognito else AppIcons.AutoAwesome,
+                    title = when {
+                        incognito -> "Incognito chat"
+                        name.isBlank() -> "What's on your mind?"
+                        else -> "Hi $name, what's on your mind?"
+                    },
+                    text = if (incognito) "Not saved to your chats, and nothing is remembered from it." else "",
+                    titleStyle = MaterialTheme.typography.headlineMedium,
+                )
+            }
+            if (room) {
+                Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                    suggestions.forEach { (icon, label, start) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable { onPick(start) }.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(20.dp),
+                        ) {
+                            Icon(icon, contentDescription = null, tint = colors.onSurface)
+                            Text(label, style = MaterialTheme.typography.titleMedium)
+                        }
+                    }
                 }
             }
         }

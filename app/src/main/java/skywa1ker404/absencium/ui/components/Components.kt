@@ -173,8 +173,17 @@ fun ScreenScaffold(
     titleContent: (@Composable () -> Unit)? = null,
     /** True when the content scrolls behind floating bottom controls: it then runs to the very bottom, under the navigation bar. */
     edgeToEdgeBottom: Boolean = false,
+    /** The page's scroll position, when the screen needs to read or guard it (the note editor). */
+    scrollState: androidx.compose.foundation.ScrollState? = null,
+    /**
+     * The content runs under the top and bottom bars instead of stopping at them (a chat that scrolls behind its input box). It then
+     * reads the room the bars take from [LocalScaffoldPadding] and keeps that clear at its own ends.
+     */
+    contentUnderBars: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val ownScroll = rememberScrollState()
+    val pageScroll = scrollState ?: ownScroll
     val glass = LocalGlassEnabled.current
     val backdrop = if (glass) rememberLayerBackdrop() else null
     val colors = MaterialTheme.colorScheme
@@ -218,16 +227,25 @@ fun ScreenScaffold(
                     .background(colors.background),
             ) {
                 GlassStage(modifier = Modifier.fillMaxSize()) {
+                    CompositionLocalProvider(LocalScaffoldPadding provides padding) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             // [scrollable] false: the content scrolls itself (a lazy list), so it must not sit in a scroll.
-                            .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                            .padding(if (edgeToEdgeBottom) PaddingValues(top = padding.calculateTopPadding()) else padding)
-                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = if (edgeToEdgeBottom) 0.dp else 8.dp),
+                            .then(if (scrollable) Modifier.verticalScroll(pageScroll) else Modifier)
+                            .then(
+                                if (contentUnderBars) {
+                                    Modifier.padding(horizontal = 16.dp)
+                                } else {
+                                    Modifier
+                                        .padding(if (edgeToEdgeBottom) PaddingValues(top = padding.calculateTopPadding()) else padding)
+                                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = if (edgeToEdgeBottom) 0.dp else 8.dp)
+                                },
+                            ),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         content = content,
                     )
+                    }
                 }
             }
         }
@@ -581,3 +599,27 @@ fun GreyedOut(disabled: Boolean, modifier: Modifier = Modifier, content: @Compos
             },
     ) { content() }
 }
+
+
+/**
+ * Selecting text can make the page jump to the top (the text field asks to be scrolled into view and gets the wrong place).
+ * While a selection is being made ([selectionKey] not null) a sudden drop to near the top is undone: the page goes back to where
+ * it was. A finger scrolling the page is not touched, since the guard only watches for a jump within a second of the selection.
+ */
+@Composable
+fun KeepScrollOnSelection(state: androidx.compose.foundation.ScrollState, selectionKey: Any?) {
+    androidx.compose.runtime.LaunchedEffect(selectionKey) {
+        if (selectionKey == null) return@LaunchedEffect
+        val anchor = state.value
+        if (anchor < 300) return@LaunchedEffect
+        kotlinx.coroutines.withTimeoutOrNull(900) {
+            androidx.compose.runtime.snapshotFlow { state.value }.collect { v ->
+                if (v < anchor / 4) state.scrollTo(anchor)
+            }
+        }
+    }
+}
+
+
+/** The room the top and bottom bars of the surrounding [ScreenScaffold] take, for content that runs under them. */
+val LocalScaffoldPadding = androidx.compose.runtime.compositionLocalOf { PaddingValues() }

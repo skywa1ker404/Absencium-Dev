@@ -468,6 +468,14 @@ object AppIcons {
     val Expand: ImageVector by lazy { glyph("Expand", "M4,11h16v2H4zM12,2l4,4h-3v3h-2V6H8zM12,22l-4,-4h3v-3h2v3h3z") }
 
     /** A four-point star: polish. */
+    /** A hat with sunglasses, drawn for this project (not taken from any icon set). */
+    val Incognito: ImageVector by lazy {
+        glyph(
+            "Incognito",
+            "M6.4,10.5l1.6,-6h8l1.6,6z M2.5,11.2h19v1.8h-19z M8,14.6a2.7,2.7 0 1,0 0.001,0z M16,14.6a2.7,2.7 0 1,0 0.001,0z M10.4,16.4h3.2v1.4h-3.2z",
+        )
+    }
+
     val Sparkle: ImageVector by lazy { glyph("Sparkle", "M12,2l2.4,7.6L22,12l-7.6,2.4L12,22l-2.4,-7.6L2,12l7.6,-2.4zM19,2l0.9,2.1L22,5l-2.1,0.9L19,8l-0.9,-2.1L16,5l2.1,-0.9z") }
 
     /** A check mark over a line: grammar fixed. */

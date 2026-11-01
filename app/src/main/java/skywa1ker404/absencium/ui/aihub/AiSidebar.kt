@@ -30,8 +30,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -126,10 +127,19 @@ fun AiSidebar(
     BackHandler(enabled = visible) { if (searching) { searching = false; query = "" } else onClose() }
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(spring(stiffness = 600f)) + scaleIn(spring(dampingRatio = 0.75f, stiffness = 380f), initialScale = 0.9f),
-        exit = fadeOut(spring(stiffness = 700f)) + scaleOut(spring(stiffness = 600f), targetScale = 0.94f),
+        // The list slides in from the left edge and back out again, with a springy settle.
+        enter = slideInHorizontally(spring(dampingRatio = 0.85f, stiffness = 420f)) { -it } + fadeIn(spring(stiffness = 700f)),
+        exit = slideOutHorizontally(spring(dampingRatio = 1f, stiffness = 500f)) { -it } + fadeOut(spring(stiffness = 900f)),
     ) {
-        Column(Modifier.fillMaxSize().background(colors.background).statusBarsPadding().navigationBarsPadding()) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(colors.background)
+                // Swallows every touch, so nothing on the screen underneath (the menu, the model name) can be pressed while the list is open.
+                .pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } }
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+        ) {
             Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (searching) {
                     AppTextField(

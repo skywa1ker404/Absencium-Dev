@@ -19,7 +19,7 @@ private fun List<Span>.plain(): String =
 fun notePreviewLines(body: String, maxLines: Int = 4, maxChars: Int = 90): List<String> {
     if (body.isBlank()) return emptyList()
     val out = ArrayList<String>()
-    for (block in MarkdownParse.blocks(body.take(4_000))) {
+    for (block in MarkdownParse.blocks(skywa1ker404.absencium.data.ai.AiNoteCleaner.repairTags(body.take(4_000)))) {
         if (out.size >= maxLines) break
         val line = when (block) {
             is Block.Heading -> block.spans.plain()

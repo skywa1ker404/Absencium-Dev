@@ -39,6 +39,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -129,6 +131,58 @@ private fun spansToText(spans: List<Span>, onLink: (String) -> Unit, strikeAll: 
     }
 }
 
+/** What the reading screen's find bar needs from the page: the words, the active match, and where the page reports back. */
+class FindState(
+    val query: String,
+    val active: Int,
+    /** For every match in page order, the index of the block that holds it. */
+    val onIndex: (IntArray) -> Unit,
+    /** A block's top edge in the window, so the screen can scroll to it. */
+    val onTop: (block: Int, windowY: Float) -> Unit,
+)
+
+private fun spanText(spans: List<Span>): String = spans.joinToString("") { it.text }
+
+/** The texts of a block that are drawn as text, in the order they are drawn; find only looks in these. */
+private fun blockMatchTexts(block: Block): List<String> = when (block) {
+    is Block.Heading -> listOf(spanText(block.spans))
+    is Block.Paragraph -> listOf(spanText(block.spans))
+    is Block.Bullet -> listOf(spanText(block.spans))
+    is Block.Numbered -> listOf(spanText(block.spans))
+    is Block.Check -> listOf(spanText(block.spans))
+    is Block.Quote -> listOf(spanText(block.spans))
+    is Block.Table -> {
+        val columns = block.rows.maxOfOrNull { it.size } ?: 0
+        block.rows.flatMap { row -> (0 until columns).map { c -> spanText(row.getOrNull(c).orEmpty()) } }
+    }
+    else -> emptyList()
+}
+
+internal fun countMatches(text: String, query: String): Int {
+    if (query.isEmpty()) return 0
+    var n = 0
+    var i = text.indexOf(query, 0, ignoreCase = true)
+    while (i >= 0) {
+        n++
+        i = text.indexOf(query, i + query.length, ignoreCase = true)
+    }
+    return n
+}
+
+/** [text] with every match of [query] marked yellow and match number [active] marked orange. */
+private fun withFind(text: AnnotatedString, query: String, active: Int): AnnotatedString {
+    val plain = text.text
+    val builder = AnnotatedString.Builder(text)
+    var i = plain.indexOf(query, 0, ignoreCase = true)
+    var n = 0
+    while (i >= 0) {
+        builder.addStyle(SpanStyle(background = if (n == active) Color(0xFFFF9800).copy(alpha = 0.85f) else Color(0xFFFFE066).copy(alpha = 0.6f)), i, i + query.length)
+        n++
+        i = plain.indexOf(query, i + query.length, ignoreCase = true)
+    }
+    return builder.toAnnotatedString()
+}
+
 /**
  * The note as formatted text. Tapping a check box flips it in the note itself ([onToggleCheck] gets the source line), and
  * tapping a `[[note link]]` calls [onOpenLink] with the title.
@@ -141,15 +195,37 @@ fun MarkdownPreview(
     modifier: Modifier = Modifier,
     /** Draws a picture, doodle or recording block; the editor supplies it because it knows where the files are. */
     embed: @Composable (Block.Embed) -> Unit = {},
+    /** Find in the page: matches are highlighted and the screen is told where each one is (see [FindState]). */
+    find: FindState? = null,
 ) {
     val colors = MaterialTheme.colorScheme
-    val blocks = remember(text) { MarkdownParse.blocks(text) }
+    // A colour or size tag that lost its `|}` closer would show as raw text; it is closed here for older notes and AI answers.
+    val blocks = remember(text) { MarkdownParse.blocks(skywa1ker404.absencium.data.ai.AiNoteCleaner.repairTags(text)) }
+    val query = find?.query.orEmpty()
+    val perBlock = remember(blocks, query) {
+        blocks.map { b -> if (query.isEmpty()) 0 else blockMatchTexts(b).sumOf { countMatches(it, query) } }
+    }
+    val starts = remember(perBlock) {
+        var acc = 0
+        perBlock.map { n -> acc.also { acc += n } }
+    }
+    if (find != null) {
+        androidx.compose.runtime.LaunchedEffect(perBlock) {
+            val owner = ArrayList<Int>()
+            perBlock.forEachIndexed { b, n -> repeat(n) { owner += b } }
+            find.onIndex(owner.toIntArray())
+        }
+    }
+    val hl: (AnnotatedString, Int) -> AnnotatedString = { a, bi -> if (query.isEmpty()) a else withFind(a, query, (find?.active ?: -1) - starts[bi]) }
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (blocks.isEmpty()) HintText("Tap here to start writing.")
-        blocks.forEach { block ->
+        blocks.forEachIndexed { bi, block ->
+          Box(
+              modifier = if (find == null) Modifier.fillMaxWidth() else Modifier.fillMaxWidth().onGloballyPositioned { find.onTop(bi, it.positionInWindow().y) },
+          ) {
             when (block) {
                 is Block.Heading -> Text(
-                    text = spansToText(block.spans, onOpenLink),
+                    text = hl(spansToText(block.spans, onOpenLink), bi),
                     style = when (block.level) {
                         1 -> MaterialTheme.typography.headlineSmall
                         2 -> MaterialTheme.typography.titleLarge
@@ -160,7 +236,7 @@ fun MarkdownPreview(
                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                 )
                 is Block.Paragraph -> Text(
-                    spansToText(block.spans, onOpenLink),
+                    hl(spansToText(block.spans, onOpenLink), bi),
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = block.align.toTextAlign(),
                     modifier = Modifier.fillMaxWidth(),
@@ -168,14 +244,14 @@ fun MarkdownPreview(
                 is Block.Embed -> Box(modifier = Modifier.fillMaxWidth(), contentAlignment = block.align.toBoxAlignment()) {
                     Box(modifier = Modifier.fillMaxWidth(block.widthPercent / 100f)) { embed(block) }
                 }
-                is Block.Table -> PreviewTable(block, onOpenLink)
+                is Block.Table -> PreviewTable(block, onOpenLink, query, (find?.active ?: -1) - starts[bi])
                 is Block.Bullet -> Row(modifier = Modifier.padding(start = (block.indent * 6).dp)) {
                     Text("•  ", style = MaterialTheme.typography.bodyLarge)
-                    Text(spansToText(block.spans, onOpenLink), style = MaterialTheme.typography.bodyLarge)
+                    Text(hl(spansToText(block.spans, onOpenLink), bi), style = MaterialTheme.typography.bodyLarge)
                 }
                 is Block.Numbered -> Row(modifier = Modifier.padding(start = (block.indent * 6).dp)) {
                     Text("${block.number}.  ", style = MaterialTheme.typography.bodyLarge)
-                    Text(spansToText(block.spans, onOpenLink), style = MaterialTheme.typography.bodyLarge)
+                    Text(hl(spansToText(block.spans, onOpenLink), bi), style = MaterialTheme.typography.bodyLarge)
                 }
                 is Block.Check -> Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -185,7 +261,7 @@ fun MarkdownPreview(
                 ) {
                     Text(if (block.checked) "☑  " else "☐  ", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        spansToText(block.spans, onOpenLink, strikeAll = block.checked),
+                        hl(spansToText(block.spans, onOpenLink, strikeAll = block.checked), bi),
                         style = MaterialTheme.typography.bodyLarge,
                         color = if (block.checked) colors.onSurfaceVariant else colors.onSurface,
                     )
@@ -197,7 +273,7 @@ fun MarkdownPreview(
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 ) {
                     Text(
-                        spansToText(block.spans, onOpenLink),
+                        hl(spansToText(block.spans, onOpenLink), bi),
                         style = MaterialTheme.typography.bodyLarge,
                         fontStyle = FontStyle.Italic,
                         color = colors.onSurfaceVariant,
@@ -214,6 +290,7 @@ fun MarkdownPreview(
                 }
                 Block.Rule -> HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             }
+          }
         }
     }
 }
@@ -237,9 +314,10 @@ internal fun Align.toBoxAlignment(): Alignment = when (this) {
 
 /** A table drawn as equal-width cells with a thin line around each; the first row is bold when the table has a header. */
 @Composable
-internal fun PreviewTable(table: Block.Table, onOpenLink: (String) -> Unit) {
+internal fun PreviewTable(table: Block.Table, onOpenLink: (String) -> Unit, query: String = "", active: Int = -1) {
     val colors = MaterialTheme.colorScheme
     val columns = table.rows.maxOfOrNull { it.size } ?: 0
+    var seen = 0
     Column(modifier = Modifier.fillMaxWidth().border(1.dp, colors.outlineVariant, RoundedCornerShape(8.dp)).clip(RoundedCornerShape(8.dp))) {
         table.rows.forEachIndexed { r, row ->
             Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
@@ -253,8 +331,11 @@ internal fun PreviewTable(table: Block.Table, onOpenLink: (String) -> Unit) {
                             .background(if (table.hasHeader && r == 0) colors.surfaceContainerHigh else Color.Transparent)
                             .padding(8.dp),
                     ) {
+                        val cellText = spansToText(cell, onOpenLink)
+                        val shown = if (query.isEmpty()) cellText else withFind(cellText, query, active - seen)
+                        if (query.isNotEmpty()) seen += countMatches(cellText.text, query)
                         Text(
-                            spansToText(cell, onOpenLink),
+                            shown,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = if (table.hasHeader && r == 0) FontWeight.SemiBold else null,
                         )

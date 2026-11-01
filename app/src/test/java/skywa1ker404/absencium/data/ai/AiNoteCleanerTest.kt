@@ -57,4 +57,14 @@ class AiNoteCleanerTest {
         val out = AiNoteCleaner.clean("[ Renin released ]\nv\n+-------+\n[ Angiotensin II ]")
         assertEquals("{align:center}**Renin released**\n{align:center}↓\n\n{align:center}**Angiotensin II**", out)
     }
+
+    @Test
+    fun colourTagsWithoutTheBarCloserAreRepaired() {
+        assertEquals("A {color:1565C0|cell division|} is key", AiNoteCleaner.repairTags("A {color:1565C0|cell division} is key"))
+        assertEquals("{color:2E7D32|tip|}", AiNoteCleaner.repairTags("{color:#2E7D32|tip"))
+        // A correct tag, and a tag nested in another, stay as they are.
+        assertEquals("{color:C62828|warn|} ok", AiNoteCleaner.repairTags("{color:C62828|warn|} ok"))
+        assertEquals("{size:20|{color:C62828|big|}|}", AiNoteCleaner.repairTags("{size:20|{color:C62828|big|}|}"))
+        assertEquals("plain text", AiNoteCleaner.repairTags("plain text"))
+    }
 }

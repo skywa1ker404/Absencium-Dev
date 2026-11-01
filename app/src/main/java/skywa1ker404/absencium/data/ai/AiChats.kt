@@ -57,6 +57,8 @@ data class AiChat(
     val level: String = "",
     /** The id of the assistant profile this chat uses, or empty for the plain assistant. */
     val assistant: String = "",
+    /** An incognito chat: kept only in memory while the screen is open, never written to the file, with no memory read or saved. */
+    val incognito: Boolean = false,
 ) {
     /** What the sidebar shows: the title, or the start of the first message while the chat has no name yet. */
     val label: String
@@ -175,6 +177,11 @@ class AiChats(context: Context) {
     fun archive(id: Long, archived: Boolean) = update(id) { it.copy(archived = archived) }
     fun delete(id: Long) = change { list -> list.filterNot { it.id == id } }
 
+    /** Forgets every incognito chat (they were never on the file). */
+    fun dropIncognito() {
+        if (_chats.value.any { it.incognito }) change { list -> list.filterNot { it.incognito } }
+    }
+
     /** Marks the action card at [index] of message [messageId] as handled. */
     fun markActionDone(chatId: Long, messageId: Long, index: Int) = update(chatId) { chat ->
         chat.copy(messages = chat.messages.map { if (it.id == messageId) it.copy(doneActions = it.doneActions + index) else it })
@@ -200,7 +207,7 @@ class AiChats(context: Context) {
 
     private fun save(list: List<AiChat>) {
         try {
-            file.writeText(AiChatsJson.encode(list))
+            file.writeText(AiChatsJson.encode(list.filterNot { it.incognito }))
         } catch (e: Exception) {
             DebugLogger.e("AiChats", "The chats could not be saved", e)
         }

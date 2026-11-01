@@ -171,6 +171,11 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
     var showShare by remember { mutableStateOf(false) }
     var showLanguages by remember { mutableStateOf(false) }
     var askOpen by remember { mutableStateOf(false) }
+    var findOpen by remember { mutableStateOf(false) }
+    var findQuery by remember { mutableStateOf("") }
+    var findActive by remember { mutableIntStateOf(0) }
+    var matchBlocks by remember { mutableStateOf(IntArray(0)) }
+    val blockTops = remember { HashMap<Int, Float>() }
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf<AiAnswer?>(null) }
     var answerMinimised by remember { mutableStateOf(false) }
@@ -182,6 +187,14 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
     var rootTop by remember { mutableFloatStateOf(0f) }
     var viewportHeight by remember { mutableIntStateOf(1) }
     val scroll = rememberScrollState()
+    // Making a selection must not throw the page back to the top.
+    skywa1ker404.absencium.ui.components.KeepScrollOnSelection(scroll, pillRect?.top)
+    // Next / previous match: bring the block that holds it a quarter of the way down the screen.
+    LaunchedEffect(findActive, matchBlocks, findQuery) {
+        val block = matchBlocks.getOrNull(findActive) ?: return@LaunchedEffect
+        val top = blockTops[block] ?: return@LaunchedEffect
+        scroll.animateScrollTo((top - rootTop - viewportHeight * 0.25f).toInt().coerceIn(0, scroll.maxValue))
+    }
 
     // Continue where reading stopped, once the page is tall enough.
     var restored by remember(note.id) { mutableStateOf(false) }
@@ -316,6 +329,14 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                                 }
                             },
                             embed = { block -> ReadOnlyEmbed(block, attachments) },
+                            find = if (findOpen && findQuery.isNotBlank()) {
+                                FindState(
+                                    query = findQuery.trim(),
+                                    active = findActive.coerceAtLeast(0),
+                                    onIndex = { matchBlocks = it; if (findActive >= it.size) findActive = 0 },
+                                    onTop = { block, y -> blockTops[block] = y + scroll.value },
+                                )
+                            } else null,
                         )
                     }
                 }
@@ -335,7 +356,14 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                             color = colors.onSurfaceVariant,
                             modifier = Modifier.weight(1f).padding(start = 4.dp),
                         )
-                        IconButton(onClick = { askOpen = !askOpen }) { Icon(AppIcons.Search, contentDescription = "Ask about this note", tint = colors.onBackground) }
+                        IconButton(onClick = {
+                            findOpen = !findOpen
+                            if (findOpen) askOpen = false else { findQuery = ""; matchBlocks = IntArray(0) }
+                        }) { Icon(AppIcons.Search, contentDescription = "Search in this note", tint = if (findOpen) colors.primary else colors.onBackground) }
+                        IconButton(onClick = {
+                            askOpen = !askOpen
+                            if (askOpen) { findOpen = false; findQuery = ""; matchBlocks = IntArray(0) }
+                        }) { Icon(AppIcons.Sparkle, contentDescription = "Ask AI about this note", tint = if (askOpen) colors.primary else colors.onBackground) }
                         IconButton(onClick = {
                             container.saveReadingPosition(note.id, scroll.value)
                             container.readingMini.value = MiniReading(note.id, note.title, subjectName, page, pages)
@@ -393,7 +421,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                         TextButton(onClick = { explain() }) { Text("Explain") }
                         TextButton(onClick = { selectedText(); showLanguages = true }) { Text("Translate") }
                         TextButton(onClick = { meaning() }) { Text("Meaning") }
-                        TextButton(onClick = { selectedText(); askOpen = true; pillRect = null }) { Text("Ask") }
+                        TextButton(onClick = { selectedText(); askOpen = true; findOpen = false; findQuery = ""; pillRect = null }) { Text("Ask") }
                     },
                 )
             }
@@ -454,6 +482,39 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                 }
                 }
 
+                if (findOpen && !focus) {
+                    Surface(shape = RoundedCornerShape(28.dp), color = colors.surfaceContainerHigh, tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+                        val total = matchBlocks.size
+                        AppTextField(
+                            value = findQuery,
+                            onValueChange = { findQuery = it; findActive = 0 },
+                            placeholder = { Text("Find in this note") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(28.dp),
+                            trailingIcon = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (findQuery.isNotBlank()) {
+                                        Text(
+                                            if (total == 0) "None" else "${findActive + 1}/$total",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = colors.onSurfaceVariant,
+                                        )
+                                    }
+                                    IconButton(onClick = { if (total > 0) findActive = (findActive - 1 + total) % total }, enabled = total > 0) {
+                                        Icon(AppIcons.ArrowUp, contentDescription = "Previous match")
+                                    }
+                                    IconButton(onClick = { if (total > 0) findActive = (findActive + 1) % total }, enabled = total > 0) {
+                                        Icon(AppIcons.ArrowDown, contentDescription = "Next match")
+                                    }
+                                    IconButton(onClick = { findOpen = false; findQuery = ""; matchBlocks = IntArray(0) }) {
+                                        Icon(AppIcons.Close, contentDescription = "Close search")
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
                 if (askOpen && !focus) {
                     // A solid pill: the note text scrolling underneath must not show through the field.
                     Surface(shape = RoundedCornerShape(28.dp), color = colors.surfaceContainerHigh, tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {

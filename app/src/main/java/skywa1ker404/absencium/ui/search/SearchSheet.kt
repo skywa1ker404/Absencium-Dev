@@ -154,7 +154,7 @@ fun SearchSheet(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 when {
-                    query.isBlank() -> HintText("Type to search. Typos are forgiven.")
+                    query.isBlank() -> ExpressiveEmptyState(AppIcons.Search, "Search everything", "Type to search notes, study material, subjects and more. Typos are forgiven.")
                     results.isEmpty -> ExpressiveEmptyState(AppIcons.Search, "No matches", "Nothing found for \"${query.trim()}\". Try another word.")
                 }
 

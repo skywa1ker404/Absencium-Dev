@@ -32,6 +32,8 @@ class AiChatService(
     private val contextFor: suspend (AiChat) -> ChatContext,
     private val memory: AiMemory,
     private val memoryAllowed: () -> Boolean,
+    /** Turns an approved read request into the attachment to send (the note's text or the material file), or null when it cannot be found. */
+    private val contentReader: suspend (AiAction.ReadContent) -> ChatAttachment? = { null },
     private val onBusy: (Boolean) -> Unit = {},
 ) {
     /** One answer in flight; the object identifies it, so a replaced answer never clears its successor's state. */
@@ -94,7 +96,7 @@ class AiChatService(
                 val reply = client.chat(connection, AiChatPrompt.system(context.copy(study = chat.study, level = chat.level, webSearch = searching)), turns, ChatOptions(searching, chat.thinking, context.temperature))
                 val parsed = AiActionParser.split(reply.text)
                 val shown = parsed.text.ifBlank { if (parsed.actions.isNotEmpty()) "Here is what I suggest." else reply.text.trim() }
-                if (memoryAllowed()) parsed.remembered.forEach { memory.add(it.text, if (it.chatOnly) chatId else null) }
+                if (memoryAllowed() && !chat.incognito) parsed.remembered.forEach { memory.add(it.text, if (it.chatOnly) chatId else null) }
                 if (shown.isBlank() && parsed.actions.isEmpty()) throw AiException("The model sent back an empty answer.")
                 append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }, sources = reply.sources))
                 finished(chatId, shown, ok = true)
@@ -178,16 +180,32 @@ class AiChatService(
         val keys = items.map { key(chatId, messageId, it.first) }
         _working.update { it + keys }
         scope.launch {
+            // What the student approved the AI to read; it goes into the chat as their next message and the AI answers again.
+            val approved = ArrayList<ChatAttachment>()
             try {
                 for ((index, action) in items) {
                     val key = key(chatId, messageId, index)
-                    val result = actionRunner().apply(action)
+                    val result = if (action is AiAction.ReadContent) {
+                        val file = contentReader(action)
+                        if (file != null) {
+                            approved += file
+                            ActionResult(true, "Sent to the AI.")
+                        } else {
+                            ActionResult(false, "That ${if (action.material) "study material" else "note"} could not be found or read.")
+                        }
+                    } else {
+                        actionRunner().apply(action)
+                    }
                     _results.update { it + (key to result) }
                     if (result.ok) chats.markActionDone(chatId, messageId, index)
                     _working.update { it - key }
                 }
             } finally {
                 _working.update { it - keys.toSet() }
+            }
+            if (approved.isNotEmpty()) {
+                append(chatId, ChatMessage(0, ChatRole.USER, "I approve. Here is what you asked to read: " + approved.joinToString(", ") { it.name } + ".", 0, attachments = approved))
+                answer(chatId)
             }
         }
     }

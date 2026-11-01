@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -87,9 +88,9 @@ fun PlusSheet(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Tile(AppIcons.Image, "Photos", Modifier.weight(1f)) { onDismiss(); onPhotos() }
                 Tile(AppIcons.Description, "Files", Modifier.weight(1f)) { onDismiss(); onFiles() }
-                Tile(AppIcons.Book, "Notes", Modifier.weight(1f)) { onDismiss(); onNotes() }
+                Tile(AppIcons.Book, "Notes and material", Modifier.weight(1f)) { onDismiss(); onNotes() }
             }
-            HintText("Pictures, PDFs, text files, recordings and short videos (recordings and videos need a Gemini model). Notes you pick are sent as text.")
+            HintText("Pictures, PDFs, text files, recordings and short videos (recordings and videos need a Gemini model). Notes and study material you pick are sent to the AI, nothing else.")
             ToggleRow(AppIcons.Search, "Web search", if (canSearch) "Looks things up and shows its sources" else "Needs a Gemini, Claude or OpenRouter model", chat.webSearch && canSearch, canSearch, onWeb)
             ToggleRow(AppIcons.Lightbulb, "Thinking", "Reasons for longer before answering (Gemini, Claude, OpenAI reasoning models)", chat.thinking, true, onThinking)
             ToggleRow(AppIcons.School, "Study mode", "Teaches step by step and checks you understood", chat.study, true, onStudy)
@@ -161,37 +162,118 @@ private fun LinkRow(icon: ImageVector, title: String, value: String, onClick: ()
     }
 }
 
-/** Picks notes whose text is sent with the next question. Only the notes ticked here are ever sent. */
+/** A note or a study material file the student can hand to the AI. */
+data class PickItem(val id: Long, val title: String, val subjectId: Long)
+
+/**
+ * Picks notes and study material to send with the next question, laid out like the Vault but compact: a search pill, two tabs, and a
+ * folder row per subject that opens into one thin row per item. Only what is ticked here is ever sent.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotePickerDialog(choices: List<Triple<Long, String, String>>, onAttach: (Set<Long>) -> Unit, onDismiss: () -> Unit) {
-    val picked = remember { mutableStateListOf<Long>() }
+fun ContentPickerDialog(
+    subjects: List<Pair<Long, String>>,
+    notes: List<PickItem>,
+    materials: List<PickItem>,
+    onAttach: (notes: Set<Long>, materials: Set<Long>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val pickedNotes = remember { mutableStateListOf<Long>() }
+    val pickedMaterials = remember { mutableStateListOf<Long>() }
+    val opened = remember { mutableStateListOf<Long>() }
     var query by remember { mutableStateOf("") }
-    val shown = remember(choices, query) { choices.filter { query.isBlank() || it.second.contains(query, true) || it.third.contains(query, true) } }
+    var tab by remember { mutableStateOf(0) }
+    val items = if (tab == 0) notes else materials
+    val picked = if (tab == 0) pickedNotes else pickedMaterials
+    val q = query.trim()
+    val groups = remember(items, subjects, q) {
+        subjects.mapNotNull { (id, name) ->
+            val list = items.filter { it.subjectId == id && (q.isEmpty() || it.title.contains(q, true) || name.contains(q, true)) }
+            if (list.isEmpty()) null else Triple(id, name, list)
+        }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(28.dp),
-        title = { Text("Send notes to the AI") },
+        title = { Text("Send to the AI", style = MaterialTheme.typography.titleMedium) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AppTextField(value = query, onValueChange = { query = it }, placeholder = { Text("Search notes") }, singleLine = true, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth())
-                if (choices.isEmpty()) HintText("You have no notes yet.")
-                Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
-                    shown.take(150).forEach { (id, title, subject) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable { if (id in picked) picked.remove(id) else picked.add(id) }.padding(vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Checkbox(checked = id in picked, onCheckedChange = { if (it) picked.add(id) else picked.remove(id) })
-                            Column(Modifier.weight(1f)) {
-                                Text(title.ifBlank { "Untitled" }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                if (subject.isNotBlank()) Text(subject, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(40.dp).clip(CircleShape).background(colors.surfaceContainerHighest).padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(AppIcons.Search, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                    Box(Modifier.weight(1f)) {
+                        if (query.isEmpty()) Text("Search", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        androidx.compose.foundation.text.BasicTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
+                            cursorBrush = androidx.compose.ui.graphics.SolidColor(colors.primary),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExpressiveChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("Notes${if (pickedNotes.isEmpty()) "" else " · ${pickedNotes.size}"}", style = MaterialTheme.typography.labelMedium, maxLines = 1) }, shape = CircleShape)
+                    ExpressiveChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("Study material${if (pickedMaterials.isEmpty()) "" else " · ${pickedMaterials.size}"}", style = MaterialTheme.typography.labelMedium, maxLines = 1) }, shape = CircleShape)
+                }
+                if (groups.isEmpty()) {
+                    Text(
+                        if (q.isNotEmpty()) "Nothing matches." else if (tab == 0) "You have no notes yet." else "You have no study material yet.",
+                        style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                }
+                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalMinimumInteractiveComponentSize provides 0.dp) {
+                    Column(Modifier.heightIn(max = 340.dp).verticalScroll(rememberScrollState())) {
+                        groups.forEach { (subjectId, name, list) ->
+                            val open = q.isNotEmpty() || subjectId in opened
+                            val count = list.count { it.id in picked }
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable { if (subjectId in opened) opened.remove(subjectId) else opened.add(subjectId) }.padding(horizontal = 4.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                androidx.compose.material3.TriStateCheckbox(
+                                    state = when {
+                                        count == 0 -> androidx.compose.ui.state.ToggleableState.Off
+                                        count == list.size -> androidx.compose.ui.state.ToggleableState.On
+                                        else -> androidx.compose.ui.state.ToggleableState.Indeterminate
+                                    },
+                                    onClick = { if (count == list.size) list.forEach { picked.remove(it.id) } else list.forEach { if (it.id !in picked) picked.add(it.id) } },
+                                )
+                                Icon(AppIcons.Folder, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                                Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                Text("$count/${list.size}", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                                skywa1ker404.absencium.ui.components.ExpandChevron(expanded = open)
+                            }
+                            skywa1ker404.absencium.ui.components.Reveal(visible = open) {
+                                Column(Modifier.padding(start = 22.dp)) {
+                                    list.forEach { item ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { if (item.id in picked) picked.remove(item.id) else picked.add(item.id) }.padding(horizontal = 4.dp, vertical = 3.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        ) {
+                                            Checkbox(checked = item.id in picked, onCheckedChange = { if (it) picked.add(item.id) else picked.remove(item.id) })
+                                            Text(item.title.ifBlank { "Untitled" }, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                Text("Only what you tick is sent, with your next question.", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             }
         },
-        confirmButton = { TextButton(onClick = { onAttach(picked.toSet()) }, enabled = picked.isNotEmpty()) { Text("Attach ${picked.size}") } },
+        confirmButton = {
+            val total = pickedNotes.size + pickedMaterials.size
+            TextButton(onClick = { onAttach(pickedNotes.toSet(), pickedMaterials.toSet()) }, enabled = total > 0) { Text("Attach $total") }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

@@ -42,7 +42,11 @@ fun DraftsPopup(onDismiss: () -> Unit, onOpenDraft: (NoteEntity) -> Unit, subjec
         // Opened from a subject folder, only that subject's drafts are listed.
         val shown = if (subjectId == null) loaded.drafts else loaded.drafts.filter { it.subjectId == subjectId }
         if (shown.isEmpty()) {
-            HintText("No drafts. When you leave a new entry unfinished, choose Save to Drafts to keep it here.")
+            skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
+                icon = skywa1ker404.absencium.ui.icons.AppIcons.Draft,
+                title = "No drafts",
+                text = "When you leave a new entry unfinished, choose Save to Drafts to keep it here.",
+            )
         }
         shown.forEach { draft ->
             AppCard(

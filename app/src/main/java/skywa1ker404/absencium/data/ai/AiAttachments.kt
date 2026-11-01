@@ -24,10 +24,10 @@ data class AttachmentPart(val image: AiImage? = null, val text: String? = null)
 class AiAttachments(private val context: Context) {
     private val dir get() = File(context.filesDir, "ai_attachments").also { it.mkdirs() }
 
-    suspend fun import(uri: Uri): AttachmentResult = withContext(Dispatchers.IO) {
+    suspend fun import(uri: Uri, displayName: String? = null): AttachmentResult = withContext(Dispatchers.IO) {
         try {
             val resolver = context.contentResolver
-            val name = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            val name = displayName ?: resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
                 if (c.moveToFirst()) c.getString(0) else null
             } ?: "file"
             val mime = (resolver.getType(uri) ?: guessMime(name))

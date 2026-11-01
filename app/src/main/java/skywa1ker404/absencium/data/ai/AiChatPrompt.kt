@@ -13,6 +13,8 @@ data class ChatContext(
     val allowed: Set<AiScope> = emptySet(),
     val calendar: CalendarData = CalendarData(),
     val notes: List<NoteEntity> = emptyList(),
+    /** Study material files (names only; their content is only sent after the student approves a read). */
+    val materials: List<skywa1ker404.absencium.data.db.GuideEntity> = emptyList(),
     val syllabus: List<SyllabusNodeEntity> = emptyList(),
     val thresholdPercent: Int = 75,
     val studentName: String? = null,
@@ -94,6 +96,9 @@ object AiChatPrompt {
         append("Use subject and topic names exactly as listed. Dates YYYY-MM-DD, times HH:mm, days MONDAY..SUNDAY. Types:\n")
         val types = buildList {
             if (AiScope.SUBJECTS in allowed) add("""{"type":"add_subject","name":""}""")
+            if (AiScope.NOTES in allowed || AiScope.MATERIAL in allowed) {
+                add("""{"type":"read_content","kind":"note|material","subject":"","title":""} (only when you need the actual text of a listed note or study material file to answer; use the exact subject and title as listed, at most 4 per answer. The student approves each read; the content then arrives in their next message, so end this answer by saying what you will read and why)""")
+            }
             if (AiScope.NOTES in allowed) {
                 add("""{"type":"add_note","subject":"","title":"","brief":"what the note must cover","length":"moderate|lengthy|in_depth"}""")
                 add("""(for add_note leave "body" out: the app's note writer then writes the full note from your brief. Only put "body" for a note of a few lines)""")
@@ -155,7 +160,7 @@ object AiChatPrompt {
                 val rows = data.attendance.filter { it.subjectId == s.id }
                 if (rows.isEmpty()) null else attendanceLine(s.name, rows.count { it.status == AttendanceStatus.PRESENT }, rows.count { it.status == AttendanceStatus.ABSENT }, c.thresholdPercent)
             }
-            append("Required attendance: ${c.thresholdPercent}%\n")
+            append("Required attendance: ${c.thresholdPercent}%. A subject marked SAFE meets it and is fine: never say it needs attention or care. Only a subject marked BELOW REQUIREMENT is a concern; a safe one close to the limit may get a gentle heads-up at most.\n")
             if (lines.isNotEmpty()) append("Attendance:\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
         }
         if (AiScope.SYLLABUS in c.allowed) {
@@ -165,7 +170,11 @@ object AiChatPrompt {
         if (AiScope.NOTES in c.allowed) {
             val lines = c.notes.filter { it.deletedAt == null }.sortedByDescending { it.updatedAt }.take(MAX_LINES)
                 .map { "${names[it.subjectId].orEmpty()}: ${it.title}" }
-            if (lines.isNotEmpty()) append("Recent note titles (the text of notes is not shared):\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
+            if (lines.isNotEmpty()) append("Recent note titles (their text is not shared unless the student approves a read_content request):\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
+        }
+        if (AiScope.MATERIAL in c.allowed) {
+            val lines = c.materials.sortedByDescending { it.updatedAt }.take(MAX_LINES).map { "${names[it.subjectId].orEmpty()}: ${it.fileName}" }
+            if (lines.isNotEmpty()) append("Study material files (their content is not shared unless the student approves a read_content request):\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
         }
     }
 
@@ -177,10 +186,10 @@ object AiChatPrompt {
         if (total == 0) return head
         return if (pct >= threshold) {
             val skip = if (threshold <= 0) Int.MAX_VALUE else (present * 100.0 / threshold - total).toInt().coerceAtLeast(0)
-            head + if (skip == Int.MAX_VALUE) "" else ": can miss $skip more lectures"
+            "$head [SAFE]" + if (skip == Int.MAX_VALUE) "" else ": can miss $skip more lectures"
         } else {
             val need = if (threshold >= 100) null else Math.ceil((threshold * total - 100.0 * present) / (100 - threshold)).toInt()
-            head + if (need == null) ": below the requirement" else ": short, must attend the next $need lectures in a row"
+            "$head [BELOW REQUIREMENT]" + if (need == null) ": below the requirement" else ": short, must attend the next $need lectures in a row"
         }
     }
 

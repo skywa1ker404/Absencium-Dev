@@ -99,6 +99,9 @@ class AiActionRunner(
             // Memories are saved by the chat itself and never reach the runner; this keeps the branch total.
             is AiAction.Remember -> ActionResult(true, "Remembered.")
 
+            // Reading is carried out by the chat service (it must put the content into the conversation); nothing to change here.
+            is AiAction.ReadContent -> ActionResult(true, "Sent to the AI.")
+
             is AiAction.SetSyllabusStatus -> {
                 val subject = subject(action.subject) ?: return missing(action.subject)
                 val nodes = database.syllabusDao().observeAll().first().filter { it.subjectId == subject.id }

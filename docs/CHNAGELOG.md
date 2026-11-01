@@ -1,17 +1,17 @@
 working on it
 
-## 2026-10-28 (development, not device-tested)
+## 2026-10-28 (development)
 - Fixed: popups jumping up and leaving a gap when the keyboard opens on a low text field (the window now resizes for the keyboard).
 - Fixed: applying a style again, or after other styles, left raw markers in the note; styles now toggle off cleanly, replace each other where they should, and a line keeps one list, quote or heading prefix.
 - Changed: subject folder tabs are a floating pill at the bottom with a floating action button; Subjects and Syllabus add actions are floating buttons; the AI Hub button is a squircle; the topic filter opens from the subject name.
 - Changed: Home, Today, Trash and Subjects redesigned with tinted cards.
 
-## 2026-10-29 (development, not device-tested)
+## 2026-10-29 (development)
 - Changed: Home has a closed-by-default drawer for the subjects to watch under the bunk buffer card, a pinned Subjects button instead of the AI button beside the pill, and an Attendance popup (Present / Absent today and notes collected).
 - Changed: the subject folder uses the main navigation pill, which shrinks while scrolling, with a button that slides away; the list runs under the navigation bar.
 - Fixed: the Import an outline dialog buttons; the chosen day in the calendar now has a ring so it differs from a holiday; note previews no longer show leftover style markers.
 
-## 2026-10-29, later (development, not device-tested)
+## 2026-10-29, later (development)
 - Removed: the pinned Subjects button beside the pill on Home.
 - Fixed: "Add today's notes" was cut off to "Add today's"; the buttons now wrap.
 - Changed: the extended buttons (subject folder tabs, Syllabus) fold to just their icon while you scroll down and unfold on scrolling up; the pill no longer shrinks on a page that cannot scroll.
@@ -31,7 +31,7 @@ working on it
 - Attendance: scrollable month chart, swipe between months, no lines through glass day beads. Timetable: week strip and a highlighted current lecture.
 - Themes: Sage & Oxblood and Orchid & Ember presets. AI Hub: a chat.
 
-## 2026-10-31 (development, not device-tested)
+## 2026-10-31 (development)
 - Fixed: the syllabus import builds a proper nested tree and leaves out course details; rows are smaller; tapping a unit shows only that unit.
 - Fixed: "The provider's reply was empty." (Gemini thinking tokens used up the reply; empty replies are retried and explained).
 - Fixed: an AI error shows once, at the bottom, for 5 seconds, and swipes away left or right.
@@ -40,9 +40,17 @@ working on it
 - Changed: every AI provider keeps its own API key; AI & Integrations lists your providers, tests a connection and switches in one tap.
 - Changed: sharing a note offers PDF (with a Themed PDF toggle) and a greyed-out Sharewave.
 
-## 2026-11-01 (development, not device-tested)
+## 2026-11-01 (development)
 - Changed: Absencium AI answers keep being written when you open another chat, leave the screen or close the app (a small "AI answers in progress" notification shows only while one is being written). A finished answer you have not seen shows a dot in the chat list.
 - Changed: Absencium AI is a general assistant first: it no longer limits itself to your app data, answers in depth, and writes notes at the length you ask in the app's own note format (long notes come from the note writer, not a short chat reply).
 - Added: optional Web search with sources (Gemini, Claude, OpenRouter), optional Thinking, optional Memory across chats (view, edit, delete), assistants with presets and import / export, study mode difficulty, files in a question (pictures, PDFs, text, recordings, videos, notes), Retry with another model, Continue, Archive, Save as note, token usage per provider, extra API keys per provider with automatic switching when one hits its limit.
 - Changed: new chat screen, full-screen chat list and "+" sheet after the reference screenshots.
 - Planned: a notification when an answer is ready while you are elsewhere; tapping it opens that chat (see TODOList 5.6).
+
+## 2026-11-01 (development)
+- Fixed: Absencium AI greeting no longer overlaps the suggestions; chat text no longer runs under a solid block behind the bars; the sidebar slides in from the side and cannot be clicked through; the model chooser is a compact sheet and the provider pills no longer glitch; "needs attention" is no longer said for subjects at or above the required percentage.
+- Fixed: `{color:...|text}` no longer shows as raw text in notes and AI chat (missing closers are repaired as the AI writes, when a note loads and when it is shown).
+- Changed: the empty chat page offers an incognito chat (not saved, no memory) instead of the new-chat icon; the thinking glow became the loading shape; "Send a note" is a compact picker like the Vault, also for study material.
+- Added: the AI can ask to read the content of a note or study material; nothing is sent until you approve the card.
+- Added: empty-page indicators on the Drafts popup and the Search page; reading mode Search finds words in the note with a separate AI icon; selecting text no longer scrolls the page to the top.
+- Docs: reference pictures and feature list for Absencium AI in `docs/ui overhaul/Ai/Generical-reference/`; `CURRENT.md` merged into `TODOList.md`.

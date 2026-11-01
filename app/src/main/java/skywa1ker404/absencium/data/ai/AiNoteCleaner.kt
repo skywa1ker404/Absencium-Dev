@@ -32,8 +32,45 @@ object AiNoteCleaner {
     private val display = Regex("""\$\$(.+?)\$\$|\\\[(.+?)\\\]""", RegexOption.DOT_MATCHES_ALL)
     private val inline = Regex("""\\\((.+?)\\\)|(?<![\\\w$])\$([^$\n]+?)\$(?![\w$])""")
 
+    private val tagOpen = Regex("""\{(?:color:#?[0-9A-Fa-f]{6}|size:\d{1,2})\|""")
+
+    /**
+     * Models often close a colour or size tag with a bare `}` (`{color:1565C0|cell division}`) or forget the closer. The editor's
+     * tag ends with `|}`, so the unclosed tag showed as raw text. Each tag whose line holds no closer gets one: the first lone `}`
+     * after it becomes `|}`, otherwise `|}` goes at the end of the line. `{color:#RRGGBB|` loses its `#`. Pure.
+     */
+    fun repairTags(text: String): String {
+        if (!text.contains("{color:") && !text.contains("{size:")) return text
+        return text.split("\n").joinToString("\n") { repairLine(it) }
+    }
+
+    private fun repairLine(line: String): String {
+        var out = line.replace("{color:#", "{color:")
+        var from = 0
+        var guard = 0
+        while (guard++ < 40) {
+            val open = tagOpen.find(out, from) ?: break
+            val bodyStart = open.range.last + 1
+            val rest = out.substring(bodyStart)
+            val nested = tagOpen.findAll(rest).count()
+            val closers = Regex("""\|}""").findAll(rest).count()
+            if (closers <= nested) {
+                var lone = -1
+                var j = bodyStart
+                while (j < out.length) {
+                    if (out[j] == '}' && (j == 0 || out[j - 1] != '|')) { lone = j; break }
+                    j++
+                }
+                out = if (lone >= 0) out.substring(0, lone) + "|}" + out.substring(lone + 1)
+                else out.trimEnd() + "|}"
+            }
+            from = bodyStart
+        }
+        return out
+    }
+
     fun clean(raw: String): String {
-        var text = raw.replace("\r\n", "\n").trim()
+        var text = repairTags(raw.replace("\r\n", "\n").trim())
         text = text.replace(Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE), "\n")
         text = stripFences(text)
         text = display.replace(text) { m -> "\n{align:center}" + math((m.groups[1] ?: m.groups[2])!!.value) + "\n" }

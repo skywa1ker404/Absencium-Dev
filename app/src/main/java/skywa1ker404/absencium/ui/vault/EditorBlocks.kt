@@ -401,7 +401,7 @@ fun TableBlock(text: String, actions: TableActions, modifier: Modifier = Modifie
                 .border(if (selected) 2.dp else 0.dp, colors.primary, shape)
                 .clickable { selected = true; menuOpen = true },
         ) {
-            if (block != null) PreviewTable(block) { } else Text(text, style = MaterialTheme.typography.bodySmall)
+            if (block != null) PreviewTable(block, onOpenLink = { }) else Text(text, style = MaterialTheme.typography.bodySmall)
         }
         if (selected) {
             // Dragging the corner down by one row's height adds a row; up removes an empty bottom row.

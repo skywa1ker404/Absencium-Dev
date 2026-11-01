@@ -177,7 +177,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
 
     var title by remember(note.id) { mutableStateOf(note.title) }
     // A picture line cut in two by an older version is joined again as the note opens.
-    var text by remember(note.id) { mutableStateOf(NoteBlocks.repair(note.bodyText)) }
+    var text by remember(note.id) { mutableStateOf(NoteBlocks.repair(skywa1ker404.absencium.data.ai.AiNoteCleaner.repairTags(note.bodyText))) }
     var selStart by remember(note.id) { mutableIntStateOf(note.bodyText.length) }
     var selEnd by remember(note.id) { mutableIntStateOf(note.bodyText.length) }
     var focusPart by remember(note.id) { mutableIntStateOf(-1) }
@@ -527,9 +527,12 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
 
     val palette = LivePalette(accent = colors.primary, muted = colors.onSurfaceVariant, codeBackground = colors.surfaceContainerHighest)
 
+    val pageScroll = androidx.compose.foundation.rememberScrollState()
+    skywa1ker404.absencium.ui.components.KeepScrollOnSelection(pageScroll, if (selStart != selEnd) selStart to selEnd else null)
     ScreenScaffold(
         title = "Note",
         onBack = { navigator.navigateUp() },
+        scrollState = pageScroll,
         customTopBar = {
             // Read so the buttons refresh when the history changes.
             @Suppress("UNUSED_VARIABLE") val version = historyVersion

@@ -155,8 +155,31 @@ class AppContainer(context: Context) {
             contextFor = { chat -> loadChatContext(chat) },
             memory = aiMemory,
             memoryAllowed = { skywa1ker404.absencium.data.ai.AiScope.MEMORY in aiPermissions.allowed.value },
+            contentReader = { read -> readContent(read) },
             onBusy = { busy -> skywa1ker404.absencium.data.ai.AiWorkService.setBusy(appContext, busy) },
         )
+    }
+
+    /** The content of a note or study material the student approved Absencium AI to read, as a file to send; null when it cannot be found. */
+    private suspend fun readContent(read: skywa1ker404.absencium.data.ai.AiAction.ReadContent): skywa1ker404.absencium.data.ai.ChatAttachment? {
+        val vault = vaultRepository.data.first()
+        val subject = vault.subjects.firstOrNull { it.name.trim().equals(read.subject.trim(), ignoreCase = true) } ?: return null
+        val dir = java.io.File(appContext.filesDir, "ai_attachments").also { it.mkdirs() }
+        return try {
+            if (read.material) {
+                val guide = vault.guides.firstOrNull { it.subjectId == subject.id && it.fileName.trim().equals(read.title.trim(), ignoreCase = true) } ?: return null
+                val uri = if (guide.localUri.startsWith("content://")) android.net.Uri.parse(guide.localUri) else android.net.Uri.fromFile(java.io.File(guide.localUri))
+                aiAttachments.import(uri, guide.fileName).attachment
+            } else {
+                val note = vault.notes.firstOrNull { it.deletedAt == null && it.subjectId == subject.id && it.title.trim().equals(read.title.trim(), ignoreCase = true) } ?: return null
+                val file = java.io.File(dir, "note-${note.id}-${System.nanoTime()}.txt")
+                file.writeText("${note.title}\n\n${note.bodyText}")
+                skywa1ker404.absencium.data.ai.ChatAttachment("${note.title}.txt", "text/plain", file.absolutePath)
+            }
+        } catch (e: Exception) {
+            skywa1ker404.absencium.logging.DebugLogger.e("AiContent", "An approved read failed", e)
+            null
+        }
     }
 
     /** What Absencium AI may know about the student right now: only the parts of the app they allowed. */
@@ -164,16 +187,18 @@ class AppContainer(context: Context) {
         val allowed = aiPermissions.allowed.value
         val calendar = if (allowed.isEmpty()) skywa1ker404.absencium.data.calendar.CalendarData() else calendarRepository.data.first()
         val notes = if (skywa1ker404.absencium.data.ai.AiScope.NOTES in allowed) vaultRepository.data.first().notes else emptyList()
+        val materials = if (skywa1ker404.absencium.data.ai.AiScope.MATERIAL in allowed) vaultRepository.data.first().guides else emptyList()
         val syllabus = if (skywa1ker404.absencium.data.ai.AiScope.SYLLABUS in allowed) database.syllabusDao().observeAll().first() else emptyList()
         val settings = settingsState.value
         return skywa1ker404.absencium.data.ai.ChatContext(
             allowed = allowed,
             calendar = calendar,
             notes = notes,
+            materials = materials,
             syllabus = syllabus,
             thresholdPercent = settings?.attendanceThresholdPercent ?: 75,
             studentName = settings?.displayName?.takeIf { it.isNotBlank() },
-            memories = if (skywa1ker404.absencium.data.ai.AiScope.MEMORY in allowed) {
+            memories = if (skywa1ker404.absencium.data.ai.AiScope.MEMORY in allowed && !chat.incognito) {
                 aiMemory.relevant(chat.messages.lastOrNull { it.role == skywa1ker404.absencium.data.ai.ChatRole.USER }?.text.orEmpty(), chat.id)
             } else {
                 emptyList()

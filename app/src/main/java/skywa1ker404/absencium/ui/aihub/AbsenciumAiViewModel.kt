@@ -63,10 +63,14 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
     val subjects: StateFlow<List<SubjectEntity>> =
         container.database.subjectDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** The notes that can be attached to a question: id, title, and the name of their subject. */
-    val noteChoices: StateFlow<List<Triple<Long, String, String>>> = combine(container.vaultRepository.data, subjects) { vault, subjects ->
-        val names = subjects.associate { it.id to it.name }
-        vault.notes.filter { it.deletedAt == null }.sortedByDescending { it.updatedAt }.map { Triple(it.id, it.title, names[it.subjectId].orEmpty()) }
+    /** The notes that can be attached to a question, with the subject each belongs to. */
+    val noteChoices: StateFlow<List<PickItem>> = container.vaultRepository.data.map { vault ->
+        vault.notes.filter { it.deletedAt == null }.sortedByDescending { it.updatedAt }.map { PickItem(it.id, it.title, it.subjectId) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The study material (files) that can be attached to a question. */
+    val materialChoices: StateFlow<List<PickItem>> = container.vaultRepository.data.map { vault ->
+        vault.guides.sortedByDescending { it.updatedAt }.map { PickItem(it.id, it.fileName, it.subjectId) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _draft = MutableStateFlow(store.blank())
@@ -115,7 +119,11 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
     /** Whether the model of the open chat can search the web (Gemini, Claude, OpenRouter). */
     fun canSearch(): Boolean = connection()?.let { AiChatService.canSearch(it) } ?: false
 
+    /** Starts or leaves an incognito chat: nothing is written to the phone and memory is not used or saved. Only on an empty chat. */
+    fun setIncognito(on: Boolean) = change { it.copy(incognito = on) }
+
     fun newChat() {
+        store.dropIncognito()
         _draft.value = store.blank()
         _files.value = emptyList()
         switchTo(_draft.value.id)
@@ -123,6 +131,7 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
 
     fun open(id: Long) {
         if (id == _currentId.value) return
+        store.dropIncognito()
         _files.value = emptyList()
         switchTo(id)
     }
@@ -208,6 +217,20 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
                     DebugLogger.e("AbsenciumAi", "A note could not be attached", e)
                     _notice.value = "That note could not be attached."
                 }
+            }
+        }
+    }
+
+    /** Attaches the chosen study material files, so the question is answered from them (only what the student ticks is ever sent). */
+    fun attachMaterials(ids: Set<Long>) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            val guides = container.vaultRepository.data.first().guides.filter { it.id in ids }
+            for (guide in guides.take(MAX_FILES - _files.value.size)) {
+                val uri = if (guide.localUri.startsWith("content://")) Uri.parse(guide.localUri) else Uri.fromFile(File(guide.localUri))
+                val result = container.aiAttachments.import(uri, guide.fileName)
+                result.attachment?.let { file -> _files.update { it + file } }
+                result.error?.let { _notice.value = it }
             }
         }
     }
@@ -304,5 +327,10 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
 
     private companion object {
         const val MAX_FILES = 8
+    }
+
+    override fun onCleared() {
+        store.dropIncognito()
+        super.onCleared()
     }
 }

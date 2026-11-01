@@ -17,6 +17,12 @@ sealed interface AiAction {
     /** One plain sentence that says exactly what will change. */
     fun describe(): String
 
+    /** Asks to read a note or a study material file. Only after the student approves is its content sent to the AI, in the next message. */
+    data class ReadContent(val material: Boolean, val subject: String, val title: String) : AiAction {
+        override val scope = if (material) AiScope.MATERIAL else AiScope.NOTES
+        override fun describe() = "Read the ${if (material) "study material" else "note"} \"$title\" in $subject and send it to the AI"
+    }
+
     data class AddSubject(val name: String) : AiAction {
         override val scope = AiScope.SUBJECTS
         override fun describe() = "Add the subject \"$name\""
@@ -180,6 +186,11 @@ object AiActionParser {
         fun str(key: String) = o.optString(key).trim().takeIf { it.isNotEmpty() && it != "null" }
         return when (str("type")?.lowercase()) {
             "add_subject" -> AiAction.AddSubject(str("name") ?: return null)
+            "read_content" -> AiAction.ReadContent(
+                material = str("kind")?.lowercase()?.startsWith("mat") == true || str("kind")?.lowercase()?.startsWith("study") == true,
+                subject = str("subject") ?: return null,
+                title = str("title") ?: return null,
+            )
             "remember" -> AiAction.Remember(str("text") ?: return null, o.optBoolean("chat_only"))
             "add_note" -> AiAction.AddNote(
                 str("subject") ?: return null, str("title") ?: return null, o.optString("body").let { if (it == "null") "" else it },
