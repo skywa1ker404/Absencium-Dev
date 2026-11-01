@@ -205,7 +205,7 @@ class AiChatService(
                         val file = contentReader(action)
                         if (file != null) {
                             approved += file
-                            ActionResult(true, "Sent to the AI.")
+                            ActionResult(true, "Read. The AI is using it.")
                         } else {
                             ActionResult(false, "That ${if (action.material) "study material" else "note"} could not be found or read.")
                         }
@@ -220,7 +220,7 @@ class AiChatService(
                 _working.update { it - keys.toSet() }
             }
             if (approved.isNotEmpty()) {
-                append(chatId, ChatMessage(0, ChatRole.USER, "I approve. Here is what you asked to read: " + approved.joinToString(", ") { it.name } + ".", 0, attachments = approved))
+                append(chatId, ChatMessage(0, ChatRole.USER, "[Result of your read request, approved by the student: " + approved.joinToString(", ") { it.name } + ". Use it now to answer; do not mention this message.]", 0, attachments = approved, hidden = true))
                 answer(chatId)
             }
         }

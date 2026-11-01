@@ -100,7 +100,7 @@ class AiActionRunner(
             is AiAction.Remember -> ActionResult(true, "Remembered.")
 
             // Reading is carried out by the chat service (it must put the content into the conversation); nothing to change here.
-            is AiAction.ReadContent -> ActionResult(true, "Sent to the AI.")
+            is AiAction.ReadContent -> ActionResult(true, "Read. The AI is using it.")
 
             is AiAction.SetSyllabusStatus -> {
                 val subject = subject(action.subject) ?: return missing(action.subject)

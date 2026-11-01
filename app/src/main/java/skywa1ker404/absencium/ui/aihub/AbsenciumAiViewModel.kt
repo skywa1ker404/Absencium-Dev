@@ -274,7 +274,7 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
     fun regenerate() {
         val chat = current.value
         if (chat.id in busyChats.value || connection(chat) == null) return
-        val lastUser = chat.messages.lastOrNull { it.role == ChatRole.USER } ?: return
+        val lastUser = chat.messages.lastOrNull { it.role == ChatRole.USER && !it.hidden } ?: return
         submit(chat, chat.messages.takeWhile { it.id != lastUser.id }, lastUser.text, lastUser.attachments)
     }
 
@@ -305,7 +305,7 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             try {
                 val body = AiNoteCleaner.clean(message.text)
-                val question = current.value.messages.lastOrNull { it.role == ChatRole.USER && it.id < message.id }?.text.orEmpty()
+                val question = current.value.messages.lastOrNull { it.role == ChatRole.USER && !it.hidden && it.id < message.id }?.text.orEmpty()
                 val heading = body.lineSequence().map { it.trim().trimStart('#', ' ').trim() }.firstOrNull { it.isNotEmpty() }
                 val title = (heading ?: question).replace(Regex("[*_=+~`]"), "").take(80).ifBlank { "AI note" }
                 container.vaultRepository.saveNote(0, subjectId, title, body, NoteStatus.ACTIVE)
@@ -321,7 +321,7 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
     fun clearAppPrompts() = container.aiHistory.clear()
 
     /** The open chat as plain text, for sharing. */
-    fun transcript(): String = current.value.messages.filter { !it.failed }.joinToString("\n\n") {
+    fun transcript(): String = current.value.messages.filter { !it.failed && !it.hidden }.joinToString("\n\n") {
         (if (it.role == ChatRole.USER) "You: " else "Absencium AI: ") + it.text
     }
 

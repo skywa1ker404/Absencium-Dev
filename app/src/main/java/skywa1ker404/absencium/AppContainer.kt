@@ -199,7 +199,7 @@ class AppContainer(context: Context) {
             thresholdPercent = settings?.attendanceThresholdPercent ?: 75,
             studentName = settings?.displayName?.takeIf { it.isNotBlank() },
             memories = if (skywa1ker404.absencium.data.ai.AiScope.MEMORY in allowed && !chat.incognito) {
-                aiMemory.relevant(chat.messages.lastOrNull { it.role == skywa1ker404.absencium.data.ai.ChatRole.USER }?.text.orEmpty(), chat.id)
+                aiMemory.relevant(chat.messages.lastOrNull { it.role == skywa1ker404.absencium.data.ai.ChatRole.USER && !it.hidden }?.text.orEmpty(), chat.id)
             } else {
                 emptyList()
             },

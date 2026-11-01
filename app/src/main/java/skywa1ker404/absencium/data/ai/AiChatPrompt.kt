@@ -97,7 +97,7 @@ object AiChatPrompt {
         val types = buildList {
             if (AiScope.SUBJECTS in allowed) add("""{"type":"add_subject","name":""}""")
             if (AiScope.NOTES in allowed || AiScope.MATERIAL in allowed) {
-                add("""{"type":"read_content","kind":"note|material","subject":"","title":""} (only when you need the actual text of a listed note or study material file to answer; use the exact subject and title as listed, at most 4 per answer. The student approves each read; the content then arrives in their next message, so end this answer by saying what you will read and why)""")
+                add("""{"type":"read_content","kind":"note|material","subject":"","title":""} (only when you need the actual text of a listed note or study material file to answer; use the exact subject and title as listed, at most 4 per answer. The student approves each read with one tap; the app then gives you the content straight away and you carry on answering with it, so just say in a short line what you are about to read. Never ask the student to paste or send the text)""")
             }
             if (AiScope.NOTES in allowed) {
                 add("""{"type":"add_note","subject":"","title":"","brief":"what the note must cover","length":"moderate|lengthy|in_depth"}""")

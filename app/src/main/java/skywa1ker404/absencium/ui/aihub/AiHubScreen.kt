@@ -340,7 +340,7 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
                     EmptyChat(name = settings?.displayName.orEmpty(), allowed = allowed, incognito = chat.incognito, onPick = { input = it })
                 }
             } else {
-                val last = chat.messages.lastOrNull()
+                val last = chat.messages.lastOrNull { !it.hidden }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     reverseLayout = true,
@@ -362,7 +362,7 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
                     } else if (last != null && last.role == ChatRole.USER) {
                         item(key = "no-answer") { NoAnswerYet(onRetry = viewModel::regenerate) }
                     }
-                    items(chat.messages.asReversed(), key = { it.id }) { message ->
+                    items(chat.messages.filter { !it.hidden }.asReversed(), key = { it.id }) { message ->
                         Box(if (message === last) Modifier.bounceIn(0) else Modifier) {
                             if (message.role == ChatRole.USER) {
                                 UserMessage(message, onCopy = { copy(message.text) }, onEdit = { input = message.text; editingId = message.id }, enabled = !pending)
