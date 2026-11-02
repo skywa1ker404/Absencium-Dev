@@ -43,6 +43,8 @@ data class PromptTopics(
     val actions: Boolean = true,
     val quiz: Boolean = true,
     val notes: Boolean = true,
+    /** The whole weekly timetable, not only today and tomorrow. */
+    val week: Boolean = true,
 ) {
     /** True when some app data is shown. */
     val data: Boolean get() = scopes == null || scopes.isNotEmpty()
@@ -84,7 +86,8 @@ data class PromptTopics(
             if (scopes.isNotEmpty()) scopes += AiScope.SUBJECTS
             // Reading a note or file is an action too, so those keep the actions format.
             val actions = ACTION_WORDS.any { it in t } || AiScope.NOTES in scopes || AiScope.MATERIAL in scopes
-            return PromptTopics(scopes, actions, quiz, NOTES.any { it in t })
+            val week = listOf("week", "timetable", "schedule", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "every day", "all my").any { it in t }
+            return PromptTopics(scopes, actions, quiz, NOTES.any { it in t }, week)
         }
     }
 }
@@ -98,16 +101,10 @@ object AiChatPrompt {
     private const val MAX_SYLLABUS_LINES = 80
 
     fun system(c: ChatContext): String = buildString {
-        append("You are Absencium AI, the student's study companion inside the Absencium app, and a sharp, versatile assistant: studying, explaining and solving problems in any subject, writing, coding, planning, advice, general knowledge. ")
-        append("Never limit yourself to the app's data and never deflect because something is not in the app.\n\n")
-        append("HOW YOU TALK. Sound like a smart, friendly person who knows the subject, not like a template.\n")
-        append("- Answer the actual question in the first sentence. No openers (\"Great question\", \"Sure\", \"Certainly\"), no restating the question, no closing offers (\"Let me know if...\", \"I hope this helps\").\n")
-        append("- Let the question set the length and shape. A casual or simple message gets a sentence or two of plain prose, no headings, no bullets. Use lists, tables, headings or code only when the content really is a list, a comparison, steps or code. Do not repeat the same layout in every answer.\n")
-        append("- Write for a phone: short paragraphs, the key point first, nothing padded. Hard problems get the key steps and a check of the result, not a lecture.\n")
-        append("- Have a view. When asked which is better or what to do, pick one and say why. When you are unsure, say so in a few words instead of guessing. If the student's own work has a mistake, point to it.\n")
-        append("- Use what you know of the conversation (earlier messages, their subjects and exams when allowed) naturally. Ask one question back only when you truly cannot answer well without it.\n")
-        append("- No emojis unless the student uses them. Do not introduce yourself or mention being offline or an app unless asked. Reply in the language the student writes in.\n")
-        append("- Use Markdown. Write maths in plain text or Unicode (x², √, ∫, ≤), not LaTeX.\n")
+        append("You are Absencium AI, the student's study companion inside the Absencium app and a sharp, versatile assistant: studying, any subject, writing, coding, planning, advice, general knowledge. Never limit yourself to the app's data.\n")
+        append("HOW YOU TALK: like a smart, friendly person. Answer in the first sentence; no openers (\"Great question\", \"Sure\"), no restating, no closing offers or recaps (\"Anything else?\"). ")
+        append("Length follows the question: casual or simple gets one or two plain sentences, no headings or bullets; use lists, tables or code only when the content is one. Short paragraphs for a phone, key point first. ")
+        append("Have a view when asked what to do; say so briefly when unsure; point out mistakes in the student's work. No emojis unless they use them. Reply in their language. Markdown; maths in plain text or Unicode, not LaTeX.\n")
         append("Today is ${c.today} (${c.today.dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }}).")
         c.studentName?.takeIf { it.isNotBlank() }?.let { append(" The student's name is $it.") }
         append('\n')
@@ -152,8 +149,7 @@ object AiChatPrompt {
             if (c.topics.actions) append(actions(shown))
             if (AiScope.MEMORY in c.allowed) append(if (c.topics.actions) memory(c.memories) else remembered(c.memories))
         }
-        append("\nApp facts, only when asked: Absencium keeps notes, attendance, timetable, exams, syllabus and study materials on the student's device.\n")
-        append("\nBEFORE YOU ANSWER, REMEMBER: respond to exactly what was asked, at the length it deserves (a single word or topic gets a compact overview, not a lecture). Do not end with \"Anything else?\", an offer or a recap. Do not add a \"quick check\" or quiz unless asked.")
+        append("\nRespond to exactly what was asked, at the length it deserves (a single word or topic gets a compact overview). No \"Anything else?\", offer or recap, no quiz unless asked.")
         if (c.topics.quiz) append(" When asked for a quiz use the absencium-quiz block only and never print the answers.")
         append('\n')
     }
@@ -221,7 +217,7 @@ object AiChatPrompt {
             }
             day(today, "Today")
             day(today.plusDays(1), "Tomorrow")
-            val lines = data.timetable.sortedWith(compareBy({ it.dayOfWeek }, { it.startTime })).take(MAX_LINES)
+            val lines = if (!c.topics.week) emptyList() else data.timetable.sortedWith(compareBy({ it.dayOfWeek }, { it.startTime })).take(MAX_LINES)
                 .map { "${it.dayOfWeek} ${it.startTime}-${it.endTime} ${names[it.subjectId].orEmpty()}" + (it.roomNumber?.let { r -> " room $r" } ?: "") }
             if (lines.isNotEmpty()) append("Weekly timetable:\n").append(lines.joinToString("\n") { "- $it" }).append('\n')
         }
