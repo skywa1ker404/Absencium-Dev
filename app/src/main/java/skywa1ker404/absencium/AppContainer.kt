@@ -65,6 +65,7 @@ class AppContainer(context: Context) {
     /** The chats of Absencium AI and which parts of the app's data it may use. Both stay on this phone. */
     val aiChats = skywa1ker404.absencium.data.ai.AiChats(appContext)
     val aiPermissions = skywa1ker404.absencium.data.ai.AiPermissions(appContext)
+    val aiMode = skywa1ker404.absencium.data.ai.AiModeStore(appContext)
     val aiMemory = skywa1ker404.absencium.data.ai.AiMemory(appContext)
     val aiAssistants = skywa1ker404.absencium.data.ai.AiAssistants(appContext)
         /** Finds or draws the images AI notes ask for (both optional, off by default). */
@@ -157,6 +158,7 @@ class AppContainer(context: Context) {
             memoryAllowed = { skywa1ker404.absencium.data.ai.AiScope.MEMORY in aiPermissions.allowed.value },
             contentReader = { read -> readContent(read) },
             onBusy = { busy -> skywa1ker404.absencium.data.ai.AiWorkService.setBusy(appContext, busy) },
+            mode = { aiMode.mode.value },
         )
     }
 

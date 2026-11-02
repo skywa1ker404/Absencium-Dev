@@ -178,7 +178,7 @@ fun AssistantMessage(
         }
         if (isLast) {
             Text(
-                (if (message.model.isNotBlank()) message.model + (if (message.via.isNotBlank()) " (${message.via} was at its limit)" else "") + " · " else "") + "Absencium AI can make mistakes. Check important facts.",
+                (if (message.model.isNotBlank()) message.model + (if (message.via.isNotBlank()) " (${message.via} was at its limit)" else "") + " · " else "") + (if (message.tokensIn > 0) "${message.tokensIn} in · ${message.tokensOut} out · " else "") + "Absencium AI can make mistakes. Check important facts.",
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.onSurfaceVariant,
             )

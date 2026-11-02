@@ -520,4 +520,6 @@ class TestLabViewModel(private val container: AppContainer) : ViewModel() {
 class AiPermissionsViewModel(private val container: AppContainer) : ViewModel() {
     val allowed: StateFlow<Set<skywa1ker404.absencium.data.ai.AiScope>> = container.aiPermissions.allowed
     fun set(scope: skywa1ker404.absencium.data.ai.AiScope, on: Boolean) = container.aiPermissions.set(scope, on)
+    val mode: StateFlow<skywa1ker404.absencium.data.ai.AiMode> = container.aiMode.mode
+    fun setMode(mode: skywa1ker404.absencium.data.ai.AiMode) = container.aiMode.set(mode)
 }

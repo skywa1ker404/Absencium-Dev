@@ -35,6 +35,7 @@ class AiChatService(
     /** Turns an approved read request into the attachment to send (the note's text or the material file), or null when it cannot be found. */
     private val contentReader: suspend (AiAction.ReadContent) -> ChatAttachment? = { null },
     private val onBusy: (Boolean) -> Unit = {},
+    private val mode: () -> AiMode = { AiMode.BALANCED },
 ) {
     /** One answer in flight; the object identifies it, so a replaced answer never clears its successor's state. */
     private class Run {
@@ -77,9 +78,11 @@ class AiChatService(
 
     fun key(chatId: Long, messageId: Long, index: Int) = "$chatId:$messageId:$index"
 
-    /** What the last few student messages touch, so the instruction only carries the parts that matter (a plain "hi" stays small). */
-    private fun topicsOf(chat: AiChat, subjects: List<String>): PromptTopics =
-        PromptTopics.of(chat.messages.filter { it.role == ChatRole.USER }.takeLast(3).joinToString("\n") { it.text }, subjects)
+    /** Looks at the last few student messages on the phone (no model call) to see what the request needs and may spend. */
+    private fun planFor(chat: AiChat, subjects: List<String>): TaskPlan {
+        val student = chat.messages.filter { it.role == ChatRole.USER }
+        return AiOrchestrator.plan(student.takeLast(3).joinToString("\n") { it.text }, student.lastOrNull { !it.hidden }?.text.orEmpty(), mode(), subjects)
+    }
 
     /** Starts answering the last question of [chatId] (already saved in the store). Replaces an answer still being written for that chat. */
     fun answer(chatId: Long) {
@@ -95,16 +98,23 @@ class AiChatService(
             try {
                 val context = contextFor(chat)
                 val searching = chat.webSearch && canSearch(connection)
-                val turns = ChatTurns.normalize(turnsOf(chat))
+                val plan = planFor(chat, context.calendar.subjects.map { it.name })
+                val turns = ChatTurns.normalize(turnsOf(chat, plan.budget))
                 if (turns.isEmpty()) return@launch
-                val reply = client.chat(connection, AiChatPrompt.system(context.copy(study = chat.study, level = chat.level, webSearch = searching, topics = topicsOf(chat, context.calendar.subjects.map { it.name }))), turns, ChatOptions(searching, chat.thinking, context.temperature))
+                val system = AiChatPrompt.system(
+                    context.copy(
+                        study = chat.study, level = chat.level, webSearch = searching, topics = plan.topics,
+                        memories = context.memories.take(plan.budget.memories),
+                    ),
+                )
+                val reply = client.chat(connection, system, turns, ChatOptions(searching, chat.thinking, context.temperature, plan.budget.maxOutput))
                 val parsed = AiActionParser.split(reply.text)
                 val (withoutQuiz, quiz) = AiQuiz.extract(parsed.text)
                 val shown = withoutQuiz.ifBlank { if (quiz != null) "Here is your quiz." else if (parsed.actions.isNotEmpty()) "Here is what I suggest." else reply.text.trim() }
                 if (memoryAllowed() && !chat.incognito) parsed.remembered.forEach { memory.add(it.text, if (it.chatOnly) chatId else null) }
                 if (shown.isBlank() && parsed.actions.isEmpty()) throw AiException("The model sent back an empty answer.")
                 if (reply.webOff) chats.get(chatId)?.let { chats.put(it.copy(webSearch = false)) }
-                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, via = reply.replacedProvider, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }, sources = reply.sources, quiz = quiz))
+                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, via = reply.replacedProvider, tokensIn = reply.tokensIn, tokensOut = reply.tokensOut, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }, sources = reply.sources, quiz = quiz))
                 finished(chatId, shown, ok = true)
             } catch (e: CancellationException) {
                 throw e
@@ -139,10 +149,10 @@ class AiChatService(
     }
 
     /**
-     * The conversation as turns, kept small so a long chat does not cost more with every question: the newest [FULL_TURNS] messages go in full,
-     * older ones are shortened, anything beyond [MAX_TURNS] is left out, and files are sent again only for the two newest messages that have them.
+     * The conversation as turns, kept small so a long chat does not cost more with every question: the newest `fullTurns` messages go in full,
+     * older ones are shortened, anything beyond `maxTurns` is left out, and files are sent again only for the two newest messages that have them.
      */
-    private suspend fun turnsOf(chat: AiChat): List<ChatTurn> {
+    private suspend fun turnsOf(chat: AiChat, budgetOf: Budget): List<ChatTurn> {
         var budget = MAX_SENT_BYTES
         var filesLeft = FILE_MESSAGES
         val turns = ArrayList<ChatTurn>()
@@ -150,11 +160,11 @@ class AiChatService(
         // Newest first, so the files of the latest questions are the ones kept when the total is too big to send again.
         for (message in chat.messages.asReversed()) {
             if (message.failed) continue
-            if (seen >= MAX_TURNS) break
-            val old = seen >= FULL_TURNS
+            if (seen >= budgetOf.maxTurns) break
+            val old = seen >= budgetOf.fullTurns
             seen++
             var text = message.text
-            if (old && text.length > OLD_TURN_CHARS) text = text.take(OLD_TURN_CHARS).trimEnd() + " …"
+            if (old && text.length > budgetOf.oldTurnChars) text = text.take(budgetOf.oldTurnChars).trimEnd() + " …"
             val images = ArrayList<AiImage>()
             val sendFiles = message.attachments.isNotEmpty() && filesLeft > 0
             if (sendFiles) filesLeft--
@@ -245,11 +255,6 @@ class AiChatService(
 
         /** The most base64 text of files sent again with one request. */
         private const val MAX_SENT_BYTES = 24_000_000
-
-        /** Messages sent in full, the most that are sent at all, and how many characters an older message keeps. */
-        private const val FULL_TURNS = 8
-        private const val MAX_TURNS = 30
-        private const val OLD_TURN_CHARS = 700
 
         /** Messages whose attached files are sent again with a new question. */
         private const val FILE_MESSAGES = 2

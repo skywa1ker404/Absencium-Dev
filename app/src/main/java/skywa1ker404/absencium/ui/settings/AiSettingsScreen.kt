@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,6 +27,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AiHubScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AiProviderScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import skywa1ker404.absencium.data.ai.AiMode
 import skywa1ker404.absencium.data.ai.AiScope
 import skywa1ker404.absencium.ui.AiPermissionsViewModel
 import skywa1ker404.absencium.ui.AiProvidersViewModel
@@ -57,6 +59,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
     val rows by providersViewModel.rows.collectAsStateWithLifecycle()
     val allowed by permissionsViewModel.allowed.collectAsStateWithLifecycle()
     val usage by providersViewModel.usage.collectAsStateWithLifecycle()
+    val mode by permissionsViewModel.mode.collectAsStateWithLifecycle()
     val active = rows.firstOrNull { it.active }
     val ready = active != null && active.complete
     var picking by remember { mutableStateOf(false) }
@@ -90,6 +93,19 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
                     leading = {
                         Icon(AppIcons.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 8.dp))
                     },
+                )
+            }
+        }
+
+        SettingCaption("Response mode")
+        SettingGroup {
+            AiMode.entries.forEachIndexed { i, option ->
+                if (i > 0) SettingDivider()
+                SettingRow(
+                    title = option.label,
+                    subtitle = option.blurb,
+                    onClick = { permissionsViewModel.setMode(option) },
+                    leading = { RadioButton(selected = mode == option, onClick = null) },
                 )
             }
         }
