@@ -68,6 +68,24 @@ class AiChatPromptTest {
         assertFalse(PromptTopics.of("hi there").quiz)
     }
 
+    @Test fun onlyTheMentionedPartsOfTheAppAreSent() {
+        val all = AiScope.entries.toSet()
+        val asked = AiChatPrompt.system(ctx(all).copy(topics = PromptTopics.of("am I safe on attendance?", listOf("Physics"))))
+        assertTrue(asked.contains("Required attendance"))
+        assertFalse(asked.contains("Weekly timetable"))
+        assertFalse(asked.contains("Recent note titles"))
+        assertFalse(asked.contains("absencium-actions"))
+        assertFalse(asked.contains("QUIZZES"))
+    }
+
+    @Test fun theActionsFormatComesOnlyWithARequestToChangeSomething() {
+        val all = AiScope.entries.toSet()
+        assertFalse(AiChatPrompt.system(ctx(all).copy(topics = PromptTopics.of("when is my next exam?"))).contains("absencium-actions"))
+        val change = AiChatPrompt.system(ctx(all).copy(topics = PromptTopics.of("add an exam for Physics on 2026-12-01")))
+        assertTrue(change.contains("add_exam"))
+        assertFalse(change.contains("set_attendance"))
+    }
+
     @Test fun attendanceLinesSayHowManyCanBeMissedOrMustBeAttended() {
         assertTrue(AiChatPrompt.attendanceLine("Physics", 18, 2, 75).contains("can miss 4 more"))
         assertTrue(AiChatPrompt.attendanceLine("Maths", 6, 4, 75).contains("must attend the next 6 lectures"))

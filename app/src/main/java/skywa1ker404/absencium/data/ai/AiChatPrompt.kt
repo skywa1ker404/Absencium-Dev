@@ -33,30 +33,58 @@ data class ChatContext(
 )
 
 /**
- * Which optional parts of the instruction a conversation needs. A plain "hi" needs none of the app data, the actions format, the quiz
- * format or the note-writing rules, which together are most of the prompt, so they are only added when the recent messages touch them.
- * It errs on the side of including a part: a missed keyword would cost an answer, an extra part only costs a few tokens.
+ * Which optional parts of the instruction a conversation needs, so a plain "hi" carries almost none of it: the app data, the actions
+ * format, the quiz format and the note-writing rules are only added when the recent messages call for them, and the data only for the
+ * parts of the app they mention (a question about attendance does not carry the syllabus). [scopes] null means every allowed part.
+ * It errs towards including a part: a missed word would cost an answer, an extra part only costs a few tokens.
  */
-data class PromptTopics(val data: Boolean = true, val quiz: Boolean = true, val notes: Boolean = true) {
+data class PromptTopics(
+    val scopes: Set<AiScope>? = null,
+    val actions: Boolean = true,
+    val quiz: Boolean = true,
+    val notes: Boolean = true,
+) {
+    /** True when some app data is shown. */
+    val data: Boolean get() = scopes == null || scopes.isNotEmpty()
+
     companion object {
         val ALL = PromptTopics()
 
-        private val DATA = listOf(
-            "attend", "class", "lecture", "timetable", "schedule", "exam", "holiday", "syllabus", "subject", "topic", "chapter", "unit",
-            "note", "material", "file", "pdf", "today", "tomorrow", "week", "bunk", "skip", "miss", "absent", "present", "room", "deadline",
-            "assignment", "revis", "study", "should i", "next", "priorit", "behind", "add ", "mark ", "remove", "delete", "change", "update",
-            "set ", "create", "save", "remember", "read", "open", "[[", "my ",
+        private val SCOPE_WORDS: Map<AiScope, List<String>> = mapOf(
+            AiScope.TIMETABLE to listOf("timetable", "schedule", "lecture", "class", "today", "tomorrow", "this week", "room", "period", "what time", "when is", "when do i"),
+            AiScope.EXAMS to listOf("exam", "test", "paper", "deadline", "prepare", "revis", "study", "what should i", "next", "soon", "priorit"),
+            AiScope.HOLIDAYS to listOf("holiday", "day off", "vacation", "break"),
+            AiScope.ATTENDANCE to listOf("attend", "bunk", "skip", "miss", "absent", "present", "percent", "%", "threshold"),
+            AiScope.SYLLABUS to listOf("syllabus", "topic", "chapter", "unit", "progress", "covered", "behind", "revis", "study", "what should i"),
+            AiScope.NOTES to listOf("note", "[["),
+            AiScope.MATERIAL to listOf("material", "pdf", "file", "guide", "book", "slides", "handout", "[["),
+        )
+        private val ACTION_WORDS = listOf(
+            "add ", "create", "reschedule", "schedule a", "move ", "mark ", "set ", "change", "update", "rename", "cancel", "remove", "delete",
+            "remember", "i am ", "i'm ", "my course", "my goal", "i prefer", "save", "make a note", "write a note", "make notes", "write notes",
+            "notes on", "notes for", "notes about", "generate",
         )
         private val QUIZ = listOf("quiz", "mcq", "flashcard", "test me", "question me", "true or false", "true/false", "practice question", "examine me")
         private val NOTES = listOf(
-            "note", "summar", "revision", "cheat", "sheet", "plan", "outline", "write", "essay", "report", "in depth", "in-depth", "lengthy",
-            "moderate", "detailed", "explain", "teach",
+            "note", "summar", "cheat", "sheet", "outline", "essay", "report", "in depth", "in-depth", "lengthy", "moderate", "study plan",
+            "revision plan", "plan for",
         )
 
-        /** Reads the last few student messages (hidden read results included, so a read in progress keeps what it needs). */
-        fun of(recent: String): PromptTopics {
+        /** Reads the last few student messages (a hidden read result included, so a read in progress keeps what it needs). */
+        fun of(recent: String, subjectNames: Collection<String> = emptyList()): PromptTopics {
             val t = recent.lowercase()
-            return PromptTopics(DATA.any { it in t }, QUIZ.any { it in t }, NOTES.any { it in t })
+            val scopes = SCOPE_WORDS.filterValues { words -> words.any { it in t } }.keys.toMutableSet()
+            // Naming a subject is a question about it: its exams, attendance, syllabus and notes become relevant.
+            if (subjectNames.any { it.isNotBlank() && t.contains(it.lowercase()) }) {
+                scopes += listOf(AiScope.EXAMS, AiScope.ATTENDANCE, AiScope.SYLLABUS, AiScope.NOTES, AiScope.MATERIAL)
+            }
+            if ("read request" in t) scopes += listOf(AiScope.NOTES, AiScope.MATERIAL)
+            val quiz = QUIZ.any { it in t }
+            if (quiz) scopes += listOf(AiScope.NOTES, AiScope.MATERIAL, AiScope.SYLLABUS)
+            if (scopes.isNotEmpty()) scopes += AiScope.SUBJECTS
+            // Reading a note or file is an action too, so those keep the actions format.
+            val actions = ACTION_WORDS.any { it in t } || AiScope.NOTES in scopes || AiScope.MATERIAL in scopes
+            return PromptTopics(scopes, actions, quiz, NOTES.any { it in t })
         }
     }
 }
@@ -111,15 +139,18 @@ object AiChatPrompt {
             append("\nYou cannot see or change anything in the student's Absencium data. Mention that they can allow it in Settings, AI & Integrations, only when it would genuinely help.\n")
         } else {
             append("\nThe student allowed you to use these parts of their Absencium data: ${c.allowed.joinToString { it.label }}. Nothing else is shared.\n")
-            if (!c.topics.data) {
-                append("It is added here whenever a question needs it, so it is not shown now.\n")
-                if (AiScope.MEMORY in c.allowed) append(remembered(c.memories))
+            val shown = c.allowed.filter { c.topics.scopes == null || it in c.topics.scopes }.toSet()
+            val view = c.copy(allowed = shown)
+            if (c.topics.data && shown.any { it != AiScope.MEMORY }) {
+                append("\n").append(context(view))
+                if (shown.any { it == AiScope.NOTES || it == AiScope.MATERIAL || it == AiScope.SUBJECTS }) {
+                    append("\nLINKS. Whenever you mention a subject, note or study material file from the lists above, write its exact name in double square brackets, like [[Cell division]]: the app turns it into a link the student taps to open it. Do this on your own, once per item, with no extra words; never use double brackets for anything else and never write web addresses for app content.\n")
+                }
             } else {
-                append("\n").append(context(c))
-                append("\nLINKS. Whenever you mention a subject, note or study material file from the lists above, write its exact name in double square brackets, like [[Cell division]]: the app turns it into a link the student taps to open it. Do this on your own, once per item, with no extra words; never use double brackets for anything else and never write web addresses for app content.\n")
-                append(actions(c.allowed))
-                if (AiScope.MEMORY in c.allowed) append(memory(c.memories))
+                append("It is added here whenever a question needs it, so it is not shown now.\n")
             }
+            if (c.topics.actions) append(actions(shown))
+            if (AiScope.MEMORY in c.allowed) append(if (c.topics.actions) memory(c.memories) else remembered(c.memories))
         }
         append("\nApp facts, only when asked: Absencium keeps notes, attendance, timetable, exams, syllabus and study materials on the student's device.\n")
         append("\nBEFORE YOU ANSWER, REMEMBER: respond to exactly what was asked, at the length it deserves (a single word or topic gets a compact overview, not a lecture). Do not end with \"Anything else?\", an offer or a recap. Do not add a \"quick check\" or quiz unless asked.")
@@ -137,7 +168,7 @@ object AiChatPrompt {
     private fun memory(items: List<MemoryItem>): String = buildString {
         append(remembered(items))
         append("\nTo remember something durable and useful about the student for later chats (their course, year, goals, strengths and weak spots, how they like answers), ")
-        append("add {\"type\":\"remember\",\"text\":\"one short sentence\"} to the absencium-actions block; add \"chat_only\":true when it only matters for this conversation. ")
+        append("add {\"type\":\"remember\",\"text\":\"one short sentence\"} to a fenced block labelled absencium-actions holding a JSON array; add \"chat_only\":true when it only matters for this conversation. ")
         append("It is saved by itself and needs no card: never mention it unless asked, and never save one-off requests, secrets, passwords or other people's private details.\n")
     }
 
@@ -168,7 +199,7 @@ object AiChatPrompt {
         }
         types.forEach { append("- ").append(it).append('\n') }
         append("If a subject does not exist yet, add it first in the same array.\n")
-    }
+    }.let { text -> if (text.lines().none { it.startsWith("- ") }) "" else text }
 
     fun context(c: ChatContext): String = buildString {
         val data = c.calendar
