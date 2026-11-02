@@ -69,3 +69,5 @@ working on it
 - Fixed: a plain "hi" cost about 3.5k tokens; app data, the actions format, quiz format and note rules are only sent when the conversation needs them.
 - Changed: the AI & Integrations page is grouped lists with short rows, an empty state, and a searchable provider picker; the model title and chooser are smaller.
 - Added: several API keys per provider; choose the one in use, the others take over at a limit.
+- Changed: the AI only receives the parts of your app data, and only the action, quiz and note formats, that your messages call for.
+- Fixed: a quiz appearing as raw JSON in a code block; the page showing through behind the title bar.
