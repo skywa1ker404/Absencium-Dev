@@ -124,6 +124,23 @@ class ApiKeyVault(context: Context) {
         }
     }
 
+    /** Makes the key at [index] of [lastFours] the one in use: it is tried first, the others only when it reaches its limit. */
+    fun useKey(provider: AiProvider, index: Int) {
+        if (index <= 0) return
+        adopt(provider)
+        val slot = extraSlots(provider).getOrNull(index - 1) ?: return
+        val mainCipher = prefs.getString(cipherKey(provider), null) ?: return
+        val mainLast = prefs.getString(lastKey(provider), null)
+        val cipher = prefs.getString(extraCipher(provider, slot), null) ?: return
+        val last = prefs.getString(extraLast(provider, slot), null)
+        prefs.edit {
+            putString(cipherKey(provider), cipher)
+            putString(lastKey(provider), last)
+            putString(extraCipher(provider, slot), mainCipher)
+            putString(extraLast(provider, slot), mainLast)
+        }
+    }
+
     private val limitedUntil = HashMap<String, Long>()
 
     /** Remembers that [apiKey] hit its limit, so it is skipped for [millis] while other keys are tried. */

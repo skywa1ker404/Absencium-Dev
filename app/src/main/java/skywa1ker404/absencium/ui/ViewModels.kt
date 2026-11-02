@@ -200,6 +200,7 @@ data class ProviderRow(
     val model: String,
     val style: skywa1ker404.absencium.data.ai.ApiStyle,
     val active: Boolean,
+    val keyCount: Int = 0,
 ) {
     /** True when this provider could answer right now: URL and model saved, and a key if it needs one. */
     val complete: Boolean get() = baseUrl.isNotBlank() && model.isNotBlank() && (!provider.keyRequired || hasKey)
@@ -224,7 +225,7 @@ class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
             val saved = profiles.get(provider)
             if (!active && !vault.hasKey(provider) && saved == null) return@mapNotNull null
             val profile = profileFor(provider, settings)
-            ProviderRow(provider, vault.hasKey(provider), vault.lastFour(provider), profile.baseUrl, profile.model, profile.style, active)
+            ProviderRow(provider, vault.hasKey(provider), vault.lastFour(provider), profile.baseUrl, profile.model, profile.style, active, vault.keyCount(provider))
         }
 
     /** What is saved for [provider], or its defaults. The provider in use is read from the settings, which hold the truth for it. */
@@ -244,12 +245,20 @@ class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
 
     fun resetUsage() = container.aiUsage.reset()
 
-    /** The last four characters of the extra keys saved for [provider] (the main one is not listed). */
-    fun extraKeys(provider: skywa1ker404.absencium.data.ai.AiProvider): List<String> = vault.lastFours(provider).drop(1)
+    /** The last four characters of every key saved for [provider]; the first is the one in use. */
+    fun keyTails(provider: skywa1ker404.absencium.data.ai.AiProvider): List<String> = vault.lastFours(provider)
 
     fun addKey(provider: skywa1ker404.absencium.data.ai.AiProvider, key: String): Boolean = vault.addKey(provider, key)
 
-    fun removeKey(provider: skywa1ker404.absencium.data.ai.AiProvider, index: Int) = vault.removeKey(provider, index)
+    fun useKey(provider: skywa1ker404.absencium.data.ai.AiProvider, index: Int) {
+        vault.useKey(provider, index)
+        refresh.update { it + 1 }
+    }
+
+    fun removeKey(provider: skywa1ker404.absencium.data.ai.AiProvider, index: Int) {
+        vault.removeKey(provider, index)
+        refresh.update { it + 1 }
+    }
 
     /**
      * Saves the provider (and its key when one was typed). With [use] it also becomes the provider in use; the first provider set up
@@ -301,16 +310,29 @@ class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch { container.settingsRepository.setAiConnection(provider, profile.baseUrl, profile.model, profile.style) }
     }
 
-    /** Forgets the provider: its key and its saved URL and model. If it was in use, another complete provider takes over. */
-    fun remove(provider: skywa1ker404.absencium.data.ai.AiProvider) {
+    /**
+     * Forgets the provider: its key and its saved URL and model. If it was in use, another complete provider takes over, or none is in use.
+     * [onDone] runs once everything is saved, so the screen must close only then: closing it first clears this ViewModel and cancels the work.
+     */
+    fun remove(provider: skywa1ker404.absencium.data.ai.AiProvider, onDone: () -> Unit = {}) {
         viewModelScope.launch {
-            val wasActive = container.settingsState.value?.aiProvider == provider
+            val settings = container.settingsState.value
+            val wasActive = settings?.aiProvider == provider && settings.aiConnectionSaved
             withContext(Dispatchers.IO) {
                 vault.clear(provider)
                 profiles.remove(provider)
             }
+            if (wasActive) {
+                val next = build(settings).firstOrNull { it.provider != provider && it.complete }
+                if (next != null) {
+                    container.settingsRepository.setAiConnection(next.provider, next.baseUrl, next.model, next.style)
+                } else {
+                    container.settingsRepository.clearAiConnection()
+                }
+            }
+            DebugLogger.i("AI", "Provider removed: ${provider.name}")
             refresh.update { it + 1 }
-            if (wasActive) rows.value.firstOrNull { it.provider != provider && it.complete }?.let { use(it.provider) }
+            onDone()
         }
     }
 

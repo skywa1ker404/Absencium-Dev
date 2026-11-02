@@ -48,6 +48,26 @@ class AiChatPromptTest {
         assertTrue(AiChatPrompt.system(ctx(emptySet()).copy(study = true, webSearch = true)).let { it.contains("STUDY MODE") && it.contains("Web search is on") })
     }
 
+    @Test fun aPlainGreetingKeepsTheInstructionSmall() {
+        val all = AiScope.entries.toSet()
+        val full = AiChatPrompt.system(ctx(all))
+        val hello = AiChatPrompt.system(ctx(all).copy(topics = PromptTopics.of("hello")))
+        assertFalse(hello.contains("APP DATA"))
+        assertFalse(hello.contains("absencium-actions"))
+        assertFalse(hello.contains("QUIZZES"))
+        assertFalse(hello.contains("NOTES AND LONG TEXT"))
+        assertTrue(hello.contains("HOW YOU TALK"))
+        assertTrue(hello.length < full.length / 2)
+    }
+
+    @Test fun topicsAreAddedWhenTheMessagesTouchThem() {
+        assertTrue(PromptTopics.of("Quiz me on cells").quiz)
+        assertTrue(PromptTopics.of("when is my next exam").data)
+        assertTrue(PromptTopics.of("make revision notes for optics").notes)
+        assertFalse(PromptTopics.of("hello").data)
+        assertFalse(PromptTopics.of("hi there").quiz)
+    }
+
     @Test fun attendanceLinesSayHowManyCanBeMissedOrMustBeAttended() {
         assertTrue(AiChatPrompt.attendanceLine("Physics", 18, 2, 75).contains("can miss 4 more"))
         assertTrue(AiChatPrompt.attendanceLine("Maths", 6, 4, 75).contains("must attend the next 6 lectures"))

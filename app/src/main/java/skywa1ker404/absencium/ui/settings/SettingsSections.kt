@@ -41,7 +41,7 @@ import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.components.SectionTitle
 import skywa1ker404.absencium.ui.components.SwitchCard
 
-private const val OPTIONAL_NOTE =
+internal const val OPTIONAL_NOTE =
     "Optional and off by default. The feature itself arrives in a later update; for now this records your choice."
 
 /** Where notes are stored: the app folder or a folder picked with the system folder picker. */

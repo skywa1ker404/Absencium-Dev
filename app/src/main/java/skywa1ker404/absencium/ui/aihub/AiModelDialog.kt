@@ -83,9 +83,9 @@ fun AiModelDialog(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 12.dp).navigationBarsPadding().imePadding(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Model", style = MaterialTheme.typography.titleMedium)
+            Text("Model", style = MaterialTheme.typography.titleSmall)
             if (providers.isEmpty() || chosen == null) {
                 Text("No provider is ready. Add one with its API key in the AI settings.", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 PillButton(text = "Open AI settings", onClick = { onDismiss(); onOpenSettings() })
@@ -124,7 +124,7 @@ fun AiModelDialog(
                 val shown = remember(state.models, query) {
                     state.models.filter { query.isBlank() || it.label.contains(query, true) || it.id.contains(query, true) }
                 }
-                LazyColumn(Modifier.heightIn(max = 240.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                LazyColumn(Modifier.heightIn(max = 180.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     items(shown.take(100), key = { it.id }) { model ->
                         ModelRow(
                             title = model.label,
@@ -152,12 +152,12 @@ private fun Pill(text: String, selected: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val background by animateColorAsState(if (selected) colors.primaryContainer else colors.surfaceContainerHigh, spring(stiffness = 500f), label = "pillBg")
     Box(
-        modifier = Modifier.height(34.dp).clip(CircleShape).background(background).clickable(onClick = onClick).padding(horizontal = 14.dp),
+        modifier = Modifier.height(30.dp).clip(CircleShape).background(background).clickable(onClick = onClick).padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             color = if (selected) colors.onPrimaryContainer else colors.onSurface,
             maxLines = 1,
             softWrap = false,
@@ -166,10 +166,10 @@ private fun Pill(text: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SearchPill(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier, leading: Boolean = true) {
+internal fun SearchPill(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier, leading: Boolean = true) {
     val colors = MaterialTheme.colorScheme
     Row(
-        modifier = modifier.height(40.dp).clip(CircleShape).background(colors.surfaceContainerHigh).padding(horizontal = 14.dp),
+        modifier = modifier.height(36.dp).clip(CircleShape).background(colors.surfaceContainerHigh).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -197,7 +197,7 @@ private fun ModelRow(title: String, subtitle: String?, selected: Boolean, tag: S
             .clip(RoundedCornerShape(14.dp))
             .background(if (selected) colors.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

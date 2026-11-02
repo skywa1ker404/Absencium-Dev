@@ -27,8 +27,39 @@ data class ChatContext(
     /** Custom instructions of the assistant profile this chat uses. */
     val instructions: String = "",
     val temperature: Double? = null,
+    /** Which optional parts of the instruction the recent messages need; everything by default. */
+    val topics: PromptTopics = PromptTopics.ALL,
     val today: LocalDate = LocalDate.now(),
 )
+
+/**
+ * Which optional parts of the instruction a conversation needs. A plain "hi" needs none of the app data, the actions format, the quiz
+ * format or the note-writing rules, which together are most of the prompt, so they are only added when the recent messages touch them.
+ * It errs on the side of including a part: a missed keyword would cost an answer, an extra part only costs a few tokens.
+ */
+data class PromptTopics(val data: Boolean = true, val quiz: Boolean = true, val notes: Boolean = true) {
+    companion object {
+        val ALL = PromptTopics()
+
+        private val DATA = listOf(
+            "attend", "class", "lecture", "timetable", "schedule", "exam", "holiday", "syllabus", "subject", "topic", "chapter", "unit",
+            "note", "material", "file", "pdf", "today", "tomorrow", "week", "bunk", "skip", "miss", "absent", "present", "room", "deadline",
+            "assignment", "revis", "study", "should i", "next", "priorit", "behind", "add ", "mark ", "remove", "delete", "change", "update",
+            "set ", "create", "save", "remember", "read", "open", "[[", "my ",
+        )
+        private val QUIZ = listOf("quiz", "mcq", "flashcard", "test me", "question me", "true or false", "true/false", "practice question", "examine me")
+        private val NOTES = listOf(
+            "note", "summar", "revision", "cheat", "sheet", "plan", "outline", "write", "essay", "report", "in depth", "in-depth", "lengthy",
+            "moderate", "detailed", "explain", "teach",
+        )
+
+        /** Reads the last few student messages (hidden read results included, so a read in progress keeps what it needs). */
+        fun of(recent: String): PromptTopics {
+            val t = recent.lowercase()
+            return PromptTopics(DATA.any { it in t }, QUIZ.any { it in t }, NOTES.any { it in t })
+        }
+    }
+}
 
 /**
  * The system instruction Absencium AI is given. It is a capable general assistant first; the app's data is extra context it may use, and
@@ -53,12 +84,16 @@ object AiChatPrompt {
         c.studentName?.takeIf { it.isNotBlank() }?.let { append(" The student's name is $it.") }
         append('\n')
         if (c.instructions.isNotBlank()) append("\nCUSTOM INSTRUCTIONS FROM THE STUDENT (follow them in every answer):\n").append(c.instructions.trim()).append('\n')
-        append("\nNOTES AND LONG TEXT. When the student wants notes, a summary, a revision sheet or a plan to keep, write it completely at the length they ask for ")
-        append("(moderate is about 500 to 800 words, lengthy 1,500 to 2,500, in depth 3,500 or more; lengthy when they give none). Cover every point with explanations, examples and exam-style questions; never abbreviate or ask whether to continue. ")
-        append(if (AiScope.NOTES in c.allowed) "To save it as a note, propose an add_note action (below): the app's note writer then writes the full note with the editor's formatting. In the chat itself use plain Markdown.\n" else "Use plain Markdown; the student can save the answer as a note.\n")
-        append("\nQUIZZES. When the student asks to be quizzed or tested, never write the questions or the answers in your text. Say one short line, then send ONE fenced block labelled absencium-quiz holding a JSON object; the app asks the questions one at a time, checks the answers and shows the score. ")
-        append("""Format: {"title":"","questions":[{"type":"mcq","q":"","options":["","","",""],"answer":"B","explain":"one line"},{"type":"true_false","q":"a statement","answer":"true","explain":""},{"type":"short","q":"","answer":"model answer","accept":["other correct wordings"],"explain":""}]}. """)
-        append("Mix the types, default to 5 questions (more when asked), make wrong options plausible, keep typed answers to a word or short phrase, and base the questions on the topic, note or study material they name (read it first with read_content when it is listed). If no topic can be told, ask which one in a single line instead of guessing.\n")
+        if (c.topics.notes) {
+            append("\nNOTES AND LONG TEXT. When the student wants notes, a summary, a revision sheet or a plan to keep, write it completely at the length they ask for ")
+            append("(moderate is about 500 to 800 words, lengthy 1,500 to 2,500, in depth 3,500 or more; lengthy when they give none). Cover every point with explanations, examples and exam-style questions; never abbreviate or ask whether to continue. ")
+            append(if (AiScope.NOTES in c.allowed) "To save it as a note, propose an add_note action (below): the app's note writer then writes the full note with the editor's formatting. In the chat itself use plain Markdown.\n" else "Use plain Markdown; the student can save the answer as a note.\n")
+        }
+        if (c.topics.quiz) {
+            append("\nQUIZZES. When the student asks to be quizzed or tested, never write the questions or the answers in your text. Say one short line, then send ONE fenced block labelled absencium-quiz holding a JSON object; the app asks the questions one at a time, checks the answers and shows the score. ")
+            append("""Format: {"title":"","questions":[{"type":"mcq","q":"","options":["","","",""],"answer":"B","explain":"one line"},{"type":"true_false","q":"a statement","answer":"true","explain":""},{"type":"short","q":"","answer":"model answer","accept":["other correct wordings"],"explain":""}]}. """)
+            append("Mix the types, default to 5 questions (more when asked), make wrong options plausible, keep typed answers to a word or short phrase, and base the questions on the topic, note or study material they name (read it first with read_content when it is listed). If no topic can be told, ask which one in a single line instead of guessing.\n")
+        }
         if (c.study) {
             append("\nSTUDY MODE is on. Teach: explain the idea simply first, then build up, using an example and an analogy. ")
             val level = when (c.level) {
@@ -75,21 +110,32 @@ object AiChatPrompt {
         if (c.allowed.isEmpty()) {
             append("\nYou cannot see or change anything in the student's Absencium data. Mention that they can allow it in Settings, AI & Integrations, only when it would genuinely help.\n")
         } else {
-            append("\nThe student allowed you to use these parts of their Absencium data: ${c.allowed.joinToString { it.label }}. Nothing else is shared.\n\n")
-            append(context(c))
-            append("\nLINKS. Whenever you mention a subject, note or study material file from the lists above, write its exact name in double square brackets, like [[Cell division]]: the app turns it into a link the student taps to open it. Do this on your own, once per item, with no extra words; never use double brackets for anything else and never write web addresses for app content.\n")
-            append(actions(c.allowed))
-            if (AiScope.MEMORY in c.allowed) append(memory(c.memories))
+            append("\nThe student allowed you to use these parts of their Absencium data: ${c.allowed.joinToString { it.label }}. Nothing else is shared.\n")
+            if (!c.topics.data) {
+                append("It is added here whenever a question needs it, so it is not shown now.\n")
+                if (AiScope.MEMORY in c.allowed) append(remembered(c.memories))
+            } else {
+                append("\n").append(context(c))
+                append("\nLINKS. Whenever you mention a subject, note or study material file from the lists above, write its exact name in double square brackets, like [[Cell division]]: the app turns it into a link the student taps to open it. Do this on your own, once per item, with no extra words; never use double brackets for anything else and never write web addresses for app content.\n")
+                append(actions(c.allowed))
+                if (AiScope.MEMORY in c.allowed) append(memory(c.memories))
+            }
         }
         append("\nApp facts, only when asked: Absencium keeps notes, attendance, timetable, exams, syllabus and study materials on the student's device.\n")
-        append("\nBEFORE YOU ANSWER, REMEMBER: respond to exactly what was asked, at the length it deserves (a single word or topic gets a compact overview, not a lecture). Do not end with \"Anything else?\", an offer or a recap. Do not add a \"quick check\" or quiz unless asked; when asked for a quiz use the absencium-quiz block only and never print the answers.\n")
+        append("\nBEFORE YOU ANSWER, REMEMBER: respond to exactly what was asked, at the length it deserves (a single word or topic gets a compact overview, not a lecture). Do not end with \"Anything else?\", an offer or a recap. Do not add a \"quick check\" or quiz unless asked.")
+        if (c.topics.quiz) append(" When asked for a quiz use the absencium-quiz block only and never print the answers.")
+        append('\n')
     }
 
-    private fun memory(items: List<MemoryItem>): String = buildString {
+    private fun remembered(items: List<MemoryItem>): String = buildString {
         if (items.isNotEmpty()) {
             append("\nWHAT YOU REMEMBER ABOUT THE STUDENT (use it naturally where it helps; never recite it):\n")
             items.forEach { append("- ").append(it.text).append('\n') }
         }
+    }
+
+    private fun memory(items: List<MemoryItem>): String = buildString {
+        append(remembered(items))
         append("\nTo remember something durable and useful about the student for later chats (their course, year, goals, strengths and weak spots, how they like answers), ")
         append("add {\"type\":\"remember\",\"text\":\"one short sentence\"} to the absencium-actions block; add \"chat_only\":true when it only matters for this conversation. ")
         append("It is saved by itself and needs no card: never mention it unless asked, and never save one-off requests, secrets, passwords or other people's private details.\n")

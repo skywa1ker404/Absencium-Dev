@@ -32,6 +32,11 @@ import skywa1ker404.absencium.ui.components.ExpressiveChip
 import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.components.SectionTitle
+import skywa1ker404.absencium.ui.components.SettingRow
+import skywa1ker404.absencium.ui.icons.AppIcons
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.RadioButton
 import skywa1ker404.absencium.ui.containerViewModel
 
 /**
@@ -49,6 +54,7 @@ fun AiProviderForm(
 ) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
     val editing = initial != null
+    val saved = initial != null && rows.any { it.provider == initial }
     var provider by rememberSaveable { mutableStateOf(initial ?: AiProvider.entries.firstOrNull { p -> rows.none { it.provider == p } } ?: AiProvider.OPENAI) }
     val start = remember(provider) { viewModel.profileFor(provider) }
     var baseUrl by rememberSaveable(provider) { mutableStateOf(start.baseUrl) }
@@ -64,6 +70,9 @@ fun AiProviderForm(
     val modelsViewModel = containerViewModel { AiModelsViewModel(it) }
     val modelsState by modelsViewModel.state.collectAsStateWithLifecycle()
     val colors = MaterialTheme.colorScheme
+
+    /** A typed key becomes the first key of a provider; once one is saved, typed keys are added with Add key instead. */
+    fun firstKey(): String = if (keyTail == null) keyInput else ""
 
     fun connection() = AiConnection(
         provider,
@@ -111,49 +120,51 @@ fun AiProviderForm(
         if (baseUrl.trim().startsWith("http://")) {
             HintText("Plain http is only meant for a server on your own network.", Modifier.padding(top = 4.dp))
         }
+        var tails by remember(provider) { mutableStateOf(viewModel.keyTails(provider)) }
+        fun refreshKeys() {
+            tails = viewModel.keyTails(provider)
+            keyTail = tails.firstOrNull()
+        }
+        /** A key typed but not added yet, while one is already saved, is added now so it is not lost. */
+        fun commitExtra() {
+            if (tails.isNotEmpty() && keyInput.isNotBlank() && viewModel.addKey(provider, keyInput)) { keyInput = ""; refreshKeys() }
+        }
+        if (tails.isNotEmpty()) {
+            Text("API keys", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
+            tails.forEachIndexed { i, tail ->
+                SettingRow(
+                    title = "Key ending in $tail",
+                    subtitle = if (i == 0) "In use. Tried first." else "Tap to use this key instead.",
+                    onClick = { viewModel.useKey(provider, i); refreshKeys() },
+                    leading = { RadioButton(selected = i == 0, onClick = null) },
+                    trailing = {
+                        IconButton(onClick = { viewModel.removeKey(provider, i); refreshKeys() }) {
+                            Icon(AppIcons.Delete, contentDescription = "Remove key ending in $tail", tint = colors.onSurfaceVariant)
+                        }
+                    },
+                )
+            }
+            if (tails.size > 1) HintText("When the key in use reaches its limit, the next one is tried by itself; when all have, another provider with a key takes over.")
+        }
         AppTextField(
             value = keyInput,
             onValueChange = { keyInput = it; error = null; testResult = null },
-            label = { Text(if (keyTail != null) "Replace key" else if (provider.keyRequired) "API key" else "API key (optional)") },
-            supportingText = {
-                Text(
-                    if (keyTail != null) "A key ending in $keyTail is saved, encrypted on this phone. It is kept for ${provider.label} when you switch."
-                    else "Encrypted with a key held in the Android Keystore and never written to the debug log.",
-                )
-            },
+            label = { Text(if (tails.isNotEmpty()) "Add another key" else if (provider.keyRequired) "API key" else "API key (optional)") },
+            supportingText = { Text("Encrypted with a key held in the Android Keystore and never written to the debug log. Every key stays saved for ${provider.label} when you switch.") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         )
-        if (keyTail != null) {
-            var extra by remember(provider) { mutableStateOf(viewModel.extraKeys(provider)) }
-            var more by remember(provider) { mutableStateOf("") }
-            extra.forEachIndexed { i, tail ->
-                androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    Text("Extra key ending in $tail", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    androidx.compose.material3.TextButton(onClick = { viewModel.removeKey(provider, i + 1); extra = viewModel.extraKeys(provider) }) { Text("Remove") }
-                }
-            }
-            AppTextField(
-                value = more,
-                onValueChange = { more = it },
-                label = { Text("Add another key (optional)") },
-                supportingText = { Text("Tried automatically when the key above reaches its limit. When every key of ${provider.label} has, other providers with a key take over.") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        if (tails.isNotEmpty() && keyInput.isNotBlank()) {
+            PillButton(
+                text = "Add key",
+                onClick = {
+                    if (viewModel.addKey(provider, keyInput)) { keyInput = ""; refreshKeys() } else error = "That key is already saved, or there is no room for more."
+                },
+                tonal = true, compact = true, modifier = Modifier.padding(top = 4.dp),
             )
-            if (more.isNotBlank()) {
-                PillButton(
-                    text = "Add key",
-                    onClick = { if (viewModel.addKey(provider, more)) { more = ""; extra = viewModel.extraKeys(provider) } },
-                    tonal = true, compact = true, modifier = Modifier.padding(top = 4.dp),
-                )
-            }
         }
         AppTextField(
             value = model,
@@ -193,8 +204,8 @@ fun AiProviderForm(
                     else -> null
                 }
                 if (error == null) {
-                    viewModel.withKey(provider, keyInput) {
-                        keyTail = viewModel.keyHint(provider)
+                    viewModel.withKey(provider, firstKey()) {
+                        refreshKeys()
                         keyInput = ""
                         modelsViewModel.load(connection())
                     }
@@ -212,14 +223,15 @@ fun AiProviderForm(
                 tonal = true,
                 loading = testing,
                 onClick = {
+                    commitExtra()
                     val found = problem()
                     if (found != null) {
                         error = found
                     } else {
                         testing = true
                         testResult = null
-                        viewModel.withKey(provider, keyInput) {
-                            keyTail = viewModel.keyHint(provider)
+                        viewModel.withKey(provider, firstKey()) {
+                            refreshKeys()
                             keyInput = ""
                             viewModel.test(connection()) { ok, text ->
                                 testing = false
@@ -233,13 +245,14 @@ fun AiProviderForm(
                 text = saveLabel,
                 loading = saving,
                 onClick = {
+                    commitExtra()
                     val found = problem()
                     if (found != null) {
                         error = found
                     } else {
                         saving = true
                         val c = connection()
-                        viewModel.save(provider, c.baseUrl, c.model, c.style, keyInput, use = true) { failure ->
+                        viewModel.save(provider, c.baseUrl, c.model, c.style, firstKey(), use = true) { failure ->
                             saving = false
                             if (failure == null) onDone() else error = failure
                         }
@@ -248,11 +261,11 @@ fun AiProviderForm(
             )
         }
     }
-    if (editing) {
+    if (saved) {
         PillButton(
             text = "Remove ${provider.label}",
             tonal = true,
-            onClick = { viewModel.remove(provider); onDone() },
+            onClick = { viewModel.remove(provider, onDone) },
             modifier = Modifier.padding(top = 4.dp),
         )
         HintText("Removing forgets its saved key, URL and model from this phone.")

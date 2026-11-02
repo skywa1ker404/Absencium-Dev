@@ -77,6 +77,10 @@ class AiChatService(
 
     fun key(chatId: Long, messageId: Long, index: Int) = "$chatId:$messageId:$index"
 
+    /** What the last few student messages touch, so the instruction only carries the parts that matter (a plain "hi" stays small). */
+    private fun topicsOf(chat: AiChat): PromptTopics =
+        PromptTopics.of(chat.messages.filter { it.role == ChatRole.USER }.takeLast(3).joinToString("\n") { it.text })
+
     /** Starts answering the last question of [chatId] (already saved in the store). Replaces an answer still being written for that chat. */
     fun answer(chatId: Long) {
         val chat = chats.get(chatId) ?: return
@@ -93,7 +97,7 @@ class AiChatService(
                 val searching = chat.webSearch && canSearch(connection)
                 val turns = ChatTurns.normalize(turnsOf(chat))
                 if (turns.isEmpty()) return@launch
-                val reply = client.chat(connection, AiChatPrompt.system(context.copy(study = chat.study, level = chat.level, webSearch = searching)), turns, ChatOptions(searching, chat.thinking, context.temperature))
+                val reply = client.chat(connection, AiChatPrompt.system(context.copy(study = chat.study, level = chat.level, webSearch = searching, topics = topicsOf(chat))), turns, ChatOptions(searching, chat.thinking, context.temperature))
                 val parsed = AiActionParser.split(reply.text)
                 val (withoutQuiz, quiz) = AiQuiz.extract(parsed.text)
                 val shown = withoutQuiz.ifBlank { if (quiz != null) "Here is your quiz." else if (parsed.actions.isNotEmpty()) "Here is what I suggest." else reply.text.trim() }

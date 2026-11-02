@@ -104,6 +104,14 @@ class SettingsRepository(context: Context) {
         }
     }
 
+    /** Forgets the saved URL and model so no provider counts as in use (the provider name stays; it is only a default). */
+    suspend fun clearAiConnection() {
+        dataStore.edit {
+            it.remove(Keys.AI_BASE_URL)
+            it.remove(Keys.AI_MODEL)
+        }
+    }
+
     suspend fun setMomentumTrackerEnabled(value: Boolean) = write(Keys.MOMENTUM_ENABLED, value)
 
     suspend fun setSemesterManagerEnabled(value: Boolean) = write(Keys.SEMESTER_MANAGER_ENABLED, value)

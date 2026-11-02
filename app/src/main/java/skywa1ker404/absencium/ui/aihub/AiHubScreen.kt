@@ -228,11 +228,11 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
                     if (unread.isNotEmpty()) Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(9.dp).clip(CircleShape).background(colors.primary))
                 }
                 Row(
-                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(20.dp)).clickable { picking = true }.padding(horizontal = 8.dp, vertical = 8.dp),
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(20.dp)).clickable { picking = true }.padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    Text(connection?.model ?: "Choose a model", style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Text(connection?.model ?: "Choose a model", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                     Icon(AppIcons.ExpandMore, contentDescription = null, tint = colors.onSurfaceVariant)
                 }
                 Row(
