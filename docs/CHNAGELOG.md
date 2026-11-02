@@ -72,3 +72,5 @@ working on it
 - Changed: the AI only receives the parts of your app data, and only the action, quiz and note formats, that your messages call for.
 - Fixed: a quiz appearing as raw JSON in a code block; the page showing through behind the title bar.
 - Changed: the AI's fixed instruction is about half as long, and the full weekly timetable is only sent when you ask about the week.
+- Added: Response mode (Efficient, Balanced, Maximum quality) in AI & Integrations; the app now works out locally what a request needs before asking the model.
+- Added: each answer shows the tokens the provider reported for it.
