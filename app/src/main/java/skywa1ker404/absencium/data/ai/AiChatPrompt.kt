@@ -82,6 +82,7 @@ object AiChatPrompt {
             if (AiScope.MEMORY in c.allowed) append(memory(c.memories))
         }
         append("\nApp facts, only when asked: Absencium keeps notes, attendance, timetable, exams, syllabus and study materials on the student's device.\n")
+        append("\nBEFORE YOU ANSWER, REMEMBER: respond to exactly what was asked, at the length it deserves (a single word or topic gets a compact overview, not a lecture). Do not end with \"Anything else?\", an offer or a recap. Do not add a \"quick check\" or quiz unless asked; when asked for a quiz use the absencium-quiz block only and never print the answers.\n")
     }
 
     private fun memory(items: List<MemoryItem>): String = buildString {

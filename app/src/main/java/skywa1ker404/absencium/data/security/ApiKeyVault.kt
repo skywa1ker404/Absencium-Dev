@@ -203,7 +203,7 @@ class ApiKeyVault(context: Context) {
     private companion object {
         const val TAG = "KeyVault"
         const val MAX_EXTRA = 8
-        const val LIMIT_COOLDOWN_MS = 10 * 60 * 1000L
+        const val LIMIT_COOLDOWN_MS = 60_000L
         const val PREFS_NAME = "absencium_key_vault"
         const val KEY_CIPHERTEXT = "api_key_ciphertext"
         const val KEY_LAST_FOUR = "api_key_last_four"

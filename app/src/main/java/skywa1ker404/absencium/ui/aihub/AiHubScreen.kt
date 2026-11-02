@@ -216,7 +216,7 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
                 modifier = Modifier
                     .fillMaxWidth()
                     // A soft fade of the page colour: the chat dissolves under the buttons instead of meeting a hard block.
-                    .background(Brush.verticalGradient(0f to colors.background.copy(alpha = 0.92f), 0.75f to colors.background.copy(alpha = 0.6f), 1f to Color.Transparent))
+                    .background(Brush.verticalGradient(0f to colors.background, 0.68f to colors.background.copy(alpha = 0.97f), 1f to Color.Transparent))
                     .statusBarsPadding()
                     .height(64.dp)
                     .padding(horizontal = 12.dp),
@@ -278,7 +278,7 @@ fun AiHubScreen(navigator: DestinationsNavigator, chatId: Long? = null) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Brush.verticalGradient(0f to Color.Transparent, 0.4f to colors.background.copy(alpha = 0.7f), 1f to colors.background.copy(alpha = 0.95f)))
+                    .background(Brush.verticalGradient(0f to Color.Transparent, 0.3f to colors.background.copy(alpha = 0.9f), 0.5f to colors.background))
                     .navigationBarsPadding()
                     .imePadding()
                     .padding(horizontal = 12.dp, vertical = 8.dp),

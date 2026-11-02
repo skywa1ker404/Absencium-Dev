@@ -64,6 +64,10 @@ data class ChatReply(
     val model: String = "",
     val tokensIn: Long = 0,
     val tokensOut: Long = 0,
+    /** The provider the student chose when its limit sent the question to another one, otherwise empty. */
+    val replacedProvider: String = "",
+    /** True when web search was asked for but the provider refused it for lack of credits, so the question was answered without it. */
+    val webOff: Boolean = false,
 )
 
 /**
@@ -310,7 +314,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                 try {
                     val reply = chatRaw(candidate, system, turns, options, key)
                     usage?.record(candidate.provider, reply.tokensIn, reply.tokensOut)
-                    return reply.copy(model = candidate.model)
+                    return reply.copy(model = candidate.model, replacedProvider = if (candidate.provider != connection.provider) connection.provider.label else "")
                 } catch (e: AiException) {
                     if (!e.limitReached) throw e
                     last = e
@@ -379,10 +383,11 @@ class AiClient(private val keyVault: ApiKeyVault) {
                     }
                     val answer = parseOpenAiReply(raw)
                     ChatReply(
-                        if (withoutWeb) answer.trimEnd() + "\n\n*Web search on OpenRouter needs credits on your account, so this answer comes from the model's own knowledge.*" else answer,
+                        if (withoutWeb) answer.trimEnd() + "\n\n*Web search is now off for this chat: OpenRouter charges credits for it and your account has none.*" else answer,
                         openAiSources(raw),
                         tokensIn = usageOf(raw, "usage", "prompt_tokens"),
                         tokensOut = usageOf(raw, "usage", "completion_tokens"),
+                        webOff = withoutWeb,
                     )
                 }
 

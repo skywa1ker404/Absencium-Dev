@@ -99,7 +99,8 @@ class AiChatService(
                 val shown = withoutQuiz.ifBlank { if (quiz != null) "Here is your quiz." else if (parsed.actions.isNotEmpty()) "Here is what I suggest." else reply.text.trim() }
                 if (memoryAllowed() && !chat.incognito) parsed.remembered.forEach { memory.add(it.text, if (it.chatOnly) chatId else null) }
                 if (shown.isBlank() && parsed.actions.isEmpty()) throw AiException("The model sent back an empty answer.")
-                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }, sources = reply.sources, quiz = quiz))
+                if (reply.webOff) chats.get(chatId)?.let { chats.put(it.copy(webSearch = false)) }
+                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, via = reply.replacedProvider, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }, sources = reply.sources, quiz = quiz))
                 finished(chatId, shown, ok = true)
             } catch (e: CancellationException) {
                 throw e
