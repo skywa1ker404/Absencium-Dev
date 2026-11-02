@@ -65,3 +65,7 @@ working on it
 - Added: the AI links notes, study material and subjects by name; tapping a link opens it.
 - Added: quizzes are interactive (multiple choice, true or false, typed answers) with a score and a review of the missed questions.
 - Removed: every shadow in the app (menus, buttons, bars, sidebar, glass).
+- Fixed: Remove provider did nothing; it now removes the key, URL and model, and another provider takes over when it was in use.
+- Fixed: a plain "hi" cost about 3.5k tokens; app data, the actions format, quiz format and note rules are only sent when the conversation needs them.
+- Changed: the AI & Integrations page is grouped lists with short rows, an empty state, and a searchable provider picker; the model title and chooser are smaller.
+- Added: several API keys per provider; choose the one in use, the others take over at a limit.
