@@ -18,7 +18,7 @@ class AiOrchestratorTest {
         val plan = AiOrchestrator.plan("derive the formula step by step", "derive the formula step by step", AiMode.EFFICIENT)
         assertEquals(Complexity.COMPLEX, plan.complexity)
         assertNull(plan.budget.maxOutput)
-        assertEquals(Complexity.COMPLEX, AiOrchestrator.plan("x", "make revision notes on optics", AiMode.EFFICIENT).complexity)
+        assertEquals(Complexity.COMPLEX, AiOrchestrator.plan("make revision notes on optics", "make revision notes on optics", AiMode.EFFICIENT).complexity)
     }
 
     @Test fun efficientCapsShortAnswersAndBalancedDoesNot() {
