@@ -71,3 +71,4 @@ working on it
 - Added: several API keys per provider; choose the one in use, the others take over at a limit.
 - Changed: the AI only receives the parts of your app data, and only the action, quiz and note formats, that your messages call for.
 - Fixed: a quiz appearing as raw JSON in a code block; the page showing through behind the title bar.
+- Changed: the AI's fixed instruction is about half as long, and the full weekly timetable is only sent when you ask about the week.

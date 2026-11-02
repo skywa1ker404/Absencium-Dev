@@ -10,7 +10,7 @@ Single source of truth for what is done, in progress, pending and planned (it al
 
 **Status words.** DONE means it compiled on CI (and is named with the commit). WAITING FOR CI means it is written and pushed but CI has not confirmed it. Nothing is marked DONE that has not compiled.
 
-Last updated: 021126 (AI prompt gating and quiz fixes done; last green build `93a76e7`, 021126). CI errors are read from the commit comment the workflow posts.
+Last updated: 021126 (AI prompt trimmed; last green build `74e7cc9`, 021126). CI errors are read from the commit comment the workflow posts.
 
 ---
 
@@ -95,6 +95,7 @@ Last updated: 021126 (AI prompt gating and quiz fixes done; last green build `93
 - **Format sent on every prompt:** the app data goes by part (a question about attendance sends only attendance), the actions format only when the message asks to add, change, mark or read something, the quiz format only for a quiz, the note rules only for notes (`PromptTopics`) (021126, Ci: 315e852).
 - **Quiz shown as raw JSON in a code block** when the model labelled the block differently: any fence, `json` or bare JSON holding a valid quiz now becomes the quiz card (021126, Ci: 93a76e7).
 - **Page text visible behind the title bar** on the AI settings and provider pages: the bar's fade is solid behind the title on every screen (021126, Ci: 93a76e7).
+- **Two short replies still cost 1,787 tokens in:** the fixed base instruction was cut by about half (the "App facts" line and the repeated closing reminder removed) and the whole weekly timetable is now sent only when the message asks about the week, a day name or the timetable; "today" sends today and tomorrow only (021126, Ci: 74e7cc9).
 
 ## Partially Complete
 
