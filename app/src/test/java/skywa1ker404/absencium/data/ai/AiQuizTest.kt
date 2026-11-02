@@ -28,6 +28,17 @@ class AiQuizTest {
         assertEquals("Cells", AiQuiz.title(json))
     }
 
+    @Test fun aDifferentlyLabelledOrBareQuizIsStillUnderstood() {
+        val json = """{"title":"Cells","questions":[{"type":"true_false","q":"Platelets carry oxygen.","answer":"false"}]}"""
+        for (wrapped in listOf("Intro\n\n```\n$json\n```", "Intro\n\n```json\n$json\n```", "Intro\n\n$json")) {
+            val (text, quiz) = AiQuiz.extract(wrapped)
+            assertEquals("Intro", text)
+            assertNotNull(quiz)
+            assertEquals(1, AiQuiz.parse(quiz!!).size)
+        }
+        assertNull(AiQuiz.extract("```kotlin\nval x = 1\n```").second)
+    }
+
     @Test fun questionKindsAreReadWithTheirAnswers() {
         val q = AiQuiz.parse(AiQuiz.extract(reply).second!!)
         assertEquals(QuizQuestion.Kind.CHOICE, q[0].kind)

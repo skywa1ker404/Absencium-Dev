@@ -207,12 +207,12 @@ fun ScreenScaffold(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                    // No solid band: a soft fade of the page colour, so scrolling content dissolves under the title
-                    // instead of meeting a hard edge. The same fade as the Home, Calendar and Vault header.
+                    // A fade of the page colour that is solid behind the title and only dissolves at its lower edge, so scrolling content
+                    // never shows through the title text and still does not meet a hard edge. The same fade as the Home, Calendar and Vault header.
                     modifier = Modifier.background(
                         androidx.compose.ui.graphics.Brush.verticalGradient(
-                            0f to colors.background.copy(alpha = 0.9f),
-                            0.7f to colors.background.copy(alpha = 0.55f),
+                            0f to colors.background,
+                            0.68f to colors.background.copy(alpha = 0.97f),
                             1f to Color.Transparent,
                         ),
                     ),

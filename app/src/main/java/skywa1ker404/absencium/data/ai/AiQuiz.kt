@@ -26,13 +26,32 @@ object AiQuiz {
     const val LABEL = "absencium-quiz"
     private val fence = Regex("```[ \\t]*" + LABEL + "[ \\t]*\\r?\\n?(.*?)(```|\\z)", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
 
-    /** The reply without its quiz block, and the quiz JSON when the block holds at least one usable question. */
+    private val anyFence = Regex("```[ \\t]*[A-Za-z0-9_-]*[ \\t]*\\r?\\n?(.*?)(```|\\z)", RegexOption.DOT_MATCHES_ALL)
+
+    /**
+     * The reply without its quiz block, and the quiz JSON when the block holds at least one usable question. A model that labels the block
+     * differently (a plain fence, `json`) or sends the JSON bare is still understood, so raw JSON never reaches the chat.
+     */
     fun extract(reply: String): Pair<String, String?> {
-        val match = fence.find(reply) ?: return reply to null
-        val json = match.groupValues[1].trim()
-        val questions = parse(json)
-        val text = reply.removeRange(match.range).trim()
-        return text to (if (questions.isEmpty()) null else json)
+        val labelled = fence.find(reply)
+        if (labelled != null) {
+            val json = labelled.groupValues[1].trim()
+            return reply.removeRange(labelled.range).trim() to (if (parse(json).isEmpty()) null else json)
+        }
+        for (match in anyFence.findAll(reply)) {
+            val json = match.groupValues[1].trim()
+            if (json.contains("\"questions\"") && parse(json).isNotEmpty()) return reply.removeRange(match.range).trim() to json
+        }
+        val at = reply.indexOf("\"questions\"")
+        if (at >= 0) {
+            val start = reply.lastIndexOf('{', at)
+            val end = reply.lastIndexOf('}')
+            if (start >= 0 && end > start) {
+                val json = reply.substring(start, end + 1)
+                if (parse(json).isNotEmpty()) return (reply.substring(0, start) + reply.substring(end + 1)).trim() to json
+            }
+        }
+        return reply to null
     }
 
     fun parse(json: String): List<QuizQuestion> {
