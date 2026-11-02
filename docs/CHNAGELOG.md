@@ -54,3 +54,14 @@ working on it
 - Added: the AI can ask to read the content of a note or study material; nothing is sent until you approve the card.
 - Added: empty-page indicators on the Drafts popup and the Search page; reading mode Search finds words in the note with a separate AI icon; selecting text no longer scrolls the page to the top.
 - Docs: reference pictures and feature list for Absencium AI in `docs/ui overhaul/Ai/Generical-reference/`; `CURRENT.md` merged into `TODOList.md`.
+
+## 2026-11-02 (development)
+- Fixed: a crash when an AI answer or note contained a colour tag (Android's regex engine rejects a bare `}`).
+- Fixed: the answer now says when another provider answered because yours was at its limit; a limit rests a key for one minute, not ten.
+- Fixed: OpenRouter web search no longer fails with HTTP 402 on an account without credits; the question is answered without it and web search turns itself off for that chat.
+- Fixed: the header overlapping the chat text; the "+" sheet's Notes tile wrapping.
+- Changed: the AI answers like a person (answer first, no openers or closing offers, length follows the question); chat history sent to the AI is capped and shortened so a long chat costs less; thinking runs at Medium effort.
+- Changed: when the AI reads a note or material you approved, the result goes to it directly instead of appearing as a message.
+- Added: the AI links notes, study material and subjects by name; tapping a link opens it.
+- Added: quizzes are interactive (multiple choice, true or false, typed answers) with a score and a review of the missed questions.
+- Removed: every shadow in the app (menus, buttons, bars, sidebar, glass).

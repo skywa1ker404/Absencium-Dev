@@ -10,34 +10,34 @@ Single source of truth for what is done, in progress, pending and planned (it al
 
 **Status words.** DONE means it compiled on CI (and is named with the commit). WAITING FOR CI means it is written and pushed but CI has not confirmed it. Nothing is marked DONE that has not compiled.
 
-Last updated: 021126 (Batch 28 done; last green build `8c5fcb4`, 021126). CI errors are read from the commit comment the workflow posts.
+Last updated: 021126 (Batch 29 done; last green build `141e970`, 021126). CI errors are read from the commit comment the workflow posts.
 
 ---
 
 ## Current tasks
 
-### Batch 29: Reference-driven AI features (rows 11.28 to 11.35; references `docs/ui overhaul/Ai/Generical-reference/README.md`, pictures 05 to 19)
+### Batch 30: Reference-driven AI features (rows 11.28 to 11.35; references `docs/ui overhaul/Ai/Generical-reference/README.md`, pictures 05 to 19)
 
 | # | Task | Status |
 | - | --- | --- |
-| 29.1 | Permission areas widened (Tasks, Reminders, Vault records, Trash, Drafts, saved chats); "what was sent" view; edit / replace / delete of notes and records through the confirmation gate (11.28) | pending |
-| 29.2 | Embedded JavaScript runtime (QuickJS), off by default (11.29) | pending |
-| 29.3 | Memory page: modes, similarity slider, statistics, debugger, auto-summary, semantic embeddings (11.30) | pending |
-| 29.4 | Keyless / custom search providers, result size (11.31); needs your approval of the sites contacted | pending |
-| 29.5 | Thinking levels Off / Low / Medium (default) / High, Temperature, Top P, Max tokens (11.32) | pending |
-| 29.6 | LaTeX, code highlighting, Mermaid (11.33) | pending |
-| 29.7 | Schema versioning and import validation (11.34) | pending |
-| 29.8 | Assistants editor as sub-pages with prompt variables, intros, clone, reorder; read aloud (11.35) | pending |
+| 30.1 | Permission areas widened (Tasks, Reminders, Vault records, Trash, Drafts, saved chats); "what was sent" view; edit / replace / delete of notes and records through the confirmation gate (11.28) | pending |
+| 30.2 | Embedded JavaScript runtime (QuickJS), off by default (11.29) | pending |
+| 30.3 | Memory page: modes, similarity slider, statistics, debugger, auto-summary, semantic embeddings (11.30) | pending |
+| 30.4 | Keyless / custom search providers, result size (11.31); needs your approval of the sites contacted | pending |
+| 30.5 | Thinking levels Off / Low / Medium (default) / High, Temperature, Top P, Max tokens (11.32) | pending |
+| 30.6 | LaTeX, code highlighting, Mermaid (11.33) | pending |
+| 30.7 | Schema versioning and import validation (11.34) | pending |
+| 30.8 | Assistants editor as sub-pages with prompt variables, intros, clone, reorder; read aloud (11.35) | pending |
 
 ## Next tasks
 
-- **Batch 30: AI follow-ups from the Readme list** (rows 11.6 to 11.27 "pending" parts): message branching, chat PDF export, search inside one chat, embeddings retrieval from notes and guides, per-model parameters, favourites, failover outside chat, camera capture and previews, per-assistant allowed areas, interactive scored quiz, in-place note edit, page-pointing PDF answers, revision plan into the calendar, clash detection, `add_syllabus_node`.
-- **Batch 31: Notification when an AI answer is ready** (5.6, 11.25; `AiChatService.completions` and `AiHubScreen(chatId)` are ready) with the notification groundwork of 5.6.
-- **Batch 32: Settings hub, profile with the syllabus card (19.21), onboarding** (images 03, 10; onboarding still has its older option cards).
-- **Batch 33: Editor toolbar as a connected toggle grid with an "Ask AI to..." pill (images 03, 14), reading selection pill, AI options popup restyle and tree-style topic picker (screens 17, 18).**
-- **Batch 34: Attendance per-subject tinted rows and striped progress bar (images 08, 04, 13), Vault grid even tiles (image 07), remaining inline add / import buttons as floating buttons (Home and Vault empty states, Test Lab, Storage).**
-- **Batch 35: Liquid Glass rest (19.1: press / drag squash and highlight on floating buttons, toggles, sliders, calmer tiles in popups, places ignoring "Apply frosted glass on other elements") and Material 3 Expressive (19.3: unread guide pages need pasted text, then the full component set).**
-- **Batch 36: Step 10 leftovers**: markup tools saved in reading mode (10.26), audio play / pause in the mini-player (10.29), hide the mic while scrolling (10.28), Paste in the multi-select toolbar (10.32), "AI is disabled" messages and consent popup (10.34), subject folder sidebar / sort / card view (10.15), practical syllabus option and "generate notes for this topic" (10.16, 10.18), pages, doodle shapes and layers, text reflow beside media, syllabus-aware AI (10.36 onward), study material rename (needs a migration), list / card mode remembered as a setting.
+- **Batch 31: AI ideas picked by the owner on 2026-11-02** (rows 11.37 to 11.42): **smart suggestion chips** built from real data (exam in 3 days, subject under the required %, today's first lecture); **Ask my notes** (the AI finds and reads the right notes and material itself, still with approval, and links them); **flashcards and spaced revision** from a note (tap to flip, missed cards return sooner); **notification when an answer is ready** (5.6, 11.25; `AiChatService.completions` and `AiHubScreen(chatId)` are ready); **quiz history and weak topics** (scores per topic on the phone, "quiz my weak topics"); **homework / photo solver** (picture of a problem, step by step, check your answer).
+- **Batch 32: AI follow-ups from the Readme list** (rows 11.6 to 11.27 "pending" parts): message branching, chat PDF export, search inside one chat, embeddings retrieval from notes and guides, per-model parameters, favourites, failover outside chat, camera capture and previews, per-assistant allowed areas, interactive scored quiz, in-place note edit, page-pointing PDF answers, revision plan into the calendar, clash detection, `add_syllabus_node`.
+- **Batch 33: Settings hub, profile with the syllabus card (19.21), onboarding** (images 03, 10; onboarding still has its older option cards).
+- **Batch 34: Editor toolbar as a connected toggle grid with an "Ask AI to..." pill (images 03, 14), reading selection pill, AI options popup restyle and tree-style topic picker (screens 17, 18).**
+- **Batch 35: Attendance per-subject tinted rows and striped progress bar (images 08, 04, 13), Vault grid even tiles (image 07), remaining inline add / import buttons as floating buttons (Home and Vault empty states, Test Lab, Storage).**
+- **Batch 36: Liquid Glass rest (19.1: press / drag squash and highlight on floating buttons, toggles, sliders, calmer tiles in popups, places ignoring "Apply frosted glass on other elements") and Material 3 Expressive (19.3: unread guide pages need pasted text, then the full component set).**
+- **Batch 37: Step 10 leftovers**: markup tools saved in reading mode (10.26), audio play / pause in the mini-player (10.29), hide the mic while scrolling (10.28), Paste in the multi-select toolbar (10.32), "AI is disabled" messages and consent popup (10.34), subject folder sidebar / sort / card view (10.15), practical syllabus option and "generate notes for this topic" (10.16, 10.18), pages, doodle shapes and layers, text reflow beside media, syllabus-aware AI (10.36 onward), study material rename (needs a migration), list / card mode remembered as a setting.
 - **Later, in the order of the Specification:** Steps 5 to 9 (platform integration, timetable overhaul, attendance and academic correctness, reminders / tasks / Quiet Mode, calendar and search), the pre-1.0 audit (Step 3), Steps 12 to 17 and the stable 1.0.0 release.
 
 ## Completed tasks
@@ -70,6 +70,7 @@ Last updated: 021126 (Batch 28 done; last green build `8c5fcb4`, 021126). CI err
 - **Batch 26: Bugs batch, Absencium AI, per-provider keys, share as PDF, AI roadmap (19.35 to 19.39)** (311026, Ci: 86482cd).
 - **Batch 27: Absencium AI rebuild: background answers, smarter prompt, memory, search, assistants, attachments, failover, new chat screen (19.40, rows 11.6 to 11.27)** (011126, Ci: dd2321b).
 - **Batch 28: Absencium AI fixes (empty page, bars, picker, model chooser, incognito, sidebar, loading shape, attendance wording, raw colour tags), reading-mode find, selection scroll, empty-page indicators, approved reading of notes and study material, Generical references, docs merge (19.41, 11.28 reading, 11.36)** (021126, Ci: 8c5fcb4).
+- **Batch 29: AI polish round: crash fix, natural voice, smaller history, hidden read results, interactive quiz, tap-to-open links, no shadows (19.42, rows 11.13, 11.36)** (021126, Ci: f5bbe5d, d383b38, 141e970).
 
 **Bugs fixed**
 
@@ -82,18 +83,23 @@ Last updated: 021126 (Batch 28 done; last green build `8c5fcb4`, 021126). CI err
 - **AI answers as raw Markdown**, question bar behind the keyboard, checkbox inside a code block (19.28) (301026, Ci: d73afc7).
 - **Syllabus import tree, empty provider replies, double AI errors, date picker behind the dialog, absent date, markup tokens cut in half, random empty shape, folder pill, drafts pull, FAB shadow, rotation reset** (19.35) (311026, Ci: 86482cd).
 - **Batch 28 bugs:** AI greeting overlapping suggestions, solid block behind the bars, sidebar click-through and pop-up animation, model chooser provider glitch, "needs attention" at 75 % or more, raw `{color:...|text}` in notes and chat, text selection scrolling the note to the top, empty Drafts / Search pages (021126, Ci: 8c5fcb4).
+- **Crash when an AI note or answer held a colour tag:** Android's regex engine rejects a bare `}` that the JVM accepts (`\|}` in `AiNoteCleaner`); escaped, with a comment (021126, Ci: f5bbe5d).
+- **Wrong AI answered without saying so:** when a provider was at its limit another one answered silently; the footer now says "(Gemini was at its limit)" and a limit rests a key for 1 minute instead of 10 (021126, Ci: 141e970).
+- **OpenRouter web search gave HTTP 402 on a free account:** the question is asked again without the paid plugin and web search is switched off for that chat once (021126, Ci: f5bbe5d, 141e970).
+- **Header overlapped the chat text:** solid fade under the top bar and input area (021126, Ci: 141e970).
+- **Approved read showed the note as a visible message:** the result is now a hidden message only the AI sees (021126, Ci: f5bbe5d).
 
 ## Partially Complete
 
 - **Liquid Glass (19.1):** press / drag squash and highlight on floating buttons, toggles and sliders; calmer inner tiles in popups; dialogs, menus and pickers that ignore "Apply frosted glass on other elements". Postponed behind the AI and screen work.
 - **Material 3 Expressive (19.3):** the developer.android.com guide pages and the m3.material.io blog could not be read from this workspace; waits for pasted text. Components already in use are listed in `docs/ui overhaul/M3E_RESEARCH.md`.
-- **Screen redesign (19.4):** done: Vault grid, notes, study material, syllabus, Home, Today, Trash, Subjects, Appearance, Attendance (calendar, tiles, 6-month chart), Timetable day view, AI chat. Left: see Next tasks, Batches 32 to 34.
+- **Screen redesign (19.4):** done: Vault grid, notes, study material, syllabus, Home, Today, Trash, Subjects, Appearance, Attendance (calendar, tiles, 6-month chart), Timetable day view, AI chat. Left: see Next tasks, Batches 33 to 35.
 - **Floating buttons (19.9):** done on the subject folder, Subjects, Syllabus. Left: Home and Vault empty states, Test Lab, Storage.
 - **Study material (19.19):** rename needs a display-name column on guides (the file name is also the stored file's name), so it waits for a migration; list / card mode is remembered only while the screen lives.
 - **Document reading (19.24, 19.25):** PDFs over 15 MB fall back to page pictures (first 36 pages); a page-range picker or the provider's file upload is needed.
 - **Attendance (19.29):** per-subject rows and the striped bar are left.
 - **Absencium AI (rows 11.6 to 11.27):** each row lists what is pending; the notification for a finished answer waits for the notification groundwork (5.6).
-- **Step 10 (Vault and editor):** the items in Next tasks, Batch 36.
+- **Step 10 (Vault and editor):** the items in Next tasks, Batch 37.
 - **Frame drops (19.27):** the cluster at 19:51 is not pinned to a screen (needs the raw log); `onTrimMemory level=20` means "UI hidden", not memory pressure.
 
 ## Your actions needed
@@ -109,6 +115,7 @@ Last updated: 021126 (Batch 28 done; last green build `8c5fcb4`, 021126). CI err
 - Never assume an API or dependency exists: inspect the repository. Do not rebuild a feature that already exists; reuse the existing component.
 - Halt on error: if CI, compilation or a test fails, stop, print the exact error, fix it or wait. Nothing is called done until it compiled on CI.
 - Bug fixes come before new features; commit and run CI only after the known bugs of the batch are fixed. Development, CI and reports happen in `skywa1ker404/Absencium-Dev` (package `skywa1ker404.absencium.dev`); builds only through GitHub Actions. `skywa1ker404/Absencium` stays empty until a stable 1.0.0 is recommended, tested and explicitly approved by Anakin.
+- No shadows anywhere in the app (owner 2026-11-02): no `shadow`, `shadowElevation` or elevation on any button, menu, bar, sheet or glass layer.
 - Commits are authored `skywa1ker404 <aalaskar43@gmail.com>` with no co-author or session trailers.
 - Replies are short and token-efficient; this file is updated after every CI build in the format above, keeps every specification detail, and never carries "not tested" remarks.
 - A specification that was replaced is ~~struck through~~ and the new one follows it immediately. Steps in the Specification run in implementation order; each heading shows how many tasks it holds.
@@ -118,7 +125,7 @@ Last updated: 021126 (Batch 28 done; last green build `8c5fcb4`, 021126). CI err
 - Approval of the repository audit report once it is written (Step 3).
 - Approval of the cleanup table below, file by file.
 - Keyless web search (11.31): which sites the app may contact (the backends are listed in the reference picture 18); nothing is added without your approval because of the zero-telemetry rule.
-- New dependencies for Batch 29 (JavaScript engine, embeddings, syntax highlighting, Mermaid): licence and size reported first.
+- New dependencies for Batch 30 (JavaScript engine, embeddings, syntax highlighting, Mermaid): licence and size reported first.
 - The stable 1.0.0 release and publishing to `skywa1ker404/Absencium`.
 
 ## Cancelled plans
@@ -133,6 +140,7 @@ Last updated: 021126 (Batch 28 done; last green build `8c5fcb4`, 021126). CI err
 - **Topic dropdown in the folder (19.10):** replaced by the sidebar (19.31); the editor keeps the small dropdown.
 - **Syllabus import by text only and 36-page batch reading of PDFs:** replaced by nested JSON (19.35) and whole-PDF upload (19.25).
 - **Thinking glow animation in Absencium AI:** replaced by the Material loading shape (Batch 28).
+- **Shadows (Liquid Glass drop shadow, elevated menus, buttons, FABs, undo / error bars, topic sidebar):** removed everywhere on 2026-11-02 at the owner's request.
 - **`CURRENT.md`:** merged into this file on 2026-11-01.
 - Older replaced items are struck through in the Specification (0.3, 1.2, 1.3, 1.7, 1b.2 to 1b.5, 1c.5, 1c.6, 1f.1, 2.3, 2.4, 6.2 to 6.6, 10.1, 10.8, 16.7).
 
@@ -414,7 +422,7 @@ The editor and file tools come before study tools, widgets and sharing because t
 
 **Tests:** Large-image and low-storage runs, a note with 50 k characters, share to two apps and to a missing app. · **Effort:** XL
 
-## Step 11. Absencium AI (the AI Hub, renamed 2026-10-31) and AI settings (36 tasks)
+## Step 11. Absencium AI (the AI Hub, renamed 2026-10-31) and AI settings (42 tasks)
 
 **Deferred to 1.x by the owner (2026-10-18), then pulled forward and now active: the chat, per-provider keys and the settings redesign (19.35 to 19.37), the rebuild (19.40) and the reference-driven features (11.28 to 11.36, owner 2026-11-01).** Rows 11.1 to 11.5 keep their original 1.x status.
 
@@ -434,7 +442,7 @@ Builds on the existing providers, model picker and key vault; adds to them rathe
 | 11.10 | **Web search with citations:** per-chat **Web search** switch ("+" sheet, optional, off by default); uses the provider's own search: Gemini Google Search grounding, Claude web search tool, OpenRouter web plugin; the sources are listed under the answer (tap one to open it) and stay saved with it for source-grounded follow-ups. Other providers say the switch needs one of these | DONE, CI green `dd2321b`; other providers pending |
 | 11.11 | **Custom assistants:** reusable profiles with custom system instructions, optional model and temperature; presets for **study, research, writing and exam coaching**; create / edit / copy-to-edit / delete; **import and export** as a JSON file (`AiAssistants`, `AssistantsDialog`); chosen per chat. **Pending:** allowed areas per assistant | DONE, CI green `dd2321b`; per-assistant allowed areas pending |
 | 11.12 | **Study mode:** per-chat switch that teaches step by step, checks understanding with a question, and has **adjustable difficulty** (Auto, Beginner, School, College, Expert). **Pending:** hints that grow, spaced prompts | DONE, CI green `dd2321b`; hints and spaced prompts pending |
-| 11.13 | **Quiz generator:** "Quiz me" in the "+" sheet makes a quiz with answers from attached notes, PDFs or study material, or from a topic. **Pending:** an interactive scored quiz with a review of wrong answers (the recall quiz tables already exist) | partly done (text quiz in chat); interactive quiz pending |
+| 11.13 | **Quiz generator:** "Quiz me" in the "+" sheet makes a quiz with answers from attached notes, PDFs or study material, or from a topic. **Pending:** an interactive scored quiz with a review of wrong answers (the recall quiz tables already exist) | DONE for the quiz itself, CI green `141e970` (19.42): `QuizCard` with multiple choice, true / false and typed answers, score and review of missed ones; pending: quiz history and weak topics (11.41) |
 | 11.14 | **Note assistant:** pick notes with the "+" sheet (their text is sent only then), then summarise, rewrite, improve or organise them; any answer can be saved with "Save as note" (cleaned into the editor's markup); a new note the chat proposes is **written by the app's note writer at the length asked** (moderate / lengthy / in depth, full formatting), not by a short chat reply. **Pending:** replace a note in place through a confirm card, flashcards | partly done; in-place edit pending |
 | 11.15 | **PDF assistant:** attach a PDF and ask, summarise or extract (the model reads the file); **pending:** answers that point to the page, a library of guides to pick from | partly done |
 | 11.16 | **Revision assistant:** the AI is given exam countdowns, syllabus progress, attendance and today's / tomorrow's lectures (when allowed) and the "Revision plan" prompt asks for a plan from them. **Pending:** adding the plan to the calendar through confirm cards | partly done |
@@ -458,6 +466,12 @@ Builds on the existing providers, model picker and key vault; adds to them rathe
 | 11.34 | **Schema versioning and validation:** a format version in exports of assistants, notes and memory / vector indices, Room migrations for every new table, validation and a clear error on import | pending (assistants import / export exists) |
 | 11.35 | **Assistants editor and read aloud (pictures 10, 11, 12, 13, 19):** the assistant page as grouped sub-pages (Profile, Prompt, Context, Models, Memory, Tools & Search, Appearance, Advanced), prompt editor with a token estimate, expand and variable chips (`{{user}}`, `{{cur_date}}`, `{{model_name}}` ...; device info, battery and location only when allowed), several intros, clone and drag-to-reorder; read aloud with System TTS (offline) first, then a custom OpenAI-compatible endpoint and cloud voices | pending |
 | 11.36 | **Absencium AI UI fixes (owner 2026-11-01):** incognito chat, compact model chooser and note / material picker, no solid block behind the bars, sliding sidebar, loading shape instead of the glow, "needs attention" fix, raw colour tags fix (details in 19.41) | DONE, CI green `8c5fcb4` |
+| 11.37 | **Smart suggestion chips:** the empty chat's chips are built from real data when allowed (an exam in 3 days, a subject under the required %, today's first lecture, a syllabus unit not started) instead of fixed prompts; fixed prompts stay as the fallback | pending (Batch 31) |
+| 11.38 | **Ask my notes:** the AI chooses which notes and study material to read for a question (titles are already in its context), asks once for approval per read and links what it used; no manual picking | pending (Batch 31); reading with approval exists (11.28) |
+| 11.39 | **Flashcards and spaced revision:** cards made from a note or material, tap to flip, Know / Again, missed cards return sooner (simple Leitner boxes); stored in the chat JSON or a Room table, decided when built | pending (Batch 31) |
+| 11.40 | **Answer-ready notification** (see 5.6, 11.25): channel, tap opens that chat | pending (Batch 31) |
+| 11.41 | **Quiz history and weak topics:** each finished quiz saved on the phone with its topic and score; "quiz my weak topics" builds a quiz from the missed questions | pending (Batch 31); the quiz card exists (11.13) |
+| 11.42 | **Homework / photo solver:** camera or picture of a problem, a solver mode that explains step by step and asks the student to check their own answer; reuses attachments (11.9) | pending (Batch 31) |
 
 **Tests:** Provider list fetched offline and online; a failing key leaves notes untouched; a note is sent to the AI only after Apply. · **Effort:** L
 
@@ -624,3 +638,4 @@ Replaces the old "restyle after the reference kit" task. Reference material live
 | 19.39 | **Absencium AI roadmap (owner 2026-10-31, 15 points)** added to Step 11 as rows 11.6 to 11.24, each marked done / partly done / pending. LastChat (AGPL-3.0) is only an idea reference: no code is copied | see Step 11 |
 | 19.40 | **Absencium AI, intelligence and background work (owner 2026-10-31 / 11-01):** answers continue when you leave the chat, the screen or the app (`AiChatService`, `AiWorkService`); general-purpose smart prompt, multi-turn chat requests, longer outputs; notes written in full by the note writer at the requested length with the whole editor markup; optional Web search, Thinking and Memory; attachments (pictures, PDFs, text, recordings, videos, notes); assistants with import / export; study difficulty; multiple keys per provider with key then provider failover; token statistics; new chat screen, chat list and "+" sheet; archive; retry with another model; continue. Details in rows 11.6 to 11.27; the notification for a finished answer is documented in 5.6 and waits for the notification groundwork | DONE, CI green `dd2321b` |
 | 19.41 | **Absencium AI fixes, reading-mode search, content access (owner 2026-11-01).** (1) **Empty pages:** the Drafts popup and the Search page use `ExpressiveEmptyState`. (2) **Selection scroll:** `KeepScrollOnSelection` keeps the page where it is while the selection pill appears, in the editor (`pageScroll`) and in reading mode. (3) **Reading mode find:** the Search icon opens a find bar over the written words (`FindState` in `MarkdownUi`: per-block match counting, highlights, scroll to the active match, tables included) and a separate Sparkle icon asks the AI. (4) **Absencium AI UI:** greeting and suggestions no longer overlap; incognito chat (`AiChat.incognito`, never saved, no memory) replaces the new-chat icon on the empty page; chat content runs under the bars (`ScreenScaffold(contentUnderBars)`) with soft fades instead of a solid block; the model chooser is a compact bottom sheet with fixed-height provider pills; "Send a note" and study material use one compact picker (`ContentPickerDialog`); the thinking glow became the loading shape; the sidebar slides in and swallows touches. (5) **Facts:** the context tags each subject `[SAFE]` / `[BELOW REQUIREMENT]` and the prompt forbids "needs attention" for safe subjects. (6) **Raw colour tags:** `AiNoteCleaner.repairTags` closes `{color:..|text}` / `{size:..|text}` that lack `|}` (on writing, on load and on display), the note prompt insists on the closer. (7) **Content access:** scope `MATERIAL`, action `read_content` (kind note or material), the card describes what is requested and **Apply** sends the note text or the material file to the AI as the next message (`contentReader`); nothing is sent before approval. (8) References saved in `docs/ui overhaul/Ai/Generical-reference/` | DONE, CI green `8c5fcb4` |
+| 19.42 | **AI polish round (owner 2026-11-02).** (1) **Crash:** colour-tag repair used a regex Android rejects (`\|}`); escaped. (2) **Voice:** the system prompt rewritten to sound like a person (answer first, no openers or closing offers, length follows the question, a point of view), with a reminder at its end for smaller models; the chat no longer carries the editor markup guide (notes are written by the note writer), which also removes raw `{color:..}` from chat. (3) **Tokens:** the newest 8 messages go in full, older ones are shortened to 700 characters, at most 30 messages and the files of the 2 newest messages with files are sent again (was: everything); thinking effort is Medium (was High). (4) **Direct access:** an approved `read_content` result is a hidden message (`ChatMessage.hidden`), not a visible text bubble; the prompt tells the AI never to ask for pasted text. (5) **Links:** `[[Name]]` in an answer opens that note, study material file or subject (`AiMarkdown(onOpenLink)`); the prompt tells the AI to write them by itself. (6) **Quiz:** the AI sends one `absencium-quiz` block (`AiQuiz`), the chat shows `QuizCard`: multiple choice, true / false and typed answers, one at a time, instant right / wrong with the explanation, score, review of missed ones, retry the missed. (7) **Shadows removed everywhere:** menus, bars, sidebar, buttons, FABs, the reading FAB and the glass drop shadow. (8) **Providers:** the footer says when another provider answered because yours was at its limit; OpenRouter web search without credits falls back and turns itself off for the chat. (9) The "+" sheet's Notes tile no longer wraps; header and input fades are solid enough to read the title | DONE, CI green `141e970` |

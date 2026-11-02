@@ -5,6 +5,7 @@ Owner request 2026-10-27: a complete overhaul of the whole app's look and layout
 **Rights note.** Images 3 to 15 are other designers' mock-ups, kept here as private inspiration. Nothing from them (artwork, icons, illustrations, photos, brand marks) is copied into the app. We take structure, proportion, spacing, colour logic and behaviour only. They are not part of the APK. Image 1 and 2 are screenshots of Absencium itself.
 
 **Rules for using this folder**
+0. No shadows anywhere (owner 2026-11-02): depth comes from tint, edge and blur only.
 1. Open the matching image before designing or changing any screen (the table at the end says which).
 2. Follow the app's chosen theme (Default, Monet, Presets, Liquid Glass): the images show *layout and shape*, the colours always come from the theme.
 3. Everything must also work with Liquid Glass off and with Performance mode.
