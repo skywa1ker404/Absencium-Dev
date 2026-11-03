@@ -271,8 +271,12 @@ class AiChatService(
     }
 
     companion object {
-        /** Whether the model searches the web itself (Gemini's grounding, free to use); every other model gets the app's own search. */
-        fun canSearch(connection: AiConnection) = connection.style == ApiStyle.GEMINI
+        /**
+         * Whether the model searches the web by itself. None does any more: Gemini's search tool has its own quota that free keys often do not
+         * have (HTTP 429 "quota exceeded" with no tokens used), and OpenRouter's costs credits, so every model gets the app's own search results.
+         */
+        @Suppress("UNUSED_PARAMETER")
+        fun canSearch(connection: AiConnection) = false
 
         /** The most base64 text of files sent again with one request. */
         private const val MAX_SENT_BYTES = 24_000_000
