@@ -1,9 +1,12 @@
 package me.rerere.common.platform
 
 object PlatformLog {
-    fun d(tag: String, message: String) = log("D", tag, message)
+    // Absencium: debug and info lines carry the full request (the student's questions and files), so they are dropped.
+    @Suppress("UNUSED_PARAMETER")
+    fun d(tag: String, message: String) = Unit
 
-    fun i(tag: String, message: String) = log("I", tag, message)
+    @Suppress("UNUSED_PARAMETER")
+    fun i(tag: String, message: String) = Unit
 
     fun w(tag: String, message: String) = log("W", tag, message)
 
