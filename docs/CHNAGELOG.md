@@ -74,3 +74,8 @@ working on it
 - Changed: the AI's fixed instruction is about half as long, and the full weekly timetable is only sent when you ask about the week.
 - Added: Response mode (Efficient, Balanced, Maximum quality) in AI & Integrations; the app now works out locally what a request needs before asking the model.
 - Added: each answer shows the tokens the provider reported for it.
+
+## 2026-11-03 (development)
+- Added: web search for every AI provider (the app searches DuckDuckGo with your question's words and shows the sources); Gemini still searches by itself.
+- Added: switch a provider off without deleting it; a pasted API key suggests its provider; keys show when they are resting after a limit.
+- Fixed: a deleted provider stayed in AI & Integrations until you left and came back; asking the AI to save its last answer as a note now saves exactly that answer.
