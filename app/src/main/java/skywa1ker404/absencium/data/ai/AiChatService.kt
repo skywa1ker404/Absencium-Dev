@@ -136,7 +136,7 @@ class AiChatService(
                 if (memoryAllowed() && !chat.incognito) parsed.remembered.forEach { memory.add(it.text, if (it.chatOnly) chatId else null) }
                 if (shown.isBlank() && parsed.actions.isEmpty()) throw AiException("The model sent back an empty answer.")
                 if (reply.webOff) chats.get(chatId)?.let { chats.put(it.copy(webSearch = false)) }
-                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, via = reply.replacedProvider, tokensIn = reply.tokensIn, tokensOut = reply.tokensOut, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }?.let { fillFromAnswer(it, chat) }, sources = if (localHits.isNotEmpty()) localHits.map { ChatSource(it.title, it.url) } else reply.sources, quiz = quiz))
+                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, via = reply.replacedProvider, tokensIn = reply.tokensIn, tokensOut = reply.tokensOut, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }?.let { fillFromAnswer(it, chat) }, sources = if (localHits.any { it.url.isNotBlank() }) localHits.filter { it.url.isNotBlank() }.map { ChatSource(it.title, it.url) } else reply.sources, quiz = quiz))
                 finished(chatId, shown, ok = true)
             } catch (e: CancellationException) {
                 throw e

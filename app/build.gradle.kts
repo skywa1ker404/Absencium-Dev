@@ -88,6 +88,7 @@ ksp {
 dependencies {
     // Provider layer ported from LastChat / RikkaHub (AGPL-3.0), see THIRD_PARTY_NOTICES.md.
     implementation(project(":lastchat:ai"))
+    implementation(project(":lastchat:search"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.profileinstaller)

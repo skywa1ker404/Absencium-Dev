@@ -6,6 +6,11 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
 import java.net.URLEncoder
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import me.rerere.search.SearchCommonOptions
+import me.rerere.search.SearchService
+import me.rerere.search.SearchServiceOptions
 
 /**
  * Web search that works with any model: the question's words go to DuckDuckGo's plain HTML page (no key, no account), the top results
@@ -41,7 +46,27 @@ object AiWebSearch {
         .replace("&amp;", "&").replace("&quot;", "\"").replace("&#x27;", "'").replace("&#39;", "'").replace("&lt;", "<").replace("&gt;", ">")
         .replace(Regex("\\s+"), " ").trim()
 
-    suspend fun search(query: String, max: Int = 5): List<Hit> = withContext(Dispatchers.IO) {
+    /**
+     * LastChat's keyless search first (it picks the right sources for news, weather, encyclopedia and general questions, and merges them),
+     * then the plain DuckDuckGo page when that finds nothing. Only the search words leave the phone.
+     */
+    suspend fun search(query: String, max: Int = 5): List<Hit> {
+        val rich = runCatching { keyless(query, max) }.getOrDefault(emptyList())
+        return rich.ifEmpty { duckDuckGo(query, max) }
+    }
+
+    private suspend fun keyless(query: String, max: Int): List<Hit> {
+        LastChatSearch.install()
+        val result = SearchService.getService(SearchServiceOptions.KeylessOptions())
+            .search(buildJsonObject { put("query", query.take(200)) }, SearchCommonOptions(resultSize = max), SearchServiceOptions.KeylessOptions())
+            .getOrThrow()
+        val hits = ArrayList<Hit>()
+        result.answer?.takeIf { it.isNotBlank() }?.let { hits += Hit("Quick answer", "", it.take(600)) }
+        result.items.forEach { hits += Hit(it.title, it.url, it.text.take(600)) }
+        return hits.take(max)
+    }
+
+    private suspend fun duckDuckGo(query: String, max: Int): List<Hit> = withContext(Dispatchers.IO) {
         val connection = (URL("https://html.duckduckgo.com/html/").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = 10_000
@@ -63,6 +88,6 @@ object AiWebSearch {
         if (hits.isEmpty()) "WEB SEARCH found nothing usable for this question. Say so and answer from what you know, marked as such.\n"
         else buildString {
             append("WEB RESULTS, fetched just now for this question. Base the answer on them where they help and cite as [1], [2]; do not invent other sources.\n")
-            hits.forEachIndexed { i, h -> append("[${i + 1}] ${h.title} (${h.url}): ${h.snippet}\n") }
+            hits.forEachIndexed { i, h -> append("[${i + 1}] ${h.title}${if (h.url.isBlank()) "" else " (${h.url})"}: ${h.snippet}\n") }
         }
 }
