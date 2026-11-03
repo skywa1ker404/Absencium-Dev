@@ -149,6 +149,13 @@ class ApiKeyVault(context: Context) {
         limitedUntil[apiKey] = System.currentTimeMillis() + millis
     }
 
+    /** For each key of [provider] in order of [lastFours]: true while it rests after hitting a limit. */
+    @Synchronized
+    fun resting(provider: AiProvider): List<Boolean> {
+        val now = System.currentTimeMillis()
+        return keys(provider).map { (limitedUntil[it] ?: 0L) > now }
+    }
+
     /** The keys of [provider] that are not resting after hitting a limit, the main one first. */
     @Synchronized
     fun usableKeys(provider: AiProvider): List<String> {

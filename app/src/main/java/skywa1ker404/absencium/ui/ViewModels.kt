@@ -201,6 +201,9 @@ data class ProviderRow(
     val style: skywa1ker404.absencium.data.ai.ApiStyle,
     val active: Boolean,
     val keyCount: Int = 0,
+    val enabled: Boolean = true,
+    /** True when every key of this provider is resting after a limit. */
+    val resting: Boolean = false,
 ) {
     /** True when this provider could answer right now: URL and model saved, and a key if it needs one. */
     val complete: Boolean get() = baseUrl.isNotBlank() && model.isNotBlank() && (!provider.keyRequired || hasKey)
@@ -214,7 +217,7 @@ class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
 
     private val vault = container.apiKeyVault
     private val profiles = container.aiProfiles
-    private val refresh = MutableStateFlow(0)
+    private val refresh = container.providersRevision
 
     val rows: StateFlow<List<ProviderRow>> = kotlinx.coroutines.flow.combine(container.settingsState, refresh) { settings, _ -> build(settings) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), build(container.settingsState.value))
@@ -225,7 +228,7 @@ class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
             val saved = profiles.get(provider)
             if (!active && !vault.hasKey(provider) && saved == null) return@mapNotNull null
             val profile = profileFor(provider, settings)
-            ProviderRow(provider, vault.hasKey(provider), vault.lastFour(provider), profile.baseUrl, profile.model, profile.style, active, vault.keyCount(provider))
+            ProviderRow(provider, vault.hasKey(provider), vault.lastFour(provider), profile.baseUrl, profile.model, profile.style, active, vault.keyCount(provider), profiles.enabled(provider), vault.resting(provider).let { it.isNotEmpty() && it.all { r -> r } })
         }
 
     /** What is saved for [provider], or its defaults. The provider in use is read from the settings, which hold the truth for it. */
@@ -247,6 +250,9 @@ class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
 
     /** The last four characters of every key saved for [provider]; the first is the one in use. */
     fun keyTails(provider: skywa1ker404.absencium.data.ai.AiProvider): List<String> = vault.lastFours(provider)
+
+    /** For each key (same order as [keyTails]): true while it rests after hitting a limit. */
+    fun keyResting(provider: skywa1ker404.absencium.data.ai.AiProvider): List<Boolean> = vault.resting(provider)
 
     fun addKey(provider: skywa1ker404.absencium.data.ai.AiProvider, key: String): Boolean = vault.addKey(provider, key)
 
@@ -303,10 +309,31 @@ class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /**
+     * Switches a provider on or off. Switching off the one in use hands over to another complete provider that is on; when there is none
+     * it stays on and [onRefused] says why.
+     */
+    fun setEnabled(provider: skywa1ker404.absencium.data.ai.AiProvider, on: Boolean, onRefused: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            val settings = container.settingsState.value
+            val inUse = settings?.aiProvider == provider && settings.aiConnectionSaved
+            if (!on && inUse) {
+                val next = build(settings).firstOrNull { it.provider != provider && it.complete && it.enabled }
+                if (next == null) {
+                    onRefused("${provider.label} is the only provider that is ready. Set up another before switching it off.")
+                    return@launch
+                }
+                container.settingsRepository.setAiConnection(next.provider, next.baseUrl, next.model, next.style)
+            }
+            withContext(Dispatchers.IO) { profiles.setEnabled(provider, on) }
+            refresh.update { it + 1 }
+        }
+    }
+
     /** Makes [provider] the one in use, with the URL and model saved for it. */
     fun use(provider: skywa1ker404.absencium.data.ai.AiProvider) {
         val profile = profileFor(provider)
-        if (profile.baseUrl.isBlank() || profile.model.isBlank()) return
+        if (profile.baseUrl.isBlank() || profile.model.isBlank() || !profiles.enabled(provider)) return
         viewModelScope.launch { container.settingsRepository.setAiConnection(provider, profile.baseUrl, profile.model, profile.style) }
     }
 
@@ -323,7 +350,7 @@ class AiProvidersViewModel(private val container: AppContainer) : ViewModel() {
                 profiles.remove(provider)
             }
             if (wasActive) {
-                val next = build(settings).firstOrNull { it.provider != provider && it.complete }
+                val next = build(settings).firstOrNull { it.provider != provider && it.complete && it.enabled }
                 if (next != null) {
                     container.settingsRepository.setAiConnection(next.provider, next.baseUrl, next.model, next.style)
                 } else {

@@ -11,6 +11,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,6 +64,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
     val active = rows.firstOrNull { it.active }
     val ready = active != null && active.complete
     var picking by remember { mutableStateOf(false) }
+    var refusal by remember { mutableStateOf<String?>(null) }
 
     ScreenScaffold(title = "AI & Integrations", onBack = { navigator.navigateUp() }) {
         StatusCard(settings.askAiEnabled, ready, active, onOpen = { navigator.navigate(AiHubScreenDestination()) })
@@ -84,8 +86,10 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
                         row = row,
                         onUse = { if (row.complete) providersViewModel.use(row.provider) else navigator.navigate(AiProviderScreenDestination(provider = row.provider.name)) },
                         onEdit = { navigator.navigate(AiProviderScreenDestination(provider = row.provider.name)) },
+                        onToggle = { on -> refusal = null; providersViewModel.setEnabled(row.provider, on) { refusal = it } },
                     )
                 }
+                refusal?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 4.dp)) }
                 SettingDivider()
                 SettingRow(
                     title = "Add a provider",
@@ -204,7 +208,7 @@ private fun StatusCard(enabled: Boolean, ready: Boolean, active: ProviderRow?, o
 }
 
 @Composable
-private fun ProviderRowItem(row: ProviderRow, onUse: () -> Unit, onEdit: () -> Unit) {
+private fun ProviderRowItem(row: ProviderRow, onUse: () -> Unit, onEdit: () -> Unit, onToggle: (Boolean) -> Unit) {
     val colors = MaterialTheme.colorScheme
     SettingRow(
         title = row.provider.label,
@@ -216,8 +220,9 @@ private fun ProviderRowItem(row: ProviderRow, onUse: () -> Unit, onEdit: () -> U
                 row.provider.keyRequired -> "no key yet"
                 else -> "no key needed"
             },
-            if (!row.complete) "tap to finish" else null,
+            if (!row.enabled) "switched off" else if (row.resting) "resting after a limit" else if (!row.complete) "tap to finish" else null,
         ).joinToString("  ·  "),
+        enabled = row.enabled,
         onClick = onUse,
         leading = { ProviderBadge(row.provider, active = row.active) },
         trailing = {
@@ -229,6 +234,7 @@ private fun ProviderRowItem(row: ProviderRow, onUse: () -> Unit, onEdit: () -> U
                     modifier = Modifier.clip(CircleShape).background(colors.primary).padding(horizontal = 10.dp, vertical = 3.dp),
                 )
             }
+            Switch(checked = row.enabled, onCheckedChange = onToggle)
             IconButton(onClick = onEdit) { Icon(AppIcons.Edit, contentDescription = "Edit ${row.provider.label}", tint = colors.onSurfaceVariant) }
         },
     )

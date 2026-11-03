@@ -66,6 +66,8 @@ class AppContainer(context: Context) {
     val aiChats = skywa1ker404.absencium.data.ai.AiChats(appContext)
     val aiPermissions = skywa1ker404.absencium.data.ai.AiPermissions(appContext)
     val aiMode = skywa1ker404.absencium.data.ai.AiModeStore(appContext)
+    /** Bumped whenever a provider or key is added, changed, switched off or removed, so every screen showing them redraws at once. */
+    val providersRevision = kotlinx.coroutines.flow.MutableStateFlow(0)
     val aiMemory = skywa1ker404.absencium.data.ai.AiMemory(appContext)
     val aiAssistants = skywa1ker404.absencium.data.ai.AiAssistants(appContext)
         /** Finds or draws the images AI notes ask for (both optional, off by default). */
@@ -76,7 +78,7 @@ class AppContainer(context: Context) {
     /** The AI the user set up, or null when AI Features are off or not yet set up. */
     fun aiConnection(): skywa1ker404.absencium.data.ai.AiConnection? {
         val s = settingsState.value ?: return null
-        if (!skywa1ker404.absencium.ui.settings.aiUsable(s, apiKeyVault.hasKey(s.aiProvider))) return null
+        if (!aiProfiles.enabled(s.aiProvider) || !skywa1ker404.absencium.ui.settings.aiUsable(s, apiKeyVault.hasKey(s.aiProvider))) return null
         return skywa1ker404.absencium.data.ai.AiConnection(s.aiProvider, s.effectiveAiStyle, s.aiBaseUrl, s.aiModel)
     }
 
@@ -88,6 +90,7 @@ class AppContainer(context: Context) {
         val s = settingsState.value ?: return null
         if (!s.askAiEnabled) return null
         val chosen = provider ?: s.aiProvider
+        if (!aiProfiles.enabled(chosen)) return null
         val profile = if (chosen == s.aiProvider && s.aiConnectionSaved) {
             skywa1ker404.absencium.data.ai.AiProfile(chosen, s.aiBaseUrl.ifBlank { chosen.defaultBaseUrl }, s.aiModel, s.effectiveAiStyle)
         } else {

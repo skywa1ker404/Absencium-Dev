@@ -29,7 +29,7 @@ sealed interface AiAction {
     }
 
     /** A new note. When [body] is empty the app's note writer writes it from [brief] after the student applies it, at the given [length]. */
-    data class AddNote(val subject: String, val title: String, val body: String, val brief: String = "", val length: NoteLength = NoteLength.LENGTHY) : AiAction {
+    data class AddNote(val subject: String, val title: String, val body: String, val brief: String = "", val length: NoteLength = NoteLength.LENGTHY, val fromAnswer: Boolean = false) : AiAction {
         override val scope = AiScope.NOTES
         override fun describe() = if (body.isBlank()) {
             "Write the note \"$title\" in $subject (${length.label.lowercase()}, written by the note writer)"
@@ -194,7 +194,7 @@ object AiActionParser {
             "remember" -> AiAction.Remember(str("text") ?: return null, o.optBoolean("chat_only"))
             "add_note" -> AiAction.AddNote(
                 str("subject") ?: return null, str("title") ?: return null, o.optString("body").let { if (it == "null") "" else it },
-                str("brief") ?: "", noteLength(str("length")),
+                str("brief") ?: "", noteLength(str("length")), o.optBoolean("from_answer"),
             )
             "set_syllabus_status" -> AiAction.SetSyllabusStatus(
                 str("subject") ?: return null, str("topic") ?: return null,

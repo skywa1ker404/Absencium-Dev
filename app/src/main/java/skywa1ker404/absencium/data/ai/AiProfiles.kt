@@ -30,7 +30,13 @@ class AiProfiles(context: Context) {
     /** Providers with saved details, in the order of the provider list. */
     fun all(): List<AiProfile> = AiProvider.entries.mapNotNull { get(it) }
 
+    /** A provider can be switched off without deleting its keys: it is then never used, not even when another one is at its limit. */
+    fun enabled(provider: AiProvider): Boolean = !prefs.getBoolean("${provider.name}_off", false)
+
+    fun setEnabled(provider: AiProvider, on: Boolean) = prefs.edit { if (on) remove("${provider.name}_off") else putBoolean("${provider.name}_off", true) }
+
     fun remove(provider: AiProvider) = prefs.edit {
+        remove("${provider.name}_off")
         remove("${provider.name}_url")
         remove("${provider.name}_model")
         remove("${provider.name}_style")

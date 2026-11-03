@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import skywa1ker404.absencium.data.ai.AiConnection
 import skywa1ker404.absencium.data.ai.AiProvider
 import skywa1ker404.absencium.data.ai.ApiStyle
+import skywa1ker404.absencium.data.ai.providerForKey
 import skywa1ker404.absencium.ui.AiProvidersViewModel
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.AppTextField
@@ -121,8 +122,10 @@ fun AiProviderForm(
             HintText("Plain http is only meant for a server on your own network.", Modifier.padding(top = 4.dp))
         }
         var tails by remember(provider) { mutableStateOf(viewModel.keyTails(provider)) }
+        var rests by remember(provider) { mutableStateOf(viewModel.keyResting(provider)) }
         fun refreshKeys() {
             tails = viewModel.keyTails(provider)
+            rests = viewModel.keyResting(provider)
             keyTail = tails.firstOrNull()
         }
         /** A key typed but not added yet, while one is already saved, is added now so it is not lost. */
@@ -134,7 +137,7 @@ fun AiProviderForm(
             tails.forEachIndexed { i, tail ->
                 SettingRow(
                     title = "Key ending in $tail",
-                    subtitle = if (i == 0) "In use. Tried first." else "Tap to use this key instead.",
+                    subtitle = (if (i == 0) "In use. Tried first." else "Tap to use this key instead.") + (if (rests.getOrNull(i) == true) " Resting after a limit." else ""),
                     onClick = { viewModel.useKey(provider, i); refreshKeys() },
                     leading = { RadioButton(selected = i == 0, onClick = null) },
                     trailing = {
@@ -157,6 +160,20 @@ fun AiProviderForm(
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         )
+        val detected = providerForKey(keyInput)
+        if (detected != null && detected != provider) {
+            Text(
+                "This looks like a ${detected.label} key, not a ${provider.label} one.",
+                style = MaterialTheme.typography.bodySmall, color = colors.error, modifier = Modifier.padding(top = 4.dp),
+            )
+            if (!editing) {
+                PillButton(
+                    text = "Use ${detected.label}",
+                    onClick = { provider = detected; modelsViewModel.reset() },
+                    tonal = true, compact = true, modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
         if (tails.isNotEmpty() && keyInput.isNotBlank()) {
             PillButton(
                 text = "Add key",

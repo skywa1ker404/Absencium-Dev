@@ -78,6 +78,25 @@ class AiChatService(
 
     fun key(chatId: Long, messageId: Long, index: Int) = "$chatId:$messageId:$index"
 
+    /** The student's latest real question (not a hidden read result), used as the search words. */
+    private fun lastQuestion(chat: AiChat): String = chat.messages.lastOrNull { it.role == ChatRole.USER && !it.hidden }?.text.orEmpty().trim()
+
+    /** An add_note that says "from_answer" gets the previous answer as its body, so the saved note is exactly what the student read. */
+    private fun fillFromAnswer(json: String, chat: AiChat): String = try {
+        val previous = chat.messages.lastOrNull { it.role == ChatRole.ASSISTANT && !it.failed && it.text.length >= 200 }?.text
+        val array = org.json.JSONArray(json)
+        for (i in 0 until array.length()) {
+            val o = array.optJSONObject(i) ?: continue
+            if (o.optString("type") == "add_note" && o.optBoolean("from_answer")) {
+                o.remove("from_answer")
+                if (previous != null) o.put("body", previous)
+            }
+        }
+        array.toString()
+    } catch (e: Exception) {
+        json
+    }
+
     /** Looks at the last few student messages on the phone (no model call) to see what the request needs and may spend. */
     private fun planFor(chat: AiChat, subjects: List<String>): TaskPlan {
         val student = chat.messages.filter { it.role == ChatRole.USER }
@@ -98,12 +117,15 @@ class AiChatService(
             try {
                 val context = contextFor(chat)
                 val searching = chat.webSearch && canSearch(connection)
+                // Any other model gets the results of a search the app runs itself, so web search works with every provider.
+                val localHits = if (chat.webSearch && !searching) runCatching { AiWebSearch.search(lastQuestion(chat)) }.getOrDefault(emptyList()) else emptyList()
                 val plan = planFor(chat, context.calendar.subjects.map { it.name })
                 val turns = ChatTurns.normalize(turnsOf(chat, plan.budget))
                 if (turns.isEmpty()) return@launch
                 val system = AiChatPrompt.system(
                     context.copy(
                         study = chat.study, level = chat.level, webSearch = searching, topics = plan.topics,
+                        webResults = if (chat.webSearch && !searching) AiWebSearch.block(localHits) else "",
                         memories = context.memories.take(plan.budget.memories),
                     ),
                 )
@@ -114,7 +136,7 @@ class AiChatService(
                 if (memoryAllowed() && !chat.incognito) parsed.remembered.forEach { memory.add(it.text, if (it.chatOnly) chatId else null) }
                 if (shown.isBlank() && parsed.actions.isEmpty()) throw AiException("The model sent back an empty answer.")
                 if (reply.webOff) chats.get(chatId)?.let { chats.put(it.copy(webSearch = false)) }
-                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, via = reply.replacedProvider, tokensIn = reply.tokensIn, tokensOut = reply.tokensOut, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }, sources = reply.sources, quiz = quiz))
+                append(chatId, ChatMessage(0, ChatRole.ASSISTANT, shown, 0, reply.model.ifBlank { connection.model }, via = reply.replacedProvider, tokensIn = reply.tokensIn, tokensOut = reply.tokensOut, actions = parsed.json?.takeIf { parsed.actions.isNotEmpty() }?.let { fillFromAnswer(it, chat) }, sources = if (localHits.isNotEmpty()) localHits.map { ChatSource(it.title, it.url) } else reply.sources, quiz = quiz))
                 finished(chatId, shown, ok = true)
             } catch (e: CancellationException) {
                 throw e
@@ -249,9 +271,8 @@ class AiChatService(
     }
 
     companion object {
-        /** Whether this connection can search the web: Gemini and Claude have it built in, OpenRouter through its web plugin. */
-        fun canSearch(connection: AiConnection) =
-            connection.style == ApiStyle.GEMINI || connection.style == ApiStyle.ANTHROPIC || connection.baseUrl.contains("openrouter", ignoreCase = true)
+        /** Whether the model searches the web itself (Gemini's grounding, free to use); every other model gets the app's own search. */
+        fun canSearch(connection: AiConnection) = connection.style == ApiStyle.GEMINI
 
         /** The most base64 text of files sent again with one request. */
         private const val MAX_SENT_BYTES = 24_000_000

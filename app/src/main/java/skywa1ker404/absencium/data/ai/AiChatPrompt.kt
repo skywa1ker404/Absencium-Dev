@@ -20,6 +20,8 @@ data class ChatContext(
     val studentName: String? = null,
     val study: Boolean = false,
     val webSearch: Boolean = false,
+    /** Results of a search the app ran for this question (see [AiWebSearch.block]); empty when none was run. */
+    val webResults: String = "",
     /** Study mode difficulty: "", "beginner", "school", "college" or "expert". */
     val level: String = "",
     /** What the student remembered for this question (global memories and this chat's own), when Memory is allowed. */
@@ -131,6 +133,7 @@ object AiChatPrompt {
             append(if (level != null) "Pitch it for $level. Adjust at once when they say it is too easy or too hard. " else "Match the difficulty to the student's level (ask once if you cannot tell, or adjust when they say it is too easy or hard). ")
             append("When it fits, finish with one short question or exercise that checks understanding.\n")
         }
+        if (c.webResults.isNotBlank()) append("\n").append(c.webResults)
         if (c.webSearch) append("\nWeb search is on: use it for anything recent or factual that may have changed, and base the answer on what you find.\n")
         if (c.allowed.isEmpty()) {
             append("\nYou cannot see or change anything in the student's Absencium data. Mention that they can allow it in Settings, AI & Integrations, only when it would genuinely help.\n")
@@ -180,6 +183,7 @@ object AiChatPrompt {
             if (AiScope.NOTES in allowed) {
                 add("""{"type":"add_note","subject":"","title":"","brief":"what the note must cover","length":"moderate|lengthy|in_depth"}""")
                 add("""(for add_note leave "body" out: the app's note writer then writes the full note from your brief. Only put "body" for a note of a few lines)""")
+                add("""{"type":"add_note","subject":"","title":"","from_answer":true} (when the student asks to save or add what you already wrote above: the app stores your previous answer exactly as the student read it, so leave brief and body out. Never say it is saved; the card does that)""")
             }
             if (AiScope.TIMETABLE in allowed) {
                 add("""{"type":"add_timetable","day":"MONDAY","subject":"","start":"09:00","end":"10:00","room":""}""")

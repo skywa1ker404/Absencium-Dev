@@ -120,8 +120,8 @@ class AbsenciumAiViewModel(private val container: AppContainer) : ViewModel() {
         container.aiConnectionFor(p, null)?.let { p to it.model }
     }
 
-    /** Whether the model of the open chat can search the web (Gemini, Claude, OpenRouter). */
-    fun canSearch(): Boolean = connection()?.let { AiChatService.canSearch(it) } ?: false
+    /** Web search works with every model: Gemini searches itself, any other gets the app's own search results. */
+    fun canSearch(): Boolean = connection() != null
 
     /** Starts or leaves an incognito chat: nothing is written to the phone and memory is not used or saved. Only on an empty chat. */
     fun setIncognito(on: Boolean) = change { it.copy(incognito = on) }

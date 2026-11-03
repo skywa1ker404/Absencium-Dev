@@ -26,3 +26,16 @@ enum class AiProvider(
     OLLAMA("Ollama (your own server)", "http://localhost:11434/v1", ApiStyle.OPENAI_COMPATIBLE, false),
     CUSTOM("Custom endpoint", "", ApiStyle.OPENAI_COMPATIBLE, false),
 }
+
+/** The provider a pasted key belongs to, judging by how that service starts its keys; null when it cannot be told. */
+fun providerForKey(key: String): AiProvider? {
+    val k = key.trim()
+    return when {
+        k.startsWith("sk-or-") -> AiProvider.OPENROUTER
+        k.startsWith("sk-ant-") -> AiProvider.ANTHROPIC
+        k.startsWith("AIza") -> AiProvider.GEMINI
+        k.startsWith("gsk_") -> AiProvider.GROQ
+        k.startsWith("sk-") -> AiProvider.OPENAI
+        else -> null
+    }
+}
