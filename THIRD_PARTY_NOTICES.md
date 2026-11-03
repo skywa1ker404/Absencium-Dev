@@ -12,6 +12,7 @@ Copyright (c) the RikkaHub and LastChat authors.
 | --- | --- | --- |
 | `lastchat/shared/` | `shared/src/commonMain/kotlin` | none to the sources; built as a plain Android library instead of Kotlin Multiplatform (iOS code left out) |
 | `lastchat/common/` | `common/src/main/java` | `AndroidPlatformJwtSigner.kt`: the PEM header literal is split in two so the repository's secret guard does not mistake it for a key; same build change |
+| `lastchat/shared/` (`PlatformLog.kt`) | same file | debug and info lines are dropped because they carried the whole request (the student's questions and files) |
 | `lastchat/ai/` | `ai/src/main/java` | `ProviderDispatcher.kt`: the expect / actual pair became one declaration (`Dispatchers.IO`); a comment in `ServiceAccountTokenProvider.kt` no longer spells a PEM header |
 
 Later ports (settings pages, chat screens, search) are listed here when they are added.

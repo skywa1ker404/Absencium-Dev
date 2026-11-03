@@ -80,3 +80,4 @@ working on it
 - Added: switch a provider off without deleting it; a pasted API key suggests its provider; keys show when they are resting after a limit.
 - Fixed: a deleted provider stayed in AI & Integrations until you left and came back; asking the AI to save its last answer as a note now saves exactly that answer.
 - Fixed: web search reporting "limit reached" on a Gemini key that had tokens left; every model now uses the app's own web search.
+- Changed (branch Absencium-ai): chat requests now go through the LastChat provider layer (OpenAI, Claude, Google); your keys, failover, response modes, quiz, links and notes work as before. The ported code no longer writes your questions to the system log.
