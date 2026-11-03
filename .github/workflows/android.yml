@@ -4,9 +4,10 @@ name: Android Build
 # development releases only come from the manual "Dev release" workflow.
 on:
   push:
-    branches: [main]
+    branches: [main, Absencium-ai]
     paths:
       - 'app/**'
+      - 'lastchat/**'
       - 'gradle/**'
       - 'gradlew'
       - 'gradlew.bat'

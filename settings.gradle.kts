@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Absencium"
 include(":app")
+include(":lastchat:shared", ":lastchat:common", ":lastchat:ai")
