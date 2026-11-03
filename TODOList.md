@@ -153,7 +153,7 @@ Last updated: 031126 (AI providers, web search and note-save round done; last gr
 - **Licence of ported chat code (Batch 39):** RikkaHub and LastChat are AGPL-3.0. You chose to port their code on 2026-11-03; confirm that the repository may carry AGPL-3.0 parts (listed in `THIRD_PARTY_NOTICES.md`) before 1.0.0.
 - Approval of the repository audit report once it is written (Step 3).
 - Approval of the cleanup table below, file by file.
-- Keyless web search (11.31): which sites the app may contact (the backends are listed in the reference picture 18); nothing is added without your approval because of the zero-telemetry rule.
+- Keyless web search (11.31): DuckDuckGo's HTML page has been used since 031126 at your request (only the question's words are sent); any further site or provider needs your approval. Which sites the app may contact (the backends are listed in the reference picture 18); nothing is added without your approval because of the zero-telemetry rule.
 - New dependencies for Batch 30 (JavaScript engine, embeddings, syntax highlighting, Mermaid): licence and size reported first.
 - The stable 1.0.0 release and publishing to `skywa1ker404/Absencium`.
 
