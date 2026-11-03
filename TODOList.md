@@ -10,7 +10,7 @@ Single source of truth for what is done, in progress, pending and planned (it al
 
 **Status words.** DONE means it compiled on CI (and is named with the commit). WAITING FOR CI means it is written and pushed but CI has not confirmed it. Nothing is marked DONE that has not compiled.
 
-Last updated: 031126 (web search made universal; last green build `5b2c636`, 031126). CI errors are read from the commit comment the workflow posts.
+Last updated: 031126 (web search made universal; last green build `b5918fe`, 031126). CI errors are read from the commit comment the workflow posts.
 
 ---
 
@@ -116,7 +116,7 @@ Last updated: 031126 (web search made universal; last green build `5b2c636`, 031
 - **Web search did nothing on Groq, OpenAI, custom and free OpenRouter:** Gemini still searches by itself; every other model now gets the top DuckDuckGo results (title, snippet, link) from the app's own search, shown as sources; only the question's words are sent (031126, Ci: 5b2c636).
 - **Saved note differed from the answer you asked to save:** `add_note` with `from_answer` stores the previous answer as written; no note-writer call, so it also works when the model cannot write notes (031126, Ci: 5b2c636).
 - **Deleted provider stayed in the main settings until you re-entered the screen:** two screens kept separate refresh counters; one shared counter in `AppContainer.providersRevision` (031126, Ci: 5b2c636).
-- **"Limit reached" with web search on while no tokens were used:** Gemini's search tool has its own quota that free keys often lack (HTTP 429), and a 429 rested the whole key; no model uses a built-in search tool any more, every model gets the app's own search results (031126, WAITING FOR CI).
+- **"Limit reached" with web search on while no tokens were used:** Gemini's search tool has its own quota that free keys often lack (HTTP 429), and a 429 rested the whole key; no model uses a built-in search tool any more, every model gets the app's own search results (031126, Ci: b5918fe).
 
 ## Partially Complete
 
