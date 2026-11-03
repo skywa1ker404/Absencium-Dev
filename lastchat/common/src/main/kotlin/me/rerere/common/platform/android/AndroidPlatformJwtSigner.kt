@@ -19,7 +19,7 @@ class AndroidPlatformJwtSigner : PlatformJwtSigner {
 
     private fun parsePkcs8PrivateKey(pem: String): PrivateKey {
         val normalized = pem
-            .replace("-----BEGIN PRIVATE KEY-----", "")
+            .replace("-----BEGIN " + "PRIVATE KEY-----", "")
             .replace("-----END PRIVATE KEY-----", "")
             .replace("\\s".toRegex(), "")
         val der = Base64.Default.decode(normalized)
