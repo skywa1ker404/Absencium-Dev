@@ -8,7 +8,7 @@ android {
     namespace = "me.rerere.rikkahub.ui.core"
     compileSdk = 37
     defaultConfig {
-        minSdk = 26
+        minSdk = 28
     }
     buildFeatures {
         compose = true

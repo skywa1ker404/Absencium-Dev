@@ -62,7 +62,7 @@ secrets. Without them a stable release build is unsigned and the workflow stops.
   will **refuse to install it over those builds** ("package conflicts with an existing package"). Those users must uninstall
   first, which deletes the app's data. Tell them to export a backup (Settings, Storage) before uninstalling.
 * Android does support key rotation (APK Signature Scheme v3 with a proof-of-rotation lineage, `apksigner rotate`), but it
-  works only on Android 9 and newer, while Absencium supports Android 8. It would also need the old, compromised key to sign
+  works only on Android 9 and newer; Absencium now requires Android 9, so that limit no longer applies. It would also need the old, compromised key to sign
   the lineage, and anyone holding that key could sign a competing lineage, so it is not recommended here. For a handful of
   testers, uninstall and reinstall is the safer path. Nothing about a new key is guaranteed to update an existing install.
 * From v1.0.0 onwards the stable key must never change.

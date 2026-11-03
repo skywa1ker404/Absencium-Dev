@@ -19,7 +19,7 @@ android {
         manifestPlaceholders["appLabel"] = if (isDev) "Absencium Dev" else "Absencium"
         // Android 8.0. Monet (dynamic color) and Liquid Glass (RenderEffect blur)
         // need Android 12 (API 31) and are disabled below that at runtime.
-        minSdk = 26
+        minSdk = 28
         targetSdk = 36
         // Dev builds: every CI run is higher than the one before (run number + 1000), so a new dev APK always installs over
         // the old one. Stable builds: the release workflow passes -PabsenciumVersionCode (derived from the SemVer tag).

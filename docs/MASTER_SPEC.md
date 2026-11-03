@@ -7,7 +7,7 @@ Standing rules: preserve working features; never invent APIs; never claim someth
 ---
 
 ## 1. Platform and architecture
-- Native Android, Kotlin, Jetpack Compose, **Material 3 Expressive**, MVVM with repositories, StateFlow and Coroutines/Flow. Room (`Absencium.db`), DataStore, app-private files. WorkManager only for durable deferrable work. minSdk 26.
+- Native Android, Kotlin, Jetpack Compose, **Material 3 Expressive**, MVVM with repositories, StateFlow and Coroutines/Flow. Room (`Absencium.db`), DataStore, app-private files. WorkManager only for durable deferrable work. minSdk 28 from the merge of the `Absencium-ai` branch (26 before it).
 - Distribution: GitHub repository and GitHub Releases, plus the owner's website. No Google Play, no F-Droid. Builds only on GitHub Actions; the optimised (R8) APK is the only artefact.
 - Offline-first: every core feature works with no network. No Google Play Services in the core.
 - Dev repository `skywa1ker404/Absencium-Dev` (package `skywa1ker404.absencium.dev`). The stable repository stays untouched until the owner approves 1.0.0.

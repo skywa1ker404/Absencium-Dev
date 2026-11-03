@@ -8,7 +8,7 @@ android {
     namespace = "me.rerere.lastchat.ai"
     compileSdk = 37
     defaultConfig {
-        minSdk = 26
+        minSdk = 28
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

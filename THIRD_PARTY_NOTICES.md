@@ -18,5 +18,7 @@ Copyright (c) the RikkaHub and LastChat authors.
 | `lastchat/highlight/` | `highlight` | built with the repository's Gradle setup (compose plugin, minSdk 26); sources and the bundled `prism.js` unchanged |
 | `lastchat/document/` | `document` | built with the repository's Gradle setup (minSdk 26); sources unchanged. Bundles MuPDF (AGPL-3.0, Artifex Software) as Java sources and `libmupdf_java.so` for arm64-v8a and x86_64 |
 | `lastchat/ui-core/` | `ui-core/src/commonMain`, `commonTest` | Kotlin Multiplatform became a plain Android library; Compose Multiplatform resources (`google_sans_flex.ttf`, launcher foreground) became Android resources and their two call sites use `R.font` / `R.drawable`; the four preset colour schemes (Ocean, Spring, Autumn, Black) that its Gradle script generated from the app are committed as `GeneratedPresetColorSchemes.kt` |
+| `lastchat/tts/` | `tts/src/main/java`, tests | Kotlin Multiplatform became a plain Android library (iOS sources left out; the expect / actual `TtsDispatcher` became one declaration); minSdk 28 |
+| `lastchat/speech/` | `speech/src/main/java`, tests, `assets/sherpa_stt_catalog.json` | built with the repository's Gradle setup; the official sherpa-onnx AAR (Apache-2.0, k2-fsa) is downloaded at build time from its GitHub release and checked against a pinned SHA-256; speech models are downloaded only when the student asks for them |
 
 Later ports (settings pages, chat screens, search) are listed here when they are added.

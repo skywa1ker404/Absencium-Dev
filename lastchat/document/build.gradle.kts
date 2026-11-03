@@ -7,7 +7,7 @@ android {
     namespace = "me.rerere.document"
     compileSdk = 37
     defaultConfig {
-        minSdk = 26
+        minSdk = 28
         consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {

@@ -82,3 +82,4 @@ working on it
 - Fixed: web search reporting "limit reached" on a Gemini key that had tokens left; every model now uses the app's own web search.
 - Changed (branch Absencium-ai): chat requests now go through the LastChat provider layer (OpenAI, Claude, Google); your keys, failover, response modes, quiz, links and notes work as before. The ported code no longer writes your questions to the system log.
 - Changed (branch Absencium-ai): AI web search now uses LastChat's keyless search, which picks sources by question type (news, weather, encyclopedia) and shows a quick answer when there is one; the old DuckDuckGo search is the fallback.
+- Changed (branch Absencium-ai): Absencium now needs Android 9 (API 28) or newer, because the embedded LastChat chat needs it.

@@ -25,7 +25,7 @@ The stable repository's README is staged in [`release/stable/README.md`](release
 
 1. Open the **Actions** tab, choose the latest green *Android Build* run and download `absencium-dev-debug-apk` or `absencium-dev-optimized-apk` (a GitHub sign-in is needed to download artifacts). Each contains `apk-report.txt`, the output of [`verify_apk.sh`](.github/scripts/verify_apk.sh) (application ID, certificate, ABIs, SHA-256).
 2. Or use a prerelease made by the manual *Dev release* workflow (it never runs on its own).
-3. Install over the previous Dev build; every CI build has a higher version code, so it updates in place. Android 8.0 (API 26) or newer is required.
+3. Install over the previous Dev build; every CI build has a higher version code, so it updates in place. Android 9 (API 28) or newer is required.
 
 ## What to test
 

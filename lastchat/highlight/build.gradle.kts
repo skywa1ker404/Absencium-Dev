@@ -9,7 +9,7 @@ android {
     namespace = "me.rerere.highlight"
     compileSdk = 37
     defaultConfig {
-        minSdk = 26
+        minSdk = 28
         consumerProguardFiles("consumer-rules.pro")
     }
     buildFeatures {
