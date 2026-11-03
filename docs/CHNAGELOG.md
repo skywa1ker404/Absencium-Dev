@@ -83,3 +83,4 @@ working on it
 - Changed (branch Absencium-ai): chat requests now go through the LastChat provider layer (OpenAI, Claude, Google); your keys, failover, response modes, quiz, links and notes work as before. The ported code no longer writes your questions to the system log.
 - Changed (branch Absencium-ai): AI web search now uses LastChat's keyless search, which picks sources by question type (news, weather, encyclopedia) and shows a quick answer when there is one; the old DuckDuckGo search is the fallback.
 - Changed (branch Absencium-ai): Absencium now needs Android 9 (API 28) or newer, because the embedded LastChat chat needs it.
+- Changed (branch Absencium-ai): AI & Integrations shows only the AI switch and providers; response mode, what AI can use, token counts, images and integrations are under a closed Advanced section. In a provider, the API URL and API style are under Advanced too (open for a custom provider).

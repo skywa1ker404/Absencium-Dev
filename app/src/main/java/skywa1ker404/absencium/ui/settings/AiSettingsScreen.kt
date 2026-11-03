@@ -1,5 +1,13 @@
 package skywa1ker404.absencium.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.rotate
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +75,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
     val ready = active != null && active.complete
     var picking by remember { mutableStateOf(false) }
     var refusal by remember { mutableStateOf<String?>(null) }
+    var advanced by rememberSaveable { mutableStateOf(false) }
 
     ScreenScaffold(title = "AI & Integrations", onBack = { navigator.navigateUp() }) {
         StatusCard(settings.askAiEnabled, ready, active, onOpen = { navigator.navigate(AiHubScreenDestination()) })
@@ -101,75 +112,84 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        SettingCaption("Response mode")
-        SettingGroup {
-            AiMode.entries.forEachIndexed { i, option ->
-                if (i > 0) SettingDivider()
-                SettingRow(
-                    title = option.label,
-                    subtitle = option.blurb,
-                    onClick = { permissionsViewModel.setMode(option) },
-                    leading = { RadioButton(selected = mode == option, onClick = null) },
-                )
-            }
-        }
+        AdvancedHeader(expanded = advanced, onToggle = { advanced = !advanced })
+        AnimatedVisibility(
+            visible = advanced,
+            enter = expandVertically(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+            exit = shrinkVertically(spring(stiffness = Spring.StiffnessMedium)) + fadeOut(),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SettingCaption("Response mode")
+                SettingGroup {
+                    AiMode.entries.forEachIndexed { i, option ->
+                        if (i > 0) SettingDivider()
+                        SettingRow(
+                            title = option.label,
+                            subtitle = option.blurb,
+                            onClick = { permissionsViewModel.setMode(option) },
+                            leading = { RadioButton(selected = mode == option, onClick = null) },
+                        )
+                    }
+                }
 
-        SettingCaption("Token usage")
-        if (usage.isEmpty()) {
-            HintText("Nothing counted yet. Each answer's tokens are added here, per provider, as the provider reports them. Counts stay on this phone.")
-        } else {
-            SettingGroup {
-                usage.forEachIndexed { i, row ->
-                    if (i > 0) SettingDivider()
-                    SettingRow(
-                        title = row.provider.label,
-                        subtitle = "${row.requests} answers · ${"%,d".format(row.tokensIn)} in · ${"%,d".format(row.tokensOut)} out · ${"%,d".format(row.tokensToday)} today",
+                SettingCaption("Token usage")
+                if (usage.isEmpty()) {
+                    HintText("Nothing counted yet. Each answer's tokens are added here, per provider, as the provider reports them. Counts stay on this phone.")
+                } else {
+                    SettingGroup {
+                        usage.forEachIndexed { i, row ->
+                            if (i > 0) SettingDivider()
+                            SettingRow(
+                                title = row.provider.label,
+                                subtitle = "${row.requests} answers · ${"%,d".format(row.tokensIn)} in · ${"%,d".format(row.tokensOut)} out · ${"%,d".format(row.tokensToday)} today",
+                            )
+                        }
+                        PillButton(text = "Reset counts", onClick = providersViewModel::resetUsage, tonal = true, compact = true, modifier = Modifier.padding(top = 6.dp))
+                    }
+                }
+
+                SettingCaption("What Absencium AI can use")
+                SettingGroup {
+                    AiScope.entries.forEachIndexed { i, scope ->
+                        if (i > 0) SettingDivider()
+                        SettingSwitchRow(
+                            title = scope.label,
+                            subtitle = scope.blurb,
+                            checked = scope in allowed,
+                            onCheckedChange = { permissionsViewModel.set(scope, it) },
+                            enabled = settings.askAiEnabled,
+                        )
+                    }
+                }
+                HintText("Everything is off until you allow it. It sees only what you allow, and every change it suggests waits for your tap on Apply. Note text is never sent, only titles.")
+
+                SettingCaption("Images in generated notes")
+                SettingGroup {
+                    SettingSwitchRow(
+                        title = "Search images (experimental)",
+                        subtitle = "Looks for free pictures on Wikimedia Commons and Openverse. Only search words leave the phone; check each result.",
+                        checked = settings.searchImagesEnabled,
+                        onCheckedChange = settingsViewModel::setSearchImagesEnabled,
+                    )
+                    SettingDivider()
+                    SettingSwitchRow(
+                        title = "Generate images",
+                        subtitle = "Asks your AI to draw pictures. Needs a paid Google Gemini or OpenAI plan.",
+                        checked = settings.generateImagesEnabled,
+                        onCheckedChange = settingsViewModel::setGenerateImagesEnabled,
                     )
                 }
-                PillButton(text = "Reset counts", onClick = providersViewModel::resetUsage, tonal = true, compact = true, modifier = Modifier.padding(top = 6.dp))
+
+                SettingCaption("Integrations")
+                SettingGroup {
+                    SettingSwitchRow(
+                        title = "Momentum tracker",
+                        subtitle = "Daily streak and study momentum. $OPTIONAL_NOTE",
+                        checked = settings.momentumTrackerEnabled,
+                        onCheckedChange = settingsViewModel::setMomentumTrackerEnabled,
+                    )
+                }
             }
-        }
-
-        SettingCaption("What Absencium AI can use")
-        SettingGroup {
-            AiScope.entries.forEachIndexed { i, scope ->
-                if (i > 0) SettingDivider()
-                SettingSwitchRow(
-                    title = scope.label,
-                    subtitle = scope.blurb,
-                    checked = scope in allowed,
-                    onCheckedChange = { permissionsViewModel.set(scope, it) },
-                    enabled = settings.askAiEnabled,
-                )
-            }
-        }
-        HintText("Everything is off until you allow it. It sees only what you allow, and every change it suggests waits for your tap on Apply. Note text is never sent, only titles.")
-
-        SettingCaption("Images in generated notes")
-        SettingGroup {
-            SettingSwitchRow(
-                title = "Search images (experimental)",
-                subtitle = "Looks for free pictures on Wikimedia Commons and Openverse. Only search words leave the phone; check each result.",
-                checked = settings.searchImagesEnabled,
-                onCheckedChange = settingsViewModel::setSearchImagesEnabled,
-            )
-            SettingDivider()
-            SettingSwitchRow(
-                title = "Generate images",
-                subtitle = "Asks your AI to draw pictures. Needs a paid Google Gemini or OpenAI plan.",
-                checked = settings.generateImagesEnabled,
-                onCheckedChange = settingsViewModel::setGenerateImagesEnabled,
-            )
-        }
-
-        SettingCaption("Integrations")
-        SettingGroup {
-            SettingSwitchRow(
-                title = "Momentum tracker",
-                subtitle = "Daily streak and study momentum. $OPTIONAL_NOTE",
-                checked = settings.momentumTrackerEnabled,
-                onCheckedChange = settingsViewModel::setMomentumTrackerEnabled,
-            )
         }
         HintText("Absencium works fully offline. AI is only used when you turn it on and ask.")
     }
@@ -179,6 +199,20 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
             added = rows.map { it.provider }.toSet(),
             onPick = { picking = false; navigator.navigate(AiProviderScreenDestination(provider = it.name)) },
             onDismiss = { picking = false },
+        )
+    }
+}
+
+/** One row that opens or closes everything that is not needed for AI to work: modes, permissions, counts, images, integrations. */
+@Composable
+private fun AdvancedHeader(expanded: Boolean, onToggle: () -> Unit) {
+    val turn by animateFloatAsState(if (expanded) 180f else 0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "advancedArrow")
+    SettingGroup {
+        SettingRow(
+            title = "Advanced options",
+            subtitle = "Response mode, what AI can use, token counts, images, integrations",
+            onClick = onToggle,
+            trailing = { Icon(AppIcons.ExpandMore, contentDescription = if (expanded) "Hide advanced options" else "Show advanced options", modifier = Modifier.rotate(turn)) },
         )
     }
 }

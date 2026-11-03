@@ -1,6 +1,16 @@
 package skywa1ker404.absencium.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -68,6 +78,9 @@ fun AiProviderForm(
     var testing by remember(provider) { mutableStateOf(false) }
     var testResult by remember(provider) { mutableStateOf<Pair<Boolean, String>?>(null) }
     var saving by remember(provider) { mutableStateOf(false) }
+    // The API URL and style are filled in for every known provider; only a custom one needs them, so they sit under Advanced.
+    var advanced by rememberSaveable(provider) { mutableStateOf(provider == AiProvider.CUSTOM) }
+    val advancedTurn by animateFloatAsState(if (advanced) 180f else 0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "advancedArrow")
     val modelsViewModel = containerViewModel { AiModelsViewModel(it) }
     val modelsState by modelsViewModel.state.collectAsStateWithLifecycle()
     val colors = MaterialTheme.colorScheme
@@ -109,18 +122,6 @@ fun AiProviderForm(
 
     SectionTitle(if (editing) provider.label else "Connection")
     AppCard(modifier = Modifier.fillMaxWidth()) {
-        AppTextField(
-            value = baseUrl,
-            onValueChange = { baseUrl = it; error = null; testResult = null },
-            label = { Text("API URL") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (baseUrl.trim().startsWith("http://")) {
-            HintText("Plain http is only meant for a server on your own network.", Modifier.padding(top = 4.dp))
-        }
         var tails by remember(provider) { mutableStateOf(viewModel.keyTails(provider)) }
         var rests by remember(provider) { mutableStateOf(viewModel.keyResting(provider)) }
         fun refreshKeys() {
@@ -192,29 +193,13 @@ fun AiProviderForm(
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         )
-        if (provider == AiProvider.CUSTOM) {
-            Text("API style", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.padding(top = 4.dp),
-            ) {
-                ApiStyle.entries.forEach { option ->
-                    ExpressiveChip(
-                        selected = style == option,
-                        onClick = { style = option; testResult = null },
-                        label = { Text(option.label, maxLines = 1, softWrap = false) },
-                        shape = CircleShape,
-                    )
-                }
-            }
-        }
         ModelPickerCard(
             provider = provider,
             state = modelsState,
             selectedId = model.trim(),
             onFetch = {
                 val url = baseUrl.trim().trimEnd('/')
+                if (!(url.startsWith("https://") || url.startsWith("http://"))) advanced = true
                 error = when {
                     !(url.startsWith("https://") || url.startsWith("http://")) -> "The API URL must start with https:// or http://"
                     provider.keyRequired && keyInput.isBlank() && keyTail == null -> "Enter the API key first."
@@ -230,6 +215,50 @@ fun AiProviderForm(
             },
             onPick = { model = it; error = null; testResult = null },
         )
+        SettingRow(
+            title = "Advanced",
+            subtitle = if (provider == AiProvider.CUSTOM) "API URL and API style" else "API URL",
+            onClick = { advanced = !advanced },
+            modifier = Modifier.padding(top = 8.dp),
+            trailing = { Icon(AppIcons.ExpandMore, contentDescription = if (advanced) "Hide advanced options" else "Show advanced options", modifier = Modifier.rotate(advancedTurn)) },
+        )
+        AnimatedVisibility(
+            visible = advanced,
+            enter = expandVertically(spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+            exit = shrinkVertically(spring(stiffness = Spring.StiffnessMedium)) + fadeOut(),
+        ) {
+            Column {
+                AppTextField(
+                    value = baseUrl,
+                    onValueChange = { baseUrl = it; error = null; testResult = null },
+                    label = { Text("API URL") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (baseUrl.trim().startsWith("http://")) {
+                    HintText("Plain http is only meant for a server on your own network.", Modifier.padding(top = 4.dp))
+                }
+                if (provider == AiProvider.CUSTOM) {
+                    Text("API style", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(top = 4.dp),
+                    ) {
+                        ApiStyle.entries.forEach { option ->
+                            ExpressiveChip(
+                                selected = style == option,
+                                onClick = { style = option; testResult = null },
+                                label = { Text(option.label, maxLines = 1, softWrap = false) },
+                                shape = CircleShape,
+                            )
+                        }
+                    }
+                }
+            }
+        }
         error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error, modifier = Modifier.padding(top = 8.dp)) }
         testResult?.let { (ok, text) ->
             Text(text, style = MaterialTheme.typography.bodySmall, color = if (ok) colors.primary else colors.error, modifier = Modifier.padding(top = 8.dp))
@@ -244,6 +273,7 @@ fun AiProviderForm(
                     val found = problem()
                     if (found != null) {
                         error = found
+                        if (found.contains("API URL")) advanced = true
                     } else {
                         testing = true
                         testResult = null
@@ -266,6 +296,7 @@ fun AiProviderForm(
                     val found = problem()
                     if (found != null) {
                         error = found
+                        if (found.contains("API URL")) advanced = true
                     } else {
                         saving = true
                         val c = connection()
