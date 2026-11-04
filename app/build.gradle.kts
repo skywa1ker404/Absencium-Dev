@@ -89,6 +89,10 @@ dependencies {
     // Provider layer ported from LastChat / RikkaHub (AGPL-3.0), see THIRD_PARTY_NOTICES.md.
     implementation(project(":lastchat:ai"))
     implementation(project(":lastchat:search"))
+    // LastChat's chat app (AGPL-3.0), opened from AI & Integrations. See THIRD_PARTY_NOTICES.md.
+    implementation(project(":lastchat:app"))
+    // The speech library cannot be a dependency of a library module, so the app carries the pinned sherpa-onnx AAR.
+    implementation(files(rootProject.file("lastchat/speech/build/sherpa/sherpa-onnx-1.13.4.aar")))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.profileinstaller)
@@ -115,4 +119,8 @@ dependencies {
     testImplementation(libs.junit)
     // The Android stubs do not implement org.json, so unit tests of code that parses JSON need a real copy (Android's own, Apache-2.0; test-only, not in the APK).
     testImplementation("com.vaadin.external.google:android-json:0.0.20131108.vaadin1")
+}
+
+tasks.named("preBuild") {
+    dependsOn(":lastchat:speech:downloadSherpaOnnxAar")
 }

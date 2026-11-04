@@ -11,6 +11,7 @@ class McpOAuthRedirectActivity : ComponentActivity() {
     private val oauthManager by inject<McpOAuthManager>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        me.rerere.rikkahub.LastChatApp.start(application)
         super.onCreate(savedInstanceState)
         oauthManager.handleRedirect(intent?.data)
         startActivity(

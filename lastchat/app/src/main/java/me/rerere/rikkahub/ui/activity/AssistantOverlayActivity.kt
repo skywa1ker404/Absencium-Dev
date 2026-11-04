@@ -37,6 +37,7 @@ class AssistantOverlayActivity : ComponentActivity() {
     private val viewModel: AssistantOverlayVM by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        me.rerere.rikkahub.LastChatApp.start(application)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 

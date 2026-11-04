@@ -311,6 +311,7 @@ class RouteActivity : ComponentActivity() {
     private var hasSuccessfulReplyBeforeSetup by mutableStateOf<Boolean?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        LastChatApp.start(application)
         try {
             enableEdgeToEdge()
             androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)

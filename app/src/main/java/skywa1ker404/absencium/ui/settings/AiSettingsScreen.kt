@@ -8,7 +8,9 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -76,10 +78,22 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
     var picking by remember { mutableStateOf(false) }
     var refusal by remember { mutableStateOf<String?>(null) }
     var advanced by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
 
     ScreenScaffold(title = "AI & Integrations", onBack = { navigator.navigateUp() }) {
         StatusCard(settings.askAiEnabled, ready, active, onOpen = { navigator.navigate(AiHubScreenDestination()) })
         AskAiToggle(settings, settingsViewModel, ready = ready)
+        // LastChat's own chat (assistants, attachments, tools, its settings), embedded as a module and kept apart from Absencium's data.
+        SettingGroup {
+            SettingRow(
+                title = "LastChat chat",
+                subtitle = "Full chat with attachments, assistants and tools",
+                onClick = { context.startActivity(Intent(context, me.rerere.rikkahub.RouteActivity::class.java)) },
+                leading = {
+                    Icon(AppIcons.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 8.dp))
+                },
+            )
+        }
 
         SettingCaption("Providers")
         if (rows.isEmpty()) {

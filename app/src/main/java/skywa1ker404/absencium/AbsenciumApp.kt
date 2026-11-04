@@ -50,5 +50,6 @@ class AbsenciumApp : Application() {
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         DebugLogger.w("Memory", "onTrimMemory level=$level")
+        me.rerere.rikkahub.LastChatApp.trim(level)
     }
 }
