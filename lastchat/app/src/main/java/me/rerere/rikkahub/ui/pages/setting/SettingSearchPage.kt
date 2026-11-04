@@ -112,7 +112,7 @@ import me.rerere.search.KeylessSearchService
 import me.rerere.search.SearchCommonOptions
 import me.rerere.search.SearchService
 import me.rerere.search.SearchServiceOptions
-import me.rerere.search.R as SearchR
+import me.rerere.lastchat.search.R as SearchR
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState

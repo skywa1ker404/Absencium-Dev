@@ -93,7 +93,7 @@ object LastChatApp {
         val searchHttpClient = get<PlatformHttpClient>(named(SEARCH_PLATFORM_HTTP_CLIENT))
         SearchService.installPlatformHttpClient(searchHttpClient)
         SearchService.installBingSearchClient(AndroidBingSearchClient(searchHttpClient))
-        SearchService.installAcceptLanguageProvider { acceptLanguageHeader() }
+        SearchService.installAcceptLanguageProvider { app.acceptLanguageHeader() }
         createNotificationChannel(app)
 
         // set cursor window size (4MB avoids native virtual memory exhaustion)
@@ -208,7 +208,7 @@ object LastChatApp {
 
     private fun deleteTempFiles() {
         get<AppScope>().launch(Dispatchers.IO) {
-            val dir = appTempFolder
+            val dir = instance.appTempFolder
             if (dir.exists()) {
                 dir.deleteRecursively()
             }
