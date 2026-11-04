@@ -84,3 +84,5 @@ working on it
 - Changed (branch Absencium-ai): AI web search now uses LastChat's keyless search, which picks sources by question type (news, weather, encyclopedia) and shows a quick answer when there is one; the old DuckDuckGo search is the fallback.
 - Changed (branch Absencium-ai): Absencium now needs Android 9 (API 28) or newer, because the embedded LastChat chat needs it.
 - Changed (branch Absencium-ai): AI & Integrations shows only the AI switch and providers; response mode, what AI can use, token counts, images and integrations are under a closed Advanced section. In a provider, the API URL and API style are under Advanced too (open for a custom provider).
+- Changed (branch Absencium-ai): LastChat's chat app (chat screen, input bar, attachment menu, pickers, settings, export) is now built into Absencium as its own module, without its cloud, update, web-server, widget, workspace and on-device-model parts; it is not opened from the app yet.
+- Fixed (branch Absencium-ai): builds ran out of memory and took 27 minutes; build memory is raised and the unused debug build of the chat module is skipped.
