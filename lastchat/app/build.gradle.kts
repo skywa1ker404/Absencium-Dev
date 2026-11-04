@@ -22,9 +22,6 @@ android {
         compose = true
         buildConfig = true
     }
-    androidResources {
-        generateLocaleConfig = false
-    }
     packaging {
         resources {
             excludes += setOf(
