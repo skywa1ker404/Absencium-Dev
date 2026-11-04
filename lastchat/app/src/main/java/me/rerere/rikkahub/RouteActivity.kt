@@ -914,18 +914,15 @@ class RouteActivity : ComponentActivity() {
                         val route = backStackEntry.toRoute<Screen.Backup>()
                         val initialTab = me.rerere.rikkahub.ui.pages.backup.BackupTab.fromRoute(route.tab)
                         AdaptiveSettingsScaffold(
-                            selected = when (initialTab) {
-                                me.rerere.rikkahub.ui.pages.backup.BackupTab.WebDav -> SettingsDestination.BackupWebDav
-                                me.rerere.rikkahub.ui.pages.backup.BackupTab.Local -> SettingsDestination.BackupLocal
-                            }
+                            selected = SettingsDestination.BackupLocal
                         ) {
                             BackupPage(initialTab = initialTab)
                         }
                     }
 
                     composable<Screen.BackupWebDav> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.BackupWebDav) {
-                            BackupPage(initialTab = me.rerere.rikkahub.ui.pages.backup.BackupTab.WebDav)
+                        AdaptiveSettingsScaffold(selected = SettingsDestination.BackupLocal) {
+                            BackupPage(initialTab = me.rerere.rikkahub.ui.pages.backup.BackupTab.Local)
                         }
                     }
 

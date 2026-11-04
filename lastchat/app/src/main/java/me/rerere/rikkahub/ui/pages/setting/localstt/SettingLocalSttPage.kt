@@ -265,7 +265,6 @@ fun SettingLocalSttPage(
         )
     }
 }
-}
 
 @Composable
 private fun SectionHeader(text: String) {

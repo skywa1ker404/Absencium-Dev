@@ -319,7 +319,6 @@ private fun settingsPaneGroups(): List<SettingsPaneGroup> {
         SettingsPaneEntry(SettingsDestination.Lorebooks, R.string.prompt_injections_page_lorebooks, null, Icons.Rounded.Folder, Screen.SettingLorebooks),
     )
     val backupChildren = listOf(
-        SettingsPaneEntry(SettingsDestination.BackupWebDav, R.string.backup_page_webdav_backup, null, Icons.Rounded.CloudUpload, Screen.BackupWebDav),
         SettingsPaneEntry(SettingsDestination.BackupLocal, R.string.backup_page_import_export, null, Icons.Rounded.FileUpload, Screen.BackupLocal),
     )
 

@@ -254,3 +254,12 @@ object LastChatApp {
         }
     }
 }
+
+class AppScope : CoroutineScope by CoroutineScope(
+    SupervisorJob()
+        + Dispatchers.Default
+        + CoroutineName("AppScope")
+        + CoroutineExceptionHandler { _, e ->
+            Log.e(TAG, "AppScope exception", e)
+        }
+)

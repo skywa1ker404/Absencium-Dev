@@ -32,7 +32,6 @@ import me.rerere.rikkahub.utils.importOwnedFile
 import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
 import me.rerere.rikkahub.utils.resolveOwnedFile
-import me.rerere.rikkahub.web.WebUploadRegistry
 import java.io.File
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -513,7 +512,6 @@ class AppStorageRepository(
             settings = settingsStore.settingsFlow.value,
             root = root ?: context.filesDir,
         )
-        protectedPaths += collectActiveWebUploadPaths(root = root)
         protectedPaths
     }
 
@@ -572,19 +570,6 @@ class AppStorageRepository(
         }
     }
 
-    private fun collectActiveWebUploadPaths(
-        root: File? = null,
-    ): Set<String> {
-        val uploadDir = root ?: context.filesDir.resolve("upload")
-        return WebUploadRegistry.listRelativePaths().mapNotNullTo(mutableSetOf()) { relativePath ->
-            val file = context.filesDir.resolve(relativePath)
-            val canonicalFile = runCatching { file.canonicalFile }.getOrNull() ?: return@mapNotNullTo null
-            if (!canonicalFile.exists() || !canonicalFile.isInside(uploadDir)) {
-                return@mapNotNullTo null
-            }
-            runCatching { canonicalFile.canonicalPath }.getOrNull()
-        }
-    }
 }
 
 private fun resolveManagedFileRef(
