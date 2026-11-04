@@ -1,0 +1,4009 @@
+package me.rerere.rikkahub.ui.pages.chat
+
+import me.rerere.rikkahub.ui.context.LocalChatAnimationsEnabled
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.tween
+import androidx.activity.compose.BackHandler
+import androidx.core.net.toUri
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.adaptive.currentWindowDpSize
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SelectAll
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.HistoryToggleOff
+
+import me.rerere.rikkahub.data.datastore.getEffectiveDisplaySetting
+import me.rerere.rikkahub.ui.components.chat.NewChatContent
+import me.rerere.rikkahub.ui.components.nav.LastChatMenuButton
+
+import me.rerere.rikkahub.ui.components.ui.ToastType
+import me.rerere.rikkahub.ui.components.ui.Tooltip
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import me.rerere.ai.core.MessageRole
+import me.rerere.ai.context.ContextCountConfidence
+import me.rerere.ai.context.ContextTokenEstimator
+import me.rerere.ai.context.ContextUsageBreakdown
+import me.rerere.ai.context.calculateMinSafeFloorTokens
+import me.rerere.ai.context.effectiveHistoryForContext
+import me.rerere.ai.context.probableTemporaryTokenReserve
+import me.rerere.ai.context.smartFitContext
+import me.rerere.ai.context.smartInputBudget
+import me.rerere.ai.provider.Model
+import me.rerere.ai.provider.ModelAbility
+import me.rerere.ai.provider.baseCapacityTokens
+import me.rerere.ai.provider.contextCapacityTokens
+import me.rerere.ai.ui.UIMessage
+import me.rerere.ai.ui.UIMessagePart
+import kotlin.math.roundToInt
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import me.rerere.rikkahub.BuildConfig
+import me.rerere.rikkahub.R
+import me.rerere.rikkahub.Screen
+import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.TtsAutoplayMode
+import me.rerere.rikkahub.data.datastore.findProvider
+import me.rerere.rikkahub.data.datastore.getEffectiveTTSProvider
+import me.rerere.rikkahub.data.datastore.getEffectiveTtsAutoplayMode
+import me.rerere.rikkahub.data.ai.contextUsageSourceKey
+import me.rerere.rikkahub.data.ai.buildTimeAwarenessBlock
+import me.rerere.rikkahub.data.ai.resolveActiveSkillIds
+import me.rerere.rikkahub.data.ai.tools.toDefinitionPreviews
+import me.rerere.rikkahub.data.ai.selectSmartMemoryContext
+import me.rerere.rikkahub.data.ai.prompts.DEFAULT_LEARNING_MODE_PROMPT
+import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.AssistantMemory
+import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.model.LorebookActivationType
+import me.rerere.rikkahub.data.model.ModeAttachmentType
+import me.rerere.rikkahub.navigation.CHAT_ROUTE_TARGET_KEY
+import me.rerere.rikkahub.navigation.ChatRouteTarget
+import me.rerere.rikkahub.data.repository.ChatAttachmentManager
+import me.rerere.rikkahub.ui.components.ai.MinimalChatInput
+import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.context.LocalTTSState
+import me.rerere.rikkahub.ui.context.LocalToaster
+import me.rerere.rikkahub.ui.hooks.ChatInputState
+import me.rerere.rikkahub.ui.hooks.EditStateContent
+import me.rerere.rikkahub.ui.hooks.HapticPattern
+import me.rerere.rikkahub.ui.hooks.rememberChatInputState
+import me.rerere.rikkahub.ui.hooks.rememberPremiumHaptics
+import me.rerere.rikkahub.ui.hooks.useEditState
+import me.rerere.rikkahub.service.ChatPersistenceMode
+import me.rerere.rikkahub.service.ContextManagementActivity
+import me.rerere.rikkahub.ui.theme.AssistantChatTheme
+import me.rerere.rikkahub.utils.base64Decode
+import me.rerere.rikkahub.utils.getFileNameFromUri
+import me.rerere.rikkahub.utils.getFileMimeType
+import me.rerere.rikkahub.utils.navigateToChatPage
+import me.rerere.rikkahub.utils.toLocalInferenceUserMessage
+import kotlinx.coroutines.Dispatchers
+import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
+import kotlinx.coroutines.withContext
+import kotlin.uuid.Uuid
+import dev.chrisbanes.haze.rememberHazeState
+import androidx.compose.ui.draw.clipToBounds
+import me.rerere.rikkahub.ui.modifier.LastChatBlur
+import me.rerere.rikkahub.ui.modifier.LocalLastChatBlur
+import me.rerere.rikkahub.ui.modifier.lastChatBlurEffect
+import me.rerere.rikkahub.ui.modifier.lastChatBlurSource
+import me.rerere.rikkahub.ui.modifier.lastChatSoftEdgeBorder
+import me.rerere.rikkahub.ui.modifier.blurredContainerColor
+import me.rerere.rikkahub.ui.theme.AppShapes
+import me.rerere.rikkahub.ui.theme.AppSize
+import me.rerere.rikkahub.ui.modifier.blurredContainerColor
+import me.rerere.rikkahub.ui.motion.LocalMotionPolicy
+import androidx.compose.ui.draw.clip
+
+internal fun hasConversationMessages(conversation: Conversation): Boolean {
+    return conversation.messageNodes.isNotEmpty()
+}
+
+internal fun hasConversationPresetMessages(conversation: Conversation, assistant: Assistant): Boolean {
+    if (assistant.presetMessages.isEmpty() && assistant.alternateGreetings.isEmpty()) return false
+    val presetIds = assistant.presetMessages.map { it.id }.toSet()
+    if (conversation.currentMessages.any { it.id in presetIds }) return true
+    if (assistant.alternateGreetings.isNotEmpty()) {
+        val alternatesSet = assistant.alternateGreetings.toSet()
+        if (conversation.currentMessages.any { msg -> msg.role == me.rerere.ai.core.MessageRole.ASSISTANT && msg.toContentText() in alternatesSet }) {
+            return true
+        }
+    }
+    return false
+}
+
+internal fun shouldOfferMessageRegenerate(
+    role: me.rerere.ai.core.MessageRole,
+    isLastTurn: Boolean,
+    previousGroup: me.rerere.rikkahub.ui.components.chat.MessageTurnGroup?,
+): Boolean {
+    if (role == me.rerere.ai.core.MessageRole.ASSISTANT && previousGroup == null) return false
+    return when (role) {
+        me.rerere.ai.core.MessageRole.USER -> true
+        else -> isLastTurn
+    }
+}
+
+internal fun isCharacterIntroMessage(
+    messages: List<me.rerere.ai.ui.UIMessage>,
+    message: me.rerere.ai.ui.UIMessage,
+): Boolean {
+    if (message.role != me.rerere.ai.core.MessageRole.ASSISTANT) return false
+    val index = messages.indexOfFirst { it.id == message.id }
+    if (index < 0) return false
+    return messages.take(index).none { it.role == me.rerere.ai.core.MessageRole.USER }
+}
+
+internal fun completedGenerationIdsAfterDone(
+    currentCompleted: Set<Uuid>,
+    finishedConversationId: Uuid,
+    viewingConversationId: Uuid,
+): Set<Uuid> {
+    return if (finishedConversationId == viewingConversationId) {
+        currentCompleted - viewingConversationId
+    } else {
+        currentCompleted + finishedConversationId
+    }
+}
+
+@Composable
+private fun ChatTopFadeOverlay(
+    fadeHeight: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val backgroundColor = MaterialTheme.colorScheme.background
+
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(statusBarHeight)
+                .background(backgroundColor)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(fadeHeight)
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            backgroundColor.copy(alpha = 0.98f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+    }
+}
+
+@Composable
+private fun ChatWidePanelEdgeFadeOverlay(
+    width: Dp,
+    placement: ChatToolbarPlacement,
+    showBottomFade: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topFadeHeight = if (placement == ChatToolbarPlacement.Top) {
+        chatTopToolbarFadeHeight
+    } else {
+        chatBottomToolbarTopFadeHeight
+    }
+    Box(
+        modifier = modifier
+            .width(width)
+            .fillMaxHeight()
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+        ) {
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(statusBarHeight)
+                    .background(backgroundColor)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(topFadeHeight)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(
+                                backgroundColor.copy(alpha = 0.98f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(200.dp)
+        ) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showBottomFade,
+                enter = androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.fadeOut(),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                        brush = if (placement == ChatToolbarPlacement.Bottom) {
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    backgroundColor.copy(alpha = 0.72f),
+                                    backgroundColor.copy(alpha = 0.97f)
+                                )
+                            )
+                        } else {
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    backgroundColor.copy(alpha = 0.92f)
+                                )
+                            )
+                        }
+                        )
+                )
+            }
+        }
+    }
+}
+
+internal data class AssistantSwitchNavigation(
+    val initText: String?,
+    val initFiles: List<String>,
+    val persistenceMode: String?,
+)
+
+internal fun buildAssistantSwitchNavigation(
+    persistenceMode: ChatPersistenceMode,
+): AssistantSwitchNavigation {
+    return AssistantSwitchNavigation(
+        initText = null,
+        initFiles = emptyList(),
+        persistenceMode = persistenceMode.takeIf { it != ChatPersistenceMode.NORMAL }?.routeValue,
+    )
+}
+
+internal fun decodeChatRouteText(text: String?): String {
+    return text?.let { encoded ->
+        runCatching { encoded.base64Decode() }.getOrDefault("")
+    }.orEmpty()
+}
+
+internal data class ChatInputDraft(
+    val text: String = "",
+    val messageContent: List<UIMessagePart> = emptyList(),
+    val editingMessage: Uuid? = null,
+) {
+    val isEmpty: Boolean
+        get() = text.isEmpty() && messageContent.isEmpty() && editingMessage == null
+
+    fun forAssistantSwitch(): ChatInputDraft {
+        return copy(editingMessage = null)
+    }
+}
+
+internal object ChatSessionDraftStore {
+    private val drafts = mutableMapOf<Uuid, ChatInputDraft>()
+
+    fun get(conversationId: Uuid): ChatInputDraft? {
+        return drafts[conversationId]
+    }
+
+    fun put(conversationId: Uuid, draft: ChatInputDraft) {
+        if (draft.isEmpty) {
+            drafts.remove(conversationId)
+        } else {
+            drafts[conversationId] = draft
+        }
+    }
+
+    fun moveDraft(fromConversationId: Uuid, toConversationId: Uuid, draft: ChatInputDraft) {
+        drafts.remove(fromConversationId)
+        put(toConversationId, draft.forAssistantSwitch())
+    }
+
+    fun clear() {
+        drafts.clear()
+    }
+}
+
+internal fun ChatInputState.toDraft(): ChatInputDraft {
+    return ChatInputDraft(
+        text = textContent.text.toString(),
+        messageContent = messageContent,
+        editingMessage = editingMessage,
+    )
+}
+
+internal fun ChatInputState.applyDraft(draft: ChatInputDraft) {
+    clearInput()
+    if (draft.text.isNotEmpty()) {
+        setMessageText(draft.text)
+    }
+    if (draft.messageContent.isNotEmpty()) {
+        messageContent = draft.messageContent
+    }
+    editingMessage = draft.editingMessage
+}
+
+internal fun shouldShowNewChatContent(
+    isTemporaryChat: Boolean,
+    hasConversationMessages: Boolean,
+    hasAnyPresetMessages: Boolean,
+    showNewChatContent: Boolean,
+    hasTextInput: Boolean,
+    isKeyboardOpen: Boolean,
+): Boolean {
+    return !isTemporaryChat &&
+        !hasConversationMessages &&
+        !hasAnyPresetMessages &&
+        showNewChatContent &&
+        !hasTextInput &&
+        !isKeyboardOpen
+}
+
+internal fun chatTopBarPlacement(settings: Settings): ChatToolbarPlacement {
+    return if (settings.displaySetting.chatToolbarAtBottom) {
+        ChatToolbarPlacement.Bottom
+    } else {
+        ChatToolbarPlacement.Top
+    }
+}
+
+internal fun chatListTopPadding(
+    placement: ChatToolbarPlacement,
+    statusBarPadding: Dp = 0.dp,
+): Dp {
+    val fadeHeight = if (placement == ChatToolbarPlacement.Top) {
+        chatTopToolbarFadeHeight
+    } else {
+        chatBottomToolbarTopFadeHeight
+    }
+    return statusBarPadding + fadeHeight
+}
+
+internal fun chatListBottomPadding(placement: ChatToolbarPlacement): androidx.compose.ui.unit.Dp {
+    return if (placement == ChatToolbarPlacement.Bottom) 204.dp else 140.dp
+}
+
+internal fun chatToolbarPopupTopPadding(placement: ChatToolbarPlacement): androidx.compose.ui.unit.Dp {
+    return if (placement == ChatToolbarPlacement.Top) 64.dp else 0.dp
+}
+
+internal fun chatToolbarPopupBottomPadding(placement: ChatToolbarPlacement): androidx.compose.ui.unit.Dp {
+    return if (placement == ChatToolbarPlacement.Bottom) 72.dp else 0.dp
+}
+
+private fun chatToolbarPopupTransformOrigin(placement: ChatToolbarPlacement): TransformOrigin {
+    return if (placement == ChatToolbarPlacement.Bottom) {
+        TransformOrigin(0.5f, 1f)
+    } else {
+        TransformOrigin(0.5f, 0f)
+    }
+}
+
+private val chatTopToolbarFadeHeight = 96.dp
+private val chatBottomToolbarTopFadeHeight = 36.dp
+
+private fun latestAssistantSpeechMessage(conversation: Conversation): UIMessage? {
+    return conversation.messageNodes.asReversed().asSequence()
+        .map { it.currentMessage }
+        .firstOrNull { message ->
+            message.role == MessageRole.ASSISTANT && message.toContentText().isNotBlank()
+        }
+}
+
+private fun speakablePrefixLength(text: String, final: Boolean): Int {
+    val trimmedEnd = text.indexOfLast { !it.isWhitespace() }
+    if (trimmedEnd < 0) return 0
+
+    val paragraphBreak = text.indexOf("\n\n")
+    if (paragraphBreak >= 0) return paragraphBreak + 2
+
+    for (i in text.indices) {
+        val c = text[i]
+        if (c == '。' || c == '！' || c == '？' || c == '…') {
+            return i + 1
+        }
+        if (c == '!' || c == '?') {
+            return i + 1
+        }
+        if (c == '.') {
+            val prevIsDigit = i > 0 && text[i - 1].isDigit()
+            val nextIsDigit = i + 1 < text.length && text[i + 1].isDigit()
+            if (!prevIsDigit || !nextIsDigit) {
+                val nextIsBoundary = i + 1 == text.length || text[i + 1].isWhitespace() || text[i + 1] == '\n' || text[i + 1] == '"' || text[i + 1] == '\''
+                if (nextIsBoundary) {
+                    return i + 1
+                }
+            }
+        }
+    }
+
+    val lineBreak = text.indexOf('\n')
+    if (lineBreak >= 0) return lineBreak + 1
+
+    return if (final) trimmedEnd + 1 else 0
+}
+
+@Composable
+private fun ChatTtsAutoplayEffect(
+    settings: Settings,
+    assistant: Assistant,
+    conversation: Conversation,
+    loadingJob: Job?,
+) {
+    val tts = LocalTTSState.current
+    val mode = settings.getEffectiveTtsAutoplayMode(assistant)
+    val provider = remember(
+        settings.ttsProviders,
+        settings.selectedTTSVoiceId,
+        settings.selectedTTSProviderId,
+        assistant.ttsVoiceId,
+    ) {
+        settings.getEffectiveTTSProvider(assistant)
+    }
+    var completedMessageId by remember(conversation.id) { mutableStateOf<Uuid?>(null) }
+    var streamingMessageId by remember(conversation.id) { mutableStateOf<Uuid?>(null) }
+    var generationBaselineMessageId by remember(conversation.id) { mutableStateOf<Uuid?>(null) }
+    var generationBaselineText by remember(conversation.id) { mutableStateOf("") }
+    var spokenLength by remember(conversation.id) { mutableStateOf(0) }
+    var wasGenerating by remember(conversation.id) { mutableStateOf(false) }
+
+    // Avoid passing the full conversation.currentMessages list to LaunchedEffect,
+    // which triggers a deep O(N) List.equals comparison across 200k tokens on every chunk.
+    val ttsEnabled = mode != TtsAutoplayMode.OFF && provider != null
+    val speechTriggerKey = if (!ttsEnabled) {
+        null
+    } else if (mode == TtsAutoplayMode.AFTER_GENERATION) {
+        loadingJob == null
+    } else {
+        latestAssistantSpeechMessage(conversation)?.let { it.id to it.toContentText().length }
+    }
+
+    LaunchedEffect(conversation.id, speechTriggerKey, mode, provider) {
+        if (!ttsEnabled) return@LaunchedEffect
+        if (loadingJob == null) {
+            if (!wasGenerating) return@LaunchedEffect
+            wasGenerating = false
+            val latestMessage = latestAssistantSpeechMessage(conversation) ?: return@LaunchedEffect
+            val text = latestMessage.toContentText()
+            if (latestMessage.id == generationBaselineMessageId && text == generationBaselineText) {
+                return@LaunchedEffect
+            }
+            if (completedMessageId == latestMessage.id && spokenLength >= text.length) {
+                return@LaunchedEffect
+            }
+            if (streamingMessageId != latestMessage.id || spokenLength > text.length) {
+                streamingMessageId = latestMessage.id
+                spokenLength = 0
+            }
+            val remaining = text.drop(spokenLength)
+            val length = speakablePrefixLength(remaining, final = true)
+            val segment = remaining.take(length).trim()
+            if (segment.isNotBlank()) {
+                tts.speak(
+                    text = segment,
+                    flushCalled = spokenLength == 0,
+                    overrideSetting = provider,
+                )
+                spokenLength += length
+            }
+            completedMessageId = latestMessage.id
+            return@LaunchedEffect
+        }
+
+        if (mode != TtsAutoplayMode.WHILE_GENERATING) return@LaunchedEffect
+
+        if (!wasGenerating) {
+            val baselineMessage = latestAssistantSpeechMessage(conversation)
+            generationBaselineMessageId = baselineMessage?.id
+            generationBaselineText = baselineMessage?.toContentText().orEmpty()
+            wasGenerating = true
+        }
+        val latestMessage = latestAssistantSpeechMessage(conversation) ?: return@LaunchedEffect
+        if (latestMessage.id == generationBaselineMessageId && latestMessage.toContentText() == generationBaselineText) {
+            return@LaunchedEffect
+        }
+        val text = latestMessage.toContentText()
+        if (streamingMessageId != latestMessage.id) {
+            streamingMessageId = latestMessage.id
+            spokenLength = 0
+        }
+        if (spokenLength > text.length) {
+            spokenLength = 0
+        }
+        val remaining = text.drop(spokenLength)
+        val length = speakablePrefixLength(remaining, final = false)
+        val segment = remaining.take(length).trim()
+        if (segment.isNotBlank()) {
+            spokenLength += length
+            tts.speak(segment, flushCalled = false, overrideSetting = provider)
+        }
+    }
+}
+
+internal fun shouldUseWideChatLayout(
+    windowWidth: Dp,
+    windowHeight: Dp,
+): Boolean {
+    return windowWidth >= 840.dp && windowHeight >= 600.dp
+}
+
+internal enum class ChatToolbarPlacement {
+    Top,
+    Bottom
+}
+
+@Composable
+fun ChatPage(
+    target: ChatRouteTarget,
+) {
+    val id = target.uuid
+    val text = target.text
+    val files = target.fileUris
+    val searchQuery = target.searchQuery
+    val persistenceMode = target.persistenceMode
+    val focusLatestMessageKey = target.focusLatestMessageKey
+    val vm: ChatVM = koinViewModel(
+        key = id.toString(),
+        parameters = {
+            parametersOf(id.toString())
+        }
+    )
+    val navController = LocalNavController.current
+    val toaster = LocalToaster.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val genericErrorMessage = context.getString(R.string.common_error)
+
+    // Handle Error
+    LaunchedEffect(vm) {
+        vm.errorFlow.collect { error ->
+            toaster.show(error.toLocalInferenceUserMessage(context) ?: genericErrorMessage, type = ToastType.Error)
+        }
+    }
+
+    val setting by vm.settings.collectAsStateWithLifecycle()
+    val conversation by vm.conversation.collectAsStateWithLifecycle()
+    val conversationInitialized by vm.conversationInitialized.collectAsStateWithLifecycle()
+    val conversationAssistant by vm.conversationAssistant.collectAsStateWithLifecycle()
+    val loadingJob by vm.conversationJob.collectAsStateWithLifecycle()
+    val conversationPersistenceMode by vm.conversationPersistenceMode.collectAsStateWithLifecycle()
+    val currentChatModel by vm.currentChatModel.collectAsStateWithLifecycle()
+    val enableWebSearch by vm.enableWebSearch.collectAsStateWithLifecycle()
+    val currentSearchMode by vm.currentSearchMode.collectAsStateWithLifecycle()
+    var manualTemporaryChat by rememberSaveable(id) { mutableStateOf(false) }
+    val activePersistenceMode = when {
+        manualTemporaryChat || conversationPersistenceMode == ChatPersistenceMode.TEMPORARY -> ChatPersistenceMode.TEMPORARY
+        conversationPersistenceMode == ChatPersistenceMode.PERSIST_ON_REPLY -> ChatPersistenceMode.PERSIST_ON_REPLY
+        else -> ChatPersistenceMode.NORMAL
+    }
+    ChatTtsAutoplayEffect(
+        settings = setting,
+        assistant = conversationAssistant,
+        conversation = conversation,
+        loadingJob = loadingJob,
+    )
+
+    LaunchedEffect(conversation.id) {
+        manualTemporaryChat = false
+    }
+
+    LaunchedEffect(id, persistenceMode) {
+        vm.applyRoutePersistenceMode(ChatPersistenceMode.fromRouteValue(persistenceMode))
+    }
+
+    LaunchedEffect(conversationPersistenceMode) {
+        if (conversationPersistenceMode == ChatPersistenceMode.NORMAL && target.persistenceMode != null) {
+            navController.currentBackStackEntry
+                ?.savedStateHandle
+                ?.set(CHAT_ROUTE_TARGET_KEY, target.copy(persistenceMode = null))
+        }
+    }
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val softwareKeyboardController = LocalSoftwareKeyboardController.current
+
+    // Handle back press when drawer is open
+    BackHandler(enabled = drawerState.isOpen) {
+        scope.launch {
+            drawerState.close()
+        }
+    }
+
+    // Hide keyboard when drawer is open
+    LaunchedEffect(drawerState.isOpen) {
+        if (drawerState.isOpen) {
+            softwareKeyboardController?.hide()
+        }
+    }
+
+    val windowSize = currentWindowDpSize()
+    val useWideLayout = shouldUseWideChatLayout(windowSize.width, windowSize.height)
+    val wideDrawerExpandedWidth = 336.dp
+    val chatContentMaxWidth = when {
+        useWideLayout && windowSize.width >= 1440.dp -> 980.dp
+        useWideLayout -> 900.dp
+        else -> Dp.Unspecified
+    }
+    val inputMaxWidth = when {
+        useWideLayout && windowSize.width >= 1440.dp -> 920.dp
+        useWideLayout -> 840.dp
+        else -> Dp.Unspecified
+    }
+    var isWidePanelCollapsed by rememberSaveable { mutableStateOf(false) }
+    var showWideRailAssistantPicker by remember { mutableStateOf(false) }
+
+    val inputState = rememberChatInputState()
+    var inputRestored by remember(id) { mutableStateOf(false) }
+    LaunchedEffect(id, text, files) {
+        inputRestored = false
+        inputState.clearInput()
+        val decodedText = decodeChatRouteText(text)
+        val importedParts = if (files.isNotEmpty()) {
+            withContext(Dispatchers.IO) {
+                buildList {
+                    files.forEach { sourceFile ->
+                        val mimeType = context.getFileMimeType(sourceFile)
+                        val fileName = context.getFileNameFromUri(sourceFile) ?: "file"
+                        val localFile = ChatAttachmentManager.importChatFile(
+                            uri = sourceFile,
+                            fileNameHint = fileName,
+                            mimeHint = mimeType,
+                        )?.uri ?: return@forEach
+                        when {
+                            mimeType?.startsWith("image/") == true -> add(UIMessagePart.Image(url = localFile.toString()))
+                            mimeType?.startsWith("video/") == true -> add(UIMessagePart.Video(url = localFile.toString()))
+                            mimeType?.startsWith("audio/") == true -> add(UIMessagePart.Audio(url = localFile.toString()))
+                            else -> add(
+                                UIMessagePart.Document(
+                                    url = localFile.toString(),
+                                    fileName = fileName,
+                                    mime = mimeType ?: "application/octet-stream"
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            emptyList()
+        }
+        val routeDraft = ChatInputDraft(
+            text = decodedText,
+            messageContent = importedParts,
+        )
+        val draft = routeDraft.takeUnless { it.isEmpty }
+            ?: ChatSessionDraftStore.get(id)
+            ?: ChatInputDraft()
+        inputState.applyDraft(draft)
+        inputRestored = true
+    }
+
+    LaunchedEffect(id, inputState) {
+        snapshotFlow {
+            if (inputRestored) {
+                inputState.toDraft()
+            } else {
+                null
+            }
+        }
+            .distinctUntilChanged()
+            .collect { draft ->
+                if (draft != null) {
+                    ChatSessionDraftStore.put(id, draft)
+                }
+            }
+    }
+
+    val initialChatListScrollPosition = vm.chatListScrollPosition
+    val chatListState = remember(conversation.id) {
+        LazyListState(
+            firstVisibleItemIndex = initialChatListScrollPosition?.firstVisibleItemIndex ?: 0,
+            firstVisibleItemScrollOffset = initialChatListScrollPosition?.firstVisibleItemScrollOffset ?: 0,
+        )
+    }
+    var chatListReady by remember(conversation.id) { mutableStateOf(false) }
+    var chatAnimationsEnabled by remember(conversation.id) { mutableStateOf(false) }
+    LaunchedEffect(conversation.id) {
+        delay(500)
+        chatAnimationsEnabled = true
+    }
+    var consumedFocusLatestMessageKey by remember(conversation.id) { mutableStateOf<String?>(null) }
+    LaunchedEffect(
+        conversation.id,
+        conversationInitialized,
+        conversation.messageNodes.size,
+        chatListState,
+    ) {
+        if (!conversationInitialized) {
+            return@LaunchedEffect
+        }
+        if (chatListReady) {
+            return@LaunchedEffect
+        }
+        val savedPosition = vm.chatListScrollPosition
+        when {
+            conversation.messageNodes.isEmpty() -> {
+                chatListReady = true
+            }
+
+            savedPosition != null -> {
+                chatListState.scrollToItem(
+                    index = savedPosition.firstVisibleItemIndex,
+                    scrollOffset = savedPosition.firstVisibleItemScrollOffset,
+                )
+                vm.chatListInitialized = true
+                chatListReady = true
+            }
+
+            !vm.chatListInitialized -> {
+                // Scroll to the last item. The LazyColumn shows turn-groups (not raw nodes),
+                // so we cannot use messageNodes.lastIndex as the item index — in a tool-heavy
+                // chat there are far fewer groups than nodes. Int.MAX_VALUE is clamped by
+                // Compose to the true last item index.
+                chatListState.scrollToItem(Int.MAX_VALUE)
+                vm.chatListInitialized = true
+                chatListReady = true
+            }
+
+            else -> {
+                chatListReady = true
+            }
+        }
+    }
+
+    LaunchedEffect(focusLatestMessageKey, conversation.id, conversation.messageNodes.isNotEmpty()) {
+        if (
+            focusLatestMessageKey != null &&
+            consumedFocusLatestMessageKey != focusLatestMessageKey &&
+            conversation.messageNodes.isNotEmpty()
+        ) {
+            consumedFocusLatestMessageKey = focusLatestMessageKey
+            // Same reasoning: use Int.MAX_VALUE instead of messageNodes.lastIndex because
+            // the LazyColumn items are turn-groups, not individual nodes.
+            chatListState.animateScrollToItem(Int.MAX_VALUE)
+        }
+    }
+
+    LaunchedEffect(conversation.id, conversation.messageNodes.isNotEmpty(), chatListReady, chatListState) {
+        if (conversation.messageNodes.isEmpty() || !chatListReady) {
+            return@LaunchedEffect
+        }
+        snapshotFlow {
+            ChatListScrollPosition(
+                firstVisibleItemIndex = chatListState.firstVisibleItemIndex,
+                firstVisibleItemScrollOffset = chatListState.firstVisibleItemScrollOffset,
+            )
+        }
+            .distinctUntilChanged()
+            .collect { position ->
+                vm.updateChatListScrollPosition(
+                    firstVisibleItemIndex = position.firstVisibleItemIndex,
+                    firstVisibleItemScrollOffset = position.firstVisibleItemScrollOffset,
+                )
+            }
+    }
+
+    fun navigateToAssistantConversation(selectedAssistant: Assistant) {
+        scope.launch {
+            val draft = inputState.toDraft()
+            val newConversation = vm.createConversationForAssistant(selectedAssistant.id)
+            ChatSessionDraftStore.moveDraft(
+                fromConversationId = conversation.id,
+                toConversationId = newConversation.id,
+                draft = draft,
+            )
+            val draftNavigation = buildAssistantSwitchNavigation(
+                persistenceMode = activePersistenceMode,
+            )
+            navigateToChatPage(
+                navController = navController,
+                chatId = newConversation.id,
+                initText = draftNavigation.initText,
+                initFiles = draftNavigation.initFiles.map(String::toUri),
+                persistenceMode = draftNavigation.persistenceMode,
+            )
+        }
+    }
+
+    when {
+        useWideLayout -> {
+            AssistantChatTheme(assistant = conversationAssistant) {
+                Surface(
+                    color = MaterialTheme.colorScheme.background,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    val wideHazeState = rememberHazeState()
+                    val wideBlur = remember(setting.displaySetting.enableBlurEffect, wideHazeState) {
+                        LastChatBlur(
+                            enabled = setting.displaySetting.enableBlurEffect,
+                            hazeState = wideHazeState,
+                        )
+                    }
+                    val widePanelWidth by androidx.compose.animation.core.animateDpAsState(
+                        targetValue = if (isWidePanelCollapsed) 80.dp else wideDrawerExpandedWidth,
+                        animationSpec = androidx.compose.animation.core.tween(
+                            durationMillis = 260,
+                            easing = androidx.compose.animation.core.FastOutSlowInEasing
+                        ),
+                        label = "chat_wide_panel_width"
+                    )
+                    val widePanelHaptics = rememberPremiumHaptics(enabled = setting.displaySetting.enableUIHaptics)
+                    var widePanelDragX by remember { mutableStateOf(0f) }
+                    val wideEffectiveDisplaySetting = setting.getEffectiveDisplaySetting(conversationAssistant)
+                    val wideShowsNewChatContent =
+                        wideEffectiveDisplaySetting.newChatHeaderStyle != me.rerere.rikkahub.data.datastore.NewChatHeaderStyle.NONE ||
+                            wideEffectiveDisplaySetting.newChatContentStyle != me.rerere.rikkahub.data.datastore.NewChatContentStyle.NONE
+                    val showWideBottomFade =
+                        hasConversationMessages(conversation) ||
+                            conversationAssistant.presetMessages.isNotEmpty() ||
+                            activePersistenceMode == ChatPersistenceMode.TEMPORARY ||
+                            !wideShowsNewChatContent
+                    CompositionLocalProvider(LocalLastChatBlur provides wideBlur) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AssistantBackground(
+                            assistant = conversationAssistant,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .lastChatBlurSource()
+                        )
+                        ChatWidePanelEdgeFadeOverlay(
+                            width = widePanelWidth,
+                            placement = chatTopBarPlacement(setting),
+                            showBottomFade = showWideBottomFade,
+                            modifier = Modifier.align(Alignment.CenterStart)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(widePanelWidth)
+                                    .fillMaxHeight()
+                                    .clipToBounds()
+                                    .pointerInput(isWidePanelCollapsed) {
+                                        detectHorizontalDragGestures(
+                                            onDragStart = {
+                                                widePanelDragX = 0f
+                                            },
+                                            onHorizontalDrag = { change, dragAmount ->
+                                                widePanelDragX += dragAmount
+                                                change.consume()
+                                            },
+                                            onDragEnd = {
+                                                val threshold = 36.dp.toPx()
+                                                val shouldCollapse = !isWidePanelCollapsed && widePanelDragX < -threshold
+                                                val shouldExpand = isWidePanelCollapsed && widePanelDragX > threshold
+                                                when {
+                                                    shouldCollapse -> {
+                                                        widePanelHaptics.perform(HapticPattern.Pop)
+                                                        isWidePanelCollapsed = true
+                                                    }
+
+                                                    shouldExpand -> {
+                                                        widePanelHaptics.perform(HapticPattern.Pop)
+                                                        isWidePanelCollapsed = false
+                                                    }
+                                                }
+                                                widePanelDragX = 0f
+                                            },
+                                            onDragCancel = {
+                                                widePanelDragX = 0f
+                                            }
+                                        )
+                                    }
+                            ) {
+                                AnimatedContent(
+                                    targetState = isWidePanelCollapsed,
+                                    transitionSpec = {
+                                        (fadeIn(
+                                            animationSpec = androidx.compose.animation.core.spring(
+                                                dampingRatio = 0.7f,
+                                                stiffness = 360f
+                                            )
+                                        ) + scaleIn(
+                                            initialScale = 0.96f,
+                                            animationSpec = androidx.compose.animation.core.spring(
+                                                dampingRatio = 0.7f,
+                                                stiffness = 360f
+                                            )
+                                        )) togetherWith (fadeOut(
+                                            animationSpec = androidx.compose.animation.core.spring(
+                                                dampingRatio = 0.85f,
+                                                stiffness = 420f
+                                            )
+                                        ) + scaleOut(
+                                            targetScale = 0.96f,
+                                            animationSpec = androidx.compose.animation.core.spring(
+                                                dampingRatio = 0.85f,
+                                                stiffness = 420f
+                                            )
+                                        )) using SizeTransform(clip = true)
+                                    },
+                                    label = "chat_side_panel",
+                                    modifier = Modifier.fillMaxSize()
+                                ) { collapsed ->
+                                    if (collapsed) {
+                                        CollapsedChatSideRail(
+                                            current = conversation,
+                                            settings = setting,
+                                            onExpand = { isWidePanelCollapsed = false },
+                                            onOpenImageGen = { navController.navigate(Screen.ImageGen) },
+                                            onOpenStatistics = { navController.navigate(Screen.Menu) },
+                                            onOpenSettings = { navController.navigate(Screen.Setting) },
+                                            onOpenAssistant = {
+                                                showWideRailAssistantPicker = true
+                                            },
+                                            vm = vm
+                                        )
+                                    } else {
+                                        ChatDrawerContent(
+                                            navController = navController,
+                                            current = conversation,
+                                            vm = vm,
+                                            settings = setting,
+                                            inputState = inputState,
+                                            activePersistenceMode = activePersistenceMode,
+                                            drawerState = null,
+                                            presentation = ChatDrawerPresentation.PermanentPane,
+                                            collapsedWidth = wideDrawerExpandedWidth,
+                                            expandedWidth = wideDrawerExpandedWidth,
+                                            onCollapseRequest = { isWidePanelCollapsed = true },
+                                        )
+                                    }
+                                }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            ) {
+                                ChatPageContent(
+                                    inputState = inputState,
+                                    loadingJob = loadingJob,
+                                    setting = setting,
+                                    currentAssistant = conversationAssistant,
+                                    conversationInitialized = conversationInitialized,
+                                    conversation = conversation,
+                                    drawerState = drawerState,
+                                    navController = navController,
+                                    vm = vm,
+                                    chatListState = chatListState,
+                                    chatListReady = chatListReady,
+                                    chatAnimationsEnabled = chatAnimationsEnabled,
+                                    enableWebSearch = enableWebSearch,
+                                    currentSearchMode = currentSearchMode,
+                                    currentChatModel = currentChatModel,
+                                    conversationPersistenceMode = conversationPersistenceMode,
+                                    manualTemporaryChat = manualTemporaryChat,
+                                    onManualTemporaryChatChange = { manualTemporaryChat = it },
+                                    bigScreen = true,
+                                    contentMaxWidth = chatContentMaxWidth,
+                                    inputMaxWidth = inputMaxWidth,
+                                    initialSearchQuery = searchQuery,
+                                    renderBackground = false,
+                                    inheritedBlur = wideBlur,
+                                )
+                            }
+                        }
+                        if (showWideRailAssistantPicker) {
+                            me.rerere.rikkahub.ui.components.ai.AssistantPickerSheet(
+                                settings = setting,
+                                currentAssistant = conversationAssistant,
+                                onAssistantSelected = { assistant ->
+                                    vm.setSelectedAssistant(assistant.id)
+                                },
+                                onNavigate = { assistant ->
+                                    showWideRailAssistantPicker = false
+                                    navigateToAssistantConversation(assistant)
+                                },
+                                onDismiss = {
+                                    showWideRailAssistantPicker = false
+                                }
+                            )
+                        }
+                    }
+                    }
+                }
+            }
+        }
+
+        else -> {
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    ChatDrawerContent(
+                        navController = navController,
+                        current = conversation,
+                        vm = vm,
+                        settings = setting,
+                        inputState = inputState,
+                        activePersistenceMode = activePersistenceMode,
+                        drawerState = drawerState,
+                        presentation = ChatDrawerPresentation.Modal,
+                    )
+                }
+            ) {
+                ChatPageContent(
+                    inputState = inputState,
+                    loadingJob = loadingJob,
+                    setting = setting,
+                    currentAssistant = conversationAssistant,
+                    conversationInitialized = conversationInitialized,
+                    conversation = conversation,
+                    drawerState = drawerState,
+                    navController = navController,
+                    vm = vm,
+                    chatListState = chatListState,
+                    chatListReady = chatListReady,
+                    chatAnimationsEnabled = chatAnimationsEnabled,
+                    enableWebSearch = enableWebSearch,
+                    currentSearchMode = currentSearchMode,
+                    currentChatModel = currentChatModel,
+                    conversationPersistenceMode = conversationPersistenceMode,
+                    manualTemporaryChat = manualTemporaryChat,
+                    onManualTemporaryChatChange = { manualTemporaryChat = it },
+                    bigScreen = false,
+                    contentMaxWidth = Dp.Unspecified,
+                    inputMaxWidth = Dp.Unspecified,
+                    initialSearchQuery = searchQuery
+                )
+            }
+            BackHandler(drawerState.isOpen) {
+                scope.launch { drawerState.close() }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatPageContent(
+    inputState: ChatInputState,
+    loadingJob: Job?,
+    setting: Settings,
+    currentAssistant: Assistant,
+    conversationInitialized: Boolean,
+    bigScreen: Boolean,
+    conversation: Conversation,
+    drawerState: DrawerState,
+    navController: NavHostController,
+    vm: ChatVM,
+    chatListState: LazyListState,
+    chatListReady: Boolean,
+    chatAnimationsEnabled: Boolean,
+    enableWebSearch: Boolean,
+    currentSearchMode: me.rerere.rikkahub.data.model.AssistantSearchMode,
+    currentChatModel: Model?,
+    conversationPersistenceMode: ChatPersistenceMode,
+    manualTemporaryChat: Boolean,
+    onManualTemporaryChatChange: (Boolean) -> Unit,
+    contentMaxWidth: Dp = Dp.Unspecified,
+    inputMaxWidth: Dp = Dp.Unspecified,
+    initialSearchQuery: String? = null,
+    renderBackground: Boolean = true,
+    inheritedBlur: LastChatBlur? = null,
+) {
+    val scope = rememberCoroutineScope()
+    val toaster = LocalToaster.current
+    val context = LocalContext.current
+    val modelRequiredMessage = context.getString(R.string.chat_model_required)
+    var previewMode by rememberSaveable { mutableStateOf(false) }
+    val activePersistenceMode = when {
+        manualTemporaryChat || conversationPersistenceMode == ChatPersistenceMode.TEMPORARY -> ChatPersistenceMode.TEMPORARY
+        conversationPersistenceMode == ChatPersistenceMode.PERSIST_ON_REPLY -> ChatPersistenceMode.PERSIST_ON_REPLY
+        else -> ChatPersistenceMode.NORMAL
+    }
+    val isTemporaryChat = activePersistenceMode == ChatPersistenceMode.TEMPORARY
+
+    // State for user message regeneration confirmation dialog
+    var showUserRegenerateConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    var pendingUserRegenerateMessage by rememberSaveable { mutableStateOf<me.rerere.ai.ui.UIMessage?>(null) }
+    var showToolbarOverflowMenu by remember { mutableStateOf(false) }
+    var showContextUsagePopup by remember { mutableStateOf(false) }
+    var isChatShareSelecting by rememberSaveable { mutableStateOf(false) }
+    var selectedChatShareItems by remember(conversation.id) { mutableStateOf<Set<Uuid>>(emptySet()) }
+    var showExportSheet by remember { mutableStateOf(false) }
+    var chatSearchQuery by rememberSaveable(conversation.id) { mutableStateOf(initialSearchQuery.orEmpty()) }
+    var consumedInitialSearchQuery by remember(conversation.id) { mutableStateOf<String?>(null) }
+    val toolbarPlacement = chatTopBarPlacement(setting)
+    val reduceMotion = LocalMotionPolicy.current.reduceMotion
+    val isGenerating = loadingJob != null
+    val density = LocalDensity.current
+    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val hazeState = rememberHazeState()
+    val localBlur = remember(setting.displaySetting.enableBlurEffect, hazeState) {
+        LastChatBlur(
+            enabled = setting.displaySetting.enableBlurEffect,
+            hazeState = hazeState,
+        )
+    }
+    val blur = inheritedBlur ?: localBlur
+    val requestContextUsage by vm.contextUsage.collectAsStateWithLifecycle()
+    val contextManagementActivity by vm.contextManagementActivity.collectAsStateWithLifecycle()
+    val assistantMemories by vm.assistantMemories.collectAsStateWithLifecycle()
+    val contextMeterUsage = rememberContextMeterUsage(
+        enabled = setting.displaySetting.showContextTokenSummary,
+        model = currentChatModel,
+        conversation = conversation,
+        assistant = currentAssistant,
+        settings = setting,
+        memoryCandidates = assistantMemories,
+        persistenceMode = activePersistenceMode,
+        pendingParts = inputState.getContents(),
+        requestUsage = requestContextUsage,
+        isGenerating = isGenerating,
+    )
+
+    LaunchedEffect(contextMeterUsage) {
+        if (contextMeterUsage == null) showContextUsagePopup = false
+    }
+
+    LaunchedEffect(conversation.id) {
+        previewMode = false
+        showToolbarOverflowMenu = false
+        showUserRegenerateConfirmDialog = false
+        pendingUserRegenerateMessage = null
+        if (isChatShareSelecting) {
+            isChatShareSelecting = false
+            selectedChatShareItems = emptySet()
+        }
+    }
+    
+    // Auto-scroll to first matching message when opened from search
+    LaunchedEffect(initialSearchQuery, conversation.id, conversation.messageNodes.isNotEmpty()) {
+        if (
+            !initialSearchQuery.isNullOrBlank() &&
+            consumedInitialSearchQuery != initialSearchQuery &&
+            conversation.messageNodes.isNotEmpty()
+        ) {
+            consumedInitialSearchQuery = initialSearchQuery
+            // Find the first message containing the search query
+            val matchIndex = conversation.messageNodes.indexOfFirst { node ->
+                node.currentMessage.toText().contains(initialSearchQuery, ignoreCase = true)
+            }
+            if (matchIndex >= 0) {
+                // Small delay to let the UI settle
+                delay(100)
+                chatListState.animateScrollToItem(matchIndex)
+            }
+        }
+    }
+    
+    // Track the last selected search provider index so we can restore it when toggling on
+    var lastProviderIndex by rememberSaveable { mutableStateOf(0) }
+    
+    // Update lastProviderIndex whenever currentSearchMode is Provider
+    LaunchedEffect(currentSearchMode) {
+        if (currentSearchMode is me.rerere.rikkahub.data.model.AssistantSearchMode.Provider) {
+            lastProviderIndex = currentSearchMode.index
+        }
+    }
+
+
+    fun navigateToAssistantConversation(selectedAssistant: Assistant) {
+        scope.launch {
+            val draft = inputState.toDraft()
+            val newConversation = vm.createConversationForAssistant(selectedAssistant.id)
+            ChatSessionDraftStore.moveDraft(
+                fromConversationId = conversation.id,
+                toConversationId = newConversation.id,
+                draft = draft,
+            )
+            val draftNavigation = buildAssistantSwitchNavigation(
+                persistenceMode = activePersistenceMode,
+            )
+            navigateToChatPage(
+                navController = navController,
+                chatId = newConversation.id,
+                initText = draftNavigation.initText,
+                initFiles = draftNavigation.initFiles.map(String::toUri),
+                persistenceMode = draftNavigation.persistenceMode,
+            )
+        }
+    }
+
+    LaunchedEffect(conversation.id, initialSearchQuery) {
+        chatSearchQuery = initialSearchQuery.orEmpty()
+    }
+
+    fun startChatShareSelection() {
+        showToolbarOverflowMenu = false
+        previewMode = false
+        selectedChatShareItems = conversation.messageNodes.map { it.id }.toSet()
+        isChatShareSelecting = true
+    }
+
+    fun cancelChatShareSelection() {
+        isChatShareSelecting = false
+        selectedChatShareItems = emptySet()
+    }
+
+    fun confirmChatShareSelection() {
+        isChatShareSelecting = false
+        if (selectedChatShareItems.isNotEmpty()) {
+            showExportSheet = true
+        }
+    }
+
+
+    LaunchedEffect(loadingJob) {
+        inputState.loading = loadingJob != null
+    }
+
+    AssistantChatTheme(assistant = currentAssistant) {
+        CompositionLocalProvider(LocalLastChatBlur provides blur) {
+            Surface(
+                color = if (renderBackground) {
+                    MaterialTheme.colorScheme.background
+                } else {
+                    Color.Transparent
+                },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (renderBackground) {
+                        AssistantBackground(
+                            assistant = currentAssistant,
+                            modifier = Modifier.lastChatBlurSource()
+                        )
+                    }
+                    Scaffold(
+                topBar = if (toolbarPlacement == ChatToolbarPlacement.Top) {
+                    {
+                        ChatToolbar(
+                            placement = ChatToolbarPlacement.Top,
+                            settings = setting,
+                            currentAssistant = currentAssistant,
+                            conversationInitialized = conversationInitialized,
+                            conversation = conversation,
+                            bigScreen = bigScreen,
+                            drawerState = drawerState,
+                            previewMode = previewMode,
+                            isTemporaryChat = isTemporaryChat,
+                            currentChatModel = currentChatModel,
+                            isGenerating = isGenerating,
+                            showCloseAction = previewMode || isChatShareSelecting,
+                            showTopFade = true,
+                            vm = vm,
+                            contextUsage = contextMeterUsage,
+                            onContextMeterClick = {
+                                showToolbarOverflowMenu = false
+                                showContextUsagePopup = !showContextUsagePopup
+                            },
+                            onNewChat = {
+                                navigateToChatPage(navController)
+                            },
+                            onOpenOverflowMenu = {
+                                showContextUsagePopup = false
+                                showToolbarOverflowMenu = !showToolbarOverflowMenu
+                            },
+                            onCloseAction = {
+                                showToolbarOverflowMenu = false
+                                if (previewMode) {
+                                    previewMode = false
+                                }
+                                if (isChatShareSelecting) {
+                                    cancelChatShareSelection()
+                                }
+                            },
+                            onUpdateSettings = { newSettings ->
+                                vm.updateSettings(newSettings)
+                            },
+                            onSwitchAssistant = { assistant ->
+                                navigateToAssistantConversation(assistant)
+                            },
+                            onToggleTemporaryChat = {
+                                onManualTemporaryChatChange(!manualTemporaryChat)
+                            }
+                        )
+                    }
+                } else {
+                    {
+                        ChatTopFadeOverlay(
+                            fadeHeight = chatBottomToolbarTopFadeHeight,
+                        )
+                    }
+                },
+                // Input is rendered manually at the bottom of the screen
+                containerColor = Color.Transparent,
+                contentWindowInsets = WindowInsets(0.dp)
+            ) { _ ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    val recentlyRestoredNodeIds = vm.recentlyRestoredNodeIds.collectAsStateWithLifecycle().value
+                    val conversationSnapshots = remember { mutableMapOf<Uuid, Conversation>() }
+                    val chatListStateSnapshots = remember { mutableMapOf<Uuid, LazyListState>() }
+                    val searchQuerySnapshots = remember { mutableMapOf<Uuid, String?>() }
+                    SideEffect {
+                        conversationSnapshots[conversation.id] = conversation
+                        chatListStateSnapshots[conversation.id] = chatListState
+                        searchQuerySnapshots[conversation.id] = initialSearchQuery
+                    }
+                    AnimatedContent(
+                        targetState = conversation.id,
+                        transitionSpec = {
+                            if (initialState == targetState) {
+                                fadeIn(animationSpec = tween(0)) togetherWith fadeOut(animationSpec = tween(0))
+                            } else {
+                                fadeIn(animationSpec = tween(150)) togetherWith fadeOut(animationSpec = tween(110))
+                            }
+                        },
+                        label = "chat_conversation_content",
+                        modifier = Modifier.fillMaxSize(),
+                    ) { targetConversationId ->
+                        val frameConversation = if (targetConversationId == conversation.id) {
+                            conversation
+                        } else {
+                            conversationSnapshots[targetConversationId] ?: Conversation.ofId(targetConversationId)
+                        }
+                        val frameListState = if (targetConversationId == conversation.id) {
+                            chatListState
+                        } else {
+                            chatListStateSnapshots.getOrPut(targetConversationId) { LazyListState() }
+                        }
+                        val frameInitialSearchQuery = if (targetConversationId == conversation.id) {
+                            initialSearchQuery
+                        } else {
+                            searchQuerySnapshots[targetConversationId]
+                        }
+                        CompositionLocalProvider(
+                            LocalChatAnimationsEnabled provides chatAnimationsEnabled
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        alpha = if (targetConversationId != conversation.id || chatListReady) 1f else 0f
+                                    }
+                            ) {
+                                ChatList(
+                                    innerPadding = PaddingValues(
+                                        top = chatListTopPadding(toolbarPlacement, statusBarTopPadding),
+                                        bottom = chatListBottomPadding(toolbarPlacement)
+                                    ),
+                                    conversation = frameConversation,
+                                    state = frameListState,
+                                    loading = targetConversationId == conversation.id && loadingJob != null,
+                                    previewMode = previewMode,
+                                    settings = setting,
+                                    recentlyRestoredNodeIds = recentlyRestoredNodeIds,
+                                    initialSearchQuery = frameInitialSearchQuery,
+                                    searchQuery = chatSearchQuery,
+                                    onSearchQueryChange = { chatSearchQuery = it },
+                                    shareSelecting = isChatShareSelecting,
+                                    selectedShareItems = selectedChatShareItems,
+                                    onSelectedShareItemsChange = { selectedChatShareItems = it },
+                                    contentMaxWidth = contentMaxWidth,
+                                    onJumpToMessage = { index ->
+                                        previewMode = false
+                                        scope.launch {
+                                            // Wait for AnimatedContent transition to complete before scrolling
+                                            delay(350)
+                                            frameListState.animateScrollToItem(index)
+                                        }
+                                    },
+                                    onRegenerate = { message ->
+                                        if (message.role == me.rerere.ai.core.MessageRole.USER) {
+                                            // User message regeneration always truncates - show confirmation
+                                            pendingUserRegenerateMessage = message
+                                            showUserRegenerateConfirmDialog = true
+                                        } else {
+                                            vm.regenerateAtMessage(message)
+                                        }
+                                    },
+                                    onEdit = {
+                                        inputState.editingMessage = it.id
+                                        inputState.setContents(it.parts)
+                                    },
+                                    onDelete = { message ->
+                                        scope.launch {
+                                            val backup = frameConversation
+                                            val removedIds = vm.deleteMessage(message)
+                                            toaster.show(
+                                                message = context.getString(R.string.message_deleted),
+                                                action = me.rerere.rikkahub.ui.components.ui.ToastAction(
+                                                    label = context.getString(R.string.undo),
+                                                    onClick = {
+                                                        vm.updateConversation(backup)
+                                                        vm.markNodesAsRestored(removedIds)
+                                                    }
+                                                )
+                                            )
+                                        }
+                                    },
+                                    onUpdateMessage = { newNode ->
+                                        val oldNode = frameConversation.messageNodes.find { it.id == newNode.id }
+                                        if (oldNode != null) {
+                                            if (oldNode.selectIndex != newNode.selectIndex) {
+                                                vm.selectMessageNode(newNode.id, newNode.selectIndex)
+                                            } else {
+                                                vm.updateConversation(
+                                                    frameConversation.copy(
+                                                        messageNodes = frameConversation.messageNodes.map { node ->
+                                                            if (node.id == newNode.id) {
+                                                                newNode
+                                                            } else {
+                                                                node
+                                                            }
+                                                        }
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onForkMessage = {
+                                        scope.launch {
+                                            val forkConversation = vm.forkMessage(it)
+                                            if (forkConversation != null) {
+                                                navigateToChatPage(navController, forkConversation.id)
+                                            }
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                ChatExportSheet(
+                    visible = showExportSheet,
+                    onDismissRequest = {
+                        showExportSheet = false
+                        selectedChatShareItems = emptySet()
+                    },
+                    conversation = conversation,
+                    selectedMessages = conversation.messageNodes
+                        .filter { it.id in selectedChatShareItems }
+                        .map { it.currentMessage }
+                )
+
+                val hasConversationContent = hasConversationMessages(conversation)
+                val hasAnyPresetMessages = hasConversationPresetMessages(conversation, currentAssistant)
+                val effectiveDisplaySetting = setting.getEffectiveDisplaySetting(currentAssistant)
+                val scrollToBottomRevealThresholdPx = with(density) { 72.dp.roundToPx() }
+                val showScrollToBottomButton by remember(
+                    chatListState,
+                    previewMode,
+                    hasConversationContent,
+                    scrollToBottomRevealThresholdPx,
+                ) {
+                    derivedStateOf {
+                        if (previewMode || !hasConversationContent) {
+                            false
+                        } else {
+                            val layoutInfo = chatListState.layoutInfo
+                            val totalItems = layoutInfo.totalItemsCount
+                            if (totalItems <= 0) {
+                                false
+                            } else {
+                                val lastContentIndex = (totalItems - 2).coerceAtLeast(0)
+                                val lastContentItem = layoutInfo.visibleItemsInfo
+                                    .firstOrNull { it.index == lastContentIndex }
+                                val lastContentBottom = lastContentItem?.let { it.offset + it.size }
+                                val isNearBottom = lastContentBottom != null &&
+                                    lastContentBottom <= layoutInfo.viewportEndOffset + scrollToBottomRevealThresholdPx
+                                chatListState.canScrollForward && !isNearBottom
+                            }
+                        }
+                    }
+                }
+                
+                // Temporary chat overlay
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isTemporaryChat && !hasConversationContent && !hasAnyPresetMessages,
+                    enter = androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.fadeOut(),
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.HistoryToggleOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                        Text(
+                            text = stringResource(R.string.temporary_chat_description),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+                
+                val headerStyle = effectiveDisplaySetting.newChatHeaderStyle
+                val contentStyle = effectiveDisplaySetting.newChatContentStyle
+                val showNewChatContent = headerStyle != me.rerere.rikkahub.data.datastore.NewChatHeaderStyle.NONE || contentStyle != me.rerere.rikkahub.data.datastore.NewChatContentStyle.NONE
+                val showModeComposer = previewMode || isChatShareSelecting
+                
+                // Detect keyboard visibility
+                val isKeyboardOpen = WindowInsets.isImeVisible
+                
+                // Hide new chat content when keyboard is open or text/media is in input
+                val hasTextInput = inputState.textContent.text.isNotEmpty() || inputState.messageContent.isNotEmpty()
+                val shouldShowNewChatContent = shouldShowNewChatContent(
+                    isTemporaryChat = isTemporaryChat,
+                    hasConversationMessages = hasConversationContent,
+                    hasAnyPresetMessages = hasAnyPresetMessages,
+                    showNewChatContent = showNewChatContent,
+                    hasTextInput = hasTextInput,
+                    isKeyboardOpen = isKeyboardOpen,
+                ) && !showModeComposer
+                
+                // State for assistant picker triggered from header avatar
+                var showHeaderAssistantPicker by remember { mutableStateOf(false) }
+                
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = shouldShowNewChatContent,
+                    enter = androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .offset(y = 28.dp)
+                ) {
+                    NewChatContent(
+                        assistant = currentAssistant,
+                        headerStyle = headerStyle,
+                        contentStyle = contentStyle,
+                        showAvatarInHeader = effectiveDisplaySetting.newChatShowAvatar,
+                        hasBackgroundImage = currentAssistant.background != null,
+                        onTemplateClick = { prompt ->
+                            // Set text and focus the input field to show keyboard
+                            inputState.setMessageTextAndFocus(prompt, scope)
+                        },
+                        onNavigateToImageGen = {
+                            navController.navigate(Screen.ImageGen)
+                        },
+                        onAvatarClick = {
+                            showHeaderAssistantPicker = true
+                        }
+                    )
+                }
+                
+                // Assistant picker sheet triggered from header avatar
+                if (showHeaderAssistantPicker) {
+                    me.rerere.rikkahub.ui.components.ai.AssistantPickerSheet(
+                        settings = setting,
+                        currentAssistant = currentAssistant,
+                        onAssistantSelected = { selectedAssistant ->
+                            vm.setSelectedAssistant(selectedAssistant.id)
+                        },
+                        onNavigate = { selectedAssistant ->
+                            showHeaderAssistantPicker = false
+                            navigateToAssistantConversation(selectedAssistant)
+                        },
+                        onDismiss = { showHeaderAssistantPicker = false }
+                    )
+                }
+
+                // User message regeneration confirmation dialog
+                if (showUserRegenerateConfirmDialog && pendingUserRegenerateMessage != null) {
+                    AlertDialog(
+                        onDismissRequest = {
+                            showUserRegenerateConfirmDialog = false
+                            pendingUserRegenerateMessage = null
+                        },
+                        title = { Text(stringResource(R.string.chat_regenerate_user_message_title)) },
+                        text = {
+                            Text(stringResource(R.string.chat_regenerate_user_message_warning))
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    pendingUserRegenerateMessage?.let { message ->
+                                        vm.regenerateAtMessage(message)
+                                    }
+                                    showUserRegenerateConfirmDialog = false
+                                    pendingUserRegenerateMessage = null
+                                }
+                            ) {
+                                Text(stringResource(R.string.regenerate))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = {
+                                    showUserRegenerateConfirmDialog = false
+                                    pendingUserRegenerateMessage = null
+                                }
+                            ) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                        }
+                    )
+                }
+
+                // Gradient behind floating toolbar - hidden when showing new chat content
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = hasConversationContent || hasAnyPresetMessages || isTemporaryChat || !showNewChatContent,
+                    enter = androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.fadeOut(),
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(
+                                brush = if (toolbarPlacement == ChatToolbarPlacement.Bottom) {
+                                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            MaterialTheme.colorScheme.background.copy(alpha = 0.72f),
+                                            MaterialTheme.colorScheme.background.copy(alpha = 0.97f)
+                                        )
+                                    )
+                                } else {
+                                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            MaterialTheme.colorScheme.background.copy(alpha = 0.92f)
+                                        )
+                                    )
+                                }
+                            )
+                    )
+                }
+
+                val bottomToolbarContent: (@Composable () -> Unit)? = if (toolbarPlacement == ChatToolbarPlacement.Bottom) {
+                    {
+                        ChatToolbar(
+                            placement = ChatToolbarPlacement.Bottom,
+                            settings = setting,
+                            currentAssistant = currentAssistant,
+                            conversationInitialized = conversationInitialized,
+                            conversation = conversation,
+                            bigScreen = bigScreen,
+                            drawerState = drawerState,
+                            previewMode = previewMode,
+                            isTemporaryChat = isTemporaryChat,
+                            currentChatModel = currentChatModel,
+                            isGenerating = isGenerating,
+                            showCloseAction = previewMode || isChatShareSelecting,
+                            vm = vm,
+                            contextUsage = contextMeterUsage,
+                            onContextMeterClick = {
+                                showToolbarOverflowMenu = false
+                                showContextUsagePopup = !showContextUsagePopup
+                            },
+                            onNewChat = {
+                                navigateToChatPage(navController)
+                            },
+                            onOpenOverflowMenu = {
+                                showContextUsagePopup = false
+                                showToolbarOverflowMenu = !showToolbarOverflowMenu
+                            },
+                            onCloseAction = {
+                                showToolbarOverflowMenu = false
+                                if (previewMode) {
+                                    previewMode = false
+                                }
+                                if (isChatShareSelecting) {
+                                    cancelChatShareSelection()
+                                }
+                            },
+                            onUpdateSettings = { newSettings ->
+                                vm.updateSettings(newSettings)
+                            },
+                            onSwitchAssistant = { assistant ->
+                                navigateToAssistantConversation(assistant)
+                            },
+                            onToggleTemporaryChat = {
+                                onManualTemporaryChatChange(!manualTemporaryChat)
+                            }
+                        )
+                    }
+                } else {
+                    null
+                }
+
+                if (showModeComposer) {
+                    ChatModeBottomControls(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .then(
+                                if (inputMaxWidth != Dp.Unspecified) {
+                                    Modifier.widthIn(max = inputMaxWidth)
+                                } else {
+                                    Modifier
+                                }
+                            ),
+                        showSearch = previewMode,
+                        searchQuery = chatSearchQuery,
+                        onSearchQueryChange = { chatSearchQuery = it },
+                        showShareSelection = isChatShareSelecting,
+                        selectedCount = selectedChatShareItems.size,
+                        allSelected = selectedChatShareItems.isNotEmpty() &&
+                            selectedChatShareItems.size == conversation.messageNodes.size,
+                        onCancelShareSelection = { cancelChatShareSelection() },
+                        onToggleSelectAll = {
+                            selectedChatShareItems = if (selectedChatShareItems.isNotEmpty()) {
+                                emptySet()
+                            } else {
+                                conversation.messageNodes.map { it.id }.toSet()
+                            }
+                        },
+                        onConfirmShareSelection = { confirmChatShareSelection() },
+                        bottomAccessory = bottomToolbarContent,
+                        bottomPadding = if (toolbarPlacement == ChatToolbarPlacement.Bottom) 12.dp else 24.dp,
+                    )
+                } else {
+                    MinimalChatInput(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .then(
+                            if (inputMaxWidth != Dp.Unspecified) {
+                                Modifier.widthIn(max = inputMaxWidth)
+                            } else {
+                                Modifier
+                            }
+                        ),
+                    state = inputState,
+                    settings = setting,
+                    conversation = conversation,
+                    mcpManager = vm.mcpManager,
+                    chatSuggestions = conversation.chatSuggestions,
+                    onClickSuggestion = { suggestion ->
+                        if (currentChatModel != null) {
+                            vm.handleMessageSend(
+                                listOf(me.rerere.ai.ui.UIMessagePart.Text(suggestion)),
+                                persistenceMode = activePersistenceMode
+                            )
+                        } else {
+                            toaster.show(modelRequiredMessage, type = ToastType.Error)
+                        }
+                    },
+                    onCancelClick = {
+                        vm.stopGeneration()
+                        loadingJob?.cancel()
+                    },
+                    enableSearch = enableWebSearch,
+                    onToggleSearch = {
+                        if (enableWebSearch) {
+                            vm.updateAssistantSearchMode(me.rerere.rikkahub.data.model.AssistantSearchMode.Off)
+                        } else {
+                            if (setting.searchServices.isNotEmpty()) {
+                                val validIndex = lastProviderIndex.coerceIn(0, setting.searchServices.lastIndex)
+                                vm.updateAssistantSearchMode(me.rerere.rikkahub.data.model.AssistantSearchMode.Provider(validIndex))
+                            }
+                        }
+                    },
+                    onSendClick = {
+                        if (inputState.isEditing()) {
+                            vm.handleMessageEdit(
+                                parts = inputState.getContents(),
+                                messageId = inputState.editingMessage!!,
+                            )
+                        } else {
+                            if (currentChatModel == null) {
+                                toaster.show(modelRequiredMessage, type = ToastType.Error)
+                                return@MinimalChatInput
+                            }
+                            vm.handleMessageSend(
+                                inputState.getContents(),
+                                persistenceMode = activePersistenceMode
+                            )
+                        }
+                        inputState.clearInput()
+                    },
+                    onLongSendClick = {
+                        if (inputState.isEditing()) {
+                            vm.handleMessageEdit(
+                                parts = inputState.getContents(),
+                                messageId = inputState.editingMessage!!,
+                            )
+                        } else {
+                            if (currentChatModel == null) {
+                                toaster.show(modelRequiredMessage, type = ToastType.Error)
+                                return@MinimalChatInput
+                            }
+                            vm.handleMessageSend(
+                                content = inputState.getContents(),
+                                answer = false,
+                                persistenceMode = activePersistenceMode
+                            )
+                        }
+                        inputState.clearInput()
+                    },
+                    onUpdateChatModel = {
+                        vm.setChatModel(it)
+                    },
+                    onUpdateAssistant = {
+                        vm.updateConversationAssistant(it)
+                    },
+                    onUpdateSearchService = { index ->
+                        vm.updateAssistantSearchMode(me.rerere.rikkahub.data.model.AssistantSearchMode.Provider(index))
+                    },
+                    onClearContext = {
+                        vm.handleMessageTruncate()
+                    },
+                    onUpdateConversation = { updatedConversation ->
+                        vm.updateConversation(updatedConversation)
+                    },
+                    onToolApproval = { toolCallId, approved, reason, answer ->
+                        vm.handleToolApproval(
+                            toolCallId = toolCallId,
+                            approved = approved,
+                            reason = reason,
+                            answer = answer,
+                        )
+                    },
+                    onNavigateToLorebook = { lorebookId ->
+                        navController.navigate(Screen.SettingLorebookDetail(lorebookId))
+                    },
+                    onRefreshContext = { vm.refreshContext() },
+                    onDeleteFile = { vm.deleteFile(it) },
+                    bottomAccessory = bottomToolbarContent,
+                    showScrollToBottomButton = showScrollToBottomButton,
+                    onScrollToBottomClick = {
+                        scope.launch {
+                            val targetIndex = (chatListState.layoutInfo.totalItemsCount - 1)
+                                .coerceAtLeast(0)
+                            chatListState.animateScrollToItem(targetIndex)
+                        }
+                    },
+                    bottomPadding = if (toolbarPlacement == ChatToolbarPlacement.Bottom) 12.dp else 24.dp,
+                )
+                }
+
+                }
+            }
+
+            // Popups are siblings placed after Scaffold so its top fade can never draw over them.
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showContextUsagePopup && contextMeterUsage != null,
+                enter = if (reduceMotion) {
+                    fadeIn(tween(90))
+                } else fadeIn(
+                    animationSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = 0.75f,
+                        stiffness = 360f,
+                    )
+                ),
+                exit = if (reduceMotion) {
+                    fadeOut(tween(80))
+                } else fadeOut(
+                    animationSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = 0.85f,
+                        stiffness = 420f,
+                    )
+                ),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                val popupScale by transition.animateFloat(
+                    transitionSpec = {
+                        if (targetState == EnterExitState.Visible) {
+                            androidx.compose.animation.core.spring(
+                                dampingRatio = 0.75f,
+                                stiffness = 360f,
+                            )
+                        } else {
+                            androidx.compose.animation.core.spring(
+                                dampingRatio = 0.85f,
+                                stiffness = 420f,
+                            )
+                        }
+                    },
+                    label = "chat_context_usage_popup_scale",
+                ) { state ->
+                    if (reduceMotion || state == EnterExitState.Visible) 1f else 0.96f
+                }
+                contextMeterUsage?.let { usage ->
+                    ContextUsageOverlay(
+                        usage = usage,
+                        activity = contextManagementActivity,
+                        placement = toolbarPlacement,
+                        popupScale = popupScale,
+                        model = currentChatModel,
+                        onUpdateModelLimit = { newLimit ->
+                            currentChatModel?.let { model ->
+                                vm.updateModelContextLimit(model.id, newLimit)
+                            }
+                        },
+                        onDismissRequest = { showContextUsagePopup = false },
+                    )
+                }
+            }
+
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showToolbarOverflowMenu,
+                enter = fadeIn(
+                    animationSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = 0.75f,
+                        stiffness = 360f,
+                    )
+                ),
+                exit = fadeOut(
+                    animationSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = 0.85f,
+                        stiffness = 420f,
+                    )
+                ),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                val menuScale by transition.animateFloat(
+                    transitionSpec = {
+                        if (targetState == EnterExitState.Visible) {
+                            androidx.compose.animation.core.spring(
+                                dampingRatio = 0.75f,
+                                stiffness = 360f,
+                            )
+                        } else {
+                            androidx.compose.animation.core.spring(
+                                dampingRatio = 0.85f,
+                                stiffness = 420f,
+                            )
+                        }
+                    },
+                    label = "chat_toolbar_overflow_menu_scale",
+                ) { state ->
+                    if (state == EnterExitState.Visible) 1f else 0.96f
+                }
+                ChatToolbarOverflowMenu(
+                    placement = toolbarPlacement,
+                    menuScale = menuScale,
+                    previewMode = previewMode,
+                    hasConversationContent = conversation.messageNodes.isNotEmpty(),
+                    chatListState = chatListState,
+                    onDismissRequest = { showToolbarOverflowMenu = false },
+                    onSearchClick = {
+                        showToolbarOverflowMenu = false
+                        previewMode = !previewMode
+                    },
+                    onShareClick = { startChatShareSelection() },
+                )
+            }
+        }
+        }
+    }
+
+}
+
+}
+
+@Composable
+private fun ChatToolbarIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    size: Dp,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    val haptics = rememberPremiumHaptics()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isPressed) 0.85f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.6f,
+            stiffness = 300f
+        ),
+        label = "chat_toolbar_icon_scale"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(size)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(RoundedCornerShape(999.dp))
+            .let { modifier ->
+                if (enabled) {
+                    modifier.clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = {
+                            haptics.perform(HapticPattern.Pop)
+                            onClick()
+                        }
+                    )
+                } else {
+                    modifier
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, contentDescription = contentDescription)
+    }
+}
+
+@Composable
+private fun ChatModeBottomControls(
+    showSearch: Boolean,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    showShareSelection: Boolean,
+    selectedCount: Int,
+    allSelected: Boolean,
+    onCancelShareSelection: () -> Unit,
+    onToggleSelectAll: () -> Unit,
+    onConfirmShareSelection: () -> Unit,
+    bottomAccessory: (@Composable () -> Unit)?,
+    bottomPadding: Dp,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Column(
+            modifier = Modifier
+                .imePadding()
+                .navigationBarsPadding()
+                .padding(bottom = bottomPadding, start = 16.dp, end = 16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        ) {
+            AnimatedContent(
+                targetState = when {
+                    showSearch -> "search"
+                    showShareSelection -> "share"
+                    else -> "none"
+                },
+                transitionSpec = {
+                    (fadeIn(animationSpec = tween(120)) + scaleIn(
+                        initialScale = 0.98f,
+                        animationSpec = tween(120)
+                    )) togetherWith (fadeOut(animationSpec = tween(90)) + scaleOut(
+                        targetScale = 0.98f,
+                        animationSpec = tween(90)
+                    ))
+                },
+                label = "chat_mode_composer"
+            ) { mode ->
+                when (mode) {
+                    "search" -> ChatSearchModeBar(
+                        query = searchQuery,
+                        onQueryChange = onSearchQueryChange,
+                    )
+                    "share" -> ChatShareSelectionModeBar(
+                        selectedCount = selectedCount,
+                        allSelected = allSelected,
+                        onCancel = onCancelShareSelection,
+                        onToggleSelectAll = onToggleSelectAll,
+                        onConfirm = onConfirmShareSelection,
+                    )
+                    else -> Spacer(Modifier.height(56.dp))
+                }
+            }
+
+            bottomAccessory?.invoke()
+        }
+    }
+}
+
+@Composable
+private fun ChatSearchModeBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
+    val searchFieldShape = me.rerere.rikkahub.ui.theme.AppShapes.SearchField
+    val containerColor = MaterialTheme.colorScheme.surfaceContainer
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = AppSize.ChromeBar)
+            .lastChatBlurEffect(containerColor, searchFieldShape),
+        shape = searchFieldShape,
+        color = blurredContainerColor(containerColor),
+        border = lastChatSoftEdgeBorder()
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Search messages") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = stringResource(R.string.clear_search),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            shape = searchFieldShape,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                disabledBorderColor = Color.Transparent,
+            ),
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun ChatShareSelectionModeBar(
+    selectedCount: Int,
+    allSelected: Boolean,
+    onCancel: () -> Unit,
+    onToggleSelectAll: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val haptics = rememberPremiumHaptics()
+    val shape = AppShapes.ButtonPill
+    val containerColor = MaterialTheme.colorScheme.surfaceContainer
+    Surface(
+        shape = shape,
+        color = blurredContainerColor(containerColor),
+        border = lastChatSoftEdgeBorder(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(AppSize.ChromeBar)
+            .lastChatBlurEffect(containerColor, shape)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)
+        ) {
+            Tooltip(tooltip = { Text(stringResource(R.string.chat_clear_selection)) }) {
+                IconButton(
+                    modifier = Modifier.size(AppSize.ChromePill),
+                    onClick = {
+                        haptics.perform(HapticPattern.Pop)
+                        onCancel()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = selectedCount.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            Tooltip(tooltip = { Text(stringResource(R.string.select_all)) }) {
+                IconButton(
+                    modifier = Modifier.size(AppSize.ChromePill),
+                    onClick = {
+                        haptics.perform(HapticPattern.Pop)
+                        onToggleSelectAll()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.SelectAll,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = if (allSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+
+            Tooltip(tooltip = { Text(stringResource(R.string.confirm)) }) {
+                FilledIconButton(
+                    modifier = Modifier.size(AppSize.ChromePill),
+                    enabled = selectedCount > 0,
+                    onClick = {
+                        haptics.perform(HapticPattern.Success)
+                        onConfirm()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatToolbarOverflowMenu(
+    placement: ChatToolbarPlacement,
+    menuScale: Float,
+    previewMode: Boolean,
+    hasConversationContent: Boolean,
+    chatListState: LazyListState,
+    onDismissRequest: () -> Unit,
+    onSearchClick: () -> Unit,
+    onShareClick: () -> Unit,
+) {
+    BackHandler(onBack = onDismissRequest)
+
+    var dragDismissInProgress by remember { mutableStateOf(false) }
+    val scrimInteractionSource = remember { MutableInteractionSource() }
+    val menuShape = AppShapes.CardMedium
+    val containerColor = MaterialTheme.colorScheme.surfaceContainer
+    val border = lastChatSoftEdgeBorder()
+    val menuTopPadding = chatToolbarPopupTopPadding(placement)
+    val menuBottomPadding = chatToolbarPopupBottomPadding(placement)
+    val scrimAlpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (dragDismissInProgress) 0f else 0.16f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.85f,
+            stiffness = 420f
+        ),
+        label = "chat_toolbar_menu_scrim_alpha"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = scrimAlpha))
+            .clickable(
+                interactionSource = scrimInteractionSource,
+                indication = null,
+                onClick = onDismissRequest
+            )
+            .pointerInput(chatListState) {
+                detectDragGestures(
+                    onDragStart = {
+                        dragDismissInProgress = true
+                    },
+                    onDragEnd = {
+                        dragDismissInProgress = false
+                        onDismissRequest()
+                    },
+                    onDragCancel = {
+                        dragDismissInProgress = false
+                        onDismissRequest()
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        chatListState.dispatchRawDelta(-dragAmount.y)
+                    }
+                )
+            }
+    ) {
+        if (!dragDismissInProgress) {
+            Surface(
+                shape = menuShape,
+                color = blurredContainerColor(containerColor),
+                border = border,
+                modifier = Modifier
+                    .align(
+                        if (placement == ChatToolbarPlacement.Top) {
+                            Alignment.TopEnd
+                        } else {
+                            Alignment.BottomEnd
+                        }
+                    )
+                    .then(
+                        if (placement == ChatToolbarPlacement.Top) {
+                            Modifier.statusBarsPadding()
+                        } else {
+                            Modifier.navigationBarsPadding()
+                        }
+                    )
+                    .padding(top = menuTopPadding, bottom = menuBottomPadding, end = 16.dp)
+                    .widthIn(min = 196.dp, max = 260.dp)
+                    .graphicsLayer {
+                        scaleX = 1f
+                        scaleY = menuScale
+                        transformOrigin = chatToolbarPopupTransformOrigin(placement)
+                    }
+                    .lastChatBlurEffect(containerColor, menuShape)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {}
+                    )
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp)
+                ) {
+                    ChatToolbarOverflowMenuItem(
+                        label = stringResource(R.string.search_ability_search),
+                        icon = if (previewMode) Icons.Rounded.Close else Icons.Rounded.Search,
+                        onClick = onSearchClick
+                    )
+                    ChatToolbarOverflowMenuItem(
+                        label = stringResource(R.string.share),
+                        icon = Icons.Rounded.Share,
+                        enabled = hasConversationContent,
+                        onClick = onShareClick
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatToolbarOverflowMenuItem(
+    label: String,
+    icon: ImageVector,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    val haptics = rememberPremiumHaptics()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isPressed && enabled) 0.98f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.6f,
+            stiffness = 300f
+        ),
+        label = "chat_toolbar_menu_item_scale"
+    )
+    val contentColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(
+                enabled = enabled,
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {
+                    haptics.perform(HapticPattern.Pop)
+                    onClick()
+                }
+            )
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = contentColor
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+private enum class TopBarActionMode {
+    CompactNewChat,
+    NewChat,
+    TemporaryNewChat,
+    InChat,
+}
+
+private data class TopBarActionState(
+    val mode: TopBarActionMode,
+    val assistantId: Uuid?,
+    val showCloseAction: Boolean,
+)
+
+private val DefaultTopBarActionState = TopBarActionState(
+    mode = TopBarActionMode.InChat,
+    assistantId = null,
+    showCloseAction = false,
+)
+
+@Composable
+private fun ChatToolbarActionPill(
+    actionState: TopBarActionState,
+    currentAssistant: Assistant,
+    topPillSize: Dp,
+    buttonShape: RoundedCornerShape,
+    containerColor: Color,
+    border: BorderStroke,
+    onNewChat: () -> Unit,
+    onOpenOverflowMenu: () -> Unit,
+    onCloseAction: () -> Unit,
+    onToggleTemporaryChat: () -> Unit,
+    onOpenAssistantPicker: () -> Unit,
+) {
+    val fullPillWidth = topPillSize * 2f
+    val targetWidth = if (actionState.mode == TopBarActionMode.CompactNewChat) {
+        topPillSize
+    } else {
+        fullPillWidth
+    }
+    val pillWidth by androidx.compose.animation.core.animateDpAsState(
+        targetValue = targetWidth,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.6f,
+            stiffness = 300f
+        ),
+        label = "top_pill_width"
+    )
+    val compactAlpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (actionState.mode == TopBarActionMode.CompactNewChat) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.6f,
+            stiffness = 300f
+        ),
+        label = "top_pill_compact_alpha"
+    )
+    val newChatAlpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (actionState.mode == TopBarActionMode.NewChat) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.6f,
+            stiffness = 300f
+        ),
+        label = "top_pill_new_chat_alpha"
+    )
+    val temporaryAlpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (actionState.mode == TopBarActionMode.TemporaryNewChat) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.6f,
+            stiffness = 300f
+        ),
+        label = "top_pill_temporary_alpha"
+    )
+    val inChatAlpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (actionState.mode == TopBarActionMode.InChat) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.6f,
+            stiffness = 300f
+        ),
+        label = "top_pill_in_chat_alpha"
+    )
+
+    Surface(
+        shape = buttonShape,
+        color = blurredContainerColor(containerColor),
+        border = border,
+        modifier = Modifier
+            .size(width = pillWidth, height = topPillSize)
+            .clip(buttonShape)
+            .lastChatBlurEffect(containerColor, buttonShape)
+    ) {
+        Box(Modifier.fillMaxSize()) {
+            if (compactAlpha > 0f) {
+                ChatToolbarCompactLayer(
+                    alpha = compactAlpha,
+                    enabled = actionState.mode == TopBarActionMode.CompactNewChat,
+                    topPillSize = topPillSize,
+                    onToggleTemporaryChat = onToggleTemporaryChat
+                )
+            }
+            if (newChatAlpha > 0f) {
+                ChatToolbarNewChatLayer(
+                    alpha = newChatAlpha,
+                    enabled = actionState.mode == TopBarActionMode.NewChat,
+                    topPillSize = topPillSize,
+                    fullPillWidth = fullPillWidth,
+                    currentAssistant = currentAssistant,
+                    temporary = false,
+                    onToggleTemporaryChat = onToggleTemporaryChat,
+                    onOpenAssistantPicker = onOpenAssistantPicker
+                )
+            }
+            if (temporaryAlpha > 0f) {
+                ChatToolbarNewChatLayer(
+                    alpha = temporaryAlpha,
+                    enabled = actionState.mode == TopBarActionMode.TemporaryNewChat,
+                    topPillSize = topPillSize,
+                    fullPillWidth = fullPillWidth,
+                    currentAssistant = currentAssistant,
+                    temporary = true,
+                    onToggleTemporaryChat = onToggleTemporaryChat,
+                    onOpenAssistantPicker = onOpenAssistantPicker
+                )
+            }
+            if (inChatAlpha > 0f) {
+                ChatToolbarInChatLayer(
+                    alpha = inChatAlpha,
+                    enabled = actionState.mode == TopBarActionMode.InChat,
+                    topPillSize = topPillSize,
+                    fullPillWidth = fullPillWidth,
+                    showCloseAction = actionState.showCloseAction,
+                    onNewChat = onNewChat,
+                    onOpenOverflowMenu = onOpenOverflowMenu,
+                    onCloseAction = onCloseAction
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.ChatToolbarCompactLayer(
+    alpha: Float,
+    enabled: Boolean,
+    topPillSize: Dp,
+    onToggleTemporaryChat: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .align(Alignment.CenterStart)
+            .size(topPillSize)
+            .graphicsLayer {
+                this.alpha = alpha
+                val layerScale = 0.92f + alpha * 0.08f
+                scaleX = layerScale
+                scaleY = layerScale
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        ChatToolbarIconButton(
+            icon = Icons.Rounded.HistoryToggleOff,
+            contentDescription = "Temporary Chat",
+            size = topPillSize,
+            enabled = enabled,
+            onClick = onToggleTemporaryChat
+        )
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.ChatToolbarNewChatLayer(
+    alpha: Float,
+    enabled: Boolean,
+    topPillSize: Dp,
+    fullPillWidth: Dp,
+    currentAssistant: Assistant,
+    temporary: Boolean,
+    onToggleTemporaryChat: () -> Unit,
+    onOpenAssistantPicker: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .align(Alignment.CenterStart)
+            .size(width = fullPillWidth, height = topPillSize)
+            .graphicsLayer {
+                this.alpha = alpha
+                val layerScale = 0.92f + alpha * 0.08f
+                scaleX = layerScale
+                scaleY = layerScale
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ChatToolbarIconButton(
+            icon = if (temporary) Icons.Rounded.History else Icons.Rounded.HistoryToggleOff,
+            contentDescription = if (temporary) "Make Normal Chat" else "Temporary Chat",
+            size = topPillSize,
+            enabled = enabled,
+            onClick = onToggleTemporaryChat
+        )
+        Box(
+            modifier = Modifier.size(topPillSize),
+            contentAlignment = Alignment.Center
+        ) {
+            me.rerere.rikkahub.ui.components.ui.UIAvatar(
+                name = currentAssistant.name.ifBlank { "Character" },
+                value = currentAssistant.avatar,
+                modifier = Modifier.size(30.dp),
+                onClick = if (enabled) onOpenAssistantPicker else null
+            )
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.ChatToolbarInChatLayer(
+    alpha: Float,
+    enabled: Boolean,
+    topPillSize: Dp,
+    fullPillWidth: Dp,
+    showCloseAction: Boolean,
+    onNewChat: () -> Unit,
+    onOpenOverflowMenu: () -> Unit,
+    onCloseAction: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .align(Alignment.CenterStart)
+            .size(width = fullPillWidth, height = topPillSize)
+            .graphicsLayer {
+                this.alpha = alpha
+                val layerScale = 0.92f + alpha * 0.08f
+                scaleX = layerScale
+                scaleY = layerScale
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ChatToolbarIconButton(
+            icon = Icons.Rounded.Add,
+            contentDescription = "New Message",
+            size = topPillSize,
+            enabled = enabled,
+            onClick = onNewChat
+        )
+        ChatToolbarIconButton(
+            icon = if (showCloseAction) Icons.Rounded.Close else Icons.Rounded.MoreVert,
+            contentDescription = if (showCloseAction) {
+                stringResource(R.string.banner_dismiss)
+            } else {
+                stringResource(R.string.more_options)
+            },
+            size = topPillSize,
+            enabled = enabled,
+            onClick = if (showCloseAction) onCloseAction else onOpenOverflowMenu
+        )
+    }
+}
+
+
+@Composable
+fun UpdatePill(
+    bigScreen: Boolean,
+    height: Dp,
+    onDismiss: () -> Unit,
+    onClick: () -> Unit
+) {
+    val haptics = me.rerere.rikkahub.ui.hooks.rememberPremiumHaptics()
+    val containerColor = MaterialTheme.colorScheme.primaryContainer
+    val contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    val pillShape = RoundedCornerShape(999.dp)
+
+    Surface(
+        onClick = {
+            haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Pop)
+            onClick()
+        },
+        shape = pillShape,
+        color = blurredContainerColor(containerColor),
+        contentColor = contentColor,
+        border = lastChatSoftEdgeBorder(),
+        modifier = Modifier
+            .height(height)
+            .lastChatBlurEffect(containerColor, pillShape)
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (bigScreen) stringResource(R.string.update_available) else "New Update",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor
+            )
+            
+            Spacer(Modifier.width(8.dp))
+            
+            IconButton(
+                onClick = {
+                    haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Pop)
+                    onDismiss()
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = "Dismiss",
+                    modifier = Modifier.size(16.dp),
+                    tint = contentColor
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatToolbar(
+    placement: ChatToolbarPlacement,
+    settings: Settings,
+    currentAssistant: Assistant,
+    conversationInitialized: Boolean,
+    conversation: Conversation,
+    drawerState: DrawerState,
+    bigScreen: Boolean,
+    previewMode: Boolean,
+    isTemporaryChat: Boolean,
+    currentChatModel: Model? = null,
+    isGenerating: Boolean = false,
+    showCloseAction: Boolean,
+    showTopFade: Boolean = true,
+    vm: ChatVM,
+    contextUsage: ContextUsageBreakdown?,
+    onContextMeterClick: () -> Unit,
+    onNewChat: () -> Unit,
+    onOpenOverflowMenu: () -> Unit,
+    onCloseAction: () -> Unit,
+    onUpdateSettings: (Settings) -> Unit,
+    onSwitchAssistant: (Assistant) -> Unit,
+    onToggleTemporaryChat: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val topContainerColor = MaterialTheme.colorScheme.surfaceContainer
+    val topContainerBorder = lastChatSoftEdgeBorder()
+    val buttonShape = AppShapes.ButtonPill
+    val topPillSize = AppSize.ChromePill
+    // State for assistant picker - must be at function level for proper recomposition
+    var showAssistantPicker by remember { mutableStateOf(false) }
+    val isEmpty = !conversation.messageNodes.any { it.role == me.rerere.ai.core.MessageRole.USER }
+    val rawActionMode = run {
+        val hasPresetMessages = currentAssistant.presetMessages.isNotEmpty() || currentAssistant.alternateGreetings.isNotEmpty()
+        val effectiveDisplay = settings.getEffectiveDisplaySetting(currentAssistant)
+        val headerShowsAvatar = effectiveDisplay.newChatShowAvatar && (
+            effectiveDisplay.newChatHeaderStyle == me.rerere.rikkahub.data.datastore.NewChatHeaderStyle.BIG_ICON ||
+                effectiveDisplay.newChatHeaderStyle == me.rerere.rikkahub.data.datastore.NewChatHeaderStyle.GREETING
+            )
+        val shouldUseCompactTemporaryToggle = !hasPresetMessages && headerShowsAvatar
+        when {
+            isEmpty && !isTemporaryChat && shouldUseCompactTemporaryToggle -> TopBarActionMode.CompactNewChat
+            isEmpty && !isTemporaryChat -> TopBarActionMode.NewChat
+            isEmpty && isTemporaryChat -> TopBarActionMode.TemporaryNewChat
+            else -> TopBarActionMode.InChat
+        }
+    }
+    val rawActionState = TopBarActionState(
+        mode = rawActionMode,
+        assistantId = currentAssistant.id.takeUnless { rawActionMode == TopBarActionMode.InChat },
+        showCloseAction = showCloseAction && rawActionMode == TopBarActionMode.InChat,
+    )
+    var displayedActionState by remember {
+        mutableStateOf(DefaultTopBarActionState)
+    }
+
+    LaunchedEffect(rawActionState, conversationInitialized) {
+        if (conversationInitialized) {
+            if (displayedActionState != rawActionState) {
+                withFrameNanos { }
+            }
+            displayedActionState = rawActionState
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        if (placement == ChatToolbarPlacement.Top && showTopFade) {
+            ChatTopFadeOverlay(
+                fadeHeight = chatTopToolbarFadeHeight,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .then(
+                    if (placement == ChatToolbarPlacement.Top) {
+                        Modifier.statusBarsPadding()
+                    } else {
+                        Modifier
+                    }
+                )
+                .fillMaxWidth()
+                .padding(
+                    vertical = if (placement == ChatToolbarPlacement.Top) 8.dp else 0.dp,
+                    horizontal = if (placement == ChatToolbarPlacement.Top) 16.dp else 0.dp
+                ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (!bigScreen) {
+                LastChatMenuButton(
+                    onClick = {
+                        scope.launch { drawerState.open() }
+                    },
+                    contentDescription = "Messages",
+                    shape = buttonShape,
+                    containerColor = blurredContainerColor(topContainerColor),
+                    border = topContainerBorder,
+                    modifier = Modifier
+                        .size(topPillSize)
+                        .zIndex(2f)
+                        .lastChatBlurEffect(topContainerColor, buttonShape),
+                    size = topPillSize,
+                )
+            }
+
+            ContextMeterAnchor(
+                usage = contextUsage,
+                onClick = onContextMeterClick,
+                modifier = Modifier.padding(start = if (bigScreen) 0.dp else 8.dp),
+            )
+
+            Spacer(Modifier.weight(1f))
+            
+            Spacer(Modifier.weight(1f))
+
+            ChatToolbarActionPill(
+                actionState = displayedActionState,
+                currentAssistant = currentAssistant,
+                topPillSize = topPillSize,
+                buttonShape = buttonShape,
+                containerColor = topContainerColor,
+                border = topContainerBorder,
+                onNewChat = onNewChat,
+                onOpenOverflowMenu = onOpenOverflowMenu,
+                onCloseAction = onCloseAction,
+                onToggleTemporaryChat = onToggleTemporaryChat,
+                onOpenAssistantPicker = { showAssistantPicker = true }
+            )
+        }
+    }
+    
+    // Assistant picker sheet - outside TopAppBar for proper state handling
+    if (showAssistantPicker) {
+        me.rerere.rikkahub.ui.components.ai.AssistantPickerSheet(
+            settings = settings,
+            currentAssistant = currentAssistant,
+            onAssistantSelected = { selectedAssistant ->
+                onUpdateSettings(settings.copy(assistantId = selectedAssistant.id))
+            },
+            onNavigate = { selectedAssistant ->
+                showAssistantPicker = false
+                onSwitchAssistant(selectedAssistant)
+            },
+            onDismiss = { showAssistantPicker = false }
+        )
+    }
+}
+
+@Composable
+private fun rememberContextMeterUsage(
+    enabled: Boolean,
+    model: Model?,
+    conversation: Conversation,
+    assistant: Assistant,
+    settings: Settings,
+    memoryCandidates: List<AssistantMemory>,
+    persistenceMode: ChatPersistenceMode,
+    pendingParts: List<UIMessagePart>,
+    requestUsage: ContextUsageBreakdown?,
+    isGenerating: Boolean = false,
+): ContextUsageBreakdown? {
+    if (!enabled) return null
+    val activeModel = model?.takeIf { (it.contextCapacityTokens ?: 0) > 0 } ?: return null
+    var lastStableUsage by remember(conversation.id) { mutableStateOf<ContextUsageBreakdown?>(null) }
+    val hasPendingInput = pendingParts.any { part ->
+        part !is UIMessagePart.Text || part.text.isNotBlank()
+    }
+    // During active generation streaming, avoid recomputing 200k+ token breakdowns on the UI thread 40 times/sec.
+    // requestUsage contains the exact context breakdown computed at request start.
+    if (isGenerating && !hasPendingInput) {
+        if (requestUsage != null) return requestUsage
+        if (lastStableUsage != null) return lastStableUsage
+    }
+    val smartActive = assistant.smartContextManagement && (activeModel.contextCapacityTokens ?: 0) > 0
+    val rawMessages = conversation.currentMessages
+    val messages = effectiveHistoryForContext(
+        messages = rawMessages,
+        smartManagement = smartActive,
+        summaryUpToIndex = conversation.contextSummaryUpToIndex.takeIf {
+            !conversation.contextSummary.isNullOrBlank()
+        } ?: -1,
+        truncateIndex = conversation.truncateIndex,
+        manualHistoryLimit = assistant.maxHistoryMessages,
+    )
+    val memoryContextEnabled = assistant.enableMemory && persistenceMode == ChatPersistenceMode.NORMAL
+    val eligibleMemoryCandidates = remember(memoryCandidates, assistant, memoryContextEnabled) {
+        if (!memoryContextEnabled) {
+            emptyList()
+        } else if (!assistant.useRagMemoryRetrieval) {
+            memoryCandidates.filter { memory -> memory.type == 0 }.take(50)
+        } else {
+            memoryCandidates.filter { memory ->
+                (memory.type == 0 && assistant.ragIncludeCore) ||
+                    (memory.type == 1 && assistant.ragIncludeEpisodes)
+            }.take(1_000)
+        }
+    }
+    val memoryRevision = remember(eligibleMemoryCandidates) {
+        eligibleMemoryCandidates.map { memory ->
+            listOf(memory.id, memory.content, memory.type, memory.timestamp)
+        }.hashCode()
+    }
+    val sourceKey = remember(conversation, assistant, activeModel, settings, memoryRevision) {
+        contextUsageSourceKey(conversation, assistant, activeModel, settings, memoryRevision)
+    }
+    val matchingRequestUsage = requestUsage?.takeIf { usage -> usage.sourceKey == sourceKey }
+    if (!hasPendingInput && matchingRequestUsage != null) return matchingRequestUsage
+
+    val observedMemoryTokenTotals = rawMessages.asReversed().mapNotNull { message ->
+        message.usedMemories.orEmpty()
+            .sumOf { memory ->
+                memory.contextTokenCount
+                    ?: ContextTokenEstimator.textTokens(memory.memoryContent, activeModel)
+            }
+            .takeIf { it > 0 }
+    }.take(6)
+    val availableSkills = settings.skills.filter { skill ->
+        skill.enabled && skill.instructions.isNotBlank()
+    }
+    val allSkillIds = availableSkills.map { skill -> skill.id }.toSet()
+    val assistantAvailableSkillIds = availableSkills
+        .filter { skill -> skill.isAvailableForAssistant(assistant.id) }
+        .map { skill -> skill.id }
+        .toSet()
+    val activeSkillIds = resolveActiveSkillIds(
+        assistantDefaultSkillIds = assistant.enabledSkillIds.intersect(assistantAvailableSkillIds),
+        conversationSkillIds = conversation.enabledModeIds,
+        turnScopedSkillIds = emptySet(),
+        allSkillIds = allSkillIds,
+        alwaysEnabledSkillIds = availableSkills
+            .filter { skill -> skill.alwaysEnabled && skill.id in assistantAvailableSkillIds }
+            .map { skill -> skill.id }
+            .toSet(),
+    )
+    val activeLorebookIds = conversation.enabledLorebookIds ?: assistant.enabledLorebookIds
+    val activeLoreEntries = remember(settings.lorebooks, activeLorebookIds) {
+        settings.lorebooks
+            .filter { lorebook -> lorebook.enabled && lorebook.id in activeLorebookIds }
+            .flatMap { lorebook -> lorebook.entries.filter { it.enabled } }
+    }
+    val deterministicLoreEntries = remember(activeLoreEntries, rawMessages) {
+        val recentText = rawMessages.takeLast(10).joinToString(" ") { message -> message.toText() }
+        activeLoreEntries.filter { entry ->
+            when (entry.activationType) {
+                LorebookActivationType.ALWAYS -> true
+                LorebookActivationType.RAG -> false
+                LorebookActivationType.KEYWORDS -> entry.keywords.any { keyword ->
+                    if (entry.useRegex) {
+                        runCatching {
+                            val options = if (entry.caseSensitive) emptySet() else setOf(RegexOption.IGNORE_CASE)
+                            Regex(keyword, options).containsMatchIn(recentText)
+                        }.getOrDefault(false)
+                    } else if (entry.caseSensitive) {
+                        recentText.contains(keyword)
+                    } else {
+                        recentText.contains(keyword, ignoreCase = true)
+                    }
+                }
+            }
+        }
+    }
+    fun loreEntryTokenCost(entry: me.rerere.rikkahub.data.model.LorebookEntry): Int =
+        ContextTokenEstimator.textTokens(entry.prompt, activeModel) +
+            entry.attachments.sumOf { attachment ->
+                when (attachment.type) {
+                    ModeAttachmentType.IMAGE -> 1_024
+                    ModeAttachmentType.VIDEO -> 4_096
+                    ModeAttachmentType.AUDIO -> 2_000
+                    ModeAttachmentType.DOCUMENT -> 512
+                }
+            }
+    val loreEntryTokensById = remember(activeLoreEntries, activeModel) {
+        activeLoreEntries.associate { entry ->
+            entry.id.toString() to loreEntryTokenCost(entry)
+        }
+    }
+    val observedConditionalTokenTotals = rawMessages.asReversed().mapNotNull { message ->
+        message.usedLorebookEntries.orEmpty()
+            .filter { it.activationReason?.startsWith("RAG Match") == true }
+            .sumOf { used ->
+                used.contextTokenCount ?: loreEntryTokensById[used.entryId] ?: 0
+            }
+            .takeIf { it > 0 }
+    }.take(6)
+    val conditionalContextCandidateTokens = remember(activeLoreEntries, loreEntryTokensById) {
+        activeLoreEntries
+            .filter { it.activationType == LorebookActivationType.RAG }
+            .sumOf { entry -> loreEntryTokensById[entry.id.toString()] ?: 0 }
+    }
+    val eligibleMemoryCandidateTokens = remember(eligibleMemoryCandidates, activeModel) {
+        eligibleMemoryCandidates.sumOf { memory ->
+            ContextTokenEstimator.textTokens(memory.content, activeModel).toLong()
+        }.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+    val probableTemporaryTokens = probableTemporaryTokenReserve(
+        model = activeModel,
+        requestedOutputTokens = assistant.maxTokens,
+        memoryEnabled = memoryContextEnabled,
+        memoryRecallIsConditional = assistant.useRagMemoryRetrieval,
+        memoryCandidateLimit = if (assistant.ragLimit > 50) 1_000 else assistant.ragLimit,
+        memoryCandidateTokens = eligibleMemoryCandidateTokens,
+        memoryBudgetFraction = when (assistant.contextPriority) {
+            me.rerere.rikkahub.data.model.ContextPriority.CHAT_HISTORY -> 0.20
+            me.rerere.rikkahub.data.model.ContextPriority.BALANCED -> 0.40
+            me.rerere.rikkahub.data.model.ContextPriority.MEMORIES -> 0.65
+        },
+        observedMemoryTokenTotals = observedMemoryTokenTotals,
+        conditionalContextCandidateTokens = conditionalContextCandidateTokens,
+        observedConditionalTokenTotals = observedConditionalTokenTotals,
+    )
+    val skillText = remember(availableSkills, activeSkillIds) {
+        buildString {
+            availableSkills
+                .filter { skill -> skill.id in activeSkillIds }
+                .forEach { skill ->
+                    appendLine(skill.name)
+                    appendLine(skill.instructions)
+                }
+        }
+    }
+    val lorebookText = remember(deterministicLoreEntries) {
+        deterministicLoreEntries.joinToString("\n") { entry -> entry.prompt }
+    }
+    val skillTokens = remember(skillText, activeModel) {
+        ContextTokenEstimator.textTokens(skillText, activeModel)
+    }
+    val lorebookTokens = remember(lorebookText, activeModel) {
+        ContextTokenEstimator.textTokens(lorebookText, activeModel)
+    }
+    fun me.rerere.rikkahub.data.model.ModeAttachment.toContextPart(): UIMessagePart = when (type) {
+        ModeAttachmentType.IMAGE -> UIMessagePart.Image(url)
+        ModeAttachmentType.VIDEO -> UIMessagePart.Video(url)
+        ModeAttachmentType.AUDIO -> UIMessagePart.Audio(url)
+        ModeAttachmentType.DOCUMENT -> UIMessagePart.Document(url, fileName, mime)
+    }
+    val knownContextAttachments = remember(availableSkills, activeSkillIds, deterministicLoreEntries) {
+        buildList {
+            availableSkills
+                .filter { skill -> skill.id in activeSkillIds }
+                .flatMapTo(this) { skill -> skill.attachments.map { it.toContextPart() } }
+            deterministicLoreEntries
+                .flatMapTo(this) { entry -> entry.attachments.map { it.toContextPart() } }
+        }
+    }
+    val knownContextMediaTokens = remember(knownContextAttachments, activeModel) {
+        knownContextAttachments.sumOf { part ->
+            ContextTokenEstimator.partTokens(part, activeModel)
+        }
+    }
+    val toolAccounting = remember(
+        activeModel,
+        assistant.localTools,
+        assistant.mcpServers,
+        settings.mcpServers,
+    ) {
+        if (ModelAbility.TOOL !in activeModel.abilities) return@remember "" to 0
+        val activeMcpTools = settings.mcpServers
+            .filter { server -> server.commonOptions.enable && server.id in assistant.mcpServers }
+            .flatMap { server -> server.commonOptions.tools.filter { tool -> tool.enable } }
+        val localPreviews = assistant.localTools.flatMap { it.toDefinitionPreviews() }
+        val definitionText = buildString {
+            localPreviews.forEach { tool ->
+                appendLine(
+                    ContextTokenEstimator.toolDefinitionText(
+                        name = tool.name,
+                        description = tool.description,
+                        schema = tool.schema,
+                    )
+                )
+            }
+            activeMcpTools.forEach { tool ->
+                appendLine(
+                    ContextTokenEstimator.toolDefinitionText(
+                        name = tool.name,
+                        description = tool.description.orEmpty(),
+                        schema = tool.inputSchema,
+                    )
+                )
+            }
+        }
+        val localTokens = localPreviews.sumOf { tool ->
+            ContextTokenEstimator.toolDefinitionTokens(
+                name = tool.name,
+                description = tool.description,
+                schema = tool.schema,
+                model = activeModel,
+            ).toLong()
+        }
+        val mcpTokens = activeMcpTools.sumOf { tool ->
+            ContextTokenEstimator.toolDefinitionTokens(
+                name = tool.name,
+                description = tool.description.orEmpty(),
+                schema = tool.inputSchema,
+                model = activeModel,
+            ).toLong()
+        }
+        definitionText to (localTokens + mcpTokens)
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+            .toInt()
+    }
+    val toolDefinitionText = toolAccounting.first
+    // Once a request has resolved runtime/local/MCP/memory tools, retain that exact definition
+    // cost while typing instead of falling back to the necessarily incomplete settings preview.
+    val toolDefinitionTokens = matchingRequestUsage?.toolDefinitionTokens ?: toolAccounting.second
+    val systemPromptText = buildString {
+        append(assistant.systemPrompt)
+        if (assistant.learningMode) {
+            appendLine()
+            append(settings.learningModePrompt.ifEmpty { DEFAULT_LEARNING_MODE_PROMPT })
+        }
+        buildTimeAwarenessBlock(
+            enabled = assistant.enableTimeAwareness,
+            fullMessages = rawMessages,
+            retainedMessages = messages,
+        )?.let { block ->
+            appendLine()
+            append(block)
+        }
+    }
+    val baseSmartInputBudget = if (smartActive) {
+        smartInputBudget(activeModel, assistant.maxTokens)
+    } else {
+        null
+    }
+    val deterministicContextTokens = ContextTokenEstimator.textTokens(systemPromptText, activeModel) +
+        ContextTokenEstimator.textTokens(conversation.contextSummary.orEmpty(), activeModel) +
+        skillTokens + lorebookTokens + toolDefinitionTokens + knownContextMediaTokens
+    val fixedMemorySelection = remember(
+        eligibleMemoryCandidates,
+        activeModel,
+        baseSmartInputBudget,
+        deterministicContextTokens,
+        messages,
+        assistant.contextPriority,
+        assistant.useRagMemoryRetrieval,
+    ) {
+        if (
+            !smartActive || assistant.useRagMemoryRetrieval ||
+            eligibleMemoryCandidates.isEmpty() || baseSmartInputBudget == null
+        ) {
+            null
+        } else {
+            selectSmartMemoryContext(
+                candidates = eligibleMemoryCandidates,
+                model = activeModel,
+                inputBudgetTokens = baseSmartInputBudget,
+                requiredContextTokens = deterministicContextTokens,
+                historyMessages = messages,
+                contextPriority = assistant.contextPriority,
+                episodeGroup = { "Older" },
+            )
+        }
+    }
+    val fixedMemoryText = fixedMemorySelection?.promptText.orEmpty()
+    val fixedMemoryTokens = fixedMemorySelection?.promptTokens ?: 0
+    val effectiveSmartInputBudget = baseSmartInputBudget?.let { budget ->
+        (budget - probableTemporaryTokens).coerceAtLeast(1)
+    }
+
+    val baseBreakdown = remember(
+        messages,
+        activeModel,
+        systemPromptText,
+        conversation.contextSummary,
+        fixedMemoryText,
+        fixedMemoryTokens,
+        skillText,
+        lorebookText,
+        skillTokens,
+        lorebookTokens,
+        toolDefinitionText,
+        toolDefinitionTokens,
+        knownContextAttachments,
+        effectiveSmartInputBudget,
+        sourceKey,
+    ) {
+        val messagesToCount = if (smartActive) {
+            val namedTokens = ContextTokenEstimator.textTokens(systemPromptText, activeModel) +
+                ContextTokenEstimator.textTokens(conversation.contextSummary.orEmpty(), activeModel) +
+                fixedMemoryTokens + skillTokens + lorebookTokens +
+                toolDefinitionTokens +
+                knownContextMediaTokens
+            val messageBudget = ((effectiveSmartInputBudget ?: Int.MAX_VALUE) - namedTokens)
+                .coerceAtLeast(1)
+            smartFitContext(
+                messages = messages,
+                model = activeModel,
+                messageBudgetTokens = messageBudget,
+            )
+        } else {
+            messages
+        }
+        ContextTokenEstimator.breakdown(
+            messages = messagesToCount,
+            model = activeModel,
+            systemPromptText = systemPromptText,
+            summaryText = conversation.contextSummary.orEmpty(),
+            memoryText = fixedMemoryText,
+            memoryTokensOverride = fixedMemoryTokens,
+            skillText = skillText,
+            lorebookText = lorebookText,
+            skillTokensOverride = skillTokens,
+            lorebookTokensOverride = lorebookTokens,
+            toolDefinitionText = toolDefinitionText,
+            toolDefinitionTokensOverride = toolDefinitionTokens,
+            pendingParts = knownContextAttachments,
+            usableInputTokens = effectiveSmartInputBudget,
+            sourceKey = sourceKey,
+        )
+    }
+
+    val computedBreakdown = if (!hasPendingInput) {
+        baseBreakdown
+    } else {
+        var pendingTextTokens = 0
+        var pendingMediaTokens = 0
+        var pendingImages = 0
+        pendingParts.forEach { part ->
+            when (part) {
+                is UIMessagePart.Image -> {
+                    pendingMediaTokens += ContextTokenEstimator.partTokens(part, activeModel)
+                    pendingImages++
+                }
+                is UIMessagePart.Video, is UIMessagePart.Audio, is UIMessagePart.Document -> {
+                    pendingMediaTokens += ContextTokenEstimator.partTokens(part, activeModel)
+                }
+                else -> {
+                    pendingTextTokens += ContextTokenEstimator.partTokens(part, activeModel)
+                }
+            }
+        }
+        val framingDelta = if (messages.isEmpty()) 7 else 4
+        val estimatedTotalTokens = baseBreakdown.usedTokens + pendingTextTokens + pendingMediaTokens + framingDelta
+        val budgetLimit = effectiveSmartInputBudget ?: Int.MAX_VALUE
+
+        if (smartActive && estimatedTotalTokens > budgetLimit) {
+            val pendingMessage = UIMessage(role = MessageRole.USER, parts = pendingParts)
+            val namedTokens = ContextTokenEstimator.textTokens(systemPromptText, activeModel) +
+                ContextTokenEstimator.textTokens(conversation.contextSummary.orEmpty(), activeModel) +
+                fixedMemoryTokens + skillTokens + lorebookTokens +
+                toolDefinitionTokens +
+                knownContextMediaTokens
+            val messageBudget = (budgetLimit - namedTokens).coerceAtLeast(1)
+            val messagesToCount = smartFitContext(
+                messages = messages + listOf(pendingMessage),
+                model = activeModel,
+                messageBudgetTokens = messageBudget,
+            )
+            ContextTokenEstimator.breakdown(
+                messages = messagesToCount,
+                model = activeModel,
+                systemPromptText = systemPromptText,
+                summaryText = conversation.contextSummary.orEmpty(),
+                memoryText = fixedMemoryText,
+                memoryTokensOverride = fixedMemoryTokens,
+                skillText = skillText,
+                lorebookText = lorebookText,
+                skillTokensOverride = skillTokens,
+                lorebookTokensOverride = lorebookTokens,
+                toolDefinitionText = toolDefinitionText,
+                toolDefinitionTokensOverride = toolDefinitionTokens,
+                pendingParts = knownContextAttachments,
+                usableInputTokens = effectiveSmartInputBudget,
+                sourceKey = sourceKey,
+            )
+        } else {
+            baseBreakdown.copy(
+                conversationTokens = baseBreakdown.conversationTokens + pendingTextTokens + framingDelta,
+                mediaTokens = baseBreakdown.mediaTokens + pendingMediaTokens,
+                imageCount = baseBreakdown.imageCount + pendingImages,
+                usedTokens = estimatedTotalTokens,
+            )
+        }
+    }
+    lastStableUsage = computedBreakdown
+    return computedBreakdown
+}
+
+@Composable
+private fun ContextUsageOverlay(
+    usage: ContextUsageBreakdown,
+    activity: ContextManagementActivity?,
+    placement: ChatToolbarPlacement,
+    popupScale: Float,
+    model: Model? = null,
+    onUpdateModelLimit: ((Int?) -> Unit)? = null,
+    onDismissRequest: () -> Unit,
+) {
+    BackHandler(onBack = onDismissRequest)
+    val interactionSource = remember { MutableInteractionSource() }
+    val shape = AppShapes.CardMedium
+    val containerColor = MaterialTheme.colorScheme.surfaceContainer
+    val border = lastChatSoftEdgeBorder()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.16f))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onDismissRequest,
+            )
+    ) {
+        Surface(
+            shape = shape,
+            color = blurredContainerColor(containerColor),
+            border = border,
+            modifier = Modifier
+                .align(
+                    if (placement == ChatToolbarPlacement.Top) Alignment.TopCenter
+                    else Alignment.BottomCenter
+                )
+                .then(
+                    if (placement == ChatToolbarPlacement.Top) Modifier.statusBarsPadding()
+                    else Modifier.navigationBarsPadding()
+                )
+                .padding(
+                    top = chatToolbarPopupTopPadding(placement),
+                    bottom = chatToolbarPopupBottomPadding(placement),
+                    start = 16.dp,
+                    end = 16.dp,
+                )
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = 1f
+                    scaleY = popupScale
+                    transformOrigin = chatToolbarPopupTransformOrigin(placement)
+                }
+                .lastChatBlurEffect(containerColor, shape)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                )
+        ) {
+            ContextUsagePopupContent(
+                usage = usage,
+                activity = activity,
+                model = model,
+                onUpdateModelLimit = onUpdateModelLimit,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContextMeterAnchor(
+    usage: ContextUsageBreakdown?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val motionPolicy = LocalMotionPolicy.current
+    var displayedUsage by remember { mutableStateOf<ContextUsageBreakdown?>(usage) }
+    LaunchedEffect(usage) {
+        if (usage != null) displayedUsage = usage
+    }
+    val haptics = rememberPremiumHaptics()
+    val enter = if (motionPolicy.reduceMotion) {
+        fadeIn(tween(90))
+    } else {
+        fadeIn(tween(180)) + expandHorizontally(expandFrom = Alignment.Start) +
+            slideInHorizontally(animationSpec = spring(dampingRatio = 0.72f, stiffness = 420f)) { -it / 2 }
+    }
+    val exit = if (motionPolicy.reduceMotion) {
+        fadeOut(tween(80))
+    } else {
+        fadeOut(tween(140)) + shrinkHorizontally(shrinkTowards = Alignment.Start) +
+            slideOutHorizontally(animationSpec = spring(dampingRatio = 0.82f, stiffness = 500f)) { -it / 2 }
+    }
+
+    androidx.compose.animation.AnimatedVisibility(
+        visible = usage != null,
+        enter = enter,
+        exit = exit,
+        modifier = modifier.clipToBounds(),
+    ) {
+        displayedUsage?.let { animatedUsage ->
+            ContextMeterButton(
+                usage = animatedUsage,
+                onClick = {
+                    haptics.perform(HapticPattern.Pop)
+                    onClick()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContextMeterButton(
+    usage: ContextUsageBreakdown,
+    onClick: () -> Unit,
+) {
+    val animatedPressure by animateFloatAsState(
+        targetValue = usage.fractionUsed,
+        animationSpec = spring(dampingRatio = 0.78f, stiffness = 240f),
+        label = "context_meter_pressure",
+    )
+    val animatedWindowProgress by animateFloatAsState(
+        targetValue = usage.fractionOfWindowUsed,
+        animationSpec = spring(dampingRatio = 0.78f, stiffness = 240f),
+        label = "context_meter_window_progress",
+    )
+    val animatedReservedProgress by animateFloatAsState(
+        targetValue = usage.fractionOfWindowReserved,
+        animationSpec = spring(dampingRatio = 0.82f, stiffness = 260f),
+        label = "context_meter_reserved_progress",
+    )
+    val targetProgressColor = when {
+        animatedPressure >= 0.95f -> MaterialTheme.colorScheme.error
+        animatedPressure >= 0.82f -> if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
+            Color(0xFFFFC857)
+        } else {
+            Color(0xFFB46900)
+        }
+        else -> MaterialTheme.colorScheme.primary
+    }
+    val progressColor by animateColorAsState(
+        targetValue = targetProgressColor,
+        animationSpec = tween(220),
+        label = "context_meter_color",
+    )
+    val containerColor = MaterialTheme.colorScheme.surfaceContainer
+    val shape = AppShapes.ButtonPill
+    Surface(
+        modifier = Modifier
+            .size(AppSize.ChromePill)
+            .lastChatBlurEffect(containerColor, shape)
+            .clickable(onClick = onClick),
+        shape = shape,
+        color = blurredContainerColor(containerColor),
+        border = lastChatSoftEdgeBorder(),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            val reserveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+            Canvas(modifier = Modifier.size(27.dp)) {
+                val strokeWidth = 3.5.dp.toPx()
+                val stroke = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                drawArc(
+                    color = trackColor,
+                    startAngle = -90f,
+                    sweepAngle = 360f,
+                    useCenter = false,
+                    style = stroke,
+                )
+                if (animatedReservedProgress > 0f) {
+                    drawArc(
+                        color = reserveColor,
+                        startAngle = -90f + (1f - animatedReservedProgress) * 360f,
+                        sweepAngle = animatedReservedProgress * 360f,
+                        useCenter = false,
+                        style = stroke,
+                    )
+                }
+                if (animatedWindowProgress > 0f) {
+                    drawArc(
+                        color = progressColor,
+                        startAngle = -90f,
+                        sweepAngle = animatedWindowProgress * 360f,
+                        useCenter = false,
+                        style = stroke,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContextUsagePopupContent(
+    usage: ContextUsageBreakdown,
+    activity: ContextManagementActivity?,
+    model: Model? = null,
+    onUpdateModelLimit: ((Int?) -> Unit)? = null,
+) {
+    val tokenAnimation = spring<Int>(dampingRatio = 0.82f, stiffness = 260f)
+    val animatedUsed by animateIntAsState(usage.usedTokens, tokenAnimation, label = "context_used_tokens")
+    val animatedTotal by animateIntAsState(usage.totalTokens, tokenAnimation, label = "context_total_tokens")
+    val animatedReserved by animateIntAsState(usage.reservedTokens, tokenAnimation, label = "context_reserved")
+    val animatedConversation by animateIntAsState(usage.conversationTokens, tokenAnimation, label = "context_conversation")
+    val animatedSystemPrompt by animateIntAsState(usage.systemPromptTokens, tokenAnimation, label = "context_system_prompt")
+    val animatedSummary by animateIntAsState(usage.summaryTokens, tokenAnimation, label = "context_summary")
+    val animatedMemory by animateIntAsState(usage.memoryTokens, tokenAnimation, label = "context_memory")
+    val animatedSkills by animateIntAsState(usage.skillTokens, tokenAnimation, label = "context_skills")
+    val animatedLorebook by animateIntAsState(usage.lorebookTokens, tokenAnimation, label = "context_lorebook")
+    val animatedToolDefinitions by animateIntAsState(usage.toolDefinitionTokens, tokenAnimation, label = "context_tool_definitions")
+    val animatedToolCalls by animateIntAsState(usage.toolCallTokens, tokenAnimation, label = "context_tool_calls")
+    val animatedMedia by animateIntAsState(usage.mediaTokens, tokenAnimation, label = "context_media")
+    val animatedImages by animateIntAsState(usage.imageCount, tokenAnimation, label = "context_images")
+
+    val haptics = rememberPremiumHaptics()
+    var isEditingLimit by remember { mutableStateOf(false) }
+    val maxCapacityTokens = model?.baseCapacityTokens ?: maxOf(usage.totalTokens, model?.contextCapacityTokens ?: 0)
+    val isCustomLimitActive = model?.customContextLimitTokens != null ||
+        model?.contextLimitSource == me.rerere.ai.provider.ContextLimitSource.MANUAL
+
+    val minSafeFloorTokens = remember(model, usage) {
+        if (model != null) {
+            calculateMinSafeFloorTokens(
+                model = model,
+                systemPromptTokens = usage.systemPromptTokens,
+                toolDefinitionTokens = usage.toolDefinitionTokens,
+            )
+        } else {
+            1_500
+        }
+    }
+    val safeFloor = minSafeFloorTokens.coerceAtMost(maxCapacityTokens)
+
+    val currentLimit = model?.customContextLimitTokens ?: usage.totalTokens
+    var draggedTokens by remember(currentLimit, maxCapacityTokens) {
+        mutableStateOf(currentLimit.coerceIn(safeFloor, maxCapacityTokens))
+    }
+    LaunchedEffect(currentLimit, maxCapacityTokens, isEditingLimit) {
+        if (!isEditingLimit) {
+            draggedTokens = currentLimit.coerceIn(safeFloor, maxCapacityTokens)
+        }
+    }
+
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val categoryColors = if (isDark) {
+        listOf(
+            Color(0xFF8AB4F8), Color(0xFFFF8A80), Color(0xFFFFD166),
+            Color(0xFF7ED99B), Color(0xFFC69AF7), Color(0xFF4DD0E1),
+            Color(0xFFFFA45B), Color(0xFFF48FB1), Color(0xFFB6D957),
+        )
+    } else {
+        listOf(
+            Color(0xFF2457C5), Color(0xFFC43D3D), Color(0xFF9A6500),
+            Color(0xFF187A3B), Color(0xFF7139B6), Color(0xFF087F8C),
+            Color(0xFFB84A00), Color(0xFFA92868), Color(0xFF5F7300),
+        )
+    }
+    val segments = listOf(
+        Triple(stringResource(R.string.context_meter_conversation), animatedConversation, categoryColors[0]),
+        Triple(stringResource(R.string.context_meter_system_prompt), animatedSystemPrompt, categoryColors[1]),
+        Triple(stringResource(R.string.context_meter_summary), animatedSummary, categoryColors[2]),
+        Triple(stringResource(R.string.context_meter_memory), animatedMemory, categoryColors[3]),
+        Triple(stringResource(R.string.context_meter_skills_modes), animatedSkills, categoryColors[4]),
+        Triple(stringResource(R.string.context_meter_lorebook), animatedLorebook, categoryColors[5]),
+        Triple(stringResource(R.string.context_meter_tool_definitions), animatedToolDefinitions, categoryColors[6]),
+        Triple(stringResource(R.string.context_meter_tool_calls), animatedToolCalls, categoryColors[7]),
+        Triple(stringResource(R.string.context_meter_media), animatedMedia, categoryColors[8]),
+    ).filter { it.second > 0 }
+    val reserveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+
+    val activeBudgetCeiling = if (isEditingLimit) draggedTokens else animatedTotal
+    val liveBudget = if (model != null) {
+        smartInputBudget(model, null, customLimitTokens = activeBudgetCeiling) ?: activeBudgetCeiling
+    } else {
+        activeBudgetCeiling
+    }
+    val liveReserve = (activeBudgetCeiling - liveBudget).coerceAtLeast(0)
+    val effectiveReserved = if (isEditingLimit) liveReserve else (if (animatedReserved > 0) animatedReserved else liveReserve)
+    val animatedEffectiveReserved by animateIntAsState(effectiveReserved, tokenAnimation, label = "context_effective_reserved")
+    val effectiveAvailable = (activeBudgetCeiling - animatedUsed - animatedEffectiveReserved).coerceAtLeast(0)
+    val remainingPercent = if (activeBudgetCeiling <= 0) 100 else
+        ((effectiveAvailable.toFloat() / activeBudgetCeiling) * 100).toInt().coerceIn(0, 100)
+
+    Column(
+        modifier = Modifier.padding(20.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            AnimatedContent(
+                targetState = isEditingLimit,
+                transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(110)) },
+                modifier = Modifier.weight(1f),
+                label = "context_meter_header_text",
+            ) { editing ->
+                if (editing) {
+                    Text(
+                        text = "Target Limit: ${compactTokenCount(draggedTokens)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Text(
+                        text = stringResource(
+                            R.string.context_meter_used,
+                            compactTokenCount(animatedUsed),
+                            compactTokenCount(animatedTotal),
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            }
+            AnimatedContent(
+                targetState = isEditingLimit,
+                transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(110)) },
+                label = "context_meter_sub_text",
+            ) { editing ->
+                if (editing) {
+                    Text(
+                        text = "Floor: ${compactTokenCount(safeFloor)}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.context_meter_remaining, remainingPercent),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+        ) {
+            var barWidthPx by remember { mutableFloatStateOf(1f) }
+            val zoomFraction by animateFloatAsState(
+                targetValue = if (isEditingLimit && maxCapacityTokens > 0) {
+                    (draggedTokens.toFloat() / maxCapacityTokens).coerceIn(0.01f, 1f)
+                } else 1f,
+                animationSpec = spring(dampingRatio = 0.78f, stiffness = 240f),
+                label = "context_limit_zoom",
+            )
+
+            val canReset = isCustomLimitActive || (isEditingLimit && draggedTokens != maxCapacityTokens)
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(24.dp)
+                    .onGloballyPositioned { coordinates ->
+                        barWidthPx = coordinates.size.width.toFloat().coerceAtLeast(1f)
+                    }
+                    .then(
+                        if (isEditingLimit) {
+                            Modifier.pointerInput(safeFloor, maxCapacityTokens) {
+                                detectDragGestures(
+                                    onDragStart = { offset ->
+                                        haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Selection)
+                                        val fraction = (offset.x / barWidthPx).coerceIn(0f, 1f)
+                                        val computed = (fraction * maxCapacityTokens).roundToInt()
+                                        draggedTokens = computed.coerceIn(safeFloor, maxCapacityTokens)
+                                    },
+                                    onDrag = { change, _ ->
+                                        change.consume()
+                                        val fraction = (change.position.x / barWidthPx).coerceIn(0f, 1f)
+                                        val computed = (fraction * maxCapacityTokens).roundToInt()
+                                        val clamped = computed.coerceIn(safeFloor, maxCapacityTokens)
+                                        if (clamped != draggedTokens) {
+                                            haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Tick)
+                                            draggedTokens = clamped
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Pop)
+                                    },
+                                )
+                            }
+                        } else Modifier
+                    ),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                // Background Track (18dp height centered in 24dp container)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(18.dp)
+                        .align(Alignment.Center)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                ) {
+                    // Active content segments
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(zoomFraction)
+                            .clip(RoundedCornerShape(999.dp)),
+                    ) {
+                        segments.forEach { (_, value, color) ->
+                            Spacer(
+                                Modifier
+                                    .weight(value.toFloat().coerceAtLeast(1f))
+                                    .fillMaxHeight()
+                                    .background(color),
+                            )
+                        }
+                        if (effectiveAvailable > 0) {
+                            Spacer(Modifier.weight(effectiveAvailable.toFloat()).fillMaxHeight())
+                        }
+                        if (animatedEffectiveReserved > 0) {
+                            Spacer(
+                                Modifier
+                                    .weight(animatedEffectiveReserved.toFloat())
+                                    .fillMaxHeight()
+                                    .background(reserveColor),
+                            )
+                        }
+                    }
+
+                    // Ignored / Darkened Region on the right in Edit Mode
+                    if (isEditingLimit && zoomFraction < 0.999f) {
+                        val ignoredColor = if (isDark) Color(0xFF070709) else Color(0xFF18181E)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(1f - zoomFraction)
+                                .align(Alignment.CenterEnd)
+                                .background(ignoredColor)
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                    shape = RoundedCornerShape(topEnd = 999.dp, bottomEnd = 999.dp),
+                                ),
+                        )
+                    }
+                }
+
+                // Tactile Draggable thumb indicator (24dp height, 8dp width, centered over the 18dp track)
+                if (isEditingLimit) {
+                    val density = LocalDensity.current
+                    val thumbWidth = 8.dp
+                    val thumbWidthPx = with(density) { thumbWidth.toPx() }
+                    val thumbOffset = ((zoomFraction * barWidthPx) - (thumbWidthPx / 2f))
+                        .coerceIn(0f, (barWidthPx - thumbWidthPx).coerceAtLeast(0f))
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .offset { androidx.compose.ui.unit.IntOffset(thumbOffset.roundToInt(), 0) }
+                            .width(thumbWidth)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(MaterialTheme.colorScheme.primary)
+                            .border(1.5.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(999.dp)),
+                    )
+                }
+            }
+
+            // The Pencil / Close button sized to 24dp to optically balance against the bar height, with long-press reset
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(
+                        color = when {
+                            isEditingLimit -> MaterialTheme.colorScheme.surfaceContainerHighest
+                            isCustomLimitActive -> MaterialTheme.colorScheme.primaryContainer
+                            else -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
+                        },
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                    )
+                    .combinedClickable(
+                        onClick = {
+                            haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Pop)
+                            if (isEditingLimit) {
+                                val newLimit = if (draggedTokens >= maxCapacityTokens) null else draggedTokens
+                                onUpdateModelLimit?.invoke(newLimit)
+                                isEditingLimit = false
+                            } else {
+                                isEditingLimit = true
+                            }
+                        },
+                        onLongClick = if (canReset) {
+                            {
+                                haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Success)
+                                draggedTokens = maxCapacityTokens
+                                onUpdateModelLimit?.invoke(null)
+                                isEditingLimit = false
+                            }
+                        } else null,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                AnimatedContent(
+                    targetState = isEditingLimit,
+                    transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(110)) },
+                    label = "context_limit_edit_toggle",
+                ) { editing ->
+                    Icon(
+                        imageVector = if (editing) androidx.compose.material.icons.Icons.Rounded.Close else androidx.compose.material.icons.Icons.Rounded.Edit,
+                        contentDescription = if (editing) "Commit" else "Edit context limit",
+                        modifier = Modifier.size(13.dp),
+                        tint = when {
+                            editing -> MaterialTheme.colorScheme.onSurface
+                            isCustomLimitActive -> MaterialTheme.colorScheme.onPrimaryContainer
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+            }
+        }
+        FlowRow(
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        ) {
+            segments.forEach { (label, value, color) ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(8.dp).background(color, RoundedCornerShape(999.dp)))
+                    Spacer(Modifier.width(5.dp))
+                    Text("$label ${compactTokenCount(value)}", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+            if (animatedEffectiveReserved > 0) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(8.dp).background(reserveColor, RoundedCornerShape(999.dp)))
+                    Spacer(Modifier.width(5.dp))
+                    Text(
+                        "${stringResource(R.string.context_meter_reserved)} ${compactTokenCount(animatedEffectiveReserved)}",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            AnimatedContent(
+                targetState = activity,
+                transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(110)) },
+                label = "context_management_activity",
+            ) { currentActivity ->
+                if (currentActivity == ContextManagementActivity.SUMMARIZING) {
+                    Text(
+                        stringResource(R.string.context_meter_summarizing),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Spacer(Modifier.width(0.dp))
+                }
+            }
+            if (activity != null && usage.maxImages != null) Spacer(Modifier.width(12.dp))
+            usage.maxImages?.let { maxImages ->
+                Text(
+                    stringResource(R.string.context_meter_images, animatedImages, maxImages),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            AnimatedContent(
+                targetState = usage.confidence,
+                transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(110)) },
+                label = "context_confidence",
+            ) { confidence ->
+                Text(
+                    text = stringResource(
+                        when (confidence) {
+                            ContextCountConfidence.EXACT -> R.string.context_meter_exact
+                            ContextCountConfidence.PROVIDER_COUNTED -> R.string.context_meter_provider_counted
+                            ContextCountConfidence.ESTIMATED -> R.string.context_meter_estimated
+                        }
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+private fun compactTokenCount(tokens: Int): String = when {
+    tokens >= 1_000_000 -> "%.1fM".format(tokens / 1_000_000f)
+    tokens >= 1_000 -> "%.1fK".format(tokens / 1_000f)
+    else -> tokens.toString()
+}

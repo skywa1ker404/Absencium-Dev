@@ -26,6 +26,30 @@ media3 = "1.8.0"
 koinBom = "4.1.1"
 commonsCompress = "1.27.1"
 materialIcons = "1.7.8"
+nav2 = "2.9.6"
+paging = "3.3.6"
+workmanager = "2.11.2"
+browser = "1.9.0"
+appcompat = "1.7.1"
+material = "1.13.0"
+securityCrypto = "1.1.0-alpha06"
+metadataExtractor = "2.19.0"
+haze = "2.0.0-alpha02"
+markdown = "0.7.3"
+coil = "3.3.0"
+ktor = "3.5.1"
+pebble = "3.2.4"
+jsoup = "1.21.2"
+zxing = "3.5.4"
+quickie = "1.11.0"
+barcodeScanning = "17.3.0"
+cameraCore = "1.5.1"
+imageViewer = "1.1.0-alpha.7"
+reorderable = "3.0.0"
+jlatexmath = "1.2"
+mcp = "0.14.0"
+floatingx = "2.3.7"
+adaptive = "1.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -62,6 +86,51 @@ androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "medi
 koin-bom = { group = "io.insert-koin", name = "koin-bom", version.ref = "koinBom" }
 koin-android = { group = "io.insert-koin", name = "koin-android" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "composeUi" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycle" }
+androidx-navigation2 = { group = "androidx.navigation", name = "navigation-compose", version.ref = "nav2" }
+androidx-material3-adaptive = { group = "androidx.compose.material3.adaptive", name = "adaptive", version.ref = "adaptive" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
+androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
+androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
+androidx-palette-ktx = { group = "androidx.palette", name = "palette-ktx", version = "1.0.0" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workmanager" }
+androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraCore" }
+metadata-extractor = { module = "com.drewnoakes:metadata-extractor", version.ref = "metadataExtractor" }
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
+haze-blur-materials = { module = "dev.chrisbanes.haze:haze-blur-materials", version.ref = "haze" }
+koin-compose = { group = "io.insert-koin", name = "koin-androidx-compose" }
+koin-androidx-workmanager = { group = "io.insert-koin", name = "koin-androidx-workmanager" }
+jetbrains-markdown = { group = "org.jetbrains", name = "markdown", version.ref = "markdown" }
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+coil-svg = { group = "io.coil-kt.coil3", name = "coil-svg", version.ref = "coil" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
+pebble = { module = "io.pebbletemplates:pebble", version.ref = "pebble" }
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+quickie-bundled = { group = "io.github.g00fy2.quickie", name = "quickie-bundled", version.ref = "quickie" }
+barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "barcodeScanning" }
+image-viewer = { group = "com.jvziyaoyao.scale", name = "image-viewer", version.ref = "imageViewer" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+jlatexmath = { module = "com.github.rikkahub.jlatexmath-android:jlatexmath", version.ref = "jlatexmath" }
+jlatexmath-font-greek = { module = "com.github.rikkahub.jlatexmath-android:jlatexmath-font-greek", version.ref = "jlatexmath" }
+jlatexmath-font-cyrillic = { module = "com.github.rikkahub.jlatexmath-android:jlatexmath-font-cyrillic", version.ref = "jlatexmath" }
+modelcontextprotocol-kotlin-sdk = { module = "io.modelcontextprotocol:kotlin-sdk", version.ref = "mcp" }
+floatingx = { module = "io.github.petterpx:floatingx", version.ref = "floatingx" }
+floatingx-compose = { module = "io.github.petterpx:floatingx-compose", version.ref = "floatingx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
