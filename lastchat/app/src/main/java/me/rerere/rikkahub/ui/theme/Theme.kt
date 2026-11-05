@@ -42,6 +42,12 @@ enum class ColorMode {
 fun RikkahubTheme(
     content: @Composable () -> Unit
 ) {
+    // Inside Absencium the host's theme engine (Default, Monet, Liquid Glass, presets) decides every colour, shape and font.
+    val host = me.rerere.rikkahub.LastChatHost.theme
+    if (host != null) {
+        host { dark -> HostedChatTheme(dark, content) }
+        return
+    }
     val settings by rememberUserSettingsState()
 
     val colorMode by rememberColorMode()
@@ -99,6 +105,31 @@ fun RikkahubTheme(
             content = content
         )
     }
+}
+
+/** The chat's own extra colours and the system bars, on top of whatever Material theme the host already set. */
+@Composable
+private fun HostedChatTheme(dark: Boolean, content: @Composable () -> Unit) {
+    val barColor = MaterialTheme.colorScheme.background
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = barColor.luminance() > 0.5f
+                isAppearanceLightNavigationBars = !dark
+            }
+            @Suppress("DEPRECATION")
+            window.navigationBarColor = android.graphics.Color.TRANSPARENT
+            @Suppress("DEPRECATION")
+            window.statusBarColor = barColor.toArgb()
+        }
+    }
+    CompositionLocalProvider(
+        LocalDarkMode provides dark,
+        LocalExtendColors provides (if (dark) ExtendDarkColors else ExtendLightColors),
+        content = content,
+    )
 }
 
 val MaterialTheme.extendColors
