@@ -10,5 +10,6 @@ echo "Size: $(stat -c %s "$apk") bytes"
 badging=$("$bt/aapt2" dump badging "$apk" 2>/dev/null | head -1)
 echo "$badging" | sed -E "s/ platformBuildVersion.*//"
 echo "$badging" | grep -q "name='$expected'" || { echo "ERROR: application ID is not $expected"; exit 1; }
+echo "Largest files inside (bytes, uncompressed):"; unzip -l "$apk" | awk 'NR>3 && $1 ~ /^[0-9]+$/ {print $1, $4}' | sort -rn | head -15
 echo "Native ABIs: $("$bt/aapt2" dump badging "$apk" 2>/dev/null | grep -E '^native-code' || echo 'none (no native code, runs on every ABI)')"
 "$bt/apksigner" verify --verbose --print-certs "$apk" | grep -E "Verifies|Verified using|certificate (DN|SHA-256)|WARNING" || { echo "ERROR: signature does not verify"; exit 1; }
