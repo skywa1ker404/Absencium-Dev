@@ -128,7 +128,7 @@ import org.koin.compose.koinInject
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-private const val EXPORT_BRAND = "LastChat"
+private const val EXPORT_BRAND = "Absencium AI"
 private const val EXPORT_WIDTH_DP = 540
 private const val EXPORT_MAX_TEXT_CHARS = 1400
 private const val EXPORT_IMAGE_DIAGNOSTIC_CHARS = 560

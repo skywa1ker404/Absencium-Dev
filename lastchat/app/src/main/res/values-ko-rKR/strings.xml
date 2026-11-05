@@ -472,7 +472,7 @@
   <string name="setting_page_search_title">검색 서비스</string>
   <string name="setting_page_share">공유</string>
   <string name="setting_page_share_desc">앱을 친구들과 공유하기</string>
-  <string name="setting_page_share_text">LastChat - 오픈소스 Android AI 어시스턴트\n\n웹사이트: https://rikka-ai.com/</string>
+  <string name="setting_page_share_text">Absencium AI - 오픈소스 Android AI 어시스턴트\n\n웹사이트: https://rikka-ai.com/</string>
   <string name="setting_page_theme_setting">테마 설정</string>
   <string name="setting_page_theme_type_high_contrast">높은 대비</string>
   <string name="setting_page_theme_type_medium_contrast">중간 대비</string>
@@ -706,7 +706,7 @@
     <string name="context_refresh_error_unknown">알 수 없는 오류</string>
     <string name="update_download_failed">업데이트 다운로드에 실패했습니다</string>
     <string name="placeholder_location">위치</string>
-    <string name="placeholder_location_unavailable">[위치를 사용할 수 없습니다 - 설정 &gt; 앱 &gt; LastChat에서 위치 권한을 허용해 주세요]</string>
+    <string name="placeholder_location_unavailable">[위치를 사용할 수 없습니다 - 설정 &gt; 앱 &gt; Absencium AI에서 위치 권한을 허용해 주세요]</string>
     <string name="chat_drawer_imagine">상상하기</string>
     <string name="clipboard_write_failed">텍스트를 클립보드에 쓰지 못했습니다</string>
     <string name="open_url_failed">URL을 열지 못했습니다: %1$s</string>

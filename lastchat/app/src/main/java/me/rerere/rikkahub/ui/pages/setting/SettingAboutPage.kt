@@ -72,6 +72,13 @@ fun SettingAboutPage() {
                 },
                 onHaptic = { haptics.perform(HapticPattern.Pop) },
             )
+            // Required credit: this chat is built on LastChat and RikkaHub, both under the GNU AGPL-3.0.
+            androidx.compose.material3.Text(
+                text = "Built on LastChat and RikkaHub (GNU AGPL-3.0). Source code and the full notices are linked above and in THIRD_PARTY_NOTICES.md.",
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 16.dp),
+            )
         }
     }
 }

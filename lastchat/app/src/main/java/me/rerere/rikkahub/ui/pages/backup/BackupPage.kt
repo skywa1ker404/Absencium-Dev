@@ -486,7 +486,7 @@ private fun ImportExportPage(
                 selectedExportKeyIds = selectedKeys
                 val timestamp = LocalDateTime.now()
                     .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-                createDocumentLauncher.launch("LastChat_backup_$timestamp.zip")
+                createDocumentLauncher.launch("Absencium_AI_backup_$timestamp.zip")
             }
         )
     }

@@ -10,7 +10,7 @@
   <string name="assistant_importer_memories_desc">استيراد الذكريات الأساسية والعرضية</string>
   <string name="assistant_importer_ready">جاهز لاستيراد هذه الشخصية.</string>
   <string name="assistant_detail_export">يصدّر</string>
-  <string name="assistant_detail_export_lastchat_bundle">حزمة LastChat (.json)</string>
+  <string name="assistant_detail_export_lastchat_bundle">حزمة Absencium AI (.json)</string>
   <string name="assistant_detail_export_card_json">بطاقة الأحرف V2 (.json)</string>
   <string name="assistant_detail_export_card_png">بطاقة الشخصية V2 (.png)</string>
   <string name="assistant_detail_export_options">خيارات التصدير</string>

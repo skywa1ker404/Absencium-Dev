@@ -472,7 +472,7 @@
   <string name="setting_page_search_title">搜尋服務</string>
   <string name="setting_page_share">分享</string>
   <string name="setting_page_share_desc">分享本APP給朋友</string>
-  <string name="setting_page_share_text">LastChat - 開源安卓AI助手\n\n官網: https://rikka-ai.com/</string>
+  <string name="setting_page_share_text">Absencium AI - 開源安卓AI助手\n\n官網: https://rikka-ai.com/</string>
   <string name="setting_page_theme_setting">主題設定</string>
   <string name="setting_page_theme_type_high_contrast">高對比</string>
   <string name="setting_page_theme_type_medium_contrast">中對比</string>
@@ -706,7 +706,7 @@
     <string name="context_refresh_error_unknown">未知錯誤</string>
     <string name="update_download_failed">下載更新失敗</string>
     <string name="placeholder_location">位置</string>
-    <string name="placeholder_location_unavailable">[無法取得位置 - 請在「設定 &gt; 應用程式 &gt; LastChat」授予位置權限]</string>
+    <string name="placeholder_location_unavailable">[無法取得位置 - 請在「設定 &gt; 應用程式 &gt; Absencium AI」授予位置權限]</string>
     <string name="chat_drawer_imagine">想像</string>
     <string name="clipboard_write_failed">將文字寫入剪貼簿失敗</string>
     <string name="open_url_failed">開啟連結失敗：%1$s</string>

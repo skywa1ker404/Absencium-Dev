@@ -11,7 +11,7 @@
     <string name="assistant_importer_memories_desc">Import core and episodic memories</string>
     <string name="assistant_importer_ready">Ready to import this character.</string>
     <string name="assistant_detail_export">Export</string>
-    <string name="assistant_detail_export_lastchat_bundle">LastChat Bundle (.json)</string>
+    <string name="assistant_detail_export_lastchat_bundle">Absencium AI Bundle (.json)</string>
     <string name="assistant_detail_export_card_json">Character Card V2 (.json)</string>
     <string name="assistant_detail_export_card_png">Character Card V2 (.png)</string>
     <string name="assistant_detail_export_options">Export Options</string>
@@ -277,8 +277,8 @@
     <string name="setting_fonts_header_preview">Header Preview</string>
     <string name="setting_fonts_content_preview">This is a preview of the content font. It shows how body text will appear in messages and other content areas.</string>
     <string name="setting_fonts_code_preview">fun main() {\n    println(\"Hello, World!\")\n}</string>
-    <string name="setting_fonts_source_default">LastChat Default</string>
-    <string name="setting_fonts_source_code">LastChat Code</string>
+    <string name="setting_fonts_source_default">Absencium AI Default</string>
+    <string name="setting_fonts_source_code">Absencium AI Code</string>
     <string name="setting_fonts_source_custom_fallback">Custom Font</string>
 
     <!-- Settings page -->

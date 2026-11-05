@@ -81,7 +81,7 @@ import me.rerere.rikkahub.utils.toCssHex
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-private const val EXPORT_WATERMARK = "LastChat"
+private const val EXPORT_WATERMARK = "Absencium AI"
 
 // Simple LRU cache for mermaid heights (max 100 entries)
 private val mermaidHeightCache = LruCache<String, Int>(100)

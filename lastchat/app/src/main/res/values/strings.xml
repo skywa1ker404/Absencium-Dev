@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">LastChat</string>
+    <string name="app_name" translatable="false">Absencium AI</string>
     <string name="about_page_github">Github</string>
     <string name="about_page_license">License</string>
     <string name="about_page_system">System</string>
@@ -677,7 +677,7 @@
     <string name="setting_page_search_title">Search Providers</string>
     <string name="setting_page_share">Share</string>
     <string name="setting_page_share_desc">Share this app with friends</string>
-    <string name="setting_page_share_text">LastChat - Open Source AI Assistant\n\nWebsite: https://rikka-ai.com/</string>
+    <string name="setting_page_share_text">Absencium AI - Open Source AI Assistant\n\nWebsite: https://rikka-ai.com/</string>
     <string name="setting_page_theme_setting">Theme Settings</string>
     <string name="setting_page_theme_type_high_contrast">High Contrast</string>
     <string name="setting_page_theme_type_medium_contrast">Medium Contrast</string>
@@ -737,7 +737,7 @@
     <string name="backup_content_settings_desc">Display, theme, font, network, and audio preferences</string>
     <string name="backup_export_no_content_selected">Please select at least one item to export.</string>
     <string name="notification_channel_workspace_environment">Workspace Environment</string>
-    <string name="workspace_env_notification_title">LastChat Workspace Setup</string>
+    <string name="workspace_env_notification_title">Absencium AI Workspace Setup</string>
     <string name="workspace_env_notification_downloading">%1$s: Downloading Linux rootfs (%2$d MB / %3$d MB)</string>
     <string name="workspace_env_notification_downloading_indeterminate">%1$s: Downloading Linux rootfs...</string>
     <string name="workspace_env_notification_extracting">%1$s: Extracting and configuring environment...</string>
@@ -858,7 +858,7 @@
     <string name="setting_provider_page_compatibility_on">On</string>
     <string name="setting_provider_page_compatibility_off">Off</string>
     <string name="setting_provider_page_comfyui_setup_title" translatable="false">ComfyUI setup</string>
-    <string name="setting_provider_page_comfyui_setup_desc" translatable="false">Start ComfyUI, enter its server URL, then import an API workflow JSON. LastChat will auto-detect common prompt and checkpoint nodes.</string>
+    <string name="setting_provider_page_comfyui_setup_desc" translatable="false">Start ComfyUI, enter its server URL, then import an API workflow JSON. Absencium AI will auto-detect common prompt and checkpoint nodes.</string>
     <string name="setting_provider_page_comfyui_server_url" translatable="false">ComfyUI Server URL</string>
     <string name="setting_provider_page_comfyui_import_workflow" translatable="false">Import API Workflow JSON</string>
     <string name="setting_provider_page_comfyui_workflow_missing" translatable="false">Workflow needed. In ComfyUI, export the workflow in API format and import it here.</string>
@@ -931,8 +931,8 @@
     <string name="setting_tts_page_model_description">TTS Model to use</string>
     <string name="setting_tts_page_model_placeholder_gemini">gemini-2.5-flash-preview-tts</string>
     <string name="setting_page_web_server">Web Access</string>
-    <string name="setting_page_web_server_desc">Use LastChat on your network</string>
-    <string name="setting_page_web_server_hero_title">LastChat in a browser</string>
+    <string name="setting_page_web_server_desc">Use Absencium AI on your network</string>
+    <string name="setting_page_web_server_hero_title">Absencium AI in a browser</string>
     <string name="setting_page_web_server_hero_desc">Start a local web server to browse conversations and send messages from devices on the same network.</string>
     <string name="setting_page_web_server_status_idle">Server is offline</string>
     <string name="setting_page_web_server_status_starting">Starting local server…</string>
@@ -962,7 +962,7 @@
     <string name="setting_page_web_server_error">Web server error</string>
     <string name="notification_channel_web_server">Web server</string>
     <string name="notification_channel_spontaneous">Assistant updates</string>
-    <string name="notification_web_server_title">LastChat web server</string>
+    <string name="notification_web_server_title">Absencium AI web server</string>
     <string name="notification_web_server_starting">Starting local browser access…</string>
     <string name="notification_web_server_stopping">Turning off local browser access…</string>
     <string name="notification_web_server_running">Local browser access is running</string>
@@ -1200,7 +1200,7 @@
     <string name="skill_export_success">Skill exported successfully</string>
     <string name="skill_export_format">Export Format</string>
     <string name="export_format_skill_md">SKILL.md (Standard)</string>
-    <string name="export_format_skill_json">JSON (LastChat)</string>
+    <string name="export_format_skill_json">JSON (Absencium AI)</string>
     <string name="skills_picker_title">Skills</string>
     <string name="skills_picker_none">No skills configured</string>
     <string name="skills_picker_active_count">%d active</string>
@@ -1273,12 +1273,12 @@
     <string name="lorebook_export_success">Lorebook exported successfully</string>
     <string name="lorebook_export_error">Failed to export lorebook</string>
     <string name="lorebook_export_format">Export Format</string>
-    <string name="export_format_lastchat">LastChat (Full)</string>
+    <string name="export_format_lastchat">Absencium AI (Full)</string>
     <string name="export_format_sillytavern">SillyTavern</string>
     <string name="export_format_tavern">Tavern (Compatible)</string>
     
     <!-- Text Selection Integration -->
-    <string name="text_selection_menu_label">Ask LastChat</string>
+    <string name="text_selection_menu_label">Ask Absencium AI</string>
     <string name="text_selection_translate">Translate</string>
     <string name="text_selection_explain">Explain</string>
     <string name="text_selection_summarize">Summarize</string>
@@ -1292,11 +1292,11 @@
     <string name="setting_android_integration">Android Integration</string>
     <string name="setting_android_integration_desc">Text selection popup settings</string>
     <!-- Digital assistant overlay -->
-    <string name="assistant_overlay_service_label">LastChat Assistant</string>
+    <string name="assistant_overlay_service_label">Absencium AI Assistant</string>
     <string name="assistant_overlay_section">Digital Assistant</string>
     <string name="assistant_overlay_set_default">Set as default assistant</string>
-    <string name="assistant_overlay_set_default_desc">Open Android settings to make LastChat your device assistant</string>
-    <string name="assistant_overlay_is_default">LastChat is your default assistant</string>
+    <string name="assistant_overlay_set_default_desc">Open Android settings to make Absencium AI your device assistant</string>
+    <string name="assistant_overlay_is_default">Absencium AI is your default assistant</string>
     <string name="assistant_overlay_assistant">Assistant character</string>
     <string name="assistant_overlay_auto_stt">Start listening on trigger</string>
     <string name="assistant_overlay_auto_stt_desc">Begin speech‑to‑text as soon as the overlay opens</string>
@@ -1322,8 +1322,8 @@
     <string name="text_selection_action_cannot_delete">Cannot delete this action</string>
     <string name="reset">Reset</string>
     <string name="text_selection_try_it">Try It</string>
-    <string name="text_selection_setup_instructions">Select text anywhere on your device, look for \"LastChat\" in the toolbar that appears, and tap it to use these features.</string>
-    <string name="text_selection_demo_text">This is sample text you can select! Try long-pressing to select these words, then look for \"LastChat\" in the selection toolbar. If you don\'t see it, you may need to tap the overflow menu (⋮) to find it.</string>
+    <string name="text_selection_setup_instructions">Select text anywhere on your device, look for \"Absencium AI\" in the toolbar that appears, and tap it to use these features.</string>
+    <string name="text_selection_demo_text">This is sample text you can select! Try long-pressing to select these words, then look for \"Absencium AI\" in the selection toolbar. If you don\'t see it, you may need to tap the overflow menu (⋮) to find it.</string>
     <string name="text_selection_demo_hint">👆 Long-press the text above to try selecting it</string>
 
     <!-- Additional Greetings -->
@@ -1406,15 +1406,15 @@
     <string name="setting_provider_page_probe_capabilities_success">Model capabilities updated from the provider API</string>
     <string name="setting_provider_page_probe_capabilities_error">Failed to probe model capabilities: %1$s</string>
     <string name="setting_provider_page_vertex_ai_base_url_hint">The base URL usually ends with `/v1beta`</string>
-    <string name="setting_display_model_catalog_title">Update LastChat Catalog</string>
+    <string name="setting_display_model_catalog_title">Update Absencium AI Catalog</string>
     <string name="setting_display_model_catalog_source_bundled">Bundled</string>
     <string name="setting_display_model_catalog_source_downloaded">Downloaded</string>
-    <string name="setting_display_model_catalog_subtitle_bundled">%1$s LastChat Catalog • %2$d models</string>
-    <string name="setting_display_model_catalog_subtitle_downloaded">%1$s LastChat Catalog • %2$d models • Updated %3$s</string>
-    <string name="setting_display_model_catalog_refresh_button">Fetch latest LastChat Catalog</string>
-    <string name="setting_display_model_catalog_refreshing">Updating the LastChat Catalog...</string>
-    <string name="setting_display_model_catalog_refresh_success">LastChat Catalog updated</string>
-    <string name="setting_display_model_catalog_refresh_error">Failed to update LastChat Catalog: %1$s</string>
+    <string name="setting_display_model_catalog_subtitle_bundled">%1$s Absencium AI Catalog • %2$d models</string>
+    <string name="setting_display_model_catalog_subtitle_downloaded">%1$s Absencium AI Catalog • %2$d models • Updated %3$s</string>
+    <string name="setting_display_model_catalog_refresh_button">Fetch latest Absencium AI Catalog</string>
+    <string name="setting_display_model_catalog_refreshing">Updating the Absencium AI Catalog...</string>
+    <string name="setting_display_model_catalog_refresh_success">Absencium AI Catalog updated</string>
+    <string name="setting_display_model_catalog_refresh_error">Failed to update Absencium AI Catalog: %1$s</string>
     <string name="setting_tts_page_api_key_description_elevenlabs">Your ElevenLabs API key from your account settings</string>
     <string name="setting_tts_page_voice_id_description_elevenlabs">The ID of the voice to use. Find voice IDs in ElevenLabs Voice Library.</string>
     <string name="setting_tts_page_model_description_elevenlabs">The TTS model to use. Multilingual v2 supports 29 languages.</string>
@@ -1435,7 +1435,7 @@
     <string name="context_refresh_error_unknown">Unknown error</string>
     <string name="update_download_failed">Failed to download update</string>
     <string name="placeholder_location">Location</string>
-    <string name="placeholder_location_unavailable">[Location unavailable - grant location permission in Settings &gt; Apps &gt; LastChat]</string>
+    <string name="placeholder_location_unavailable">[Location unavailable - grant location permission in Settings &gt; Apps &gt; Absencium AI]</string>
   <string name="local_llm_default_disabled">Run open models locally on this device.</string>
   <string name="local_llm_download_title">Download model</string>
   <string name="local_llm_download_message">Download the selected model to use on this device?</string>
@@ -1461,7 +1461,7 @@
   <string name="local_llm_tool_calling_litert">Tool calling: prompt-engineered. Accuracy varies per model.</string>
   <string name="local_llm_enable_label">Enable</string>
   <string name="local_llm_install_url_hint">Must be a .litertlm file. /resolve/, /blob/, or hf.co links work.</string>
-  <string name="local_llm_format_info">LastChat uses Google\'s LiteRT-LM engine for fast, on-device inference. This engine requires the optimized .litertlm format, which bundles the model weights and tokenizer. Standard .gguf files are not supported by this runtime.</string>
+  <string name="local_llm_format_info">Absencium AI uses Google\'s LiteRT-LM engine for fast, on-device inference. This engine requires the optimized .litertlm format, which bundles the model weights and tokenizer. Standard .gguf files are not supported by this runtime.</string>
   <string name="local_llm_download_default">Download default model</string>
   <string name="local_llm_installed_models_count">%1$d model(s) installed. Manage them in the Models tab.</string>
   <string name="local_llm_accelerator_label">Accelerator: %1$s</string>
@@ -1586,7 +1586,7 @@
   <string name="local_llm_surface_desc">Download Gallery-compatible LiteRT packages, tune runtime safety, and manage the models stored on this phone.</string>
   <string name="local_llm_model_count_short">%1$d installed</string>
   <string name="local_llm_download_active_title">Downloading model</string>
-  <string name="local_llm_download_active_desc">Keep LastChat open or use the notification to watch progress.</string>
+  <string name="local_llm_download_active_desc">Keep Absencium AI open or use the notification to watch progress.</string>
   <string name="local_llm_section_runtime">Runtime</string>
   <string name="local_llm_section_runtime_desc">CPU mode is the reliable baseline. Try acceleration only when a model is stable on this device.</string>
   <string name="local_llm_section_custom">Advanced install</string>

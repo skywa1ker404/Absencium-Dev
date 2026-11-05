@@ -598,7 +598,7 @@
   <string name="setting_page_search_title">搜索服务</string>
   <string name="setting_page_share">分享</string>
   <string name="setting_page_share_desc">分享本APP给朋友</string>
-  <string name="setting_page_share_text">LastChat - 开源安卓AI助手\n\n官网: https://rikka-ai.com/</string>
+  <string name="setting_page_share_text">Absencium AI - 开源安卓AI助手\n\n官网: https://rikka-ai.com/</string>
   <string name="setting_page_theme_setting">主题设置</string>
   <string name="setting_page_theme_type_high_contrast">高对比</string>
   <string name="setting_page_theme_type_medium_contrast">中对比</string>
@@ -656,7 +656,7 @@
   <string name="backup_content_settings_desc">显示、主题、字体、网络与音频偏好设置</string>
   <string name="backup_export_no_content_selected">请至少选择一项要导出的内容。</string>
   <string name="notification_channel_workspace_environment">工作区环境</string>
-  <string name="workspace_env_notification_title">LastChat 工作区配置</string>
+  <string name="workspace_env_notification_title">Absencium AI 工作区配置</string>
   <string name="workspace_env_notification_downloading">%1$s: 正在下载 Linux 环境 (%2$d MB / %3$d MB)</string>
   <string name="workspace_env_notification_downloading_indeterminate">%1$s: 正在下载 Linux 环境...</string>
   <string name="workspace_env_notification_extracting">%1$s: 正在解压并配置环境...</string>
@@ -780,8 +780,8 @@
   <string name="setting_tts_page_model_description">要使用的TTS模型</string>
   <string name="setting_tts_page_model_placeholder_gemini">gemini-2.5-flash-preview-tts</string>
   <string name="setting_page_web_server">网络访问</string>
-  <string name="setting_page_web_server_desc">在您的网络上使用 LastChat</string>
-  <string name="setting_page_web_server_hero_title">浏览器中的 LastChat</string>
+  <string name="setting_page_web_server_desc">在您的网络上使用 Absencium AI</string>
+  <string name="setting_page_web_server_hero_title">浏览器中的 Absencium AI</string>
   <string name="setting_page_web_server_hero_desc">启动本地 Web 服务器以浏览对话并从同一网络上的设备发送消息。</string>
   <string name="setting_page_web_server_status_idle">服务器离线</string>
   <string name="setting_page_web_server_status_starting">启动本地服务器...</string>
@@ -811,7 +811,7 @@
   <string name="setting_page_web_server_error">网络服务器错误</string>
   <string name="notification_channel_web_server">网络服务器</string>
   <string name="notification_channel_spontaneous">助理更新</string>
-  <string name="notification_web_server_title">LastChat 网络服务器</string>
+  <string name="notification_web_server_title">Absencium AI 网络服务器</string>
   <string name="notification_web_server_starting">开始本地浏览器访问...</string>
   <string name="notification_web_server_stopping">正在关闭本地浏览器访问...</string>
   <string name="notification_web_server_running">本地浏览器访问正在运行</string>
@@ -1085,7 +1085,7 @@
   <string name="export_format_lastchat">最后聊天（完整）</string>
   <string name="export_format_sillytavern">傻酒馆</string>
   <string name="export_format_tavern">酒馆（兼容）</string>
-  <string name="text_selection_menu_label">询问 LastChat</string>
+  <string name="text_selection_menu_label">询问 Absencium AI</string>
   <string name="text_selection_translate">翻译</string>
   <string name="text_selection_explain">解释</string>
   <string name="text_selection_summarize">总结</string>
@@ -1109,8 +1109,8 @@
   <string name="text_selection_action_cannot_delete">无法删除此操作</string>
   <string name="reset">重置</string>
   <string name="text_selection_try_it">尝试一下</string>
-  <string name="text_selection_setup_instructions">选择设备上任意位置的文本，在出现的工具栏中查找“LastChat”，然后点击它以使用这些功能。</string>
-  <string name="text_selection_demo_text">这是您可以选择的示例文本！尝试长按选择这些单词，然后在选择工具栏中查找“LastChat”。如果您没有看到它，您可能需要点击溢出菜单 (⋮) 才能找到它。</string>
+  <string name="text_selection_setup_instructions">选择设备上任意位置的文本，在出现的工具栏中查找“Absencium AI”，然后点击它以使用这些功能。</string>
+  <string name="text_selection_demo_text">这是您可以选择的示例文本！尝试长按选择这些单词，然后在选择工具栏中查找“Absencium AI”。如果您没有看到它，您可能需要点击溢出菜单 (⋮) 才能找到它。</string>
   <string name="text_selection_demo_hint">👆 长按上面的文字尝试选择它</string>
   <string name="greeting_early_morning">崛起并闪耀！</string>
   <string name="greeting_lunch_time">午餐时间！</string>
@@ -1163,7 +1163,7 @@
   <string name="assistant_importer_memories_desc">导入核心记忆和情景记忆</string>
   <string name="assistant_importer_ready">准备导入这个角色。</string>
   <string name="assistant_detail_export">出口</string>
-  <string name="assistant_detail_export_lastchat_bundle">LastChat 捆绑包 (.json)</string>
+  <string name="assistant_detail_export_lastchat_bundle">Absencium AI 捆绑包 (.json)</string>
   <string name="assistant_detail_export_card_json">人物卡 V2 (.json)</string>
   <string name="assistant_detail_export_card_png">人物卡 V2 (.png)</string>
   <string name="assistant_detail_export_options">导出选项</string>
@@ -1392,7 +1392,7 @@
   <string name="setting_fonts_header_preview">标题预览</string>
   <string name="setting_fonts_content_preview">这是内容字体的预览。它显示了正文文本将如何显示在消息和其他内容区域中。</string>
   <string name="setting_fonts_code_preview">fun main() {\n    println(\"Hello, World!\")\n}</string>
-  <string name="setting_fonts_source_default">LastChat 默认</string>
+  <string name="setting_fonts_source_default">Absencium AI 默认</string>
   <string name="setting_fonts_source_code">最后聊天代码</string>
   <string name="setting_fonts_source_custom_fallback">自定义字体</string>
   <string name="buy_me_a_coffee">请我喝杯咖啡</string>
@@ -1533,7 +1533,7 @@
     <string name="context_refresh_error_unknown">未知错误</string>
     <string name="update_download_failed">下载更新失败</string>
     <string name="placeholder_location">位置</string>
-    <string name="placeholder_location_unavailable">[位置信息不可用 - 请在“设置 &gt; 应用 &gt; LastChat”中授予位置权限]</string>
+    <string name="placeholder_location_unavailable">[位置信息不可用 - 请在“设置 &gt; 应用 &gt; Absencium AI”中授予位置权限]</string>
     <string name="chat_drawer_imagine">畅想</string>
     <string name="clipboard_write_failed">写入文本到剪贴板失败</string>
     <string name="open_url_failed">打开链接失败：%1$s</string>
@@ -1585,15 +1585,15 @@
     <string name="setting_provider_page_compatibility_off">Off</string>
     <string name="setting_provider_page_reload_models">Reload API models</string>
     <string name="setting_provider_page_reload_models_error">Failed to reload models: %1$s</string>
-    <string name="setting_display_model_catalog_title">Update LastChat Catalog</string>
+    <string name="setting_display_model_catalog_title">Update Absencium AI Catalog</string>
     <string name="setting_display_model_catalog_source_bundled">Bundled</string>
     <string name="setting_display_model_catalog_source_downloaded">Downloaded</string>
-    <string name="setting_display_model_catalog_subtitle_bundled">%1$s LastChat Catalog • %2$d models</string>
-    <string name="setting_display_model_catalog_subtitle_downloaded">%1$s LastChat Catalog • %2$d models • Updated %3$s</string>
-    <string name="setting_display_model_catalog_refresh_button">Fetch latest LastChat Catalog</string>
-    <string name="setting_display_model_catalog_refreshing">Updating the LastChat Catalog...</string>
-    <string name="setting_display_model_catalog_refresh_success">LastChat Catalog updated</string>
-    <string name="setting_display_model_catalog_refresh_error">Failed to update LastChat Catalog: %1$s</string>
+    <string name="setting_display_model_catalog_subtitle_bundled">%1$s Absencium AI Catalog • %2$d models</string>
+    <string name="setting_display_model_catalog_subtitle_downloaded">%1$s Absencium AI Catalog • %2$d models • Updated %3$s</string>
+    <string name="setting_display_model_catalog_refresh_button">Fetch latest Absencium AI Catalog</string>
+    <string name="setting_display_model_catalog_refreshing">Updating the Absencium AI Catalog...</string>
+    <string name="setting_display_model_catalog_refresh_success">Absencium AI Catalog updated</string>
+    <string name="setting_display_model_catalog_refresh_error">Failed to update Absencium AI Catalog: %1$s</string>
   <string name="assistant_page_theme_color">主题颜色</string>
   <string name="assistant_page_theme_color_desc">选择从图片中提取的配色</string>
   <string name="skills_page_always_enabled">始终启用</string>

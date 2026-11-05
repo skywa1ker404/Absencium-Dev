@@ -17,7 +17,7 @@ android {
     defaultConfig {
         applicationId = if (isDev) "skywa1ker404.absencium.dev" else "skywa1ker404.absencium"
         manifestPlaceholders["appLabel"] = if (isDev) "Absencium Dev" else "Absencium"
-        // Android 8.0. Monet (dynamic color) and Liquid Glass (RenderEffect blur)
+        // Android 9 (the embedded AI needs it). Monet (dynamic color) and Liquid Glass (RenderEffect blur)
         // need Android 12 (API 31) and are disabled below that at runtime.
         minSdk = 28
         targetSdk = 36
@@ -26,6 +26,18 @@ android {
         versionCode = (findProperty("absenciumVersionCode") as String?)?.toInt()
             ?: ((System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt() + 1000)
         versionName = (findProperty("absenciumVersionName") as String?) ?: "0.1.0"
+        // The embedded AI brings native libraries (speech, PDF, QR). Development builds carry arm64 only, so they stay small.
+        if (isDev) ndk { abiFilters += "arm64-v8a" }
+    }
+
+    // Stable builds are one APK per processor type (no universal APK), each a fraction of a combined one.
+    splits {
+        abi {
+            isEnable = !isDev
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = false
+        }
     }
 
     // Two separate keys, on purpose.
