@@ -347,7 +347,7 @@ class RouteActivity : ComponentActivity() {
             } else {
                 null
             }
-            val intentWebServerSettings = intent?.getBooleanExtra("webServerSettings", false) == true
+            val intentWebServerSettings = intent?.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) == true
             pendingTextSelection = intent?.readQuickAskContinuationData()
             pendingShareIntent = intent?.readResolvedSharePayload()
             lifecycleScope.launch {
@@ -387,7 +387,7 @@ class RouteActivity : ComponentActivity() {
                         
                         LaunchedEffect(intentWebServerSettings) {
                             if (intentWebServerSettings) {
-                                navStack.navigate(Screen.SettingWeb)
+                                navStack.navigate(Screen.Setting)
                             }
                         }
                     }
@@ -630,8 +630,8 @@ class RouteActivity : ComponentActivity() {
         pendingShareIntent = intent.readResolvedSharePayload()
         pendingTextSelection = intent.readQuickAskContinuationData() ?: pendingTextSelection
 
-        if (intent.getBooleanExtra("webServerSettings", false)) {
-            navStack?.navigate(Screen.SettingWeb)
+        if (intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)) {
+            navStack?.navigate(Screen.Setting)
             return
         }
         intent.toSpontaneousNotificationData()?.let { notification ->
@@ -691,6 +691,8 @@ class RouteActivity : ComponentActivity() {
     }
 
     companion object {
+        /** Absencium opens the chat straight on its settings (providers, models, assistants) with this extra. */
+        const val EXTRA_OPEN_SETTINGS = "openSettings"
         const val EXTRA_CONVERSATION_ID = "conversationId"
         const val EXTRA_ASSISTANT_ID = "assistantId"
     }

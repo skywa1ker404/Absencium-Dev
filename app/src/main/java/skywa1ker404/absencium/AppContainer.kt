@@ -59,47 +59,40 @@ class AppContainer(context: Context) {
     val aiClient = AiClient(apiKeyVault).also {
         it.history = aiHistory
         it.usage = aiUsage
-        // When every saved key of the chosen provider hit its limit, other providers with a key take over.
-        it.fallbacks = { skywa1ker404.absencium.data.ai.AiProvider.entries.mapNotNull { p -> aiConnectionFor(p, null) } }
     }
-    /** The chats of Absencium AI and which parts of the app's data it may use. Both stay on this phone. */
-    val aiChats = skywa1ker404.absencium.data.ai.AiChats(appContext)
-    val aiPermissions = skywa1ker404.absencium.data.ai.AiPermissions(appContext)
-    val aiMode = skywa1ker404.absencium.data.ai.AiModeStore(appContext)
     /** Bumped whenever a provider or key is added, changed, switched off or removed, so every screen showing them redraws at once. */
     val providersRevision = kotlinx.coroutines.flow.MutableStateFlow(0)
-    val aiMemory = skywa1ker404.absencium.data.ai.AiMemory(appContext)
-    val aiAssistants = skywa1ker404.absencium.data.ai.AiAssistants(appContext)
         /** Finds or draws the images AI notes ask for (both optional, off by default). */
     val diagramService: skywa1ker404.absencium.data.ai.DiagramService by lazy { skywa1ker404.absencium.data.ai.DiagramService(aiClient) }
-    /** True when a key is saved for the provider in use. */
-    fun activeKeySaved(): Boolean = settingsState.value?.aiProvider?.let { apiKeyVault.hasKey(it) } ?: false
+    /** True when Absencium AI has a chat model with a key (or a local server) ready for the app's own AI features. */
+    fun activeKeySaved(): Boolean = chatChoice() != null
 
-    /** The AI the user set up, or null when AI Features are off or not yet set up. */
-    fun aiConnection(): skywa1ker404.absencium.data.ai.AiConnection? {
-        val s = settingsState.value ?: return null
-        if (!aiProfiles.enabled(s.aiProvider) || !skywa1ker404.absencium.ui.settings.aiUsable(s, apiKeyVault.hasKey(s.aiProvider))) return null
-        return skywa1ker404.absencium.data.ai.AiConnection(s.aiProvider, s.effectiveAiStyle, s.aiBaseUrl, s.aiModel)
-    }
+    private fun chatChoice(): me.rerere.rikkahub.LastChatApi.Choice? =
+        runCatching { me.rerere.rikkahub.LastChatApi.choice(appContext as android.app.Application) }.getOrNull()
+            ?.takeIf { it.apiKey.isNotBlank() || it.baseUrl.contains("localhost") || it.baseUrl.contains("127.0.0.1") || it.baseUrl.contains("192.168.") }
 
     /**
-     * The connection for one chat: [provider] and [model] when the chat picked its own, otherwise the provider in use. Null while AI is
-     * off or that provider is not complete (no URL or model saved, or no key saved when it needs one).
+     * The AI the student set up in Absencium AI, or null when AI Features are off or no chat model is chosen yet. The app's own AI
+     * features (note writer, syllabus import, text from files, homework) all use it.
      */
-    fun aiConnectionFor(provider: skywa1ker404.absencium.data.ai.AiProvider?, model: String?): skywa1ker404.absencium.data.ai.AiConnection? {
-        val s = settingsState.value ?: return null
-        if (!s.askAiEnabled) return null
-        val chosen = provider ?: s.aiProvider
-        if (!aiProfiles.enabled(chosen)) return null
-        val profile = if (chosen == s.aiProvider && s.aiConnectionSaved) {
-            skywa1ker404.absencium.data.ai.AiProfile(chosen, s.aiBaseUrl.ifBlank { chosen.defaultBaseUrl }, s.aiModel, s.effectiveAiStyle)
-        } else {
-            aiProfiles.get(chosen) ?: return null
+    fun aiConnection(): skywa1ker404.absencium.data.ai.AiConnection? {
+        if (settingsState.value?.askAiEnabled != true) return null
+        val c = chatChoice() ?: return null
+        val provider = when {
+            c.baseUrl.contains("openrouter") -> skywa1ker404.absencium.data.ai.AiProvider.OPENROUTER
+            c.baseUrl.contains("groq") -> skywa1ker404.absencium.data.ai.AiProvider.GROQ
+            c.baseUrl.contains("11434") -> skywa1ker404.absencium.data.ai.AiProvider.OLLAMA
+            c.kind == me.rerere.rikkahub.LastChatApi.Kind.GOOGLE -> skywa1ker404.absencium.data.ai.AiProvider.GEMINI
+            c.kind == me.rerere.rikkahub.LastChatApi.Kind.CLAUDE -> skywa1ker404.absencium.data.ai.AiProvider.ANTHROPIC
+            c.baseUrl.contains("api.openai.com") -> skywa1ker404.absencium.data.ai.AiProvider.OPENAI
+            else -> skywa1ker404.absencium.data.ai.AiProvider.CUSTOM
         }
-        if (profile.baseUrl.isBlank() || (chosen.keyRequired && !apiKeyVault.hasKey(chosen))) return null
-        val useModel = model?.takeIf { it.isNotBlank() } ?: profile.model
-        if (useModel.isBlank()) return null
-        return skywa1ker404.absencium.data.ai.AiConnection(chosen, profile.style, profile.baseUrl, useModel)
+        val style = when (c.kind) {
+            me.rerere.rikkahub.LastChatApi.Kind.GOOGLE -> skywa1ker404.absencium.data.ai.ApiStyle.GEMINI
+            me.rerere.rikkahub.LastChatApi.Kind.CLAUDE -> skywa1ker404.absencium.data.ai.ApiStyle.ANTHROPIC
+            else -> skywa1ker404.absencium.data.ai.ApiStyle.OPENAI_COMPATIBLE
+        }
+        return skywa1ker404.absencium.data.ai.AiConnection(provider, style, c.baseUrl, c.modelId, apiKey = c.apiKey)
     }
 
     /** Reads text out of pictures, PDFs, documents and recordings with the user's AI. */
@@ -141,77 +134,6 @@ class AppContainer(context: Context) {
         }
     }
 
-    /** Files attached to chat messages (copies in the app's private storage). */
-    val aiAttachments = skywa1ker404.absencium.data.ai.AiAttachments(appContext)
-
-    /**
-     * Answers chats on the app's own scope, so an answer keeps being written when the student leaves the chat, the screen or the app.
-     * A foreground service keeps the process alive while any answer is in flight.
-     */
-    val aiChatService: skywa1ker404.absencium.data.ai.AiChatService by lazy {
-        skywa1ker404.absencium.data.ai.AiChatService(
-            scope = appScope,
-            chats = aiChats,
-            client = aiClient,
-            attachments = aiAttachments,
-            actionRunner = { aiActionRunner },
-            connectionFor = { chat -> aiConnectionFor(chat.provider?.let { runCatching { skywa1ker404.absencium.data.ai.AiProvider.valueOf(it) }.getOrNull() }, chat.model) },
-            contextFor = { chat -> loadChatContext(chat) },
-            memory = aiMemory,
-            memoryAllowed = { skywa1ker404.absencium.data.ai.AiScope.MEMORY in aiPermissions.allowed.value },
-            contentReader = { read -> readContent(read) },
-            onBusy = { busy -> skywa1ker404.absencium.data.ai.AiWorkService.setBusy(appContext, busy) },
-            mode = { aiMode.mode.value },
-        )
-    }
-
-    /** The content of a note or study material the student approved Absencium AI to read, as a file to send; null when it cannot be found. */
-    private suspend fun readContent(read: skywa1ker404.absencium.data.ai.AiAction.ReadContent): skywa1ker404.absencium.data.ai.ChatAttachment? {
-        val vault = vaultRepository.data.first()
-        val subject = vault.subjects.firstOrNull { it.name.trim().equals(read.subject.trim(), ignoreCase = true) } ?: return null
-        val dir = java.io.File(appContext.filesDir, "ai_attachments").also { it.mkdirs() }
-        return try {
-            if (read.material) {
-                val guide = vault.guides.firstOrNull { it.subjectId == subject.id && it.fileName.trim().equals(read.title.trim(), ignoreCase = true) } ?: return null
-                val uri = if (guide.localUri.startsWith("content://")) android.net.Uri.parse(guide.localUri) else android.net.Uri.fromFile(java.io.File(guide.localUri))
-                aiAttachments.import(uri, guide.fileName).attachment
-            } else {
-                val note = vault.notes.firstOrNull { it.deletedAt == null && it.subjectId == subject.id && it.title.trim().equals(read.title.trim(), ignoreCase = true) } ?: return null
-                val file = java.io.File(dir, "note-${note.id}-${System.nanoTime()}.txt")
-                file.writeText("${note.title}\n\n${note.bodyText}")
-                skywa1ker404.absencium.data.ai.ChatAttachment("${note.title}.txt", "text/plain", file.absolutePath)
-            }
-        } catch (e: Exception) {
-            skywa1ker404.absencium.logging.DebugLogger.e("AiContent", "An approved read failed", e)
-            null
-        }
-    }
-
-    /** What Absencium AI may know about the student right now: only the parts of the app they allowed. */
-    private suspend fun loadChatContext(chat: skywa1ker404.absencium.data.ai.AiChat): skywa1ker404.absencium.data.ai.ChatContext {
-        val allowed = aiPermissions.allowed.value
-        val calendar = if (allowed.isEmpty()) skywa1ker404.absencium.data.calendar.CalendarData() else calendarRepository.data.first()
-        val notes = if (skywa1ker404.absencium.data.ai.AiScope.NOTES in allowed) vaultRepository.data.first().notes else emptyList()
-        val materials = if (skywa1ker404.absencium.data.ai.AiScope.MATERIAL in allowed) vaultRepository.data.first().guides else emptyList()
-        val syllabus = if (skywa1ker404.absencium.data.ai.AiScope.SYLLABUS in allowed) database.syllabusDao().observeAll().first() else emptyList()
-        val settings = settingsState.value
-        return skywa1ker404.absencium.data.ai.ChatContext(
-            allowed = allowed,
-            calendar = calendar,
-            notes = notes,
-            materials = materials,
-            syllabus = syllabus,
-            thresholdPercent = settings?.attendanceThresholdPercent ?: 75,
-            studentName = settings?.displayName?.takeIf { it.isNotBlank() },
-            memories = if (skywa1ker404.absencium.data.ai.AiScope.MEMORY in allowed && !chat.incognito) {
-                aiMemory.relevant(chat.messages.lastOrNull { it.role == skywa1ker404.absencium.data.ai.ChatRole.USER && !it.hidden }?.text.orEmpty(), chat.id)
-            } else {
-                emptyList()
-            },
-            instructions = aiAssistants.find(chat.assistant)?.instructions.orEmpty(),
-            temperature = aiAssistants.find(chat.assistant)?.temperature,
-        )
-    }
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.subjectDao(), database.subjectCascadeDao()) }
 }
 

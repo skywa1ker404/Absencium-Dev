@@ -67,7 +67,6 @@ import skywa1ker404.absencium.data.settings.AppSettings
 import skywa1ker404.absencium.data.settings.ColorEngine
 import skywa1ker404.absencium.data.settings.ThemeMode
 import skywa1ker404.absencium.data.settings.VisualQuality
-import skywa1ker404.absencium.ui.AiProvidersViewModel
 import skywa1ker404.absencium.ui.REQUIRES_ANDROID_12
 import skywa1ker404.absencium.ui.StorageViewModel
 import skywa1ker404.absencium.ui.components.AnimatedPopup
@@ -88,7 +87,6 @@ import skywa1ker404.absencium.ui.containerViewModel
 import skywa1ker404.absencium.ui.description
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.label
-import skywa1ker404.absencium.ui.settings.AiProviderForm
 import skywa1ker404.absencium.ui.settings.AskAiToggle
 import skywa1ker404.absencium.ui.settings.GlassBlurSlider
 import skywa1ker404.absencium.ui.settings.MomentumToggle
@@ -136,10 +134,8 @@ private const val ExpandTravelPx = 60f
 fun OnboardingScreen() {
     val settingsViewModel = rememberSettingsViewModel()
     val storageViewModel = containerViewModel { StorageViewModel(it) }
-    val aiProvidersViewModel = containerViewModel { AiProvidersViewModel(it) }
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
     val storage by storageViewModel.state.collectAsStateWithLifecycle()
-    val providerRows by aiProvidersViewModel.rows.collectAsStateWithLifecycle()
 
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val scope = rememberCoroutineScope()
@@ -250,13 +246,8 @@ fun OnboardingScreen() {
                                 }
                                 3 -> {
                                     PageHeader("AI Features", "Optional. Connect an AI to explain notes and read photos. You can set this up later in Settings.")
-                                    AskAiToggle(settings, settingsViewModel, ready = providerRows.any { it.active && it.complete })
-                                    AiProviderForm(
-                                        initial = remember { providerRows.firstOrNull { it.active }?.provider },
-                                        viewModel = aiProvidersViewModel,
-                                        onDone = {},
-                                        saveLabel = "Save provider",
-                                    )
+                                    AskAiToggle(settings, settingsViewModel, ready = true)
+                                    HintText("Pick your provider, key and model inside Absencium AI. Open it from Settings, Absencium AI, once you have finished here.")
                                 }
                                 else -> {
                                     PageHeader("Optional modules", "All off by default. Turn on what you want; each can be changed later in Settings.")

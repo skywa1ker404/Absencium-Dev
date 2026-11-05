@@ -116,9 +116,9 @@ fun AiConsentDialog(onAgree: () -> Unit, onDecline: () -> Unit) {
     )
 }
 
-/** True when the saved connection is complete: URL and model saved, and a key saved if the provider needs one. */
-fun aiReady(settings: AppSettings, hasKey: Boolean): Boolean =
-    settings.aiConnectionSaved && (!settings.aiProvider.keyRequired || hasKey)
+/** True when Absencium AI has a chat model with its key (or a local server) ready; [hasKey] says so. */
+@Suppress("UNUSED_PARAMETER")
+fun aiReady(settings: AppSettings, hasKey: Boolean): Boolean = hasKey
 
 /** True when AI may actually be used: the AI Features switch is on and the connection is complete. */
 fun aiUsable(settings: AppSettings, hasKey: Boolean): Boolean = settings.askAiEnabled && aiReady(settings, hasKey)

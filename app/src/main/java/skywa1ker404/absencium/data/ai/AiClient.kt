@@ -36,6 +36,8 @@ data class AiConnection(
     val style: ApiStyle,
     val baseUrl: String,
     val model: String,
+    /** The key to use, taken from Absencium AI's settings. When null the saved keys of [provider] are used (older code paths). */
+    val apiKey: String? = null,
 )
 
 /**
@@ -303,6 +305,12 @@ class AiClient(private val keyVault: ApiKeyVault) {
      * (each with its saved model). Only a rate or quota limit moves on; any other failure is the real answer.
      */
     private suspend fun withFailover(connection: AiConnection, system: String, turns: List<ChatTurn>, options: ChatOptions): ChatReply {
+        // The key comes from Absencium AI's settings (which rotate their own key pool), so there is nothing to fail over here.
+        if (connection.apiKey != null) {
+            val reply = chatRaw(connection, system, turns, options, connection.apiKey)
+            usage?.record(connection.provider, reply.tokensIn, reply.tokensOut)
+            return reply.copy(model = connection.model)
+        }
         if (connection.provider.keyRequired && keyVault.keyCount(connection.provider) == 0) keyFor(connection)
         var last: AiException? = null
         val candidates = listOf(connection) + fallbacks().filter { it.provider != connection.provider }
@@ -344,9 +352,10 @@ class AiClient(private val keyVault: ApiKeyVault) {
     }
 
     private fun keyFor(connection: AiConnection): String? {
+        connection.apiKey?.takeIf { it.isNotBlank() }?.let { return it }
         val key = keyVault.read(connection.provider)
         if (connection.provider.keyRequired && key.isNullOrBlank()) {
-            throw AiException("Save your API key first (Settings, AI & Integrations, API key).")
+            throw AiException("Add your API key first (Settings, Absencium AI, providers).")
         }
         return key
     }
