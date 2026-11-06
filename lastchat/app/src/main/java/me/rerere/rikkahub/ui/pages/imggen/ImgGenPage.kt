@@ -57,7 +57,7 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -610,7 +610,6 @@ private fun FloatingInputBar(
                                             .align(Alignment.TopEnd)
                                             .size(16.dp)
                                             .clickable { vm.clearSelectedImage() },
-                                        shadowElevation = 2.dp
                                     ) {
                                         Icon(
                                             imageVector = Icons.Rounded.Close,

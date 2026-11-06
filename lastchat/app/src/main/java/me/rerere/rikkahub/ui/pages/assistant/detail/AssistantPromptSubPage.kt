@@ -248,7 +248,6 @@ fun AssistantPromptSubPage(
                                         Surface(
                                             color = MaterialTheme.colorScheme.surface,
                                             shape = me.rerere.rikkahub.ui.theme.AppShapes.CardSmall,
-                                            shadowElevation = 1.dp,
                                             modifier = Modifier
                                                 .width(280.dp)
                                                 .height(140.dp)

@@ -56,7 +56,7 @@ import me.rerere.rikkahub.ui.components.ui.SummarizerModelTipBanner
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.CircularProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField

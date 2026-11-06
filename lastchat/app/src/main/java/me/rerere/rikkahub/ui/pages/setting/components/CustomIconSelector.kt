@@ -28,7 +28,7 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -126,7 +126,6 @@ fun CustomIconSelector(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                shadowElevation = 2.dp,
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Close,

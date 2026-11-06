@@ -46,7 +46,7 @@ import android.content.Intent
 import me.rerere.tts.provider.android.TTSManager
 import org.koin.compose.koinInject
 import kotlinx.coroutines.launch
-import androidx.compose.material3.CircularProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer

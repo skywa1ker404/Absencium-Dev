@@ -281,7 +281,6 @@ private fun EmojiModifierPicker(
                 .padding(16.dp),
             shape = RoundedCornerShape(10.dp),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp,
             tonalElevation = 8.dp
         ) {
             Column(

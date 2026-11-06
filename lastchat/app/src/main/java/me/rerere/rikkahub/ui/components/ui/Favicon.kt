@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
@@ -62,7 +61,6 @@ fun FaviconRow(
                 Favicon(
                     url = url,
                     modifier = Modifier
-                        .shadow(1.dp, CircleShape)
                         .zIndex(index.toFloat())
                         .size(size),
                     shape = CircleShape,

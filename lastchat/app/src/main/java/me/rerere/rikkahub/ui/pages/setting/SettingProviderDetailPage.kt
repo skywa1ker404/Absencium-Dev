@@ -535,7 +535,6 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                         shape = RoundedCornerShape(28.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         tonalElevation = 6.dp,
-                        shadowElevation = 8.dp
                     ) {
                         Row(
                             modifier = Modifier.padding(4.dp),
