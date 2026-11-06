@@ -412,30 +412,7 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
      */
     fun insertOutline(items: List<SyllabusTree.OutlineItem>, chosen: Set<Int> = items.indices.toSet(), parentId: Long? = null) {
         viewModelScope.launch {
-            val existing = nodes.value
-            fun norm(t: String) = t.trim().replace(Regex("\\s+"), " ").lowercase()
-            val known = HashMap<Pair<Long?, String>, Long>()
-            existing.forEach { known[it.parentId to norm(it.title)] = it.id }
-            // The ids of the most recent node at each depth, so a deeper line is filed under the one above it.
-            val trail = arrayOfNulls<Long>(SyllabusTree.MAX_DEPTH + 2)
-            val nextPosition = HashMap<Long?, Int>()
-            fun position(parent: Long?): Int {
-                val start = nextPosition[parent] ?: ((existing.filter { it.parentId == parent }.maxOfOrNull { it.position } ?: -1) + 1)
-                nextPosition[parent] = start + 1
-                return start
-            }
-            items.forEachIndexed { index, item ->
-                val parent = if (item.depth == 0) parentId else trail[item.depth - 1] ?: parentId
-                val match = known[parent to norm(item.title)]
-                val id = when {
-                    match != null -> match
-                    index in chosen -> dao.insert(SyllabusNodeEntity(subjectId = subjectId, parentId = parent, title = item.title, position = position(parent)))
-                        .also { known[parent to norm(item.title)] = it }
-                    else -> null
-                }
-                trail[item.depth] = id
-                for (deeper in item.depth + 1 until trail.size) trail[deeper] = null
-            }
+            SyllabusTree.insertOutline(dao, subjectId, nodes.value, items, chosen, parentId)
             _import.value = OutlineImport.Idle
         }
     }

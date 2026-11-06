@@ -21,6 +21,7 @@ import skywa1ker404.absencium.data.db.NoteStatus
 import skywa1ker404.absencium.data.db.Priority
 import skywa1ker404.absencium.data.db.SubjectEntity
 import skywa1ker404.absencium.data.db.SyllabusStatus
+import skywa1ker404.absencium.data.syllabus.SyllabusTree
 import skywa1ker404.absencium.logging.DebugLogger
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -37,7 +38,9 @@ class ChatAppTools(private val container: AppContainer) {
 
     private companion object {
         const val APP_PROMPT = """You are Absencium AI, the assistant built into Absencium, the student's offline college companion app (attendance, timetable, exams, holidays, notes, syllabus, Vault). The Vault is the student's notes and drafts, their attachments (photos, documents, recordings) and their study guides: use list_vault, search_notes, list_attachments and read_note for it.
-You can look things up and change them with the app tools. Look the answer up with a tool instead of guessing, and never say something was added, changed or deleted unless the tool answered ok. Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain."""
+You can look things up and change them with the app tools. Look the answer up with a tool instead of guessing, and never say something was added, changed or deleted unless the tool answered ok.
+Rules for changes: (1) Today's date and weekday come from app_overview; work out every date from it and never guess one. Pass weekday along with a date when you know it. (2) Before adding anything, look it up first (list_subjects, get_timetable, list_exams, list_holidays, list_vault, get_syllabus) and do not add what already exists. (3) Do each change once; if a tool answered ok, do not repeat it, and if it refused, read why instead of trying again. (4) A syllabus goes into add_syllabus, a lecture into the timetable, an exam into exams, a holiday into holidays. Never put a syllabus, timetable, exam list or study material into a note. Notes are only for text the student asked to keep as a note. (5) Study material and files can only be added by the student in the app. (6) When the request is unclear (which subject, which date, which time), ask the student instead of guessing.
+Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain."""
     }
 
     fun tools(): List<Tool> = listOf(
@@ -65,9 +68,13 @@ You can look things up and change them with the app tools. Look the answer up wi
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
             subjectResult(container.subjectRepository.delete(s), "Deleted the subject.")
         },
-        write("add_note", "Adds a note to a subject.", mapOf("subject" to text("Subject name"), "title" to text("Note title"), "body" to text("Note text")), required = listOf("subject", "title", "body")) { a ->
+        write("add_note", "Adds a text note to a subject's Vault, only when the student asked to keep something as a note. Never use it for a syllabus (use add_syllabus), a timetable, exams or study material.", mapOf("subject" to text("Subject name"), "title" to text("Note title"), "body" to text("Note text")), required = listOf("subject", "title", "body")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
-            container.vaultRepository.saveNote(0, s.id, a.req("title"), a.req("body"), NoteStatus.ACTIVE)
+            val title = a.req("title").trim()
+            if (Regex("syllabus|timetable|time table|exam schedule", RegexOption.IGNORE_CASE).containsMatchIn(title)) return@write fail("A syllabus belongs in add_syllabus and a timetable in add_timetable_slot, not in a note.")
+            container.database.noteDao().observeAll().first().firstOrNull { it.subjectId == s.id && it.title.trim().equals(title, true) }
+                ?.let { return@write fail("${s.name} already has a note called \"${it.title}\" (id ${it.id}). Use update_note to change it.") }
+            container.vaultRepository.saveNote(0, s.id, title, a.req("body"), NoteStatus.ACTIVE)
             ok("Added the note to ${s.name}.")
         },
         write("update_note", "Changes the title and/or text of a note. append_text is added to the end of the existing text.", mapOf("note_id" to num("Note id"), "title" to text("New title"), "body" to text("New full text (replaces the old text)"), "append_text" to text("Text to add at the end")), required = listOf("note_id")) { a ->
@@ -92,7 +99,12 @@ You can look things up and change them with the app tools. Look the answer up wi
             val start = time(a.req("start")) ?: return@write fail("Start must look like 09:30.")
             val end = time(a.req("end")) ?: return@write fail("End must look like 10:30.")
             if (!end.isAfter(start)) return@write fail("The lecture must end after it starts.")
-            container.calendarRepository.addSlot(day(a.req("day")) ?: return@write fail("Unknown day."), s.id, start, end, a.str("room"))
+            val d = day(a.req("day")) ?: return@write fail("Unknown day.")
+            val names = container.database.subjectDao().observeAll().first().associate { it.id to it.name }
+            container.database.timetableDao().observeAll().first()
+                .firstOrNull { it.dayOfWeek == d && it.startTime < end && start < it.endTime && (it.subjectId == s.id || it.startTime == start) }
+                ?.let { return@write fail("${d.name} already has ${names[it.subjectId].orEmpty()} at ${it.startTime}-${it.endTime}, which overlaps. Change that lecture with update_timetable_slot instead of adding another.") }
+            container.calendarRepository.addSlot(d, s.id, start, end, a.str("room"))
             ok("Added to the timetable.")
         },
         write("update_timetable_slot", "Moves or edits a lecture. Identify it by subject and day (and start when the subject has several that day).", mapOf("subject" to text("Subject name"), "day" to text("Current day"), "start" to text("Current start HH:mm, only if needed"), "new_day" to text("New day"), "new_start" to text("New start HH:mm"), "new_end" to text("New end HH:mm"), "room" to text("New room")), required = listOf("subject", "day")) { a ->
@@ -112,9 +124,15 @@ You can look things up and change them with the app tools. Look the answer up wi
             container.calendarRepository.deleteSlot(slot)
             ok("Moved the lecture to the Trash.")
         },
-        write("add_exam", "Adds an exam.", mapOf("subject" to text("Subject name"), "title" to text("Exam title"), "date" to text("YYYY-MM-DD"), "room" to text("Room"), "weightage" to num("Weightage percent")), required = listOf("subject", "title", "date")) { a ->
+        write("add_exam", "Adds an exam.", mapOf("subject" to text("Subject name"), "title" to text("Exam title"), "date" to text("YYYY-MM-DD"), "room" to text("Room"), "weightage" to num("Weightage percent"), "weekday" to text("Weekday of that date, to double-check it")), required = listOf("subject", "title", "date")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
-            container.calendarRepository.addExam(s.id, date(a.req("date")) ?: return@write fail("Date must look like 2026-12-05."), a.req("title"), a.dbl("weightage"), a.str("room"), null, Priority.HIGH)
+            val d = date(a.req("date")) ?: return@write fail("Date must look like 2026-12-05.")
+            dateProblem(d, a.str("weekday"), future = true)?.let { return@write fail(it) }
+            val title = a.req("title").trim()
+            container.database.examDao().observeAll().first()
+                .firstOrNull { it.subjectId == s.id && (it.date == d || it.title.trim().equals(title, true)) }
+                ?.let { return@write fail("${s.name} already has the exam \"${it.title}\" on ${it.date}. Use update_exam to change it instead of adding another.") }
+            container.calendarRepository.addExam(s.id, d, title, a.dbl("weightage"), a.str("room"), null, Priority.HIGH)
             ok("Exam added.")
         },
         write("update_exam", "Changes an exam found by words in its title or subject.", mapOf("match" to text("Words from the exam title or subject"), "title" to text("New title"), "date" to text("New date YYYY-MM-DD"), "room" to text("New room")), required = listOf("match")) { a ->
@@ -127,9 +145,10 @@ You can look things up and change them with the app tools. Look the answer up wi
             container.calendarRepository.deleteExam(exam)
             ok("Moved the exam to the Trash.")
         },
-        write("add_holiday", "Adds a holiday.", mapOf("date" to text("YYYY-MM-DD"), "title" to text("Holiday name")), required = listOf("date", "title")) { a ->
+        write("add_holiday", "Adds a holiday.", mapOf("date" to text("YYYY-MM-DD"), "title" to text("Holiday name"), "weekday" to text("Weekday of that date, to double-check it")), required = listOf("date", "title")) { a ->
             val d = date(a.req("date")) ?: return@write fail("Date must look like 2026-12-25.")
-            if (container.database.holidayDao().getForDate(d) != null) return@write fail("That day already has a holiday.")
+            dateProblem(d, a.str("weekday"), future = false)?.let { return@write fail(it) }
+            container.database.holidayDao().getForDate(d)?.let { return@write fail("That day already has the holiday \"${it.title}\".") }
             container.calendarRepository.addHoliday(d, a.req("title"), true, Priority.LOW)
             ok("Holiday added.")
         },
@@ -138,11 +157,31 @@ You can look things up and change them with the app tools. Look the answer up wi
             container.calendarRepository.deleteHoliday(h)
             ok("Moved the holiday to the Trash.")
         },
-        write("set_attendance", "Marks a subject PRESENT, ABSENT or CANCELLED on a date.", mapOf("subject" to text("Subject name"), "date" to text("YYYY-MM-DD"), "status" to text("PRESENT, ABSENT or CANCELLED")), required = listOf("subject", "date", "status")) { a ->
+        write("set_attendance", "Marks a subject PRESENT, ABSENT or CANCELLED on a date that is today or earlier. Marking the same status again does nothing.", mapOf("subject" to text("Subject name"), "date" to text("YYYY-MM-DD"), "status" to text("PRESENT, ABSENT or CANCELLED"), "weekday" to text("Weekday of that date, to double-check it")), required = listOf("subject", "date", "status")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
             val status = runCatching { AttendanceStatus.valueOf(a.req("status").trim().uppercase()) }.getOrNull() ?: return@write fail("Status must be PRESENT, ABSENT or CANCELLED.")
-            container.calendarRepository.setAttendance(s.id, date(a.req("date")) ?: return@write fail("Date must look like 2026-12-05."), status)
+            val d = date(a.req("date")) ?: return@write fail("Date must look like 2026-12-05.")
+            dateProblem(d, a.str("weekday"), future = false)?.let { return@write fail(it) }
+            if (d.isAfter(LocalDate.now())) return@write fail("Attendance can only be marked for today or an earlier day.")
+            if (container.database.holidayDao().getForDate(d) != null) return@write fail("That day is a holiday.")
+            if (container.database.timetableDao().observeAll().first().none { it.subjectId == s.id && it.dayOfWeek == d.dayOfWeek }) return@write fail("${s.name} has no lecture on ${d.dayOfWeek.name} in the timetable.")
+            val current = container.database.attendanceDao().getFor(s.id, d)
+            if (current?.status == status) return@write ok("Already marked ${status.name}.")
+            container.calendarRepository.setAttendance(s.id, d, status)
             ok("Attendance marked.")
+        },
+        write("add_syllabus", "Adds syllabus topics to a subject's Syllabus (not to notes). outline has one title per line, nested by two spaces of indentation per level (unit, chapter, topic, subtopic). Titles already in the syllabus are skipped.", mapOf("subject" to text("Subject name"), "outline" to text("One topic per line, indented to nest"), "under" to text("Optional existing topic to add below")), required = listOf("subject", "outline")) { a ->
+            val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
+            val items = SyllabusTree.parseOutline(a.req("outline"))
+            if (items.isEmpty()) return@write fail("The outline has no topics.")
+            val dao = container.database.syllabusDao()
+            val nodes = dao.observeAll().first().filter { it.subjectId == s.id }
+            val parent = a.str("under")?.trim()?.takeIf { it.isNotEmpty() }?.let { u ->
+                val hits = nodes.filter { it.title.equals(u, true) }.ifEmpty { nodes.filter { it.title.contains(u, true) } }
+                (hits.singleOrNull() ?: return@write fail(if (hits.isEmpty()) "No syllabus topic matches \"$u\"." else "Several topics match \"$u\".")).id
+            }
+            val added = SyllabusTree.insertOutline(dao, s.id, nodes, items, parentId = parent)
+            ok(if (added == 0) "Everything in that outline is already in the syllabus." else "Added $added syllabus topics to ${s.name}.")
         },
         write("set_syllabus_status", "Marks a syllabus topic NOT_STARTED, IN_PROGRESS or COMPLETED.", mapOf("subject" to text("Subject name"), "topic" to text("Topic title"), "status" to text("NOT_STARTED, IN_PROGRESS or COMPLETED")), required = listOf("subject", "topic", "status")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
@@ -397,6 +436,18 @@ You can look things up and change them with the app tools. Look the answer up wi
         val names = container.database.subjectDao().observeAll().first().associate { it.id to it.name }
         return container.database.examDao().observeAll().first()
             .filter { it.title.contains(match, true) || names[it.subjectId].orEmpty().contains(match, true) }.singleOrNull()
+    }
+
+    /** Catches a date the model worked out wrongly: its weekday must match when one is given, and it must be a sensible distance from today. */
+    private fun dateProblem(d: LocalDate, weekday: String?, future: Boolean): String? {
+        val today = LocalDate.now()
+        weekday?.takeIf { it.isNotBlank() }?.let { w ->
+            val given = day(w) ?: return "Unknown weekday \"$w\"."
+            if (given != d.dayOfWeek) return "$d is a ${d.dayOfWeek.name}, not ${given.name}. Today is $today (${today.dayOfWeek.name}); work the date out again."
+        }
+        if (d.isBefore(today.minusYears(3)) || d.isAfter(today.plusYears(2))) return "$d is too far from today ($today). Check the date."
+        if (future && d.isBefore(today)) return "$d is in the past (today is $today). Check the date."
+        return null
     }
 
     private fun day(text: String): DayOfWeek? {
