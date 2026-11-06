@@ -90,3 +90,5 @@ working on it
 - Added (branch Absencium-ai): Absencium AI can look up and change your app: subjects, notes, timetable, exams, holidays, attendance and syllabus. Looking things up needs no tap; every change, and reading a whole note, waits for your approval, and deleted items go to the Trash.
 - Changed (branch Absencium-ai): the chat uses your theme (Default, Monet, Liquid Glass, presets) and the 90 Hz cap, so it looks like the rest of the app.
 - Changed (branch Absencium-ai): development builds contain arm64 only, so the APK is far smaller; stable builds are one APK per processor type.
+- Fixed (branch Absencium-ai): the assistant is now called Absencium AI instead of "Generical" and knows it lives inside Absencium, not LastChat; existing chats keep working.
+- Added (branch Absencium-ai): Absencium AI can see your Vault: notes, drafts, attachments (with the text read from them) and study guides, and can move a note between Active, Finished and Draft after you approve.
