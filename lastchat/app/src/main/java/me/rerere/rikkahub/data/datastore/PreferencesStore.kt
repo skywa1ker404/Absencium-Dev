@@ -278,7 +278,7 @@ class SettingsStore(
                     )
                 } else provider
             }.toMutableList()
-            val assistants = it.assistants.ifEmpty { DEFAULT_ASSISTANTS }.toMutableList()
+            val assistants = it.assistants.ifEmpty { DEFAULT_ASSISTANTS }.map { a -> a.migrateDefaultAssistant() }.toMutableList()
             val ttsProviders = it.ttsProviders.map { provider ->
                 val defaultVoiceId = if (provider.id == DEFAULT_SYSTEM_TTS_ID) DEFAULT_SYSTEM_TTS_VOICE_ID else null
                 provider.withDefaultVoices(defaultVoiceId)

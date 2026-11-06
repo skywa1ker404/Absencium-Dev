@@ -116,7 +116,7 @@ class AppShortcutManager(
             }
             is Avatar.Resource -> {
                 // Use the resource directly without circle cropping
-                // This preserves the original icon shape (like Generical)
+                // This preserves the original icon shape (like the Absencium AI logo)
                 Icon.createWithResource(context, avatar.id)
             }
             is Avatar.Dummy -> {

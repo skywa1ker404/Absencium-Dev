@@ -206,8 +206,8 @@ fun UIAvatar(
                     Button(
                         onClick = {
                             showPickOption = false
-                            if (name == "Generical") {
-                                onUpdate?.invoke(Avatar.Resource(me.rerere.rikkahub.R.drawable.default_generical_pfp))
+                            if (name == "Absencium AI") {
+                                onUpdate?.invoke(Avatar.Resource(me.rerere.rikkahub.R.drawable.absencium_ai_avatar))
                             } else {
                                 onUpdate?.invoke(Avatar.Dummy)
                             }

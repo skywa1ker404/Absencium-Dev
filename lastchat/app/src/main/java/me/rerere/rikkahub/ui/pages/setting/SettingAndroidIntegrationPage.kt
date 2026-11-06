@@ -230,7 +230,7 @@ fun SettingAndroidIntegrationPage(
                             }
                         )
 
-                        val overlayDefaultAssistant = settings.assistants.find { it.name == "Generical" }
+                        val overlayDefaultAssistant = settings.assistants.find { it.name == "Absencium AI" }
                             ?: settings.assistants.firstOrNull()
                         SettingGroupItem(
                             title = stringResource(R.string.assistant_overlay_assistant),
@@ -333,8 +333,8 @@ fun SettingAndroidIntegrationPage(
             // Settings Section
                 item {
                     SettingsGroup(title = stringResource(R.string.settings)) {
-                        // Assistant picker - default to Generical
-                        val defaultAssistant = settings.assistants.find { it.name == "Generical" }
+                        // Assistant picker - default to Absencium AI
+                        val defaultAssistant = settings.assistants.find { it.name == "Absencium AI" }
                             ?: settings.assistants.firstOrNull()
                         
                         SettingGroupItem(

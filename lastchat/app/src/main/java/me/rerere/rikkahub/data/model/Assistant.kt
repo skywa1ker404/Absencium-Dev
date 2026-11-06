@@ -122,7 +122,7 @@ fun Assistant.getInitialMessageNodes(): List<me.rerere.ai.ui.MessageNode> {
     val allIntros = mutableListOf<String>()
     
     // Port old preset messages (gather all ASSISTANT ones). Skip blank intros so a new chat
-    // never opens with an empty Generical/assistant bubble.
+    // never opens with an empty assistant bubble.
     presetMessages.filter { it.role == me.rerere.ai.core.MessageRole.ASSISTANT }
         .map { it.toText().trim() }
         .filter { it.isNotEmpty() }

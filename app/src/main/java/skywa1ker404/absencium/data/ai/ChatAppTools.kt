@@ -36,7 +36,7 @@ import java.util.Locale
 class ChatAppTools(private val container: AppContainer) {
 
     private companion object {
-        const val APP_PROMPT = """You are Absencium AI, the assistant built into Absencium, the student's offline college companion app (attendance, timetable, exams, holidays, notes, syllabus, Vault).
+        const val APP_PROMPT = """You are Absencium AI, the assistant built into Absencium, the student's offline college companion app (attendance, timetable, exams, holidays, notes, syllabus, Vault). The Vault is the student's notes and drafts, their attachments (photos, documents, recordings) and their study guides: use list_vault, search_notes, list_attachments and read_note for it.
 You can look things up and change them with the app tools. Look the answer up with a tool instead of guessing, and never say something was added, changed or deleted unless the tool answered ok. Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain."""
     }
 
@@ -49,7 +49,9 @@ You can look things up and change them with the app tools. Look the answer up wi
         read("list_holidays", "Holidays from today on, or all of them when all is true.", mapOf("all" to bool("Include past holidays"))) { a -> holidays(a.bool("all") ?: false) },
         read("get_attendance", "Attendance counts (present, absent, cancelled, percentage) for one subject or all, and its last 15 marked days.", mapOf("subject" to text("Subject name; leave out for all"))) { a -> attendance(a.str("subject")) },
         read("get_syllabus", "The syllabus topics of one subject with their progress.", mapOf("subject" to text("Subject name")), required = listOf("subject")) { a -> syllabus(a.req("subject")) },
-        read("search_notes", "Searches note titles and the start of note text. Returns id, subject, title and a short snippet.", mapOf("query" to text("Words to look for"), "subject" to text("Optional subject name")), required = listOf("query")) { a -> searchNotes(a.req("query"), a.str("subject")) },
+        read("search_notes", "Searches note titles, text, tags and attachment text. Returns id, subject, title and a short snippet.", mapOf("query" to text("Words to look for"), "subject" to text("Optional subject name")), required = listOf("query")) { a -> searchNotes(a.req("query"), a.str("subject")) },
+        read("list_vault", "The Vault: the student's notes (with status ACTIVE, FINISHED or DRAFT, tags and how many attachments each has) and the study guides (question papers, syllabus files, answer banks) per subject. Optional subject and status filters.", mapOf("subject" to text("Optional subject name"), "status" to text("Optional ACTIVE, FINISHED or DRAFT"))) { a -> vault(a.str("subject"), a.str("status")) },
+        read("list_attachments", "The photos, documents, recordings and sketches attached to one note, with the text read from them.", mapOf("note_id" to num("Note id from list_vault or search_notes")), required = listOf("note_id")) { a -> attachments(a.long("note_id")) },
         read("search_app", "Searches everything by words: subjects, notes, exams, holidays and syllabus topics.", mapOf("query" to text("Words to look for")), required = listOf("query")) { a -> searchApp(a.req("query")) },
         write("read_note", "Reads the whole text of one note (the student approves each time, because it is sent to the AI provider).", mapOf("note_id" to num("Note id from search_notes")), required = listOf("note_id"), needsApproval = true) { a -> readNote(a.long("note_id")) },
 
@@ -78,6 +80,12 @@ You can look things up and change them with the app tools. Look the answer up wi
             val note = container.vaultRepository.getNote(a.long("note_id") ?: return@write fail("note_id is missing.")) ?: return@write fail("No such note.")
             container.vaultRepository.deleteNote(note)
             ok("Moved the note to the Trash.")
+        },
+        write("set_note_status", "Moves a note between the Vault states: ACTIVE, FINISHED or DRAFT.", mapOf("note_id" to num("Note id"), "status" to text("ACTIVE, FINISHED or DRAFT")), required = listOf("note_id", "status")) { a ->
+            val note = container.vaultRepository.getNote(a.long("note_id") ?: return@write fail("note_id is missing.")) ?: return@write fail("No such note.")
+            val status = runCatching { NoteStatus.valueOf(a.req("status").trim().uppercase()) }.getOrNull() ?: return@write fail("Status must be ACTIVE, FINISHED or DRAFT.")
+            container.vaultRepository.setNoteStatus(note, status)
+            ok("Note is now ${status.name}.")
         },
         write("add_timetable_slot", "Adds a weekly lecture.", mapOf("subject" to text("Subject name"), "day" to text("MONDAY..SUNDAY"), "start" to text("HH:mm"), "end" to text("HH:mm"), "room" to text("Room, optional")), required = listOf("subject", "day", "start", "end")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
@@ -253,9 +261,10 @@ You can look things up and change them with the app tools. Look the answer up wi
         val words = query.lowercase().split(Regex("\\s+")).filter { it.isNotBlank() }
         return buildJsonObject {
             put("notes", buildJsonArray {
+                val fileText = container.database.attachmentDao().observeAll().first().groupBy({ it.noteId }, { (it.displayName + " " + it.extractedText).lowercase() })
                 container.database.noteDao().observeAll().first()
                     .filter { only == null || it.subjectId == only }
-                    .filter { n -> words.all { w -> n.title.lowercase().contains(w) || n.bodyText.lowercase().contains(w) } }
+                    .filter { n -> words.all { w -> n.title.lowercase().contains(w) || n.bodyText.lowercase().contains(w) || n.tags.lowercase().contains(w) || fileText[n.id].orEmpty().any { t -> t.contains(w) } } }
                     .take(15).forEach { n ->
                         add(buildJsonObject {
                             put("id", n.id)
@@ -264,6 +273,55 @@ You can look things up and change them with the app tools. Look the answer up wi
                             put("snippet", n.bodyText.replace(Regex("\\s+"), " ").take(140))
                         })
                     }
+            })
+        }
+    }
+
+    private suspend fun vault(subjectName: String?, statusName: String?): JsonElement {
+        val names = container.database.subjectDao().observeAll().first().associate { it.id to it.name }
+        val only = subjectName?.let { (subject(it) ?: return missing(it)).id }
+        val status = statusName?.let { n -> runCatching { NoteStatus.valueOf(n.trim().uppercase()) }.getOrNull() ?: return fail("Status must be ACTIVE, FINISHED or DRAFT.") }
+        val files = container.database.attachmentDao().observeAll().first().groupingBy { it.noteId }.eachCount()
+        val notes = container.database.noteDao().observeAll().first().filter { (only == null || it.subjectId == only) && (status == null || it.status == status) }
+        return buildJsonObject {
+            put("note_count", notes.size)
+            put("notes", buildJsonArray {
+                notes.sortedByDescending { it.updatedAt }.take(40).forEach { n ->
+                    add(buildJsonObject {
+                        put("id", n.id)
+                        put("subject", names[n.subjectId].orEmpty())
+                        put("title", n.title)
+                        put("status", n.status.name)
+                        if (n.tags.isNotBlank()) put("tags", n.tags)
+                        put("attachments", files[n.id] ?: 0)
+                    })
+                }
+            })
+            put("guides", buildJsonArray {
+                container.database.guideDao().observeAll().first().filter { only == null || it.subjectId == only }.take(40).forEach { g ->
+                    add(buildJsonObject {
+                        put("subject", names[g.subjectId].orEmpty())
+                        put("file", g.fileName)
+                        put("type", g.guideType.name)
+                    })
+                }
+            })
+        }
+    }
+
+    private suspend fun attachments(id: Long?): JsonElement {
+        val note = container.vaultRepository.getNote(id ?: return fail("note_id is missing.")) ?: return fail("No such note.")
+        return buildJsonObject {
+            put("note", note.title)
+            put("attachments", buildJsonArray {
+                container.vaultRepository.attachmentsFor(note.id).forEach { f ->
+                    add(buildJsonObject {
+                        put("name", f.displayName)
+                        put("kind", f.kind.name)
+                        put("type", f.mimeType)
+                        if (f.extractedText.isNotBlank()) put("text", f.extractedText.take(3_000))
+                    })
+                }
             })
         }
     }

@@ -351,7 +351,7 @@ internal fun Settings.normalizeLocalProvider(): Settings {
 
 /**
  * Replaces the old Bing HTML scraper with Keyless (a router over free search backends) and
- * turns search on for Generical when that migration happens.
+ * turns search on for the default assistant when that migration happens.
  */
 internal fun Settings.normalizeSearchServices(): Settings {
     var convertedBing = false
@@ -710,30 +710,45 @@ private fun Model.findModelProviderFromList(providers: List<ProviderSetting>): P
 
 internal val GEMINI_2_5_FLASH_ID = Uuid.parse("cd2cba9a-3f92-4148-b4c6-4d7a86f7b9c2")
 internal val DEFAULT_ASSISTANT_ID = Uuid.parse("0950e2dc-9bd5-4801-afa3-aa887aa36b4e")
+internal const val DEFAULT_ASSISTANT_NAME = "Absencium AI"
+
+internal val DEFAULT_ASSISTANT_PROMPT = """
+    You are {{char}}, the assistant built into Absencium, a student's offline college companion app (attendance, timetable, exams, holidays, notes, syllabus and the Vault). The Vault is the student's notes and drafts, their attachments and their study guides.
+    Use the Absencium app tools to look things up and to add, change or delete things instead of guessing, and only say something was changed when the tool answered ok. Use the search tool for factual questions that are not about the app. Keep answers short and plain, no emojis. You can have opinions if the user asks for one.
+
+    **Context:
+    - You are currently chatting to {{user}}
+    - You are running on {{model_name}}
+    - Date: {{cur_date}}
+
+    **Additional info:
+    - The UI supports LaTeX rendering
+    - You are an AI/LLM and shouldn't hide this fact
+""".trimIndent()
+
 internal val DEFAULT_ASSISTANTS = listOf(
     Assistant(
         id = DEFAULT_ASSISTANT_ID,
-        name = "Generical",
-        avatar = Avatar.Resource(R.drawable.default_generical_pfp),
+        name = DEFAULT_ASSISTANT_NAME,
+        avatar = Avatar.Resource(R.drawable.absencium_ai_avatar),
         temperature = 0.6f,
         uiSettings = me.rerere.rikkahub.data.model.AssistantUISettings(newChatShowAvatar = false),
         enableTimeAwareness = true,
         searchMode = AssistantSearchMode.Provider(0),
-        systemPrompt = """
-            You are the best generic assistant, called {{char}}. {{char}} is a really nice guy. He doesn't use emojis though. Use the search tool when looking for factual info. You can have opinions if the user asks you for one. 
-
-            **Context:
-            - You are currently chatting to {{user}}
-            - You are running on {{model_name}}
-            - Date: {{cur_date}}
-
-            **Additional info:
-            - The UI supports LaTeX rendering
-            - The user is chatting to you trough an app called LastChat
-            - You are an AI/LLM and shouldn't hide this fact
-        """.trimIndent()
+        systemPrompt = DEFAULT_ASSISTANT_PROMPT
     )
 )
+
+/** The first release shipped the assistant as "Generical" and told it the app was LastChat; bring those saved copies up to date. */
+internal fun Assistant.migrateDefaultAssistant(): Assistant {
+    if (id != DEFAULT_ASSISTANT_ID) return this
+    val old = name == "Generical" || systemPrompt.contains("LastChat")
+    return copy(
+        name = if (old) DEFAULT_ASSISTANT_NAME else name,
+        systemPrompt = if (old) DEFAULT_ASSISTANT_PROMPT else systemPrompt,
+        avatar = if (old || avatar is Avatar.Resource) Avatar.Resource(R.drawable.absencium_ai_avatar) else avatar,
+    )
+}
 
 val DEFAULT_SYSTEM_TTS_ID = Uuid.parse("026a01a2-c3a0-4fd5-8075-80e03bdef200")
 val DEFAULT_SYSTEM_TTS_VOICE_ID = Uuid.parse("65e59f2d-31a4-4db4-99dd-ef2f8a9a8a38")

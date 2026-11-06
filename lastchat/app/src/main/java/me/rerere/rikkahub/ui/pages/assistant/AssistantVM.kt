@@ -46,22 +46,10 @@ class AssistantVM(
             val settings = settings.value
             val newAssistant = if (assistant.name.isBlank()) {
                 assistant.copy(
-                    name = "Generical",
-                    avatar = Avatar.Resource(me.rerere.rikkahub.R.drawable.default_generical_pfp),
+                    name = me.rerere.rikkahub.data.datastore.DEFAULT_ASSISTANT_NAME,
+                    avatar = Avatar.Resource(me.rerere.rikkahub.R.drawable.absencium_ai_avatar),
                     enableTimeAwareness = true,
-                    systemPrompt = """
-                        You are the best generic assistant, called {{char}}. {{char}} is a really nice guy. He doesn't use emojis though. Use the search tool when looking for factual info. You can have opinions if the user asks you for one. 
-
-                        **Context:
-                        - You are currently chatting to {{user}}
-                        - You are running on {{model_name}}
-                        - Date: {{cur_date}}
-
-                        **Additional info:
-                        - The UI supports LaTeX rendering
-                        - The user is chatting to you trough an app called LastChat
-                        - You are an AI/LLM and shouldn't hide this fact
-                    """.trimIndent()
+                    systemPrompt = me.rerere.rikkahub.data.datastore.DEFAULT_ASSISTANT_PROMPT
                 )
             } else {
                 assistant
