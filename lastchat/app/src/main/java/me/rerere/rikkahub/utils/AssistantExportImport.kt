@@ -65,10 +65,10 @@ object AssistantExportImport : KoinComponent {
     }
 
     /**
-     * Export an Assistant to LastChat Bundle JSON format.
+     * Export an Assistant to Absencium AI Bundle JSON format.
      * Includes all settings, avatar image, and enabled lorebooks.
      */
-    suspend fun exportToLastChatBundle(
+    suspend fun exportToAbsencium AIBundle(
         assistant: Assistant, 
         context: Context,
         includeMemories: Boolean,
@@ -167,18 +167,18 @@ object AssistantExportImport : KoinComponent {
     }
 
     /**
-     * Import an Assistant from LastChat Bundle JSON format.
+     * Import an Assistant from Absencium AI Bundle JSON format.
      */
-    suspend fun importFromLastChatBundle(jsonContent: String, context: Context): Assistant {
+    suspend fun importFromAbsencium AIBundle(jsonContent: String, context: Context): Assistant {
         val export = json.decodeFromString<AssistantExportV1>(jsonContent)
-        return finalizeLastChatImport(export, context, true, true)
+        return finalizeAbsencium AIImport(export, context, true, true)
     }
 
     /**
      * Finalize the import from a parsed ExportV1 object.
      * Restores files, memories, and lorebooks based on flags.
      */
-    suspend fun finalizeLastChatImport(
+    suspend fun finalizeAbsencium AIImport(
         export: AssistantExportV1, 
         context: Context,
         importMemories: Boolean,
@@ -317,7 +317,7 @@ object AssistantExportImport : KoinComponent {
         val characterBook = if (mergedTavernEntries.isNotEmpty()) {
             TavernCharacterBook(
                 name = "Bundled Lore",
-                description = "Merged lorebooks from LastChat",
+                description = "Merged lorebooks from Absencium AI",
                 entries = mergedTavernEntries
             )
         } else {
@@ -383,7 +383,7 @@ object AssistantExportImport : KoinComponent {
         return when (format) {
             "card_v2" -> "${baseName}_card_v2.json"
             "card_v2_png" -> "${baseName}_card.png"
-            else -> "${baseName}_bundle.json" // LastChat format
+            else -> "${baseName}_bundle.json" // Absencium AI format
         }
     }
     
@@ -605,7 +605,7 @@ object AssistantExportImport : KoinComponent {
         
         data class Configurable(
             val assistant: Assistant,
-            val exportV1: AssistantExportV1?, // Null if not LastChat Bundle
+            val exportV1: AssistantExportV1?, // Null if not Absencium AI Bundle
             val hasMemories: Boolean,
             val hasLorebooks: Boolean,
             val missingModels: List<String> // List of missing model IDs (names for display)

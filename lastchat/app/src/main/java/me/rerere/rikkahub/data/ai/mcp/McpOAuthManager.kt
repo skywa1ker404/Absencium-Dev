@@ -416,11 +416,11 @@ class McpOAuthManager(
         val deepLink = serverId?.let { "lastchat://mcp/oauth/$it?status=complete" }
         val heading = if (success) "Connection complete" else "Connection failed"
         val message = if (success) {
-            "Returning to LastChat&hellip;"
+            "Returning to Absencium AI&hellip;"
         } else {
-            "Return to LastChat and try signing in again."
+            "Return to Absencium AI and try signing in again."
         }
-        val returnLink = deepLink?.let { "<p><a href=\"$it\">Return to LastChat</a></p>" }.orEmpty()
+        val returnLink = deepLink?.let { "<p><a href=\"$it\">Return to Absencium AI</a></p>" }.orEmpty()
         val returnScript = deepLink?.let { "<script>window.location.replace(\"$it\");</script>" }.orEmpty()
         return """
             <!doctype html>
@@ -428,7 +428,7 @@ class McpOAuthManager(
               <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>LastChat connection</title>
+                <title>Absencium AI connection</title>
               </head>
               <body>
                 <p>$heading</p>
@@ -648,9 +648,9 @@ internal fun resolveOAuthClientNames(endpoint: String): List<String> = buildList
         add("Claude")
         add("Cursor")
         add("VS Code")
-        add("LastChat")
+        add("Absencium AI")
     } else {
-        add("LastChat")
+        add("Absencium AI")
         add("Claude")
         add("Cursor")
     }

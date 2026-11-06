@@ -55,7 +55,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import me.rerere.rikkahub.ui.components.ui.HapticSwitch
-import me.rerere.rikkahub.ui.components.ui.LastChatDestructiveConfirmDialog
+import me.rerere.rikkahub.ui.components.ui.Absencium AIDestructiveConfirmDialog
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -418,7 +418,7 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
     
     // Delete confirmation dialog
     if (showDeleteDialog && mcpToDelete != null) {
-        LastChatDestructiveConfirmDialog(
+        Absencium AIDestructiveConfirmDialog(
             title = stringResource(R.string.setting_mcp_delete_title),
             consequence = stringResource(R.string.setting_mcp_delete_server),
             onDismiss = {
@@ -481,7 +481,7 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
             title = { Text("${preset.name} needs app setup") },
             text = {
                 Text(
-                    preset.setupNote ?: "This service requires an OAuth application to be registered for LastChat."
+                    preset.setupNote ?: "This service requires an OAuth application to be registered for Absencium AI."
                 )
             },
             confirmButton = {

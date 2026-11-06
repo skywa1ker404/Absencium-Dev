@@ -1,5 +1,7 @@
 package skywa1ker404.absencium
 
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
@@ -66,7 +68,14 @@ class AbsenciumApp : Application() {
         me.rerere.rikkahub.LastChatHost.theme = { content ->
             val settings by container.settingsState.collectAsStateWithLifecycle()
             settings?.let { loaded ->
-                AbsenciumTheme(settings = loaded) { content(isDarkTheme(loaded)) }
+                AbsenciumTheme(settings = loaded) {
+                    // Liquid Glass: the same wallpaper layer the app's own screens sit on, so the chat's panes are glass over it.
+                    skywa1ker404.absencium.ui.components.GlassStage(Modifier.fillMaxSize()) {
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            me.rerere.rikkahub.LocalHostGlass provides skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current,
+                        ) { content(isDarkTheme(loaded)) }
+                    }
+                }
             }
         }
         val chatTools = skywa1ker404.absencium.data.ai.ChatAppTools(container)

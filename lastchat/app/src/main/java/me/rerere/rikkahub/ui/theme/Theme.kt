@@ -109,8 +109,10 @@ fun RikkahubTheme(
 
 /** The chat's own extra colours and the system bars, on top of whatever Material theme the host already set. */
 @Composable
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 private fun HostedChatTheme(dark: Boolean, content: @Composable () -> Unit) {
     val barColor = MaterialTheme.colorScheme.background
+    val glass = me.rerere.rikkahub.LocalHostGlass.current
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -125,11 +127,27 @@ private fun HostedChatTheme(dark: Boolean, content: @Composable () -> Unit) {
             window.statusBarColor = barColor.toArgb()
         }
     }
+    val scheme = MaterialTheme.colorScheme
+    val glassScheme = remember(scheme, glass) {
+        // Liquid Glass: the page is see-through so the wallpaper shows, and the panes on it (input bar, cards, bubbles) are tinted
+        // glass. Dialogs, menus and sheets keep their solid colours so they stay readable.
+        if (glass) scheme.copy(
+            background = androidx.compose.ui.graphics.Color.Transparent,
+            surfaceContainer = scheme.surfaceContainer.copy(alpha = 0.55f),
+        ) else scheme
+    }
     CompositionLocalProvider(
         LocalDarkMode provides dark,
         LocalExtendColors provides (if (dark) ExtendDarkColors else ExtendLightColors),
-        content = content,
-    )
+    ) {
+        androidx.compose.material3.MaterialExpressiveTheme(
+            colorScheme = glassScheme,
+            motionScheme = androidx.compose.material3.MotionScheme.expressive(),
+            shapes = MaterialTheme.shapes,
+            typography = MaterialTheme.typography,
+            content = content,
+        )
+    }
 }
 
 val MaterialTheme.extendColors

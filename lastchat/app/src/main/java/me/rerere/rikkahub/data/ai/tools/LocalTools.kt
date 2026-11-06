@@ -166,7 +166,7 @@ fun LocalToolOption.toDefinitionPreviews(): List<LocalToolDefinitionPreview> = w
     LocalToolOption.Tts -> listOf(
         LocalToolDefinitionPreview(
             name = "text_to_speech",
-            description = "Read text aloud using the currently selected LastChat TTS provider. Use this when the user explicitly wants spoken output.",
+            description = "Read text aloud using the currently selected Absencium AI TTS provider. Use this when the user explicitly wants spoken output.",
             schema = InputSchema.Obj(
                 properties = buildJsonObject {
                     put("text", buildJsonObject {
@@ -236,7 +236,7 @@ fun LocalToolOption.toDefinitionPreviews(): List<LocalToolDefinitionPreview> = w
     LocalToolOption.ImageGeneration -> listOf(
         LocalToolDefinitionPreview(
             name = "generate_image",
-            description = "Generate an image with LastChat's selected image generation model and save it to the image gallery. Use this only when the user asks for an image. Improve vague user requests into a concrete visual prompt before calling.",
+            description = "Generate an image with Absencium AI's selected image generation model and save it to the image gallery. Use this only when the user asks for an image. Improve vague user requests into a concrete visual prompt before calling.",
             schema = InputSchema.Obj(
                 properties = buildJsonObject {
                     put("prompt", buildJsonObject {
@@ -414,7 +414,7 @@ class LocalTools(
     val ttsTool by lazy {
         Tool(
             name = "text_to_speech",
-            description = "Read text aloud using the currently selected LastChat TTS provider. Use this when the user explicitly wants spoken output.",
+            description = "Read text aloud using the currently selected Absencium AI TTS provider. Use this when the user explicitly wants spoken output.",
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {
@@ -456,7 +456,7 @@ class LocalTools(
     val imageGenerationTool by lazy {
         Tool(
             name = "generate_image",
-            description = "Generate an image with LastChat's selected image generation model and save it to the image gallery. Use this only when the user asks for an image. Improve vague user requests into a concrete visual prompt before calling.",
+            description = "Generate an image with Absencium AI's selected image generation model and save it to the image gallery. Use this only when the user asks for an image. Improve vague user requests into a concrete visual prompt before calling.",
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {

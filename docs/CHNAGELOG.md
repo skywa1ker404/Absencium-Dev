@@ -93,3 +93,4 @@ working on it
 - Fixed (branch Absencium-ai): the assistant is now called Absencium AI instead of "Generical" and knows it lives inside Absencium, not LastChat; existing chats keep working.
 - Added (branch Absencium-ai): Absencium AI can see your Vault: notes, drafts, attachments (with the text read from them) and study guides, and can move a note between Active, Finished and Draft after you approve.
 - Fixed (branch Absencium-ai): Absencium AI no longer adds duplicate lectures, exams or notes, no longer undoes an attendance mark by marking it twice, checks dates against the weekday, and puts a syllabus into the Syllabus (new tool) instead of a note.
+- Changed (branch Absencium-ai): Absencium AI follows your theme more closely: Liquid Glass wallpaper behind the chat, the morphing loader instead of plain spinners, no shadows, and the chat's own theme settings are replaced by the app's Appearance.

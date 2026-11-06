@@ -1,6 +1,7 @@
 package me.rerere.rikkahub
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import me.rerere.ai.core.Tool
 
 /**
@@ -16,3 +17,6 @@ object LastChatHost {
     /** Extra tools the host app offers the chat (Absencium's attendance, timetable, notes and so on). Asked again for every request. */
     var tools: () -> List<Tool> = { emptyList() }
 }
+
+/** True while the host runs Liquid Glass: the chat then lets its backgrounds and panes show the host's wallpaper through. */
+val LocalHostGlass = staticCompositionLocalOf { false }

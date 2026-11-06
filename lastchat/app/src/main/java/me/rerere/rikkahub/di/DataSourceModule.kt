@@ -257,7 +257,7 @@ val dataSourceModule = module {
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .addHeader(HttpHeaders.AcceptLanguage, acceptLang)
-                    .addHeader(HttpHeaders.UserAgent, "LastChat-Android/${BuildConfig.VERSION_NAME}")
+                    .addHeader(HttpHeaders.UserAgent, "Absencium-AI-Android/${BuildConfig.VERSION_NAME}")
                     .build()
                 chain.proceed(request)
             }

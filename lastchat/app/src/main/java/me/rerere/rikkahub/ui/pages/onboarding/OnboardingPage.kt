@@ -270,7 +270,7 @@ fun OnboardingPage(vm: OnboardingVM = koinViewModel()) {
                 )
 
                 SetupPage.GuidedSignup -> LinkOutPage(
-                    text = "Let’s get your API key! Tap\nbelow to create your\n${selectedGuidedProvider?.name ?: "[Provider]"} account, then\nreturn to LastChat for the\nnext step.",
+                    text = "Let’s get your API key! Tap\nbelow to create your\n${selectedGuidedProvider?.name ?: "[Provider]"} account, then\nreturn to Absencium AI for the\nnext step.",
                     button = "Open signup page",
                     url = selectedGuidedProvider?.signupUrl,
                     onReturned = {
@@ -534,7 +534,7 @@ private fun IntroPage(
         ) {
             IntroRipple(progress = ripple.value)
             Image(
-                painter = painterResource(R.drawable.lastchat_setup_icon),
+                painter = painterResource(R.drawable.absencium_ai_avatar),
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
@@ -546,7 +546,7 @@ private fun IntroPage(
                     }
             )
             Text(
-                text = "Let’s get you set\nup on LastChat!",
+                text = "Let’s get you set\nup on Absencium AI!",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 lineHeight = MaterialTheme.typography.headlineSmall.lineHeight,
@@ -654,7 +654,7 @@ private fun ProviderOverviewPage(
                 .padding(top = 160.dp),
         ) {
             Text(
-                text = "Here are some of the\nproviders you can access\nthrough LastChat:",
+                text = "Here are some of the\nproviders you can access\nthrough Absencium AI:",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 lineHeight = MaterialTheme.typography.titleLarge.lineHeight,
@@ -1051,7 +1051,7 @@ private fun SuccessPage(
     onDone: () -> Unit,
 ) {
     val message = if (guided) {
-        "You’re ready to chat.\n\nWe set up a basic setup with free models so you can start using LastChat without having to pay anything."
+        "You’re ready to chat.\n\nWe set up a basic setup with free models so you can start using Absencium AI without having to pay anything."
     } else {
         "You’re ready to chat.\n\nYou can tune the rest whenever you feel like it."
     }

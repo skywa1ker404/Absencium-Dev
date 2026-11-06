@@ -161,7 +161,7 @@ class TextSelectionVM(
                 )
                 if (model == null) {
                     state = TextSelectionState.Error(
-                        "No model is available for this Ask LastChat action. Please choose one in Android Integration settings."
+                        "No model is available for this Ask Absencium AI action. Please choose one in Android Integration settings."
                     )
                     return@launch
                 }

@@ -59,7 +59,7 @@ class WebdavSync(
         selectedKeyIds: Set<kotlin.uuid.Uuid>? = null,
     ): File = withContext(Dispatchers.IO) {
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-        val backupFile = File(context.cacheDir, "LastChat_backup_$timestamp.zip")
+        val backupFile = File(context.cacheDir, "Absencium_AI_backup_$timestamp.zip")
         if (backupFile.exists()) {
             backupFile.delete()
         }

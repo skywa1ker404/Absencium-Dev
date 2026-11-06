@@ -131,6 +131,13 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                 SettingsGroup(
                     title = stringResource(R.string.setting_page_theme_setting)
                 ) {
+                    if (me.rerere.rikkahub.LastChatHost.theme != null) {
+                        // Inside Absencium the app's own theme engine decides colours, dark mode, glass and the font.
+                        SettingGroupItem(
+                            title = "Theme, colours and font",
+                            subtitle = "Shared with the whole app. Change them in Absencium Settings, Appearance.",
+                        )
+                    } else {
                     var colorMode by rememberColorMode()
                     SettingGroupItem(
                         title = stringResource(R.string.setting_page_color_mode),
@@ -182,7 +189,8 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                         subtitle = stringResource(R.string.setting_fonts_app_font_desc),
                         onClick = { navController.navigate(me.rerere.rikkahub.Screen.SettingFonts) }
                     )
-                    
+                    }
+
                     SettingGroupItem(
                         title = stringResource(R.string.setting_ui_customization_title),
                         subtitle = stringResource(R.string.setting_display_ui_customization_desc),

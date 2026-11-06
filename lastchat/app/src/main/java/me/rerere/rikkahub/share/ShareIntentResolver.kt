@@ -445,5 +445,5 @@ private fun limitSharedWebpageContent(content: String): String {
         return content
     }
     return content.take(MAX_SHARED_WEBPAGE_CHARS) +
-        "\n\n[Shared webpage content truncated by LastChat.]"
+        "\n\n[Shared webpage content truncated by Absencium AI.]"
 }
