@@ -68,7 +68,7 @@ object AssistantExportImport : KoinComponent {
      * Export an Assistant to Absencium AI Bundle JSON format.
      * Includes all settings, avatar image, and enabled lorebooks.
      */
-    suspend fun exportToAbsencium AIBundle(
+    suspend fun exportToLastChatBundle(
         assistant: Assistant, 
         context: Context,
         includeMemories: Boolean,
@@ -169,16 +169,16 @@ object AssistantExportImport : KoinComponent {
     /**
      * Import an Assistant from Absencium AI Bundle JSON format.
      */
-    suspend fun importFromAbsencium AIBundle(jsonContent: String, context: Context): Assistant {
+    suspend fun importFromLastChatBundle(jsonContent: String, context: Context): Assistant {
         val export = json.decodeFromString<AssistantExportV1>(jsonContent)
-        return finalizeAbsencium AIImport(export, context, true, true)
+        return finalizeLastChatImport(export, context, true, true)
     }
 
     /**
      * Finalize the import from a parsed ExportV1 object.
      * Restores files, memories, and lorebooks based on flags.
      */
-    suspend fun finalizeAbsencium AIImport(
+    suspend fun finalizeLastChatImport(
         export: AssistantExportV1, 
         context: Context,
         importMemories: Boolean,
