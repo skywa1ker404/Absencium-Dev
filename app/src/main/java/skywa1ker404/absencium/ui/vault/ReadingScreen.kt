@@ -141,6 +141,7 @@ fun ReadingScreen(noteId: Long, navigator: DestinationsNavigator) {
     var note by remember { mutableStateOf<NoteEntity?>(null) }
     var missing by remember { mutableStateOf(false) }
     LaunchedEffect(noteId) {
+        skywa1ker404.absencium.data.ai.AiContext.noteViewed(noteId)
         container.readingMini.value = null
         note = viewModel.getNote(noteId)
         if (note == null) missing = true

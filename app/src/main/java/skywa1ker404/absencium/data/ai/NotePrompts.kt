@@ -184,17 +184,22 @@ object NotePrompts {
         ${diagramPart(b)}
     """.trimIndent()
 
-    /** The editor's features the answer must really use, with a tiny example of each. */
-    private val FEATURES = """
-        Use the editor's features visibly, wherever they fit the content (this is required, not optional):
-        - At least one table when anything is compared, classified or listed with properties. Example: | Term | Meaning |, then |---|---|, then rows.
-        - Key facts to remember in ==highlight==; headings of definitions in {color:1565C0|blue|}; warnings and common mistakes in {color:C62828|red|}; results and tips in {color:2E7D32|green|}.
-        - Every formula and key result on its own centred line: {align:center}a + b = c
-        - Numbered steps for any process or working, "a) " letters for options or parts, bullets for properties.
-        - A "- [ ] " revision checklist near the end.
-        - "> " for the one idea or rule that must not be forgotten, and a line of --- between the big parts.
-        - **bold** for each key term the first time it appears, ++underline++ for sub-labels.
+    /**
+     * How to choose among the editor's styles. One rule for the chat, Generate Notes, homework and the editor's AI panel: the content
+     * decides which styles appear, so no two notes need look alike and nothing is added only to show a feature.
+     */
+    internal val STYLE_GUIDE = """
+        How to use the styles: let the content decide. Use a style only where it helps the reader and leave out the rest. Never add a table, colour, highlight, checklist or centred line just to show the editor can do it, and never repeat one layout from note to note.
+        - A table when things are compared, classified or listed with properties. Example: | Term | Meaning |, then |---|---|, then rows.
+        - Numbered steps for a process or working, "a) " letters for options or parts, bullets for properties.
+        - A formula or key result on its own centred line, like {align:center}a + b = c, only when there is one.
+        - ==highlight== for the one fact to remember in a section, **bold** for each key term the first time it appears, ++underline++ for sub-labels, colour only for a real definition ({color:1565C0|..|}), warning ({color:C62828|..|}) or result ({color:2E7D32|..|}).
+        - A "- [ ] " checklist only when there is something to revise or do; "> " only for a rule or idea that must not be forgotten; a line of --- only between big parts.
+        - Quantitative topics want formulas, units and worked examples; narrative topics timelines, causes and consequences; language topics rules, examples and exception tables; descriptive topics classifications and labelled steps; practical topics procedures and observations.
+        - Short content stays simple: a few lines need no headings, tables or colours.
     """.trimIndent()
+
+    private val FEATURES = STYLE_GUIDE
 
     private val SOLUTION = """
         Shape the answer to the question. For a calculation: the question restated, the given data in a small table, the formula used, the working one numbered step at a time with each result on a centred line, then the final answer highlighted and in bold with its units.
@@ -216,6 +221,8 @@ object NotePrompts {
         $selection
 
         $EDITOR
+
+        $STYLE_GUIDE
 
         $RULES
     """.trimIndent()

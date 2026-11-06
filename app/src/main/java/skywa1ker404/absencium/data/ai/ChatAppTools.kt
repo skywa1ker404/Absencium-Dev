@@ -37,13 +37,51 @@ import java.util.Locale
 class ChatAppTools(private val container: AppContainer) {
 
     private companion object {
-        const val APP_PROMPT = """You are Absencium AI, the assistant built into Absencium, the student's offline college companion app (attendance, timetable, exams, holidays, notes, syllabus, Vault). The Vault is the student's notes and drafts, their attachments (photos, documents, recordings) and their study guides: use list_vault, search_notes, list_attachments and read_note for it.
+        /** Which "Do without asking" switch unlocks which tool. Deleting and reading a whole note are not in it: they always ask. */
+        val KINDS = mapOf(
+            "add_subject" to "subjects", "rename_subject" to "subjects",
+            "add_note" to "notes", "update_note" to "notes", "append_to_note" to "notes", "set_note_status" to "notes",
+            "add_timetable_slot" to "timetable", "update_timetable_slot" to "timetable",
+            "add_exam" to "exams", "update_exam" to "exams",
+            "add_holiday" to "holidays",
+            "set_attendance" to "attendance",
+            "add_syllabus" to "syllabus", "set_syllabus_status" to "syllabus",
+        )
+        /** What one step of a plan may be: only adding and changing, never deleting. */
+        val PLAN_OPS = listOf("add_subject", "add_note", "append_to_note", "add_timetable_slot", "add_exam", "add_holiday", "set_attendance", "add_syllabus", "set_syllabus_status", "set_note_status")
+
+        val APP_PROMPT: String = """You are Absencium AI, the assistant built into Absencium, the student's offline college companion app (attendance, timetable, exams, holidays, notes, syllabus, Vault). The Vault is the student's notes and drafts, their attachments (photos, documents, recordings) and their study guides: use list_vault, search_notes, list_attachments and read_note for it.
 You can look things up and change them with the app tools. Look the answer up with a tool instead of guessing, and never say something was added, changed or deleted unless the tool answered ok.
 Rules for changes: (1) Today's date and weekday come from app_overview; work out every date from it and never guess one. Pass weekday along with a date when you know it. (2) Before adding anything, look it up first (list_subjects, get_timetable, list_exams, list_holidays, list_vault, get_syllabus) and do not add what already exists. (3) Do each change once; if a tool answered ok, do not repeat it, and if it refused, read why instead of trying again. (4) A syllabus goes into add_syllabus, a lecture into the timetable, an exam into exams, a holiday into holidays. Never put a syllabus, timetable, exam list or study material into a note. Notes are only for text the student asked to keep as a note. (5) Study material and files can only be added by the student in the app. (6) When the request is unclear (which subject, which date, which time), ask the student instead of guessing.
-Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain."""
+Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain.""" + "\n" + NOTE_RULES
+
+        private val NOTE_RULES: String = """
+Writing notes: put the whole note inside the tool call (add_note body, append_to_note text), never write it in the chat first, and afterwards tell the student what was saved from the tool's answer instead of writing a different version.
+Finding the note: when the student says "add this to the note", "in my note" or names a note, search_notes first and use append_to_note on the match (or on recent_note from app_overview when they say "this note"). Create a new note only when the student asks for a new one or nothing matches. If two or more notes could be meant, or you are not sure which one, ask which.
+${NotePrompts.STYLE_GUIDE}
+${NotePrompts.EDITOR}
+""".trimIndent()
+
     }
 
-    fun tools(): List<Tool> = listOf(
+    /**
+     * The tools for one request. Asked again every time, so a change in "Do without asking" applies at once: a kind of change the student
+     * switched on runs on its own, everything else (and every delete, and reading a whole note) waits for approval.
+     */
+    fun tools(): List<Tool> {
+        val auto = container.settingsState.value?.aiAutoApprove.orEmpty()
+        val base = baseTools()
+        val byName = base.associateBy { it.name }
+        fun unlocked(t: Tool) = KINDS[t.name]?.let { it in auto } == true
+        val plan = planTool(byName)
+        val all = base + plan
+        return all.map { t ->
+            val skip = if (t.name == "apply_plan") KINDS.values.toSet().all { it in auto } else unlocked(t)
+            if (t.approvalMode == ToolApprovalMode.RequiresApproval && skip) t.copy(approvalMode = ToolApprovalMode.Auto) else t
+        }
+    }
+
+    private fun baseTools(): List<Tool> = listOf(
         // Looking things up
         read("app_overview", "Today's date, the subjects, the lectures today, upcoming exams and the attendance percentage per subject. Call this first when the question is about the student's college life.", emptyMap()) { overview() }.copy(systemPrompt = { _, _ -> APP_PROMPT }),
         read("list_subjects", "All subjects.", emptyMap()) { subjectsJson() },
@@ -72,16 +110,25 @@ Changes wait for the student's approval in the chat. Deleted items go to the Tra
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
             val title = a.req("title").trim()
             if (Regex("syllabus|timetable|time table|exam schedule", RegexOption.IGNORE_CASE).containsMatchIn(title)) return@write fail("A syllabus belongs in add_syllabus and a timetable in add_timetable_slot, not in a note.")
-            container.database.noteDao().observeAll().first().firstOrNull { it.subjectId == s.id && it.title.trim().equals(title, true) }
-                ?.let { return@write fail("${s.name} already has a note called \"${it.title}\" (id ${it.id}). Use update_note to change it.") }
-            container.vaultRepository.saveNote(0, s.id, title, a.req("body"), NoteStatus.ACTIVE)
-            ok("Added the note to ${s.name}.")
+            val existing = container.database.noteDao().observeAll().first().filter { it.subjectId == s.id && similarTitle(it.title, title) }
+            if (existing.isNotEmpty()) return@write fail("${s.name} already has ${existing.joinToString { "\"${it.title}\" (id ${it.id})" }}. Add to that note with append_to_note, or ask the student which note they mean. Only create a new note when they asked for a new one.")
+            val body = a.req("body")
+            val id = container.vaultRepository.saveNote(0, s.id, title, body, NoteStatus.ACTIVE)
+            saved("Added the note to ${s.name}.", id, title, body)
         },
         write("update_note", "Changes the title and/or text of a note. append_text is added to the end of the existing text.", mapOf("note_id" to num("Note id"), "title" to text("New title"), "body" to text("New full text (replaces the old text)"), "append_text" to text("Text to add at the end")), required = listOf("note_id")) { a ->
             val note = container.vaultRepository.getNote(a.long("note_id") ?: return@write fail("note_id is missing.")) ?: return@write fail("No such note.")
             val body = a.str("body") ?: (note.bodyText + (a.str("append_text")?.let { "\n$it" } ?: ""))
-            container.vaultRepository.saveNote(note.id, note.subjectId, a.str("title") ?: note.title, body, note.status, note.tags)
-            ok("Note updated.")
+            val title = a.str("title") ?: note.title
+            container.vaultRepository.saveNote(note.id, note.subjectId, title, body, note.status, note.tags)
+            saved("Note updated.", note.id, title, body)
+        },
+        write("append_to_note", "Adds text at the end of an existing note. Use this, not add_note, whenever the student says to add something to a note. note_id is from search_notes, or \"recent\" for the note the student just had open.", mapOf("note_id" to text("Note id, or recent"), "text" to text("The text to add, in the note formatting")), required = listOf("note_id", "text")) { a ->
+            val id = noteId(a.req("note_id")) ?: return@write fail("No note is meant by that. Use search_notes or ask the student which note.")
+            val note = container.vaultRepository.getNote(id) ?: return@write fail("No such note.")
+            val body = note.bodyText.trimEnd() + "\n\n" + a.req("text").trim()
+            container.vaultRepository.saveNote(note.id, note.subjectId, note.title, body, note.status, note.tags)
+            saved("Added to the note.", note.id, note.title, a.req("text").trim())
         },
         write("delete_note", "Moves a note to the Trash.", mapOf("note_id" to num("Note id")), required = listOf("note_id")) { a ->
             val note = container.vaultRepository.getNote(a.long("note_id") ?: return@write fail("note_id is missing.")) ?: return@write fail("No such note.")
@@ -204,6 +251,9 @@ Changes wait for the student's approval in the chat. Deleted items go to the Tra
         return buildJsonObject {
             put("today", today.toString())
             put("weekday", today.dayOfWeek.name)
+            AiContext.recentNoteId()?.let { id ->
+                container.vaultRepository.getNote(id)?.let { n -> put("recent_note", buildJsonObject { put("id", n.id); put("title", n.title); put("subject", names[n.subjectId].orEmpty()) }) }
+            }
             put("subjects", JsonArray(data.subjects.map { JsonPrimitive(it.name) }))
             put("lectures_today", buildJsonArray {
                 data.timetable.filter { it.dayOfWeek == today.dayOfWeek }.sortedBy { it.startTime }.forEach { add(slotJson(it, names)) }
@@ -387,6 +437,81 @@ Changes wait for the student's approval in the chat. Deleted items go to the Tra
     }
 
     // ---- helpers ----
+
+    /** What the AI is told after a note was saved: exactly the text that went in, so what it says in the chat is what is in the note. */
+    private fun saved(message: String, id: Long, title: String, text: String): JsonElement = buildJsonObject {
+        put("ok", true)
+        put("message", message)
+        put("note_id", id)
+        put("title", title)
+        put("saved_text", text.take(6_000))
+    }
+
+    private fun similarTitle(a: String, b: String): Boolean {
+        fun words(t: String) = t.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length > 1 }.toSet()
+        val x = words(a)
+        val y = words(b)
+        if (x.isEmpty() || y.isEmpty()) return a.trim().equals(b.trim(), true)
+        val shared = x.intersect(y).size.toDouble()
+        return shared / x.union(y).size >= 0.6 || x.containsAll(y) || y.containsAll(x)
+    }
+
+    private suspend fun noteId(text: String): Long? {
+        val t = text.trim()
+        if (t.equals("recent", true) || t.equals("open", true) || t.equals("this", true)) return AiContext.recentNoteId()
+        return t.toLongOrNull()
+    }
+
+    /** One step of a plan: the same tool the AI would have called alone, so every guard and duplicate check still applies. */
+    private fun planTool(byName: Map<String, Tool>): Tool {
+        val fields = linkedMapOf(
+            "op" to "string", "subject" to "string", "name" to "string", "title" to "string", "body" to "string", "text" to "string",
+            "note_id" to "string", "day" to "string", "start" to "string", "end" to "string", "room" to "string", "date" to "string",
+            "weekday" to "string", "status" to "string", "outline" to "string", "under" to "string", "topic" to "string", "weightage" to "number",
+        )
+        return Tool(
+            name = "apply_plan",
+            description = "Makes several additions or changes after ONE approval from the student. Use it whenever you would call two or more of the add and set tools, or anything in bulk. summary is a short list in plain words of everything the plan does, which the student reads before approving. Each change has an op (${PLAN_OPS.joinToString(", ")}) and the same fields that tool takes. Deleting is not allowed here.",
+            parameters = {
+                InputSchema.Obj(
+                    properties = buildJsonObject {
+                        put("summary", buildJsonObject { put("type", "string"); put("description", "Plain-words list of everything this plan will do, one line each") })
+                        put("changes", buildJsonObject {
+                            put("type", "array")
+                            put("description", "The changes, in the order to make them (a subject must be added before things that use it)")
+                            put("items", buildJsonObject {
+                                put("type", "object")
+                                put("properties", buildJsonObject { fields.forEach { (k, t) -> put(k, buildJsonObject { put("type", t) }) } })
+                                put("required", JsonArray(listOf(JsonPrimitive("op"))))
+                            })
+                        })
+                    },
+                    required = listOf("summary", "changes"),
+                )
+            },
+            approvalMode = ToolApprovalMode.RequiresApproval,
+            execute = { input ->
+                val changes = ((input as? JsonObject)?.get("changes") as? JsonArray).orEmpty()
+                if (changes.isEmpty()) fail("The plan has no changes.")
+                else if (changes.size > 60) fail("A plan can hold at most 60 changes. Split it.")
+                else buildJsonObject {
+                    var done = 0
+                    put("results", buildJsonArray {
+                        changes.forEach { c ->
+                            val obj = c as? JsonObject ?: return@forEach
+                            val op = (obj["op"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                            val tool = byName[op]?.takeIf { op in PLAN_OPS }
+                            val result = tool?.execute?.invoke(JsonObject(obj.filterKeys { it != "op" })) ?: fail("\"$op\" cannot be part of a plan.")
+                            if ((result as? JsonObject)?.get("ok")?.let { (it as? JsonPrimitive)?.booleanOrNull } == true) done++
+                            add(buildJsonObject { put("op", op); put("result", result) })
+                        }
+                    })
+                    put("ok", done == changes.size)
+                    put("message", "$done of ${changes.size} changes done.")
+                }
+            },
+        )
+    }
 
     private fun attendanceJson(s: SubjectEntity, rows: List<skywa1ker404.absencium.data.db.AttendanceEntity>): JsonObject {
         val present = rows.count { it.status == AttendanceStatus.PRESENT }

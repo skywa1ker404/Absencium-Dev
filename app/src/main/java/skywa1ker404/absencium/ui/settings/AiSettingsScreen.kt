@@ -48,6 +48,8 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
             )
         }
 
+        AutoApproveSection(settings.aiAutoApprove, settingsViewModel::setAiAutoApprove)
+
         SettingCaption("Images in generated notes")
         SettingGroup {
             SettingSwitchRow(
@@ -77,3 +79,45 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
         HintText("Absencium works fully offline. AI is only used when you turn it on and ask.")
     }
 }
+
+/** The kinds of change Absencium AI can make without asking. Closed by default; deleting always asks. */
+@Composable
+private fun AutoApproveSection(auto: Set<String>, onChange: (Set<String>) -> Unit) {
+    var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    SettingCaption("Advanced")
+    SettingGroup {
+        SettingRow(
+            title = "Do without asking",
+            subtitle = if (auto.isEmpty()) "Everything it changes waits for your approval" else "${auto.size} kinds of change run on their own",
+            onClick = { open = !open },
+        )
+        androidx.compose.animation.AnimatedVisibility(
+            visible = open,
+            enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.spring(0.8f, 380f)) + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.spring(1f, 500f)) + androidx.compose.animation.fadeOut(),
+        ) {
+            androidx.compose.foundation.layout.Column {
+                AUTO_KINDS.forEach { (key, label) ->
+                    SettingDivider()
+                    SettingSwitchRow(
+                        title = label,
+                        subtitle = "Adding and changing. Deleting still asks.",
+                        checked = key in auto,
+                        onCheckedChange = { on -> onChange(if (on) auto + key else auto - key) },
+                    )
+                }
+            }
+        }
+    }
+    HintText("A plan with several changes is shown once and approved once. Anything you switch on here skips even that.")
+}
+
+private val AUTO_KINDS = listOf(
+    "subjects" to "Subjects",
+    "notes" to "Notes",
+    "timetable" to "Timetable",
+    "exams" to "Exams",
+    "holidays" to "Holidays",
+    "attendance" to "Attendance",
+    "syllabus" to "Syllabus",
+)

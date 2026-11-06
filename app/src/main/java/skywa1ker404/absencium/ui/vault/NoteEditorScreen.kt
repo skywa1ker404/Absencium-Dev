@@ -148,6 +148,7 @@ fun NoteEditorScreen(noteId: Long, navigator: DestinationsNavigator, startInEdit
     var missing by remember { mutableStateOf(false) }
 
     LaunchedEffect(noteId) {
+        skywa1ker404.absencium.data.ai.AiContext.noteViewed(noteId)
         note = viewModel.getNote(noteId)
         if (note == null) missing = true
     }
