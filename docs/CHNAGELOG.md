@@ -98,3 +98,4 @@ working on it
 - Fixed (branch Absencium-ai): asking Absencium AI to add to a note now adds to the existing note (or the one you just had open) instead of creating a new one, and the chat reports exactly what was saved.
 - Changed (branch Absencium-ai): chat notes, Generate Notes and homework use one formatting rule: tables, colours, highlights, formulas, checklists and headings appear only where the content needs them, not in a fixed layout.
 - Removed (branch Absencium-ai): the old built-in AI chat code, its memory, assistants and background service, now that Absencium AI does all of it.
+- Fixed (branch Absencium-ai): the approval card for Absencium AI changes now shows what will be added or changed in plain words (every step of a plan), not cut-off technical text.
