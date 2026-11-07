@@ -99,3 +99,4 @@ working on it
 - Changed (branch Absencium-ai): chat notes, Generate Notes and homework use one formatting rule: tables, colours, highlights, formulas, checklists and headings appear only where the content needs them, not in a fixed layout.
 - Removed (branch Absencium-ai): the old built-in AI chat code, its memory, assistants and background service, now that Absencium AI does all of it.
 - Fixed (branch Absencium-ai): the approval card for Absencium AI changes now shows what will be added or changed in plain words (every step of a plan), not cut-off technical text.
+- Added (branch Absencium-ai): a tick box for every step of an Absencium AI plan (untick to skip it), and "Ask Absencium AI" in the note editor and reading menus, which lets "this note" mean the note you are in.
