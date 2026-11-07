@@ -21,6 +21,9 @@ object LastChatHost {
      * Words for the approval card of one of the host's tools: a title and the lines of what it is about to do, in plain words.
      * Null for a tool the host does not describe (the card then shows the raw arguments).
      */
+    /** Chips for an empty chat, built by the host from its own data. */
+    var suggestions: suspend () -> List<String> = { emptyList() }
+
     var describe: (toolName: String, arguments: String) -> Pair<String, String>? = { _, _ -> null }
 
     /** The steps of a plan-like tool call, one line each, so the approval card can show a tick box per step. Null when the call has none. */

@@ -336,6 +336,33 @@ ${NotePrompts.EDITOR}
         }
     }
 
+    /**
+     * Chips for an empty chat, worked out on the phone from the student's own data (nothing is sent anywhere): the next exam, the subject
+     * furthest under the attendance target, today's lectures and the note last opened.
+     */
+    suspend fun suggestions(): List<String> {
+        val data = container.calendarRepository.data.first()
+        val names = data.subjects.associate { it.id to it.name }
+        val today = LocalDate.now()
+        val out = ArrayList<String>()
+        data.exams.filter { !it.date.isBefore(today) && it.date.isBefore(today.plusDays(15)) }.minByOrNull { it.date }?.let { e ->
+            val days = java.time.temporal.ChronoUnit.DAYS.between(today, e.date)
+            out += "Make a revision plan for ${names[e.subjectId].orEmpty()} ${e.title.ifBlank { "exam" }} (${if (days == 0L) "today" else if (days == 1L) "tomorrow" else "in $days days"})"
+        }
+        val target = container.settingsState.value?.attendanceThresholdPercent ?: 75
+        data.subjects.mapNotNull { s ->
+            val rows = data.attendance.filter { it.subjectId == s.id }
+            val present = rows.count { it.status == AttendanceStatus.PRESENT }
+            val counted = present + rows.count { it.status == AttendanceStatus.ABSENT }
+            if (counted >= 3 && present * 100.0 / counted < target) s.name to present * 100.0 / counted else null
+        }.minByOrNull { it.second }?.let { (name, _) -> out += "How many lectures can I miss in $name?" }
+        if (data.timetable.any { it.dayOfWeek == today.dayOfWeek }) out += "What lectures do I have today?"
+        AiContext.recentNoteId()?.let { id -> container.vaultRepository.getNote(id)?.let { out += "Summarise my note \"${it.title.take(40)}\"" } }
+        if (data.exams.any { !it.date.isBefore(today) }) out += "What exams are coming up?"
+        out += "What should I study today?"
+        return out.distinct().take(5)
+    }
+
     private suspend fun exams(upcomingOnly: Boolean): JsonElement {
         val data = container.calendarRepository.data.first()
         val names = data.subjects.associate { it.id to it.name }

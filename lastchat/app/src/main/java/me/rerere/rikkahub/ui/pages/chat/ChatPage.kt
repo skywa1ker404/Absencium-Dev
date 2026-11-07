@@ -1215,6 +1215,7 @@ private fun ChatPageContent(
     renderBackground: Boolean = true,
     inheritedBlur: LastChatBlur? = null,
 ) {
+    val hostSuggestions by androidx.compose.runtime.produceState(emptyList<String>()) { value = me.rerere.rikkahub.LastChatHost.suggestions() }
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     val context = LocalContext.current
@@ -1879,7 +1880,7 @@ private fun ChatPageContent(
                     settings = setting,
                     conversation = conversation,
                     mcpManager = vm.mcpManager,
-                    chatSuggestions = conversation.chatSuggestions,
+                    chatSuggestions = conversation.chatSuggestions.ifEmpty { if (conversation.messageNodes.isEmpty()) hostSuggestions else emptyList() },
                     onClickSuggestion = { suggestion ->
                         if (currentChatModel != null) {
                             vm.handleMessageSend(
