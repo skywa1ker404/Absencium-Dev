@@ -45,6 +45,19 @@ Last updated: 031126 (web search made universal; last green build `b5918fe`, 031
 | 38.9 | Unified analytics: provider-reported in / out per answer, cached tokens, latency, retries, escalation (11.51) | slice 1 DONE (in / out shown per answer, never estimated); rest pending |
 | 38.10 | User controls: Efficient / Balanced (default) / Maximum quality (11.52) | slice 1 DONE (setting on AI & Integrations); per-mode memory, caching and escalation switches pending |
 
+### Batch 40: One consistent look, taken from Absencium AI (owner 2026-11-07: "literally everything so nothing is of 2 or more types"; one batch, all screens)
+
+| # | Task | Status |
+| - | --- | --- |
+| 40.1 | Text fields: one input style (shape, label, error, clear, keyboard) across the app and the chat | pending |
+| 40.2 | Settings layouts: grouped cards with the chat's corner shapes, rows, switches (haptic switch, toggle surface), dropdowns and popups all of one kind | pending |
+| 40.3 | Page switching: one springy transition and tab animation for every screen change | pending |
+| 40.4 | Swipe-to-delete with physics on notes, exams, timetable rows and Trash | pending |
+| 40.5 | Toasts and auto-save indicator in the chat's style for every message in the app | pending |
+| 40.6 | Large collapsing title bar on top-level pages; sticky headers on grouped lists | pending |
+| 40.7 | Empty-state card, suggestion pills and time-based greeting on Home and empty pages | pending |
+| 40.8 | Typography, info shapes, expand / collapse and scrolling prompts unified; audit for any element left in two styles | pending |
+
 ## Next tasks
 
 - **Review after Batch 39 (owner to confirm on a device):** Batches 30, 32 and 38 overlap with what the embedded Absencium AI already provides (memory, thinking levels and sampling settings, LaTeX / code / Mermaid, assistants editor, search providers, message branching, chat export, usage display). Each row is to be checked on a device and then marked covered, kept, or dropped; nothing is dropped before that.

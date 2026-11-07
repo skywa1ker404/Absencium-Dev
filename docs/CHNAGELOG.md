@@ -101,3 +101,6 @@ working on it
 - Fixed (branch Absencium-ai): the approval card for Absencium AI changes now shows what will be added or changed in plain words (every step of a plan), not cut-off technical text.
 - Added (branch Absencium-ai): a tick box for every step of an Absencium AI plan (untick to skip it), and "Ask Absencium AI" in the note editor and reading menus, which lets "this note" mean the note you are in.
 - Added (branch Absencium-ai): an empty Absencium AI chat offers suggestion chips built on your phone from your own data: the next exam, the subject furthest under your attendance target, today's lectures and the note you just had open.
+- Fixed (branch Absencium-ai): with Liquid Glass on, the solid white or black band behind page titles is gone in the app and in Absencium AI; titles sit on a faint glass veil over the wallpaper.
+- Changed (branch Absencium-ai): the new-chat screen opened from "Ask Absencium AI" shows the same data-based chips; the Absencium AI avatar follows the theme colours.
+- Changed (branch Absencium-ai): the chat drawer shows your Absencium profile (name and avatar style); the name also replaces the chat's own user name in prompts.

@@ -4,6 +4,12 @@ import skywa1ker404.absencium.data.ai.ChatAppTools
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxSize
 import android.app.Activity
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
 import android.app.Application
 import android.os.Bundle
 import androidx.compose.runtime.getValue
@@ -76,6 +82,35 @@ class AbsenciumApp : Application() {
                             me.rerere.rikkahub.LocalHostGlass provides skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current,
                         ) { content(isDarkTheme(loaded)) }
                     }
+                }
+            }
+        }
+        // The chat's user (name, avatar, {{user}}) is the student's Absencium profile.
+        me.rerere.rikkahub.LastChatHost.userName = container.settingsState
+            .map { it?.displayName.orEmpty() }
+            .distinctUntilChanged()
+        me.rerere.rikkahub.LastChatHost.userAvatar = { name, modifier ->
+            val colors = androidx.compose.material3.MaterialTheme.colorScheme
+            val initials = skywa1ker404.absencium.ui.main.initialsOf(name)
+            androidx.compose.foundation.layout.Box(
+                modifier = modifier
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(colors.primaryContainer),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                if (initials == null) {
+                    androidx.compose.material3.Icon(
+                        skywa1ker404.absencium.ui.icons.AppIcons.Person,
+                        contentDescription = null,
+                        tint = colors.onPrimaryContainer,
+                        modifier = Modifier.size(26.dp),
+                    )
+                } else {
+                    androidx.compose.material3.Text(
+                        text = initials,
+                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                        color = colors.onPrimaryContainer,
+                    )
                 }
             }
         }

@@ -414,6 +414,14 @@ class SettingsStore(
         .map { settings ->
             secretKeyManager.populateSecretsForExport(settings).normalizeFontSettings()
         }
+        .let { flow ->
+            // The host's profile name wins over the chat's own user name.
+            val hostName = me.rerere.rikkahub.LastChatHost.userName
+            if (hostName == null) flow else kotlinx.coroutines.flow.combine(flow, hostName) { settings, name ->
+                if (name.isBlank()) settings
+                else settings.copy(displaySetting = settings.displaySetting.copy(userNickname = name))
+            }
+        }
         .onEach { settings -> quickCache.updateCache(settings) }
         .toMutableStateFlow(scope, quickCache.createCachedSettings())
 

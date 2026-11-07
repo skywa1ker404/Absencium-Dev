@@ -194,7 +194,10 @@ fun ChatDrawerContent(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 val headerActionColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                UIAvatar(
+                val hostAvatar = me.rerere.rikkahub.LastChatHost.userAvatar
+                if (hostAvatar != null) {
+                    hostAvatar(settings.displaySetting.userNickname, Modifier.size(50.dp))
+                } else UIAvatar(
                     name = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
                     value = settings.displaySetting.userAvatar,
                     onUpdate = { newAvatar ->
@@ -224,7 +227,7 @@ fun ChatDrawerContent(
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.clickable(enabled = me.rerere.rikkahub.LastChatHost.userName == null) {
                                 nicknameEditState.open(settings.displaySetting.userNickname)
                             }
                     )

@@ -24,6 +24,12 @@ object LastChatHost {
     /** Chips for an empty chat, built by the host from its own data. */
     var suggestions: suspend () -> List<String> = { emptyList() }
 
+    /** The host's profile name. When set, it replaces the chat's own user name everywhere (drawer, greeting, {{user}}). */
+    var userName: kotlinx.coroutines.flow.Flow<String>? = null
+
+    /** The host's profile avatar, drawn for the user in the chat drawer. When set, the avatar is not editable inside the chat. */
+    var userAvatar: (@Composable (name: String, modifier: androidx.compose.ui.Modifier) -> Unit)? = null
+
     var describe: (toolName: String, arguments: String) -> Pair<String, String>? = { _, _ -> null }
 
     /** The steps of a plan-like tool call, one line each, so the approval card can show a tick box per step. Null when the call has none. */
