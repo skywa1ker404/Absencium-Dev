@@ -285,7 +285,7 @@ private fun ChatTopFadeOverlay(
                 .background(
                     brush = androidx.compose.ui.graphics.Brush.verticalGradient(
                         colors = listOf(
-                            backgroundColor.copy(alpha = glassFadeAlpha(0.98f)),
+                            backgroundColor.copy(alpha = 0.98f),
                             Color.Transparent
                         )
                     )
@@ -331,7 +331,7 @@ private fun ChatWidePanelEdgeFadeOverlay(
                     .background(
                         brush = androidx.compose.ui.graphics.Brush.verticalGradient(
                             colors = listOf(
-                                backgroundColor.copy(alpha = glassFadeAlpha(0.98f)),
+                                backgroundColor.copy(alpha = 0.98f),
                                 Color.Transparent
                             )
                         )
@@ -358,15 +358,15 @@ private fun ChatWidePanelEdgeFadeOverlay(
                             androidx.compose.ui.graphics.Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    backgroundColor.copy(alpha = glassFadeAlpha(0.72f)),
-                                    backgroundColor.copy(alpha = glassFadeAlpha(0.97f))
+                                    backgroundColor.copy(alpha = 0.72f),
+                                    backgroundColor.copy(alpha = 0.97f)
                                 )
                             )
                         } else {
                             androidx.compose.ui.graphics.Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    backgroundColor.copy(alpha = glassFadeAlpha(0.92f))
+                                    backgroundColor.copy(alpha = 0.92f)
                                 )
                             )
                         }
@@ -1215,7 +1215,6 @@ private fun ChatPageContent(
     renderBackground: Boolean = true,
     inheritedBlur: LastChatBlur? = null,
 ) {
-    val hostSuggestions by androidx.compose.runtime.produceState(emptyList<String>()) { value = me.rerere.rikkahub.LastChatHost.suggestions() }
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     val context = LocalContext.current
@@ -1767,15 +1766,15 @@ private fun ChatPageContent(
                                     androidx.compose.ui.graphics.Brush.verticalGradient(
                                         colors = listOf(
                                             Color.Transparent,
-                                            MaterialTheme.colorScheme.background.copy(alpha = glassFadeAlpha(0.72f)),
-                                            MaterialTheme.colorScheme.background.copy(alpha = glassFadeAlpha(0.97f))
+                                            MaterialTheme.colorScheme.background.copy(alpha = 0.72f),
+                                            MaterialTheme.colorScheme.background.copy(alpha = 0.97f)
                                         )
                                     )
                                 } else {
                                     androidx.compose.ui.graphics.Brush.verticalGradient(
                                         colors = listOf(
                                             Color.Transparent,
-                                            MaterialTheme.colorScheme.background.copy(alpha = glassFadeAlpha(0.92f))
+                                            MaterialTheme.colorScheme.background.copy(alpha = 0.92f)
                                         )
                                     )
                                 }
@@ -1880,7 +1879,7 @@ private fun ChatPageContent(
                     settings = setting,
                     conversation = conversation,
                     mcpManager = vm.mcpManager,
-                    chatSuggestions = conversation.chatSuggestions.ifEmpty { if (conversation.messageNodes.isEmpty()) hostSuggestions else emptyList() },
+                    chatSuggestions = conversation.chatSuggestions,
                     onClickSuggestion = { suggestion ->
                         if (currentChatModel != null) {
                             vm.handleMessageSend(
@@ -4009,6 +4008,3 @@ private fun compactTokenCount(tokens: Int): String = when {
     else -> tokens.toString()
 }
 
-/** The fades at the edges of the chat: full strength normally, soft under Liquid Glass so they do not paint a dark band over the wallpaper. */
-@androidx.compose.runtime.Composable
-private fun glassFadeAlpha(base: Float): Float = if (me.rerere.rikkahub.LocalHostGlass.current) base * 0.3f else base

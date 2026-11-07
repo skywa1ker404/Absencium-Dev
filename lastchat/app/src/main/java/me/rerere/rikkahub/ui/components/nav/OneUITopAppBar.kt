@@ -106,11 +106,19 @@ fun OneUITopAppBar(
         modifier = modifier
             .fillMaxWidth()
             .height(currentHeight)
-            // Liquid Glass: the large header is see-through over the wallpaper and turns into a tinted glass bar as it collapses.
+            // Liquid Glass: like the app's own screens, the header is dark at the top and fades into the wallpaper below it,
+            // and settles into a tinted glass bar once it has collapsed.
             .background(
-                MaterialTheme.colorScheme.surface.copy(
-                    alpha = if (me.rerere.rikkahub.LocalHostGlass.current) 0.62f * collapseProgress else 1f
-                )
+                if (me.rerere.rikkahub.LocalHostGlass.current) {
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.9f * collapseProgress),
+                        )
+                    )
+                } else {
+                    androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.surface)
+                }
             )
     ) {
         // Status bar spacer

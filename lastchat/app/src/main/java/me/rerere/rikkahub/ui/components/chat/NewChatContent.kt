@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.components.chat
 
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,6 +60,7 @@ fun NewChatContent(
     onAvatarClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val hostChips by androidx.compose.runtime.produceState(emptyList<String>()) { value = me.rerere.rikkahub.LastChatHost.suggestions() }
     val writePrompt = stringResource(R.string.new_chat_template_write_prompt) + " "
     val codePrompt = stringResource(R.string.new_chat_template_code_prompt) + " "
     val brainstormPrompt = stringResource(R.string.new_chat_template_brainstorm_prompt) + " "
@@ -158,7 +160,23 @@ fun NewChatContent(
                 }
             }
 
-            NewChatContentStyle.ACTIONS -> {
+            NewChatContentStyle.ACTIONS -> if (hostChips.isNotEmpty()) {
+                // Inside Absencium the generic Create image / Code / Write chips give way to ones built from the student's own data.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    hostChips.forEach { chip ->
+                        ActionPill(
+                            icon = Icons.Rounded.Lightbulb,
+                            text = chip,
+                            iconColor = MaterialTheme.colorScheme.tertiary,
+                            hasBackgroundImage = hasBackgroundImage,
+                            onClick = { onTemplateClick(chip) },
+                        )
+                    }
+                }
+            } else {
                 val primaryColor = MaterialTheme.colorScheme.primary
                 val secondaryColor = MaterialTheme.colorScheme.secondary
                 val writeColor = MaterialTheme.colorScheme.inversePrimary
