@@ -1625,6 +1625,7 @@ private data class PendingToolApproval(
     val toolName: String,
     val arguments: String,
 ) {
+    fun isHosted(): Boolean = me.rerere.rikkahub.LastChatHost.describe(toolName, arguments) != null
     val isWorkspaceTool: Boolean
         get() = toolName.startsWith("workspace_")
 }
@@ -1710,7 +1711,7 @@ private fun ToolApprovalCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        maxLines = 3,
+                        maxLines = if (approval.isHosted()) 16 else 3,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -1814,8 +1815,10 @@ private fun ToolApprovalActionRow(
     }
 }
 
+private fun PendingToolApproval.hostWords(): Pair<String, String>? = me.rerere.rikkahub.LastChatHost.describe(toolName, arguments)
+
 @Composable
-private fun PendingToolApproval.displayName(): String = when (toolName) {
+private fun PendingToolApproval.displayName(): String = hostWords()?.first ?: when (toolName) {
     "workspace_shell" -> stringResource(R.string.activity_timeline_tool_workspace_shell)
     "workspace_read_file" -> stringResource(R.string.activity_timeline_tool_workspace_read_file)
     "workspace_write_file" -> stringResource(R.string.activity_timeline_tool_workspace_write_file)
@@ -1825,6 +1828,7 @@ private fun PendingToolApproval.displayName(): String = when (toolName) {
 }
 
 private fun PendingToolApproval.summary(): String {
+    hostWords()?.let { return it.second }
     val args = runCatching { JsonInstantPretty.parseToJsonElement(arguments).jsonObject }.getOrNull()
     val key = when (toolName) {
         "workspace_shell" -> "command"

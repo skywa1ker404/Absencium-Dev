@@ -36,7 +36,36 @@ import java.util.Locale
  */
 class ChatAppTools(private val container: AppContainer) {
 
-    private companion object {
+    companion object {
+        /**
+         * The approval card of an Absencium tool in plain words: a title and what it will do, so nothing is approved blind.
+         * Null for tools that are not Absencium's.
+         */
+        fun describe(toolName: String, arguments: String): Pair<String, String>? {
+            val known = toolName in KINDS || toolName == "apply_plan" || toolName.startsWith("delete_") || toolName == "read_note"
+            if (!known) return null
+            val args = runCatching { parser.parseToJsonElement(arguments) as? JsonObject }.getOrNull() ?: return null
+            fun value(e: JsonElement?): String = when (e) {
+                is JsonPrimitive -> e.contentOrNull.orEmpty()
+                else -> e?.toString().orEmpty()
+            }
+            fun label(k: String) = k.replace("_", " ").replaceFirstChar { it.uppercase() }
+            fun lines(o: JsonObject, skip: Set<String> = emptySet()) = o.entries.filter { it.key !in skip && value(it.value).isNotBlank() }
+                .joinToString("\n") { (k, v) -> "${label(k)}: ${value(v).trim().take(500)}" }
+            fun title(op: String) = op.replace("_", " ").replaceFirstChar { it.uppercase() }
+            if (toolName != "apply_plan") return title(toolName) to lines(args)
+            val steps = (args["changes"] as? JsonArray).orEmpty().mapIndexed { i, c ->
+                val o = c as? JsonObject ?: return@mapIndexed "${i + 1}."
+                val op = value(o["op"])
+                val details = o.entries.filter { it.key != "op" && value(it.value).isNotBlank() }.joinToString(" · ") { value(it.value).trim().replace("\n", " ").take(80) }
+                "${i + 1}. ${title(op)}: $details"
+            }
+            val summary = value(args["summary"]).trim()
+            return "Plan with ${steps.size} changes" to (if (summary.isNotEmpty()) summary + "\n\n" else "") + steps.joinToString("\n")
+        }
+
+        private val parser = kotlinx.serialization.json.Json
+
         /** Which "Do without asking" switch unlocks which tool. Deleting and reading a whole note are not in it: they always ask. */
         val KINDS = mapOf(
             "add_subject" to "subjects", "rename_subject" to "subjects",

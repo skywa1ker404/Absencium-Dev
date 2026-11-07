@@ -79,6 +79,7 @@ class AbsenciumApp : Application() {
             }
         }
         val chatTools = skywa1ker404.absencium.data.ai.ChatAppTools(container)
+        me.rerere.rikkahub.LastChatHost.describe = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.describe(name, args) }
         me.rerere.rikkahub.LastChatHost.tools = { chatTools.tools() }
         val rates = HashMap<Activity, RefreshRatePreference>()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {

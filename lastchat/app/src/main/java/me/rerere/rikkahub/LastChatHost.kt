@@ -16,6 +16,12 @@ object LastChatHost {
 
     /** Extra tools the host app offers the chat (Absencium's attendance, timetable, notes and so on). Asked again for every request. */
     var tools: () -> List<Tool> = { emptyList() }
+
+    /**
+     * Words for the approval card of one of the host's tools: a title and the lines of what it is about to do, in plain words.
+     * Null for a tool the host does not describe (the card then shows the raw arguments).
+     */
+    var describe: (toolName: String, arguments: String) -> Pair<String, String>? = { _, _ -> null }
 }
 
 /** True while the host runs Liquid Glass: the chat then lets its backgrounds and panes show the host's wallpaper through. */
