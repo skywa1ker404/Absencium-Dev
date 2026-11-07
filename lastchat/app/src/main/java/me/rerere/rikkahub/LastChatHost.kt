@@ -22,6 +22,12 @@ object LastChatHost {
      * Null for a tool the host does not describe (the card then shows the raw arguments).
      */
     var describe: (toolName: String, arguments: String) -> Pair<String, String>? = { _, _ -> null }
+
+    /** The steps of a plan-like tool call, one line each, so the approval card can show a tick box per step. Null when the call has none. */
+    var planSteps: (toolName: String, arguments: String) -> List<String>? = { _, _ -> null }
+
+    /** Tells the host which steps (0-based) the student unticked, just before the call is approved. */
+    var skipPlanSteps: (toolName: String, arguments: String, skipped: Set<Int>) -> Unit = { _, _, _ -> }
 }
 
 /** True while the host runs Liquid Glass: the chat then lets its backgrounds and panes show the host's wallpaper through. */

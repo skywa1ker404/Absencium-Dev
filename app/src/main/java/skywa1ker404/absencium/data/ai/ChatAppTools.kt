@@ -9,6 +9,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
@@ -41,6 +42,25 @@ class ChatAppTools(private val container: AppContainer) {
          * The approval card of an Absencium tool in plain words: a title and what it will do, so nothing is approved blind.
          * Null for tools that are not Absencium's.
          */
+        /** The steps of a plan as one line each, so the approval card can offer a tick box per step. Null for anything but a plan. */
+        fun planSteps(toolName: String, arguments: String): List<String>? {
+            if (toolName != "apply_plan") return null
+            val args = runCatching { parser.parseToJsonElement(arguments) as? JsonObject }.getOrNull() ?: return null
+            return (args["changes"] as? JsonArray).orEmpty().mapIndexed { i, c ->
+                val o = c as? JsonObject ?: return@mapIndexed "${i + 1}."
+                val op = (o["op"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                val details = o.entries.filter { it.key != "op" }.mapNotNull { (it.value as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { v -> v.isNotEmpty() } }
+                    .joinToString(" · ") { it.replace("\n", " ").take(80) }
+                "${op.replace("_", " ").replaceFirstChar { it.uppercase() }}: $details"
+            }
+        }
+
+        fun skipPlanSteps(toolName: String, arguments: String, skipped: Set<Int>) {
+            if (toolName != "apply_plan") return
+            val key = (runCatching { parser.parseToJsonElement(arguments) as? JsonObject }.getOrNull()?.get("summary") as? JsonPrimitive)?.contentOrNull ?: return
+            AiContext.skipSteps(key, skipped)
+        }
+
         fun describe(toolName: String, arguments: String): Pair<String, String>? {
             val known = toolName in KINDS || toolName == "apply_plan" || toolName.startsWith("delete_") || toolName == "read_note"
             if (!known) return null
@@ -524,10 +544,14 @@ ${NotePrompts.EDITOR}
                 if (changes.isEmpty()) fail("The plan has no changes.")
                 else if (changes.size > 60) fail("A plan can hold at most 60 changes. Split it.")
                 else buildJsonObject {
+                    val skipped = AiContext.takeSkippedSteps((input.jsonObject["summary"] as? JsonPrimitive)?.contentOrNull.orEmpty())
                     var done = 0
+                    var ran = 0
                     put("results", buildJsonArray {
-                        changes.forEach { c ->
-                            val obj = c as? JsonObject ?: return@forEach
+                        changes.forEachIndexed { index, c ->
+                            if (index in skipped) return@forEachIndexed
+                            ran++
+                            val obj = c as? JsonObject ?: return@forEachIndexed
                             val op = (obj["op"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                             val tool = byName[op]?.takeIf { op in PLAN_OPS }
                             val result = tool?.execute?.invoke(JsonObject(obj.filterKeys { it != "op" })) ?: fail("\"$op\" cannot be part of a plan.")
@@ -535,8 +559,8 @@ ${NotePrompts.EDITOR}
                             add(buildJsonObject { put("op", op); put("result", result) })
                         }
                     })
-                    put("ok", done == changes.size)
-                    put("message", "$done of ${changes.size} changes done.")
+                    put("ok", done == ran)
+                    put("message", "$done of $ran changes done." + if (skipped.isNotEmpty()) " The student skipped ${skipped.size}: ${skipped.sorted().joinToString { "step ${it + 1}" }}. Do not redo them." else "")
                 }
             },
         )

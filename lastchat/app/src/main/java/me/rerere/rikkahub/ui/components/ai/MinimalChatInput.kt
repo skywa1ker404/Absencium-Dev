@@ -1698,8 +1698,35 @@ private fun ToolApprovalCard(
                 }
             }
 
+            val steps = remember(approval.toolCallId) { me.rerere.rikkahub.LastChatHost.planSteps(approval.toolName, approval.arguments) }
+            val unticked = remember(approval.toolCallId) { androidx.compose.runtime.mutableStateListOf<Int>() }
             val summary = approval.summary()
-            if (summary.isNotBlank()) {
+            if (!steps.isNullOrEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    steps.forEachIndexed { index, line ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { if (index in unticked) unticked.remove(index) else unticked.add(index) },
+                        ) {
+                            androidx.compose.material3.Checkbox(checked = index !in unticked, onCheckedChange = { if (it) unticked.remove(index) else unticked.add(index) })
+                            Text(
+                                text = line,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (index in unticked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
+            } else if (summary.isNotBlank()) {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -1722,7 +1749,10 @@ private fun ToolApprovalCard(
                 description = stringResource(R.string.tool_approval_approve_desc),
                 icon = Icons.Rounded.Check,
                 selected = true,
-                onClick = onApprove,
+                onClick = {
+                    if (!steps.isNullOrEmpty()) me.rerere.rikkahub.LastChatHost.skipPlanSteps(approval.toolName, approval.arguments, unticked.toSet())
+                    onApprove()
+                },
             )
             if (approval.isWorkspaceTool) {
                 ToolApprovalActionRow(

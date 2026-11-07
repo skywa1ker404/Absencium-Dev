@@ -566,6 +566,14 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                                 navigator.navigate(ReadingScreenDestination(noteId = note.id))
                             }
                         })
+                        AppMenuItem(AppIcons.Sparkle, "Ask Absencium AI", {
+                            menuOpen = false
+                            scope.launch {
+                                if (isDirty()) saveNow()
+                                skywa1ker404.absencium.data.ai.AiContext.noteViewed(note.id)
+                                skywa1ker404.absencium.ui.AbsenciumAi.open(appContext)
+                            }
+                        })
                         AppMenuItem(AppIcons.Folder, "File under a topic", { menuOpen = false; showTopicPicker = true })
                         AppMenuItem(AppIcons.Info, "Notes info", { menuOpen = false; showInfo = true })
                         AppMenuDivider()
