@@ -140,7 +140,6 @@ fun ReadingScreen(noteId: Long, navigator: DestinationsNavigator) {
     val container = context.appContainer
     var note by remember { mutableStateOf<NoteEntity?>(null) }
     var missing by remember { mutableStateOf(false) }
-    val aiContext = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(noteId) {
         skywa1ker404.absencium.data.ai.AiContext.noteViewed(noteId)
         container.readingMini.value = null
@@ -375,6 +374,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                             IconButton(onClick = { menuOpen = true }) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = colors.onBackground) }
                             AppMenu(expanded = menuOpen, onDismiss = { menuOpen = false }) {
                                 AppMenuItem(AppIcons.Share, "Share or export", { menuOpen = false; showShare = true })
+                                val aiContext = androidx.compose.ui.platform.LocalContext.current
                                 AppMenuItem(AppIcons.Sparkle, "Ask Absencium AI", { menuOpen = false; skywa1ker404.absencium.data.ai.AiContext.noteViewed(note.id); skywa1ker404.absencium.ui.AbsenciumAi.open(aiContext) })
                                 AppMenuItem(AppIcons.Fullscreen, "Focus mode", { menuOpen = false; focus = true })
                                 AppMenuDivider()
