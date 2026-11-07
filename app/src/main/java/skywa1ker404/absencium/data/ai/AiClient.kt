@@ -50,6 +50,8 @@ class AiImage(val mimeType: String, val base64: String) {
 }
 
 /** One turn of a conversation sent to the model. A turn may carry pictures or PDFs. */
+enum class ChatRole { USER, ASSISTANT }
+
 data class ChatTurn(val role: ChatRole, val text: String, val images: List<AiImage> = emptyList())
 
 /** A web page the answer was grounded on (only when web search was on). */

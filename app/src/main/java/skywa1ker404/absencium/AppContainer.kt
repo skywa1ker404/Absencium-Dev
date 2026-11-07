@@ -50,7 +50,6 @@ class AppContainer(context: Context) {
     val notesStorage = NotesStorage(appContext, notesStorageSettings)
     val apiKeyVault = ApiKeyVault(appContext).also { vault -> vault.legacyOwner = { settingsState.value?.aiProvider } }
     /** URL, model and request style of every provider the student has set up (keys stay in [apiKeyVault]). */
-    val aiProfiles = skywa1ker404.absencium.data.ai.AiProfiles(appContext)
     val attachmentStore = AttachmentStore(appContext)
     val shareService: skywa1ker404.absencium.data.share.ShareService by lazy { skywa1ker404.absencium.data.share.ShareService(appContext) }
     val backupManager = BackupManager(appContext)
