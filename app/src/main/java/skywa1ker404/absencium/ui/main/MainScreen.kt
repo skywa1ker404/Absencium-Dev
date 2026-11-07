@@ -88,6 +88,7 @@ import skywa1ker404.absencium.ui.theme.LocalGlassEnabled
 import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import skywa1ker404.absencium.ui.components.pageHeaderGlass
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.graphicsLayer
@@ -291,9 +292,9 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    // No bar: only a soft fade of the background colour so scrolling content never collides with the title.
-                    .background(skywa1ker404.absencium.ui.components.pageTitleFade(colors.background, top = 0.88f, mid = 0.5f, midAt = 0.7f)),
             ) {
+                // No bar: a soft fade of the background colour (frosted under Liquid Glass) so scrolling content never collides with the title.
+                Box(Modifier.matchParentSize().pageHeaderGlass(colors.background, top = 0.88f, mid = 0.5f, midAt = 0.7f))
                 ShellTopBar(displayName = settings.displayName, onProfile = { showProfile = true })
             }
 

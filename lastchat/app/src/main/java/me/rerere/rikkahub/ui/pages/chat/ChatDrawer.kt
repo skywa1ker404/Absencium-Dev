@@ -482,7 +482,15 @@ fun ChatDrawerContent(
     // 昵称编辑对话框
     when (presentation) {
         ChatDrawerPresentation.Modal -> {
-            LastChatModalDrawerSheet(
+            if (me.rerere.rikkahub.LocalHostGlass.current) {
+                // Liquid Glass: a translucent pane; the page behind it is blurred while the drawer is open.
+                androidx.compose.material3.ModalDrawerSheet(
+                    modifier = Modifier.widthIn(max = drawerWidth),
+                    drawerShape = RoundedCornerShape(topEnd = 32.dp, bottomEnd = 32.dp),
+                    drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.55f),
+                    content = { drawerContent() },
+                )
+            } else LastChatModalDrawerSheet(
                 modifier = Modifier.widthIn(max = drawerWidth),
             ) {
                 drawerContent()

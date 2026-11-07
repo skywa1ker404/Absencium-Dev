@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.chat
 
+import androidx.compose.ui.draw.blur
 import me.rerere.rikkahub.ui.context.LocalChatAnimationsEnabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterExitState
@@ -946,9 +947,10 @@ fun ChatPage(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     val wideHazeState = rememberHazeState()
-                    val wideBlur = remember(setting.displaySetting.enableBlurEffect, wideHazeState) {
+                    val wideHostGlass = me.rerere.rikkahub.LocalHostGlass.current
+                    val wideBlur = remember(setting.displaySetting.enableBlurEffect, wideHostGlass, wideHazeState) {
                         LastChatBlur(
-                            enabled = setting.displaySetting.enableBlurEffect,
+                            enabled = setting.displaySetting.enableBlurEffect || wideHostGlass,
                             hazeState = wideHazeState,
                         )
                     }
@@ -1141,6 +1143,13 @@ fun ChatPage(
         }
 
         else -> {
+            val drawerHostGlass = me.rerere.rikkahub.LocalHostGlass.current
+            // Liquid Glass: the page behind the open drawer is blurred, so the translucent drawer reads as frosted glass.
+            val pageBlur by androidx.compose.animation.core.animateDpAsState(
+                targetValue = if (drawerHostGlass && drawerState.targetValue == androidx.compose.material3.DrawerValue.Open) 18.dp else 0.dp,
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 380f),
+                label = "drawerPageBlur",
+            )
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
@@ -1156,6 +1165,7 @@ fun ChatPage(
                     )
                 }
             ) {
+                Box(modifier = if (pageBlur > 0.dp) Modifier.blur(pageBlur) else Modifier) {
                 ChatPageContent(
                     inputState = inputState,
                     loadingJob = loadingJob,
@@ -1180,6 +1190,7 @@ fun ChatPage(
                     inputMaxWidth = Dp.Unspecified,
                     initialSearchQuery = searchQuery
                 )
+                }
             }
             BackHandler(drawerState.isOpen) {
                 scope.launch { drawerState.close() }
@@ -1243,9 +1254,10 @@ private fun ChatPageContent(
     val density = LocalDensity.current
     val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val hazeState = rememberHazeState()
-    val localBlur = remember(setting.displaySetting.enableBlurEffect, hazeState) {
+    val hostGlassBlur = me.rerere.rikkahub.LocalHostGlass.current
+    val localBlur = remember(setting.displaySetting.enableBlurEffect, hostGlassBlur, hazeState) {
         LastChatBlur(
-            enabled = setting.displaySetting.enableBlurEffect,
+            enabled = setting.displaySetting.enableBlurEffect || hostGlassBlur,
             hazeState = hazeState,
         )
     }

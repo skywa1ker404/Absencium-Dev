@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.components.pageHeaderGlass
 import skywa1ker404.absencium.ui.components.AppMenu
 import skywa1ker404.absencium.ui.components.AppMenuDivider
 import skywa1ker404.absencium.ui.components.AppMenuItem
@@ -537,10 +538,11 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         customTopBar = {
             // Read so the buttons refresh when the history changes.
             @Suppress("UNUSED_VARIABLE") val version = historyVersion
+            Box {
+            Box(Modifier.matchParentSize().pageHeaderGlass(colors.background, top = 0.9f, mid = 0.55f, midAt = 0.7f))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(skywa1ker404.absencium.ui.components.pageTitleFade(colors.background, top = 0.9f, mid = 0.55f, midAt = 0.7f))
                     .statusBarsPadding()
                     .height(48.dp)
                     .padding(horizontal = 4.dp),
@@ -586,6 +588,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                         AppMenuItem(AppIcons.Delete, "Delete", { menuOpen = false; confirmDelete = true }, destructive = true)
                     }
                 }
+            }
             }
         },
         bottomBar = {

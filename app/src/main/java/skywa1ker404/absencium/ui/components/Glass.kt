@@ -14,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
@@ -58,8 +60,8 @@ fun Modifier.floatingGlass(
     val veilBase = lerp(scheme.surface, scheme.primaryContainer, 0.18f)
     // A popup (dense veil) carries text over whatever is behind it, so it blurs harder and veils more: nothing behind it may
     // read through as a second layer of labels. Bars and the pill keep the lighter look.
-    val veil = veilBase.copy(alpha = if (denseVeil) (if (isDark) 0.72f else 0.80f) else if (isDark) 0.42f else 0.5f)
-    val blurDp = if (denseVeil) maxOf(LocalGlassBlur.current, 18.dp) else LocalGlassBlur.current
+    val veil = veilBase.copy(alpha = if (denseVeil) (if (isDark) 0.66f else 0.52f) else if (isDark) 0.42f else 0.5f)
+    val blurDp = if (denseVeil) maxOf(LocalGlassBlur.current, 24.dp) else LocalGlassBlur.current
     // Lens refraction needs rounded corners and Android 13 (a runtime shader); a plain rectangle only blurs.
     val useLens = lens && quality.glassLens && shape is CornerBasedShape && isRuntimeShaderSupported()
     val rim = if (bordered && !quality.glassHighlight) {
@@ -268,3 +270,37 @@ fun pageTitleFade(background: androidx.compose.ui.graphics.Color, top: Float = 1
         midAt to background.copy(alpha = mid),
         1f to androidx.compose.ui.graphics.Color.Transparent,
     )
+
+
+/**
+ * The glass behind a page header (Liquid Glass only): the page colour as a veil over a blur of whatever scrolls under the header,
+ * dissolving at its lower edge so there is no band, only a soft frosting that keeps titles readable. Put it first in a Box and give it
+ * `matchParentSize()`; the header goes on top. Without Liquid Glass (or a backdrop) it is the plain [pageTitleFade].
+ */
+@Composable
+fun Modifier.pageHeaderGlass(background: Color, top: Float = 1f, mid: Float = 0.97f, midAt: Float = 0.68f): Modifier {
+    val backdrop = skywa1ker404.absencium.ui.theme.LocalBackdrop.current
+    if (!LocalGlassEnabled.current || backdrop == null) return this.background(pageTitleFade(background, top, mid, midAt))
+    val blurDp = maxOf(LocalGlassBlur.current, 14.dp)
+    return this
+        .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            // Dissolve the frosting into the page: opaque under the title, gone at the lower edge.
+            drawRect(
+                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                    0f to Color.Black,
+                    0.6f to Color.Black.copy(alpha = 0.85f),
+                    1f to Color.Transparent,
+                ),
+                blendMode = androidx.compose.ui.graphics.BlendMode.DstIn,
+            )
+        }
+        .drawBackdrop(
+            backdrop = backdrop,
+            shape = { androidx.compose.ui.graphics.RectangleShape },
+            effects = { blur(blurDp.toPx()) },
+            shadow = null,
+            onDrawSurface = { drawRect(background.copy(alpha = 0.62f)) },
+        )
+}

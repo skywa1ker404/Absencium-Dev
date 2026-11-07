@@ -1653,11 +1653,12 @@ private fun ToolApprovalCard(
     onDenyWithInstruction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val approvalFill = blurredContainerColor(MaterialTheme.colorScheme.surfaceContainer)
     Surface(
         shape = AppShapes.CardMedium,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = approvalFill,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth().lastChatBlurEffect(approvalFill, AppShapes.CardMedium)
     ) {
         Column(
             modifier = Modifier.padding(14.dp),

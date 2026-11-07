@@ -104,3 +104,5 @@ working on it
 - Fixed (branch Absencium-ai): with Liquid Glass on, the solid white or black band behind page titles is gone in the app and in Absencium AI; titles sit on a faint glass veil over the wallpaper.
 - Changed (branch Absencium-ai): the new-chat screen opened from "Ask Absencium AI" shows the same data-based chips; the Absencium AI avatar follows the theme colours.
 - Changed (branch Absencium-ai): the chat drawer shows your Absencium profile (name and avatar style); the name also replaces the chat's own user name in prompts.
+- Changed (branch Absencium-ai): with Liquid Glass, page headers are a blur of what scrolls under them in the page colour, dissolving at the lower edge (Home, Vault, Calendar, settings pages, note editor); other themes keep the solid fade.
+- Changed (branch Absencium-ai): frosted popups are lighter in light mode and blur harder; in Absencium AI the input bar, chips and approval card blur the messages behind them under Liquid Glass, and the drawer is a translucent pane over a blurred page.

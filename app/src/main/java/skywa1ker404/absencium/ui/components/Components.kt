@@ -194,7 +194,9 @@ fun ScreenScaffold(
             modifier = modifier,
             containerColor = colors.background,
             topBar = {
-                if (customTopBar != null) customTopBar() else TopAppBar(
+                if (customTopBar != null) customTopBar() else Box {
+                  Box(Modifier.matchParentSize().pageHeaderGlass(colors.background))
+                  TopAppBar(
                     title = { if (titleContent != null) titleContent() else Text(title, style = MaterialTheme.typography.headlineSmall) },
                     navigationIcon = {
                         if (onBack != null) {
@@ -209,8 +211,8 @@ fun ScreenScaffold(
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                     // A fade of the page colour that is solid behind the title and only dissolves at its lower edge, so scrolling content
                     // never shows through the title text and still does not meet a hard edge. The same fade as the Home, Calendar and Vault header.
-                    modifier = Modifier.background(pageTitleFade(colors.background)),
-                )
+                  )
+                }
             },
             bottomBar = bottomBar,
         ) { padding ->
