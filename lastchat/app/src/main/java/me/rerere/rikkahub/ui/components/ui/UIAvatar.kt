@@ -140,7 +140,22 @@ fun UIAvatar(
                     )
                 }
 
-                is Avatar.Resource -> {
+                is Avatar.Resource -> if (value.id == me.rerere.rikkahub.R.drawable.absencium_ai_avatar) {
+                    // Absencium AI's own logo follows the app theme: the primary colour behind, the on-primary colour for the mark.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(me.rerere.rikkahub.R.drawable.absencium_ai_glyph),
+                            contentDescription = null,
+                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.onPrimary),
+                            modifier = Modifier.fillMaxSize(0.56f),
+                        )
+                    }
+                } else {
                     AsyncImage(
                         model = value.id,
                         contentDescription = null,

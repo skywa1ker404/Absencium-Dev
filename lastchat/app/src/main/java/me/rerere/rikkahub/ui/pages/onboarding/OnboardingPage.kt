@@ -533,18 +533,27 @@ private fun IntroPage(
             contentAlignment = Alignment.Center,
         ) {
             IntroRipple(progress = ripple.value)
-            Image(
-                painter = painterResource(R.drawable.absencium_ai_avatar),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
+            // The logo in the theme's colours, round like the assistant avatar.
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(124.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
                     .graphicsLayer {
                         scaleX = logoScale.value
                         scaleY = logoScale.value
                         translationY = logoYOffset.value
                     }
-            )
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.absencium_ai_glyph),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.onPrimary),
+                    modifier = Modifier.fillMaxSize(0.56f),
+                )
+            }
             Text(
                 text = "Let’s get you set\nup on Absencium AI!",
                 style = MaterialTheme.typography.headlineSmall,
