@@ -540,13 +540,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to colors.background.copy(alpha = 0.9f),
-                            0.7f to colors.background.copy(alpha = 0.55f),
-                            1f to Color.Transparent,
-                        ),
-                    )
+                    .background(skywa1ker404.absencium.ui.components.pageTitleFade(colors.background, top = 0.9f, mid = 0.55f, midAt = 0.7f))
                     .statusBarsPadding()
                     .height(48.dp)
                     .padding(horizontal = 4.dp),

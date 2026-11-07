@@ -252,3 +252,19 @@ fun sheetContainerColor(): Color {
 @Composable
 fun sheetScrimColor(): Color =
     Color.Black.copy(alpha = 0.4f)
+
+/**
+ * The fade behind a page title. Normally the page colour, solid behind the title so scrolling content never shows through it. Under
+ * Liquid Glass only a faint veil, so the wallpaper runs all the way up to the top of the screen instead of ending in a white or black slab.
+ */
+@androidx.compose.runtime.Composable
+fun pageTitleFade(background: androidx.compose.ui.graphics.Color, top: Float = 1f, mid: Float = 0.97f, midAt: Float = 0.68f): androidx.compose.ui.graphics.Brush =
+    if (skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current) androidx.compose.ui.graphics.Brush.verticalGradient(
+        0f to background.copy(alpha = 0.26f),
+        0.6f to background.copy(alpha = 0.1f),
+        1f to androidx.compose.ui.graphics.Color.Transparent,
+    ) else androidx.compose.ui.graphics.Brush.verticalGradient(
+        0f to background.copy(alpha = top),
+        midAt to background.copy(alpha = mid),
+        1f to androidx.compose.ui.graphics.Color.Transparent,
+    )

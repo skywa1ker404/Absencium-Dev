@@ -285,7 +285,7 @@ private fun ChatTopFadeOverlay(
                 .background(
                     brush = androidx.compose.ui.graphics.Brush.verticalGradient(
                         colors = listOf(
-                            backgroundColor.copy(alpha = 0.98f),
+                            backgroundColor.copy(alpha = glassFadeAlpha(0.98f)),
                             Color.Transparent
                         )
                     )
@@ -331,7 +331,7 @@ private fun ChatWidePanelEdgeFadeOverlay(
                     .background(
                         brush = androidx.compose.ui.graphics.Brush.verticalGradient(
                             colors = listOf(
-                                backgroundColor.copy(alpha = 0.98f),
+                                backgroundColor.copy(alpha = glassFadeAlpha(0.98f)),
                                 Color.Transparent
                             )
                         )
@@ -358,15 +358,15 @@ private fun ChatWidePanelEdgeFadeOverlay(
                             androidx.compose.ui.graphics.Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    backgroundColor.copy(alpha = 0.72f),
-                                    backgroundColor.copy(alpha = 0.97f)
+                                    backgroundColor.copy(alpha = glassFadeAlpha(0.72f)),
+                                    backgroundColor.copy(alpha = glassFadeAlpha(0.97f))
                                 )
                             )
                         } else {
                             androidx.compose.ui.graphics.Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    backgroundColor.copy(alpha = 0.92f)
+                                    backgroundColor.copy(alpha = glassFadeAlpha(0.92f))
                                 )
                             )
                         }
@@ -1766,15 +1766,15 @@ private fun ChatPageContent(
                                     androidx.compose.ui.graphics.Brush.verticalGradient(
                                         colors = listOf(
                                             Color.Transparent,
-                                            MaterialTheme.colorScheme.background.copy(alpha = 0.72f),
-                                            MaterialTheme.colorScheme.background.copy(alpha = 0.97f)
+                                            MaterialTheme.colorScheme.background.copy(alpha = glassFadeAlpha(0.72f)),
+                                            MaterialTheme.colorScheme.background.copy(alpha = glassFadeAlpha(0.97f))
                                         )
                                     )
                                 } else {
                                     androidx.compose.ui.graphics.Brush.verticalGradient(
                                         colors = listOf(
                                             Color.Transparent,
-                                            MaterialTheme.colorScheme.background.copy(alpha = 0.92f)
+                                            MaterialTheme.colorScheme.background.copy(alpha = glassFadeAlpha(0.92f))
                                         )
                                     )
                                 }
@@ -4008,3 +4008,6 @@ private fun compactTokenCount(tokens: Int): String = when {
     else -> tokens.toString()
 }
 
+/** The fades at the edges of the chat: full strength normally, only a faint veil under Liquid Glass so no dark slab sits over the wallpaper. */
+@androidx.compose.runtime.Composable
+private fun glassFadeAlpha(base: Float): Float = if (me.rerere.rikkahub.LocalHostGlass.current) base * 0.25f else base

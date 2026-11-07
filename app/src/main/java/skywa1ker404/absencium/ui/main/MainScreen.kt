@@ -292,13 +292,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
                     // No bar: only a soft fade of the background colour so scrolling content never collides with the title.
-                    .background(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
-                            0f to colors.background.copy(alpha = 0.88f),
-                            0.7f to colors.background.copy(alpha = 0.5f),
-                            1f to androidx.compose.ui.graphics.Color.Transparent,
-                        ),
-                    ),
+                    .background(skywa1ker404.absencium.ui.components.pageTitleFade(colors.background, top = 0.88f, mid = 0.5f, midAt = 0.7f)),
             ) {
                 ShellTopBar(displayName = settings.displayName, onProfile = { showProfile = true })
             }
