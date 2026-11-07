@@ -106,7 +106,12 @@ fun OneUITopAppBar(
         modifier = modifier
             .fillMaxWidth()
             .height(currentHeight)
-            .background(MaterialTheme.colorScheme.surface)
+            // Liquid Glass: the large header is see-through over the wallpaper and turns into a tinted glass bar as it collapses.
+            .background(
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = if (me.rerere.rikkahub.LocalHostGlass.current) 0.62f * collapseProgress else 1f
+                )
+            )
     ) {
         // Status bar spacer
         Spacer(modifier = Modifier.height(statusBarHeight))

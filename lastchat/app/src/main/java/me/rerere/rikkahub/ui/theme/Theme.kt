@@ -132,7 +132,8 @@ private fun HostedChatTheme(dark: Boolean, content: @Composable () -> Unit) {
         // Liquid Glass: the page is see-through so the wallpaper shows, and the panes on it (input bar, cards, bubbles) are tinted
         // glass. Dialogs, menus and sheets keep their solid colours so they stay readable.
         if (glass) scheme.copy(
-            background = androidx.compose.ui.graphics.Color.Transparent,
+            // Same colour at zero alpha, not Color.Transparent: fades drawn from the background colour then blend to the wallpaper, not to black.
+            background = scheme.background.copy(alpha = 0f),
             surfaceContainer = scheme.surfaceContainer.copy(alpha = 0.55f),
         ) else scheme
     }
