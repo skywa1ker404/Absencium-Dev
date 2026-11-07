@@ -97,3 +97,4 @@ working on it
 - Added (branch Absencium-ai): Absencium AI shows a bulk change as one plan you approve once, and AI settings, Advanced, has "Do without asking" switches for subjects, notes, timetable, exams, holidays, attendance and syllabus (deleting always asks).
 - Fixed (branch Absencium-ai): asking Absencium AI to add to a note now adds to the existing note (or the one you just had open) instead of creating a new one, and the chat reports exactly what was saved.
 - Changed (branch Absencium-ai): chat notes, Generate Notes and homework use one formatting rule: tables, colours, highlights, formulas, checklists and headings appear only where the content needs them, not in a fixed layout.
+- Removed (branch Absencium-ai): the old built-in AI chat code, its memory, assistants and background service, now that Absencium AI does all of it.
