@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.chat
 
+import androidx.compose.runtime.collectAsState
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 
 import androidx.core.net.toUri
@@ -341,8 +342,9 @@ fun ChatDrawerContent(
                 // Imagine + Stats buttons (visibility handled by ConversationList)
                 quickActions = {
                     val haptics = rememberPremiumHaptics()
+                    val imagineOn = imagineAllowed()
                     LastChatDrawerQuickActionGroup {
-                        LastChatDrawerQuickAction(
+                        if (imagineOn) LastChatDrawerQuickAction(
                             label = stringResource(R.string.chat_drawer_imagine),
                             onClick = {
                                 navController.navigate(Screen.ImageGen)
@@ -443,13 +445,16 @@ fun ChatDrawerContent(
                             }
                         }
 
+                        val gearContext = androidx.compose.ui.platform.LocalContext.current
                         DrawerAction(
                             icon = {
                                 LastChatSettingsIcon(contentDescription = null)
                             },
                             label = { Text(stringResource(R.string.settings)) },
                             onClick = {
-                                navController.navigate(Screen.Setting)
+                                // Absencium's own AI settings page replaces the chat's settings hub.
+                                val openHost = me.rerere.rikkahub.LastChatHost.openAppSettings
+                                if (openHost != null) openHost(gearContext) else navController.navigate(Screen.Setting)
                                 dismissDrawerAfterSelection()
                             },
                             containerColor = itemColor,
@@ -602,7 +607,7 @@ fun CollapsedChatSideRail(
                 modifier = Modifier.clip(me.rerere.rikkahub.ui.theme.AppShapes.CardMedium),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                DrawerAction(
+                if (imagineAllowed()) DrawerAction(
                     icon = { Icon(Icons.Rounded.Image, null) },
                     label = { Text(stringResource(R.string.chat_drawer_imagine)) },
                     onClick = onOpenImageGen,
@@ -734,4 +739,12 @@ private fun DrawerAvatarVisual(
             }
         }
     }
+}
+
+
+/** Imagine is offered only when the host allows it (Absencium AI settings, Advanced, Generate images). */
+@androidx.compose.runtime.Composable
+private fun imagineAllowed(): Boolean {
+    val flow = me.rerere.rikkahub.LastChatHost.imagineEnabled ?: return true
+    return flow.collectAsState(initial = false).value
 }

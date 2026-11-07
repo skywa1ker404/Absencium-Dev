@@ -43,6 +43,19 @@ class MainActivity : ComponentActivity() {
 
     private val refreshRate by lazy { RefreshRatePreference(this) }
 
+    /** Set when the chat's settings gear asks for the AI settings page; the app navigates there once it is showing. */
+    private var openAiSettings by mutableStateOf(false)
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_OPEN_AI_SETTINGS, false)) openAiSettings = true
+    }
+
+    companion object {
+        const val EXTRA_OPEN_AI_SETTINGS = "openAiSettings"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The splash screen stays up until the saved settings are read, so the first frame is already in the
         // right theme instead of an empty window.
@@ -51,6 +64,7 @@ class MainActivity : ComponentActivity() {
         val container = applicationContext.appContainer
         splash.setKeepOnScreenCondition { container.settingsState.value == null }
         enableEdgeToEdge()
+        if (intent?.getBooleanExtra(EXTRA_OPEN_AI_SETTINGS, false) == true) openAiSettings = true
         setContent {
             val viewModel = rememberMainViewModel()
             val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -97,6 +111,12 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     if (phase == AppPhase.APP) {
+                        androidx.compose.runtime.LaunchedEffect(openAiSettings) {
+                            if (openAiSettings) {
+                                openAiSettings = false
+                                navController.navigate(com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination.route)
+                            }
+                        }
                         val mini by container.readingMini.collectAsStateWithLifecycle()
                         ReadingMiniPlayer(
                             mini = mini,

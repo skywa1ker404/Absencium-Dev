@@ -1,5 +1,6 @@
 package me.rerere.rikkahub
 
+import androidx.compose.runtime.remember
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -303,6 +304,24 @@ class RouteActivity : ComponentActivity() {
     private val chatService by inject<me.rerere.rikkahub.service.ChatService>()
     private val conversationRepo by inject<me.rerere.rikkahub.data.repository.ConversationRepository>()
     private var navStack by mutableStateOf<NavHostController?>(null)
+
+    // Opened from the host's AI settings page for one chat settings page: going back from it closes this screen and returns there.
+    private var returnToHostSettings = false
+    private var sawHostSettingsPage = false
+
+    private fun settingsScreenFor(name: String?): Screen? = when (name) {
+        "models" -> Screen.SettingModels
+        "providers" -> Screen.SettingProvider
+        "assistants" -> Screen.Assistant
+        "search" -> Screen.SettingSearch
+        "mcp" -> Screen.SettingMcp
+        "skills" -> Screen.SettingSkills()
+        "android" -> Screen.SettingAndroidIntegration
+        "tts" -> Screen.SettingTTS
+        "storage" -> Screen.SettingChatStorage
+        "about" -> Screen.SettingAbout
+        else -> null
+    }
     private var pendingTextSelection by mutableStateOf<QuickAskContinuationData?>(null)
     private var pendingConversationId by mutableStateOf<String?>(null)
     private var pendingResolvedSpontaneousTarget by mutableStateOf<ResolvedSpontaneousChatTarget?>(null)
@@ -389,6 +408,29 @@ class RouteActivity : ComponentActivity() {
                             if (intentWebServerSettings) {
                                 navStack.navigate(Screen.Setting)
                             }
+                        }
+                        val intentSettingsPage = remember { settingsScreenFor(intent?.getStringExtra(EXTRA_SETTINGS_DESTINATION)) }
+                        LaunchedEffect(intentSettingsPage) {
+                            if (intentSettingsPage != null) {
+                                returnToHostSettings = true
+                                navStack.navigate(intentSettingsPage)
+                            }
+                        }
+                        androidx.compose.runtime.DisposableEffect(navStack) {
+                            val listener = androidx.navigation.NavController.OnDestinationChangedListener { _, destination, _ ->
+                                val route = destination.route.orEmpty()
+                                if (returnToHostSettings) {
+                                    if (route.contains("Screen.Chat") && sawHostSettingsPage) {
+                                        returnToHostSettings = false
+                                        sawHostSettingsPage = false
+                                        finish()
+                                    } else if (!route.contains("Screen.Chat")) {
+                                        sawHostSettingsPage = true
+                                    }
+                                }
+                            }
+                            navStack.addOnDestinationChangedListener(listener)
+                            onDispose { navStack.removeOnDestinationChangedListener(listener) }
                         }
                     }
                 }
@@ -630,6 +672,12 @@ class RouteActivity : ComponentActivity() {
         pendingShareIntent = intent.readResolvedSharePayload()
         pendingTextSelection = intent.readQuickAskContinuationData() ?: pendingTextSelection
 
+        settingsScreenFor(intent.getStringExtra(EXTRA_SETTINGS_DESTINATION))?.let { page ->
+            returnToHostSettings = true
+            sawHostSettingsPage = false
+            navStack?.navigate(page)
+            return
+        }
         if (intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)) {
             navStack?.navigate(Screen.Setting)
             return
@@ -693,6 +741,8 @@ class RouteActivity : ComponentActivity() {
     companion object {
         /** Absencium opens the chat straight on its settings (providers, models, assistants) with this extra. */
         const val EXTRA_OPEN_SETTINGS = "openSettings"
+        /** Opens one settings page of the chat directly (models, providers, assistants, search, mcp, skills, android, tts, storage, about). */
+        const val EXTRA_SETTINGS_DESTINATION = "settingsDestination"
         const val EXTRA_CONVERSATION_ID = "conversationId"
         const val EXTRA_ASSISTANT_ID = "assistantId"
     }

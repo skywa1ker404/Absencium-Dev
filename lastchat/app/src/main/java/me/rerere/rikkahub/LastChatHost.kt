@@ -30,6 +30,12 @@ object LastChatHost {
     /** The host's profile avatar, drawn for the user in the chat drawer. When set, the avatar is not editable inside the chat. */
     var userAvatar: (@Composable (name: String, modifier: androidx.compose.ui.Modifier) -> Unit)? = null
 
+    /** Opens the host's own AI settings page. When set, the chat has no settings hub of its own: its gear goes here. */
+    var openAppSettings: ((android.content.Context) -> Unit)? = null
+
+    /** Whether the Imagine (image generation) entry shows in the chat drawer. Null: always shown. */
+    var imagineEnabled: kotlinx.coroutines.flow.Flow<Boolean>? = null
+
     var describe: (toolName: String, arguments: String) -> Pair<String, String>? = { _, _ -> null }
 
     /** The steps of a plan-like tool call, one line each, so the approval card can show a tick box per step. Null when the call has none. */

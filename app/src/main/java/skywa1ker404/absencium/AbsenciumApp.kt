@@ -114,6 +114,17 @@ class AbsenciumApp : Application() {
                 }
             }
         }
+        // The chat's gear opens the app's own AI settings page; Imagine shows in the chat drawer only when "Generate images" is on.
+        me.rerere.rikkahub.LastChatHost.openAppSettings = { context ->
+            val intent = android.content.Intent(context, MainActivity::class.java)
+                .putExtra(MainActivity.EXTRA_OPEN_AI_SETTINGS, true)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            if (context !is Activity) intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        }
+        me.rerere.rikkahub.LastChatHost.imagineEnabled = container.settingsState
+            .map { it?.generateImagesEnabled == true }
+            .distinctUntilChanged()
         val chatTools = skywa1ker404.absencium.data.ai.ChatAppTools(container)
         me.rerere.rikkahub.LastChatHost.describe = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.describe(name, args) }
         me.rerere.rikkahub.LastChatHost.planSteps = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.planSteps(name, args) }
