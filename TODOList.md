@@ -50,11 +50,11 @@ Last updated: 031126 (web search made universal; last green build `b5918fe`, 031
 | # | Task | Status |
 | - | --- | --- |
 | 40.1 | Text fields: one input style (shape, label, error, clear, keyboard) across the app and the chat | pending |
-| 40.2 | **Partly built, CI pending (the Settings hub's joined cards; still to do: the cards inside each settings page, the toggles, dropdowns and popups).** Settings layouts: grouped cards with the chat's corner shapes, rows, switches (haptic switch, toggle surface), dropdowns and popups all of one kind | pending |
+| 40.2 | **Partly built, CI green `42443059455` (the Settings hub's joined cards; still to do: the cards inside each settings page, the toggles, dropdowns and popups).** Settings layouts: grouped cards with the chat's corner shapes, rows, switches (haptic switch, toggle surface), dropdowns and popups all of one kind | pending |
 | 40.3 | Page switching: one springy transition and tab animation for every screen change | pending |
 | 40.4 | Swipe-to-delete with physics on notes, exams, timetable rows and Trash | pending |
 | 40.5 | Toasts and auto-save indicator in the chat's style for every message in the app | pending |
-| 40.6 | **Partly built, CI pending (large title on Settings, General, Appearance, Storage, AI settings and Profile; still to do: Home, Vault, Calendar and the rest, sticky headers).** Large collapsing title bar on top-level pages; sticky headers on grouped lists | pending |
+| 40.6 | **Partly built, CI green `42443059455` (large title on Settings, General, Appearance, Storage, AI settings and Profile; still to do: Home, Vault, Calendar and the rest, sticky headers).** Large collapsing title bar on top-level pages; sticky headers on grouped lists | pending |
 | 40.7 | Empty-state card, suggestion pills and time-based greeting on Home and empty pages | pending |
 | 40.8 | Typography, info shapes, expand / collapse and scrolling prompts unified; audit for any element left in two styles | pending |
 | 40.9 | **Built, CI green `42441320530` (grow-in animation; the chat's own start-up flash still to check on a device).** Opening Absencium AI is smooth (owner 2026-11-08: "the transition after clicking the Absencium AI button isn't smooth"): one springy shared transition from the button into the chat, no white / black flash while the chat starts (the AI Hub "trampoline flash" of Batch 39), the chat shell drawn at once and its data filling in | pending |
