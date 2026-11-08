@@ -111,8 +111,9 @@ fun OneUITopAppBar(
                 if (me.rerere.rikkahub.LocalHostGlass.current) {
                     androidx.compose.ui.graphics.Brush.verticalGradient(
                         listOf(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.26f + 0.5f * collapseProgress),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.6f * collapseProgress),
+                            // A veil that thickens as the bar collapses but always dissolves at the lower edge, never a solid band.
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.2f + 0.55f * collapseProgress),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0f),
                         )
                     )
                 } else {

@@ -347,7 +347,7 @@ private fun LobeHubIconOption(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = AppShapes.CardMedium,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Row(
             modifier = Modifier

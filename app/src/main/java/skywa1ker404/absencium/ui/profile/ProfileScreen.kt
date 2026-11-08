@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import skywa1ker404.absencium.ui.components.NavCard
+import skywa1ker404.absencium.ui.components.GroupPosition
+import skywa1ker404.absencium.ui.components.CardStack
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -79,60 +83,80 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
     val rows = remember(data) { data?.subjectAttendance().orEmpty() }
     val overall = remember(rows) { rows.overall() }
 
+    var editing by remember { mutableStateOf(false) }
+    val details = listOf(loaded.profileCourse, loaded.profileYear, loaded.profileCollege).filter { it.isNotBlank() }
+
     ScreenScaffold(title = "Profile", onBack = { navigator.navigateUp() }, largeTitle = true) {
-        // Who
+        // Who: one centred card, the avatar with its attendance ring, the name and the details; Edit opens the fields in place.
         AppCard(modifier = Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    ProfileAvatar(name = name, percent = overall.percent, threshold = threshold)
-                    AppTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Your name") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                AppTextField(
-                    value = course,
-                    onValueChange = { course = it },
-                    label = { Text("Course or class") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth(),
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                ProfileAvatar(name = loaded.displayName, percent = overall.percent, threshold = threshold)
+                Text(
+                    text = loaded.displayName.ifBlank { "Add your name" },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AppTextField(
-                        value = year,
-                        onValueChange = { year = it },
-                        label = { Text("Year or semester") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier.weight(1f),
-                    )
-                    AppTextField(
-                        value = college,
-                        onValueChange = { college = it },
-                        label = { Text("College") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier.weight(1f),
-                    )
+                Text(
+                    text = if (details.isEmpty()) "Course, year and college stay on this phone" else details.joinToString(" · "),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = editing,
+                    enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.spring(0.8f, 380f)) + androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.spring(1f, 500f)) + androidx.compose.animation.fadeOut(),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 10.dp)) {
+                        AppTextField(
+                            value = name, onValueChange = { name = it }, label = { Text("Your name") }, singleLine = true,
+                            shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
+                        )
+                        AppTextField(
+                            value = course, onValueChange = { course = it }, label = { Text("Course or class") }, singleLine = true,
+                            shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
+                        )
+                        AppTextField(
+                            value = year, onValueChange = { year = it }, label = { Text("Year or semester") }, singleLine = true,
+                            shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
+                        )
+                        AppTextField(
+                            value = college, onValueChange = { college = it }, label = { Text("College") }, singleLine = true,
+                            shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
-                val changed = name.trim() != loaded.displayName.trim() || course.trim() != loaded.profileCourse ||
-                    year.trim() != loaded.profileYear || college.trim() != loaded.profileCollege
-                if (changed) {
-                    PillButton(text = "Save", onClick = {
-                        settingsViewModel.setDisplayName(name.trim())
-                        settingsViewModel.setProfileDetails(course, year, college)
-                    })
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 8.dp)) {
+                    if (editing) {
+                        PillButton(text = "Save", onClick = {
+                            settingsViewModel.setDisplayName(name.trim())
+                            settingsViewModel.setProfileDetails(course, year, college)
+                            editing = false
+                        })
+                        PillButton(text = "Cancel", onClick = {
+                            name = loaded.displayName; course = loaded.profileCourse; year = loaded.profileYear; college = loaded.profileCollege
+                            editing = false
+                        })
+                    } else {
+                        PillButton(text = "Edit profile", onClick = { editing = true })
+                    }
                 }
-                HintText("Kept on this phone only. It is used for greetings and by Absencium AI.")
             }
         }
 
-        // How am I doing
+        // Numbers at a glance.
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            val notesCount = vault?.notes?.count { it.status != NoteStatus.DRAFT } ?: 0
+            StatTile(overall.percent?.let { "${it.roundToInt()}%" } ?: "–", "Attendance", Modifier.weight(1f))
+            StatTile("$notesCount", "Notes", Modifier.weight(1f))
+            StatTile("${vault?.guides?.size ?: 0}", "Material", Modifier.weight(1f))
+        }
+
+        // Attendance: one card, the overall line then a row per subject.
         SectionTitle("Attendance")
         AppCard(modifier = Modifier.fillMaxWidth()) {
             val percent = overall.percent
@@ -140,82 +164,49 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
                 HintText("Add subjects and log lectures to see attendance here.")
             } else {
                 val margin = attendanceMargin(overall.present, overall.held, threshold)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        text = "${percent.roundToInt()}%",
-                        style = MaterialTheme.typography.displaySmall,
-                        color = if (percent < threshold) colors.error else colors.primary,
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("${overall.present} present of ${overall.held} held", style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            text = if (margin.mustAttend > 0) "Attend the next ${margin.mustAttend} to reach your $threshold% target"
-                            else "You can skip ${margin.canSkip} and stay above your $threshold% target",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onSurfaceVariant,
-                        )
-                    }
-                }
+                Text(
+                    text = if (margin.mustAttend > 0) "Attend the next ${margin.mustAttend} to reach your $threshold% target"
+                    else "You can skip ${margin.canSkip} and stay above your $threshold% target",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (margin.mustAttend > 0) colors.error else colors.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
             }
-        }
-        rows.forEach { item ->
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(subjectColor(item.subject.id)))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(item.subject.name, style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            text = "${item.present} present · ${item.absent} absent · ${item.cancelled} cancelled",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onSurfaceVariant,
-                        )
-                    }
-                    val percent = item.percent
-                    if (percent != null) {
-                        val margin = attendanceMargin(item.present, item.held, threshold)
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "${percent.roundToInt()}%",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = if (percent < threshold) colors.error else colors.primary,
-                            )
-                            Text(
-                                text = if (margin.mustAttend > 0) "attend ${margin.mustAttend}" else "can skip ${margin.canSkip}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = colors.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
+            rows.forEachIndexed { index, item ->
+                if (index > 0 || percent != null) SettingDivider()
+                val p = item.percent
+                val margin = attendanceMargin(item.present, item.held, threshold)
+                ProgressRow(
+                    title = item.subject.name,
+                    subtitle = if (p == null) "No lectures logged" else "${item.present} of ${item.held} · " +
+                        (if (margin.mustAttend > 0) "attend ${margin.mustAttend}" else "can skip ${margin.canSkip}"),
+                    value = p?.let { (it / 100.0).toFloat() },
+                    valueText = p?.let { "${it.roundToInt()}%" } ?: "–",
+                    color = if (p != null && p < threshold) colors.error else subjectColor(item.subject.id),
+                )
             }
         }
 
-        // Syllabus
+        // Syllabus: the same rows.
         val withSyllabus = rows.map { it.subject }.filter { subject -> syllabus.any { it.subjectId == subject.id } }
         if (withSyllabus.isNotEmpty()) {
             SectionTitle("Syllabus")
             AppCard(modifier = Modifier.fillMaxWidth()) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    withSyllabus.forEach { subject ->
-                        val progress = SyllabusTree.progress(syllabus.filter { it.subjectId == subject.id }, null)
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(subject.name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                                Text("${(progress * 100).roundToInt()}%", style = MaterialTheme.typography.labelLarge, color = colors.primary)
-                            }
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier.fillMaxWidth().clip(CircleShape),
-                                color = subjectColor(subject.id),
-                                trackColor = colors.surfaceContainerHighest,
-                            )
-                        }
-                    }
+                withSyllabus.forEachIndexed { index, subject ->
+                    if (index > 0) SettingDivider()
+                    val progress = SyllabusTree.progress(syllabus.filter { it.subjectId == subject.id }, null)
+                    ProgressRow(
+                        title = subject.name,
+                        subtitle = "Covered so far",
+                        value = progress,
+                        valueText = "${(progress * 100).roundToInt()}%",
+                        color = subjectColor(subject.id),
+                    )
                 }
             }
         }
 
-        // What is next
+        // What is next.
         val today = LocalDate.now()
         val upcoming = remember(data) { data?.exams.orEmpty().filter { !it.date.isBefore(today) }.sortedBy { it.date }.take(3) }
         if (upcoming.isNotEmpty()) {
@@ -240,45 +231,58 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        // What I have
-        vault?.let { v ->
-            val notes = v.notes.count { it.status != NoteStatus.DRAFT }
-            SectionTitle("Vault")
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
-                    VaultStat("$notes", "Notes")
-                    VaultStat("${v.guides.size}", "Study material")
-                    VaultStat("${v.drafts.size}", "Drafts")
-                    VaultStat("${rows.size}", "Subjects")
-                }
-            }
-        }
-
-        // Where to go
+        // Where to go.
         SectionTitle("More")
-        SettingGroup {
-            SettingRow(
+        CardStack {
+            NavCard(
+                icon = AppIcons.AutoAwesome,
                 title = "Absencium AI",
-                subtitle = if (loaded.askAiEnabled) "Chat, attach files, and let it look things up or change your notes" else "AI Features are off. Turn them on in AI settings, or ignore this.",
+                subtitle = if (loaded.askAiEnabled) "Chat, attach files, and let it look things up or change your notes" else "AI Features are off. Turn them on in AI settings.",
                 onClick = { navigator.navigate(AiHubScreenDestination()) },
-                leading = { Icon(AppIcons.AutoAwesome, contentDescription = null, tint = colors.primary) },
+                position = GroupPosition.First,
             )
-            SettingDivider()
-            SettingRow(
+            NavCard(
+                icon = AppIcons.Tune,
                 title = "Settings",
                 subtitle = "General, appearance, storage and AI",
                 onClick = { navigator.navigate(SettingsHubScreenDestination) },
-                leading = { Icon(AppIcons.Tune, contentDescription = null, tint = colors.primary) },
+                position = GroupPosition.Last,
             )
         }
     }
 }
 
+/** A small number with its label, in a tile. */
 @Composable
-private fun VaultStat(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun StatTile(value: String, label: String, modifier: Modifier = Modifier) {
+    AppCard(modifier = modifier) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            Text(value, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** A title and a line under it, a number at the end, and a thin bar showing how far along it is. */
+@Composable
+private fun ProgressRow(title: String, subtitle: String, value: Float?, valueText: String, color: androidx.compose.ui.graphics.Color) {
+    val colors = MaterialTheme.colorScheme
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            }
+            Text(valueText, style = MaterialTheme.typography.titleMedium, color = color)
+        }
+        LinearProgressIndicator(
+            progress = { (value ?: 0f).coerceIn(0f, 1f) },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+            color = color,
+            trackColor = colors.surfaceContainerHighest.copy(alpha = 0.6f),
+            gapSize = 0.dp,
+            drawStopIndicator = {},
+        )
     }
 }
 

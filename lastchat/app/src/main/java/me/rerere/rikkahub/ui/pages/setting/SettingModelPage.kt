@@ -1120,7 +1120,7 @@ private fun HelperReasoningSettings(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest
+                    color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHighest)
                 )
                 .clickable {
                     haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Pop)

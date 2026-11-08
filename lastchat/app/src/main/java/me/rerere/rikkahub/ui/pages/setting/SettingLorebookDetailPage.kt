@@ -333,7 +333,7 @@ fun SettingLorebookDetailPage(
                         haptics.perform(HapticPattern.Tick)
                     },
                     shape = AppShapes.CardLarge,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
                     Icon(
@@ -1378,7 +1378,7 @@ private fun LorebookEntryAttachmentItem(
         Surface(
             modifier = Modifier.fillMaxSize(),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh
+            color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh)
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -1546,7 +1546,7 @@ containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceCon
                 
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHighest)
                     ),
                     shape = shape
                 ) {

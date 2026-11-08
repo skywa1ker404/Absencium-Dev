@@ -190,7 +190,7 @@ fun SettingSkillsPage(
                             .align(Alignment.BottomCenter)
                             .offset(y = -ScreenOffset),
                         shape = RoundedCornerShape(28.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                         tonalElevation = 6.dp,
                     ) {
                         Row(
@@ -249,7 +249,7 @@ fun SettingSkillsPage(
                             importLauncher.launch(arrayOf("application/json", "text/markdown", "application/zip", "*/*"))
                         },
                         shape = AppShapes.CardLarge,
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                         contentColor = MaterialTheme.colorScheme.onSurface
                     ) {
                         Icon(

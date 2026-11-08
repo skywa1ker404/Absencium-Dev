@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.syllabus
 
+import skywa1ker404.absencium.ui.components.floatingGlass
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -106,11 +107,19 @@ fun TopicSidebar(
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
         )
         var drag by remember { mutableStateOf(0f) }
+        // Liquid Glass: the panel is frosted glass over the page instead of a solid slab.
+        val sidebarBackdrop = skywa1ker404.absencium.ui.theme.LocalBackdrop.current
+        val sidebarGlass = skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current && sidebarBackdrop != null
         Surface(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(panelWidth)
                 .graphicsLayer { translationX = -(1f - progress).coerceAtLeast(0f) * size.width + drag.coerceAtMost(0f) }
+                .then(
+                    if (sidebarGlass) Modifier.floatingGlass(
+                        sidebarBackdrop, RoundedCornerShape(topEnd = 36.dp, bottomEnd = 36.dp), colors.surfaceContainerLow, lens = false,
+                    ) else Modifier,
+                )
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragEnd = { if (drag < -size.width * 0.18f) onDismiss(); drag = 0f },
@@ -118,8 +127,8 @@ fun TopicSidebar(
                     ) { _, amount -> drag += amount }
                 },
             shape = RoundedCornerShape(topEnd = 36.dp, bottomEnd = 36.dp),
-            color = colors.surfaceContainerLow,
-            tonalElevation = 6.dp,
+            color = if (sidebarGlass) androidx.compose.ui.graphics.Color.Transparent else colors.surfaceContainerLow,
+            tonalElevation = if (sidebarGlass) 0.dp else 6.dp,
             shadowElevation = 0.dp,
         ) {
             Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {

@@ -166,7 +166,7 @@ fun SettingLorebooksPage(vm: SettingVM = koinViewModel()) {
                             .align(Alignment.BottomCenter)
                             .offset(y = -ScreenOffset),
                         shape = RoundedCornerShape(28.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                         tonalElevation = 6.dp,
                     ) {
                         Row(
@@ -227,7 +227,7 @@ fun SettingLorebooksPage(vm: SettingVM = koinViewModel()) {
                             importLauncher.launch(arrayOf("application/json", "*/*"))
                         },
                         shape = AppShapes.CardLarge,
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                         contentColor = MaterialTheme.colorScheme.onSurface
                     ) {
                         Icon(

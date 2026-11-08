@@ -307,7 +307,12 @@ class RouteActivity : ComponentActivity() {
 
     // Opened from the host's AI settings page for one chat settings page: going back from it closes this screen and returns there.
     private var returnToHostSettings = false
-    private var sawHostSettingsPage = false
+
+    override fun finish() {
+        super.finish()
+        // Back to the host's AI settings: the page slides away and the host settles back in, the reverse of how it opened.
+        if (returnToHostSettings) overridePendingTransition(R.anim.ai_page_back_enter, R.anim.ai_page_back_exit)
+    }
 
     private fun settingsScreenFor(name: String?): Screen? = when (name) {
         "models" -> Screen.SettingModels
@@ -413,24 +418,9 @@ class RouteActivity : ComponentActivity() {
                         LaunchedEffect(intentSettingsPage) {
                             if (intentSettingsPage != null) {
                                 returnToHostSettings = true
-                                navStack.navigate(intentSettingsPage)
+                                // The page replaces the chat on this screen's stack, so there is no chat flash and Back leaves to the host.
+                                navStack.navigate(intentSettingsPage) { popUpTo<Screen.Chat> { inclusive = true } }
                             }
-                        }
-                        androidx.compose.runtime.DisposableEffect(navStack) {
-                            val listener = androidx.navigation.NavController.OnDestinationChangedListener { _, destination, _ ->
-                                val route = destination.route.orEmpty()
-                                if (returnToHostSettings) {
-                                    if (route.contains("Screen.Chat") && sawHostSettingsPage) {
-                                        returnToHostSettings = false
-                                        sawHostSettingsPage = false
-                                        finish()
-                                    } else if (!route.contains("Screen.Chat")) {
-                                        sawHostSettingsPage = true
-                                    }
-                                }
-                            }
-                            navStack.addOnDestinationChangedListener(listener)
-                            onDispose { navStack.removeOnDestinationChangedListener(listener) }
                         }
                     }
                 }
@@ -674,8 +664,7 @@ class RouteActivity : ComponentActivity() {
 
         settingsScreenFor(intent.getStringExtra(EXTRA_SETTINGS_DESTINATION))?.let { page ->
             returnToHostSettings = true
-            sawHostSettingsPage = false
-            navStack?.navigate(page)
+            navStack?.navigate(page) { popUpTo<Screen.Chat> { inclusive = true } }
             return
         }
         if (intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)) {

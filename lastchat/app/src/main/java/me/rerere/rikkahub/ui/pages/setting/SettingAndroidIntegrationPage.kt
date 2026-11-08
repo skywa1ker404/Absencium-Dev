@@ -505,7 +505,7 @@ private fun PreviewCard(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp), // No horizontal padding - edge to edge
             shape = QuickAskOuterShape,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerLow),
             tonalElevation = 8.dp
         ) {
             Column(
@@ -539,7 +539,7 @@ private fun PreviewCard(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = QuickAskInnerShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh // Same as popup
+                    color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh) // Same as popup
                 ) {
                     Text(
                         text = "Selected text preview...",
@@ -599,7 +599,7 @@ private fun PreviewActionButton(
                 scaleY = scale
             },
         shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHighest),
         tonalElevation = if (isBlack) 0.dp else 6.dp,
         onClick = onClick
     ) {

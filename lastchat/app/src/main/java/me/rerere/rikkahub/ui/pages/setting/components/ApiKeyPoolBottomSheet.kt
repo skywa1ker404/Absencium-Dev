@@ -125,7 +125,7 @@ fun ApiKeyPoolBottomSheet(
                 Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null)
             }
         },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(
             modifier = Modifier

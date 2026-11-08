@@ -162,7 +162,7 @@ fun SettingTTSProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 Surface(
                     modifier = Modifier.align(Alignment.Center),
                     shape = RoundedCornerShape(28.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                     tonalElevation = 6.dp,
                 ) {
                     Row(
@@ -773,7 +773,7 @@ private fun ProviderVoicesFab(
             if (discovered.isEmpty()) fetchVoices()
         },
         shape = AppShapes.CardLarge,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Icon(icon, contentDescription = contentDescription)

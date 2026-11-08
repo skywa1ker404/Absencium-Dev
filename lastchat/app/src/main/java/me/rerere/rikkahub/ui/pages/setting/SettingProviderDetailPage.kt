@@ -533,7 +533,7 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                     Surface(
                         modifier = Modifier.align(Alignment.Center),
                         shape = RoundedCornerShape(28.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                         tonalElevation = 6.dp,
                     ) {
                         Row(
@@ -1570,7 +1570,7 @@ private fun ModelPickerFab(
             haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Tick)
         },
         shape = me.rerere.rikkahub.ui.theme.AppShapes.CardLarge,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Icon(

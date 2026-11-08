@@ -239,7 +239,7 @@ private fun KeylessOptionsDescription() {
         KeylessSearchService.backends.forEach { backend ->
             Surface(
                 shape = AppShapes.ListItem,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
             ) {
                 Column(
                     modifier = Modifier
@@ -360,7 +360,7 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                         showCommonOptions = true
                     },
                     shape = AppShapes.CardLarge,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
                     Icon(

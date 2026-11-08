@@ -155,3 +155,9 @@ val MaterialTheme.extendColors
     @Composable
     @ReadOnlyComposable
     get() = LocalExtendColors.current
+
+/** A settings card colour: under Liquid Glass the card is a tinted see-through pane over the wallpaper (the same look as the app's cards), otherwise solid. */
+@Composable
+@ReadOnlyComposable
+fun glassCard(base: Color): Color =
+    if (me.rerere.rikkahub.LocalHostGlass.current) base.copy(alpha = 0.42f) else base

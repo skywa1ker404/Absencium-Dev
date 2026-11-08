@@ -323,7 +323,7 @@ fun SettingProviderPage(
                                 }
                             },
                             shape = AppShapes.CardLarge,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                             contentColor = MaterialTheme.colorScheme.onSurface
                         ) {
                             Icon(
@@ -518,7 +518,7 @@ fun SettingProviderPage(
                             }
                         },
                         shape = AppShapes.CardLarge,
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                         contentColor = MaterialTheme.colorScheme.onSurface
                     ) {
                         Icon(
@@ -725,7 +725,7 @@ private fun ProviderListView(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest
+                        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHighest)
                     ) {
                         Row(
                             modifier = Modifier
@@ -929,7 +929,7 @@ private fun ImportProviderButton(
         FloatingActionButton(
             onClick = openImportDialog,
             shape = AppShapes.CardLarge,
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
             contentColor = MaterialTheme.colorScheme.onSurface
         ) {
             Icon(Icons.AutoMirrored.Rounded.Input, stringResource(R.string.import_label))

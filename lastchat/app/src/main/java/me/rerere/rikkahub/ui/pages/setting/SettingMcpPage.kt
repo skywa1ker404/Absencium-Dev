@@ -224,7 +224,7 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
                             showImportDialog = true
                         },
                         shape = AppShapes.CardLarge,
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                         contentColor = MaterialTheme.colorScheme.onSurface,
                     ) {
                         Icon(Icons.AutoMirrored.Rounded.Input, "Import MCP configuration")
@@ -627,7 +627,7 @@ private fun McpConnectionsSheet(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = shape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHighest),
                         contentColor = itemTextColor,
                     ) {
                         Row(

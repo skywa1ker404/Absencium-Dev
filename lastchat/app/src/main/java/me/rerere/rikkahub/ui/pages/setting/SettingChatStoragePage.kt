@@ -748,7 +748,7 @@ fun SettingChatStoragePage(
                     items(embeddingCacheStats) { stat ->
                         val isSelected = stat.modelId in activeEmbeddingModelIds
                         Surface(
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -1127,7 +1127,7 @@ private fun EmptyFilesCard(
 ) {
     Surface(
         shape = AppShapes.CardMedium,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -1188,7 +1188,7 @@ private fun StorageImageTile(
     val context = LocalContext.current
     Surface(
         shape = AppShapes.CardMedium,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column {
@@ -1257,7 +1257,7 @@ private fun StorageFileTile(
             )
         },
         shape = AppShapes.CardMedium,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column {
@@ -1542,7 +1542,7 @@ private fun OtherUploadTile(
         Surface(
             onClick = onOpen,
             shape = AppShapes.CardMedium,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerLow),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column {
@@ -1593,7 +1593,7 @@ private fun OtherUploadTile(
         Surface(
             onClick = onOpen,
             shape = AppShapes.CardMedium,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerLow),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column {
