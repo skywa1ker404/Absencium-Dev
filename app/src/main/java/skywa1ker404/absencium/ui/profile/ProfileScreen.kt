@@ -79,7 +79,7 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
     val rows = remember(data) { data?.subjectAttendance().orEmpty() }
     val overall = remember(rows) { rows.overall() }
 
-    ScreenScaffold(title = "Profile", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(title = "Profile", onBack = { navigator.navigateUp() }, largeTitle = true) {
         // Who
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

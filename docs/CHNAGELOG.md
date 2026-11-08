@@ -110,3 +110,4 @@ working on it
 - Changed (branch Absencium-ai): Imagine is hidden in the chat drawer until "Generate images (Imagine)" is switched on in AI settings, Advanced (off by default); Statistics stays.
 - Changed (branch Absencium-ai): the profile is a full page (not a popup) in the Settings card style: avatar with the attendance ring, name, course, year and college (kept on the phone), overall attendance with the skip or attend count, each subject's attendance log, syllabus progress, next exams, Vault counts, and shortcuts to Absencium AI and Settings.
 - Changed (branch Absencium-ai): opening Absencium AI grows in with a springy fade instead of a cut.
+- Changed (branch Absencium-ai): Settings, General, Appearance, Storage & Data, Absencium AI and Profile open with a large centred title that scrolls away into the bar title; the Settings hub groups its entries as joined cards (large outer corners, small where they meet) like the chat's settings.

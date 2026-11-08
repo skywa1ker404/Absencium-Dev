@@ -34,7 +34,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
     val primary = androidx.compose.material3.MaterialTheme.colorScheme.primary
     var advanced by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
 
-    ScreenScaffold(title = "Absencium AI", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(title = "Absencium AI", onBack = { navigator.navigateUp() }, largeTitle = true) {
         AskAiToggle(settings, settingsViewModel, ready = true)
 
         // What AI needs to work: the chat, the model, where it comes from, and who answers.

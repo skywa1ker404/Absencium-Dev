@@ -180,6 +180,8 @@ fun ScreenScaffold(
      * reads the room the bars take from [LocalScaffoldPadding] and keeps that clear at its own ends.
      */
     contentUnderBars: Boolean = false,
+    /** A big centred title that scrolls away and hands over to the bar title, as on the chat's settings pages. */
+    largeTitle: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val ownScroll = rememberScrollState()
@@ -197,7 +199,18 @@ fun ScreenScaffold(
                 if (customTopBar != null) customTopBar() else Box {
                   Box(Modifier.matchParentSize().pageHeaderGlass(colors.background))
                   TopAppBar(
-                    title = { if (titleContent != null) titleContent() else Text(title, style = MaterialTheme.typography.headlineSmall) },
+                    title = {
+                        if (titleContent != null) titleContent() else {
+                            val handOver = with(androidx.compose.ui.platform.LocalDensity.current) { 110.dp.toPx() }
+                            Text(
+                                title,
+                                style = MaterialTheme.typography.headlineSmall,
+                                modifier = if (largeTitle) Modifier.graphicsLayer {
+                                    alpha = ((pageScroll.value - handOver * 0.6f) / (handOver * 0.4f)).coerceIn(0f, 1f)
+                                } else Modifier,
+                            )
+                        }
+                    },
                     navigationIcon = {
                         if (onBack != null) {
                             IconButton(
@@ -239,7 +252,32 @@ fun ScreenScaffold(
                                 },
                             ),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
-                        content = content,
+                        content = {
+                            if (largeTitle) {
+                                val fadeOut = with(androidx.compose.ui.platform.LocalDensity.current) { 150.dp.toPx() }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(150.dp)
+                                        .graphicsLayer {
+                                            alpha = (1f - pageScroll.value / fadeOut).coerceIn(0f, 1f)
+                                            translationY = pageScroll.value * 0.3f
+                                        },
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = title,
+                                        style = MaterialTheme.typography.displaySmall.copy(
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                            fontSize = 32.sp,
+                                            lineHeight = 38.sp,
+                                        ),
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    )
+                                }
+                            }
+                            content()
+                        },
                     )
                     }
                 }
@@ -337,6 +375,22 @@ fun SwitchCard(
     }
 }
 
+/** Where a card sits in a stack of joined cards: the outer corners are large, the corners where two cards meet are small. */
+enum class GroupPosition { Only, First, Middle, Last }
+
+fun groupedCardShape(position: GroupPosition): androidx.compose.ui.graphics.Shape = when (position) {
+    GroupPosition.First -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 10.dp, bottomEnd = 10.dp)
+    GroupPosition.Middle -> RoundedCornerShape(10.dp)
+    GroupPosition.Last -> RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+    GroupPosition.Only -> RoundedCornerShape(24.dp)
+}
+
+/** A stack of joined cards (a few [NavCard]s with a [GroupPosition] each), a thin gap between them. */
+@Composable
+fun CardStack(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp), content = content)
+}
+
 /** A settings row that opens another screen: an emoji tile, a bold title and a short description. */
 @Composable
 fun NavCard(
@@ -345,8 +399,9 @@ fun NavCard(
     subtitle: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    position: GroupPosition = GroupPosition.Only,
 ) {
-    AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
+    AppCard(modifier = modifier.fillMaxWidth(), onClick = onClick, shape = groupedCardShape(position)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),

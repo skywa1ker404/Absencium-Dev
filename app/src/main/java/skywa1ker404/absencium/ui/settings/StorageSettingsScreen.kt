@@ -68,7 +68,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
         if (uri != null) storageViewModel.restoreFrom(uri)
     }
 
-    ScreenScaffold(title = "Storage & Data", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(title = "Storage & Data", onBack = { navigator.navigateUp() }, largeTitle = true) {
         StorageLocationSection(storageViewModel)
 
         SectionTitle("Backup and restore")

@@ -21,7 +21,7 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
     val viewModel = rememberSettingsViewModel()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
 
-    ScreenScaffold(title = "General", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(title = "General", onBack = { navigator.navigateUp() }, largeTitle = true) {
         SectionTitle("Attendance")
         SliderCard(
             title = "Attendance threshold",

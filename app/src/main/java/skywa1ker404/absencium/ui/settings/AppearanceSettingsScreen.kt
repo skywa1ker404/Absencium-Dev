@@ -54,7 +54,7 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
     val viewModel = rememberSettingsViewModel()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
 
-    ScreenScaffold(title = "Appearance", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(title = "Appearance", onBack = { navigator.navigateUp() }, largeTitle = true) {
         VisualQualityChoices(
             selected = settings.visualQuality,
             onSelect = viewModel::setVisualQuality,
