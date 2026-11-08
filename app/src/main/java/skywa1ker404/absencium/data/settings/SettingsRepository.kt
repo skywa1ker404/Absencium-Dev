@@ -55,6 +55,13 @@ class SettingsRepository(context: Context) {
     suspend fun setOnboardingComplete(value: Boolean) = write(Keys.ONBOARDING_COMPLETE, value)
 
     suspend fun setDisplayName(value: String) = write(Keys.DISPLAY_NAME, value.trim().take(40))
+    suspend fun setProfileDetails(course: String, year: String, college: String) {
+        dataStore.edit {
+            it[Keys.PROFILE_COURSE] = course.trim().take(60)
+            it[Keys.PROFILE_YEAR] = year.trim().take(30)
+            it[Keys.PROFILE_COLLEGE] = college.trim().take(80)
+        }
+    }
 
     suspend fun setThemeMode(value: ThemeMode) = write(Keys.THEME_MODE, value.name)
 
@@ -182,6 +189,9 @@ class SettingsRepository(context: Context) {
     private object Keys {
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
         val DISPLAY_NAME = stringPreferencesKey("display_name")
+        val PROFILE_COURSE = stringPreferencesKey("profile_course")
+        val PROFILE_YEAR = stringPreferencesKey("profile_year")
+        val PROFILE_COLLEGE = stringPreferencesKey("profile_college")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_ENGINE = stringPreferencesKey("color_engine")
         val THEME_PRESET = stringPreferencesKey("theme_preset")
@@ -220,7 +230,7 @@ class SettingsRepository(context: Context) {
         ).map { it.name }.toSet()
         val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES).map { it.name }.toSet()
         val STRINGS = setOf(
-            DISPLAY_NAME, THEME_MODE, COLOR_ENGINE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE, AI_AUTO_APPROVE,
+            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, COLOR_ENGINE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE, AI_AUTO_APPROVE,
         ).map { it.name }.toSet()
     }
 
@@ -230,6 +240,9 @@ class SettingsRepository(context: Context) {
             introSeen = this[Keys.INTRO_SEEN] ?: defaults.introSeen,
             onboardingComplete = this[Keys.ONBOARDING_COMPLETE] ?: defaults.onboardingComplete,
             displayName = this[Keys.DISPLAY_NAME] ?: defaults.displayName,
+            profileCourse = this[Keys.PROFILE_COURSE] ?: defaults.profileCourse,
+            profileYear = this[Keys.PROFILE_YEAR] ?: defaults.profileYear,
+            profileCollege = this[Keys.PROFILE_COLLEGE] ?: defaults.profileCollege,
             themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode),
             // Before Liquid Glass became a toggle it was a theme of its own; that setting becomes the toggle on top of
             // the default theme, and Solid Accent (also gone) falls back to the default as well.

@@ -13,6 +13,8 @@ object AbsenciumAi {
         if (settings) intent.putExtra(RouteActivity.EXTRA_OPEN_SETTINGS, true)
         if (destination != null) intent.putExtra(RouteActivity.EXTRA_SETTINGS_DESTINATION, destination)
         if (context !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
+        // A springy grow-in instead of the default cut, so opening the chat never flashes.
+        val options = android.app.ActivityOptions.makeCustomAnimation(context, skywa1ker404.absencium.R.anim.ai_open_enter, skywa1ker404.absencium.R.anim.ai_open_exit)
+        context.startActivity(intent, options.toBundle())
     }
 }

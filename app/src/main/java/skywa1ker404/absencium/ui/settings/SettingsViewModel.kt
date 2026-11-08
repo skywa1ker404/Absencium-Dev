@@ -28,6 +28,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings())
 
     fun setDisplayName(value: String) = launch { repository.setDisplayName(value) }
+    fun setProfileDetails(course: String, year: String, college: String) = launch { repository.setProfileDetails(course, year, college) }
 
     fun setThemeMode(mode: ThemeMode) = launch { repository.setThemeMode(mode) }
 

@@ -32,6 +32,10 @@ data class AppSettings(
     val onboardingComplete: Boolean = false,
     /** Shown on the profile avatar and greeting. Empty until the user sets one. */
     val displayName: String = "",
+    /** Optional student details on the profile page; kept on the phone only. */
+    val profileCourse: String = "",
+    val profileYear: String = "",
+    val profileCollege: String = "",
     val themeMode: ThemeMode = ThemeMode.SYSTEM_AUTO,
     val colorEngine: ColorEngine = ColorEngine.DEFAULT_PALETTE,
     /** Used while [colorEngine] is [ColorEngine.PRESET]; remembered otherwise. */

@@ -75,7 +75,6 @@ import skywa1ker404.absencium.ui.components.floatingGlass
 import skywa1ker404.absencium.ui.containerViewModel
 import skywa1ker404.absencium.ui.home.HomeTab
 import skywa1ker404.absencium.ui.icons.AppIcons
-import skywa1ker404.absencium.ui.profile.ProfileSheet
 import skywa1ker404.absencium.ui.search.SearchSheet
 import skywa1ker404.absencium.ui.vault.VaultTab
 import skywa1ker404.absencium.ui.vault.VaultViewModel
@@ -151,7 +150,6 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var fabOpen by remember { mutableStateOf(false) }
     var addEntry by remember { mutableStateOf<AddEntryRequest?>(null) }
     var importKind by remember { mutableStateOf<ImportKind?>(null) }
-    var showProfile by rememberSaveable { mutableStateOf(false) }
     var showTimetable by rememberSaveable { mutableStateOf(false) }
     var showAttendancePopup by rememberSaveable { mutableStateOf(false) }
     var monthPicker by remember { mutableStateOf<MonthPickRequest?>(null) }
@@ -295,7 +293,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
             ) {
                 // No bar: a soft fade of the background colour (frosted under Liquid Glass) so scrolling content never collides with the title.
                 Box(Modifier.matchParentSize().pageHeaderGlass(colors.background, top = 0.88f, mid = 0.5f, midAt = 0.7f))
-                ShellTopBar(displayName = settings.displayName, onProfile = { showProfile = true })
+                ShellTopBar(displayName = settings.displayName, onProfile = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination) })
             }
 
             if (message != null) {
@@ -528,26 +526,6 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 )
             }
 
-            AnimatedPopup(if (showProfile) true else null) {
-                ProfileSheet(
-                    data = loaded,
-                    settings = settings,
-                    onDismiss = { showProfile = false },
-                    onSaveName = { settingsViewModel.setDisplayName(it) },
-                    onOpenAttendance = {
-                        showProfile = false
-                        tab = TAB_ATTENDS
-                    },
-                    onOpenSettings = {
-                        showProfile = false
-                        navigator.navigate(SettingsHubScreenDestination)
-                    },
-                    onOpenAiHub = {
-                        showProfile = false
-                        navigator.navigate(AiHubScreenDestination())
-                    },
-                )
-            }
         }
     }
 }
