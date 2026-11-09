@@ -247,7 +247,7 @@ fun OnboardingScreen() {
                                 3 -> {
                                     PageHeader("AI Features", "Optional. Connect an AI to explain notes and read photos. You can set this up later in Settings.")
                                     AskAiToggle(settings, settingsViewModel, ready = true)
-                                    HintText("Pick your provider, key and model inside Absencium AI. Open it from Settings, Absencium AI, once you have finished here.")
+                                    HintText("Choose your provider, key and model in Absencium AI after setup: Settings, then Absencium AI.")
                                 }
                                 else -> {
                                     PageHeader("Optional modules", "All off by default. Turn on what you want; each can be changed later in Settings.")
@@ -287,7 +287,7 @@ fun OnboardingScreen() {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text("Skip the optional steps?", style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    text = "Every setting, the essential ones and the optional ones, is in the app's Settings, so you can set up anything later. Do you want to skip?",
+                    text = "You can change every setting later in Settings. Skip setup?",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -471,7 +471,7 @@ private fun LookPage(
                     PanelColumn(topPadding = 0.dp) {
                         GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
                         SwitchCard(
-                            title = "Apply frosted glass on all elements",
+                            title = "Frosted popups",
                             subtitle = "Profile, search, Add Entry and dialogs",
                             checked = settings.frostedOverlays,
                             onCheckedChange = { viewModel.setFrostedOverlays(it) },
@@ -533,7 +533,7 @@ private fun OptionTile(
 
 @Composable
 private fun AttendanceStep(settings: AppSettings, viewModel: SettingsViewModel) {
-    SectionTitle("Target attendance threshold")
+    SectionTitle("Attendance target")
     SliderCard(
         title = "Minimum safe attendance",
         subtitle = "Warn me below this",
@@ -544,13 +544,13 @@ private fun AttendanceStep(settings: AppSettings, viewModel: SettingsViewModel) 
     )
     SectionTitle("Weekends")
     SwitchCard(
-        title = "Sunday is always holiday",
+        title = "Sunday is a holiday",
         subtitle = "Turn off if you have lectures",
         checked = settings.sundayHoliday,
         onCheckedChange = { viewModel.setSundayHoliday(it) },
     )
     SwitchCard(
-        title = "Saturday is always holiday",
+        title = "Saturday is a holiday",
         subtitle = "Turn off if you have lectures",
         checked = settings.saturdayHoliday,
         onCheckedChange = { viewModel.setSaturdayHoliday(it) },

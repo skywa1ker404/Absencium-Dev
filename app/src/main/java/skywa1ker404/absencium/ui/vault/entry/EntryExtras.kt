@@ -213,7 +213,7 @@ internal fun AiTaskStage(
             }
         }
         val sources by viewModel.imageSources.collectAsStateWithLifecycle()
-        // Hidden until at least one source is switched on in Settings, AI & Integrations.
+        // Hidden until at least one source is switched on in Settings, then Absencium AI.
         if (sources.search || sources.generate) {
             OptionGroup(
                 title = "Images",
@@ -265,7 +265,7 @@ internal fun AiTaskStage(
             ) {
                 Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
                 Text(
-                    "Add an AI provider, a model and your API key in Settings, AI & Integrations, then come back.",
+                    "Add an AI provider, a model and your API key in Settings, then Absencium AI, then come back.",
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSecondaryContainer,
                 )

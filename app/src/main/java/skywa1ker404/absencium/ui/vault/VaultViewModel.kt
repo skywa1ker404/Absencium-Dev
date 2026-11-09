@@ -66,7 +66,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
             throw e
         } catch (e: Exception) {
             DebugLogger.e("Vault", "Could not read note $id", e)
-            _message.value = "Could not open the note. See debug.log for details."
+            _message.value = "Could not open the note."
             null
         }
 
@@ -78,7 +78,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
             throw e
         } catch (e: Exception) {
             DebugLogger.e("Vault", "Could not save note $id", e)
-            _message.value = "Could not save the note. See debug.log for details."
+            _message.value = "Could not save the note."
             null
         }
 
@@ -469,7 +469,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
                 val root = container.notesStorage.rootFolder()
                     ?: return@withContext "Choose a notes folder first (Settings, Storage and Data)."
                 val folder = root.childFolder(NotesStorage.GUIDES_FOLDER)
-                    ?: return@withContext "Could not open the Guides folder. See debug.log for details."
+                    ?: return@withContext "Could not open the Guides folder."
                 val existing = folder.listFileNames().toSet()
                 val base = sanitizeFileName("${subject.name} - ${title.trim()}")
                 var name = "$base.pdf"
@@ -479,11 +479,11 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
                 val input = container.appContext.contentResolver.openInputStream(source)
                     ?: return@withContext "Could not read the selected file."
                 val output = folder.openOutput(name, "application/pdf")
-                    ?: return@withContext "Could not write to the notes folder. See debug.log for details."
+                    ?: return@withContext "Could not write to the notes folder."
                 input.use { i -> output.use { o -> i.copyTo(o) } }
 
                 val location = folder.locationOf(name)
-                    ?: return@withContext "The file was copied but could not be found again. See debug.log for details."
+                    ?: return@withContext "The file was copied but could not be found again."
                 repository.addGuide(subject.id, name, location, type)
                 DebugLogger.i("Vault", "Imported guide \"$name\" for ${subject.name}")
                 null
@@ -524,7 +524,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
                 throw e
             } catch (e: Exception) {
                 DebugLogger.e("Vault", "Could not read the text file", e)
-                _message.value = "Could not read the selected file. See debug.log for details."
+                _message.value = "Could not read the selected file."
                 null
             }
         }
@@ -537,7 +537,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
                 throw e
             } catch (e: Exception) {
                 DebugLogger.e("Vault", "Could not $action", e)
-                _message.value = "Could not $action. See debug.log for details."
+                _message.value = "Could not $action."
             }
         }
     }

@@ -118,14 +118,14 @@ fun ShareFormatDialog(onPick: (ShareFormat, PdfTheme?) -> Unit, onDismiss: () ->
                         .clip(RoundedCornerShape(24.dp))
                         .background(colors.surfaceContainerHigh)
                         .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .semantics { contentDescription = "Sharewave, not available yet" },
+                        .semantics { contentDescription = "Sharewave, coming soon" },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(AppIcons.Share, contentDescription = null, modifier = Modifier.size(28.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Sharewave", style = MaterialTheme.typography.titleMedium)
-                        Text("Send a note straight to another Absencium. Coming later.", style = MaterialTheme.typography.bodySmall)
+                        Text("Send notes to another Absencium. Coming soon.", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

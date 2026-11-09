@@ -177,7 +177,7 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
                 _state.update { it.copy(stage = ImportStage.SOURCE, message = skywa1ker404.absencium.data.ai.AI_FAILED_INLINE) }
             } catch (e: Exception) {
                 DebugLogger.e("Import", "Could not read the files", e)
-                _state.update { it.copy(stage = ImportStage.SOURCE, message = "Could not read that file. See debug.log for details.") }
+                _state.update { it.copy(stage = ImportStage.SOURCE, message = "Could not read that file.") }
             } finally {
                 dropTemporary()
             }
@@ -288,7 +288,7 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
             _state.update { it.copy(stage = ImportStage.SOURCE, message = skywa1ker404.absencium.data.ai.AI_FAILED_INLINE) }
         } catch (e: Exception) {
             DebugLogger.e("Import", "AI request failed", e)
-            _state.update { it.copy(stage = ImportStage.SOURCE, message = "Something went wrong. See debug.log for details.") }
+            _state.update { it.copy(stage = ImportStage.SOURCE, message = "Something went wrong.") }
         }
     }
 
@@ -355,7 +355,7 @@ class ImportViewModel(private val container: AppContainer) : ViewModel() {
                 throw e
             } catch (e: Exception) {
                 DebugLogger.e("Import", "Could not add the items", e)
-                _state.update { it.copy(busy = false, message = "Could not add them. See debug.log for details.") }
+                _state.update { it.copy(busy = false, message = "Could not add them.") }
             }
         }
     }
@@ -485,7 +485,7 @@ private fun SourceStage(
                 Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
                 Text(
                     "Finding items in a document needs an AI provider, a model (one that accepts images for photos) and your API key. " +
-                        "Turn on AI Features and add them in Settings, AI & Integrations. Without AI you can still get the text out of a picture or file on this phone.",
+                        "Turn on AI Features and add them in Settings, then Absencium AI. Without AI you can still get the text out of a picture or file on this phone.",
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSecondaryContainer,
                 )
@@ -525,13 +525,13 @@ private fun ChooseStage(state: ImportState, onBack: () -> Unit, onImport: () -> 
         }
         ActionTile("Import", AppIcons.Add, colors.primaryContainer, colors.onPrimaryContainer, 0, onImport, Modifier.fillMaxWidth(), 84.dp, enabled = ready)
         Text(
-            if (ready) "Your AI finds the ${state.kind.pluralNoun} in it and you confirm what to add." else "Needs an AI set up in Settings, AI & Integrations.",
+            if (ready) "Your AI finds the ${state.kind.pluralNoun} in it and you confirm what to add." else "Needs an AI set up in Settings, then Absencium AI.",
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
         ActionTile("Extract text with AI", AppIcons.ExtractText, colors.tertiaryContainer, colors.onTertiaryContainer, 2, onExtract, Modifier.fillMaxWidth(), 84.dp, enabled = ready)
         Text(
-            "Extracting text puts the words in a box so you can fix them before searching. AI can make mistakes, so check the text.",
+            "Review the extracted text before searching. AI can make mistakes.",
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )

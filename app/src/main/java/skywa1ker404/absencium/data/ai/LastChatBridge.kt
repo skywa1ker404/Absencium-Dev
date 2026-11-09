@@ -45,7 +45,7 @@ class LastChatBridge {
     suspend fun chat(connection: AiConnection, key: String?, system: String, turns: List<ChatTurn>, options: ChatOptions): ChatReply =
         withContext(Dispatchers.IO) {
             val model = connection.model.trim().removePrefix("models/")
-            if (model.isEmpty()) throw AiException("Choose a model in Settings, AI & Integrations first.")
+            if (model.isEmpty()) throw AiException("Choose a model in Settings, then Absencium AI first.")
             val messages = messagesOf(system, turns)
             val params = paramsOf(model, turns, options)
             val setting = settingOf(connection, key.orEmpty())

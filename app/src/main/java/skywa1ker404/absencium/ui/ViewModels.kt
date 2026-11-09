@@ -89,7 +89,7 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
             val ok = withContext(Dispatchers.IO) { container.notesStorageSettings.useCustomFolder(uri) }
             _state.update {
                 it.copy(
-                    message = if (ok) "Notes folder updated." else "Could not use that folder. See debug.log for details.",
+                    message = if (ok) "Notes folder updated." else "Could not use that folder.",
                 )
             }
             refresh()
@@ -340,7 +340,7 @@ class TestLabViewModel(private val container: AppContainer) : ViewModel() {
         } ?: false
         if (!written) return "Could not write a test file in ${folder.displayPath}."
         val readBack = folder.openInput("hello.txt")?.use { it.readBytes().toString(Charsets.UTF_8) }
-            ?: return "Wrote the test file but could not read it back."
+            ?: return "The test file was written but could not be read back."
         val files = folder.listFileNames()
         DebugLogger.i("TestLab", "Storage test passed in ${folder.displayPath}: files=$files")
         return "Passed. Wrote and read back \"$readBack\". Files in the test folder: ${files.joinToString()}. " +

@@ -58,7 +58,7 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
                 throw e
             } catch (e: Exception) {
                 DebugLogger.e("Calendar", "Could not add the holiday", e)
-                _message.value = "Could not add the holiday. See debug.log for details."
+                _message.value = "Could not add the holiday."
             }
         }
     }
@@ -117,7 +117,7 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
                 throw e
             } catch (e: Exception) {
                 DebugLogger.e("Calendar", "Could not $action", e)
-                _message.value = "Could not $action. See debug.log for details."
+                _message.value = "Could not $action."
             }
         }
     }

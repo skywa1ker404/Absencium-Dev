@@ -328,11 +328,11 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                         skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
                             icon = AppIcons.Description,
                             title = "This folder is empty",
-                            text = "Use New entry below to add the first note. Press and hold a note later to select several.",
+                            text = "Add your first note with New entry.",
                         )
                     } else HintText(
                         if (topicFilter != null) "No notes under this topic. Clear the topic to see every note."
-                        else if (finished.isEmpty() && drafts.isEmpty()) "This folder is empty. Use New entry below, or press and hold a note later to select several."
+                        else if (finished.isEmpty() && drafts.isEmpty()) "This folder is empty. Add a note with New entry."
                         else "No notes here right now. Notes you mark as finished move to the archive below.",
                     )
                 }
@@ -409,7 +409,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                         skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
                             icon = AppIcons.Book,
                             title = "No study material yet",
-                            text = "Add previous year papers, answer books, guides or the official syllabus as PDFs, then file each under the topic it covers. Use the Guide / Answer PDF format in a new entry.",
+                            text = "Add question papers, guides and the syllabus as PDFs, and file each under its topic.",
                         )
                     }
                 } else {
@@ -478,7 +478,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                         skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
                             icon = AppIcons.School,
                             title = "No syllabus yet",
-                            text = "Add the units, chapters and topics of this subject, or import an outline. Notes and study material can then be filed under them.",
+                            text = "Add units, chapters and topics, or import an outline, then file notes under them.",
                         )
                     }
                 } else {

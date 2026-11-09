@@ -117,7 +117,7 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
 
         SectionTitle("Your subjects")
         if (subjects.isEmpty()) {
-            ExpressiveEmptyState(AppIcons.Folder, "No subjects yet", "Add one with the button below, or add sample data from Settings, then Test Lab.")
+            ExpressiveEmptyState(AppIcons.Folder, "No subjects yet", "Add a subject with the button below.")
         }
         subjects.forEach { subject ->
             key(subject.id) { SubjectCard(subject, viewModel) }

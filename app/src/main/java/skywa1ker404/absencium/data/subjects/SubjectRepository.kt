@@ -52,7 +52,7 @@ class SubjectRepository(private val dao: SubjectDao, private val cascade: Subjec
 
     /** Deletes the subject and everything under it in one transaction. Returns null on success or a message. */
     suspend fun deleteWithEntries(subject: SubjectEntity): String? =
-        attempt("delete ${subject.name} with its entries", "Could not delete \"${subject.name}\". See debug.log for details.") {
+        attempt("delete ${subject.name} with its entries", "Could not delete \"${subject.name}\".") {
             cascade.deleteWithEntries(subject.id)
         }
 

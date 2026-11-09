@@ -87,7 +87,7 @@ class TrashViewModel(container: AppContainer) : ViewModel() {
                 throw e
             } catch (e: Exception) {
                 DebugLogger.e("Trash", "Could not $action", e)
-                _message.value = "Could not $action. See debug.log for details."
+                _message.value = "Could not $action."
             }
         }
     }

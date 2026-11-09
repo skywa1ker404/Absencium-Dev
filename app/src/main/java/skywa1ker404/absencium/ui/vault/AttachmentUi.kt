@@ -177,7 +177,7 @@ fun ExtractChoiceDialog(
                             FileKind.IMAGE, FileKind.PDF -> "It copes with handwriting, tables and messy photos."
                             else -> "It tidies the text into clean notes."
                         } + " AI can make mistakes, so check the text." +
-                            if (!aiReady) " AI Features are off or not set up: turn them on in Settings, AI & Integrations." else "",
+                            if (!aiReady) " AI Features are off or not set up: turn them on in Settings, then Absencium AI." else "",
                         enabled = aiReady,
                         highlighted = aiReady,
                         onClick = { onDismiss(); onConfirm() },
@@ -302,7 +302,7 @@ fun ExtractProblemDialog(message: String, setupMissing: Boolean, onOpenSettings:
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(if (setupMissing) "AI is off or not set up" else "Could not get the text", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    if (setupMissing) "Turn on AI Features and add an AI provider, a model and your API key in Settings, AI & Integrations." else message,
+                    if (setupMissing) "Turn on AI Features and add an AI provider, a model and your API key in Settings, then Absencium AI." else message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )

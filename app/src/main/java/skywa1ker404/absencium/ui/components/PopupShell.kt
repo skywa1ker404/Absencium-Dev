@@ -75,7 +75,7 @@ fun <T : Any> AnimatedPopup(item: T?, content: @Composable (T) -> Unit) {
 /**
  * The card every popup of the app is built on (Add Entry, Import, Search, Profile, calendar entries, Timetable, Drafts).
  *
- * - It lives in the screen's own window, so with Liquid Glass and "Apply frosted glass on other elements" on it is real
+ * - It lives in the screen's own window, so with Liquid Glass and "Frosted popups" on it is real
  *   glass: it blurs the page behind it exactly like the navigation pill does, with the same blur strength setting.
  *   Otherwise it is a plain solid card.
  * - It starts at the bottom of the screen and grows upwards, so the bottom edge stays put while its content changes.

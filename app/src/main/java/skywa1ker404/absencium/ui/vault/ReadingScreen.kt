@@ -237,7 +237,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
         answer = AiAnswer(title, loading = true, text = null, error = null)
         aiJob = viewModel.askAi(request) { outcome ->
             answer = when {
-                outcome.setupMissing -> AiAnswer(title, false, null, "AI is disabled or not set up. Enable it in Settings, AI Features, or ignore this.")
+                outcome.setupMissing -> AiAnswer(title, false, null, "AI is off or not set up. Turn it on in Settings, then Absencium AI.")
                 outcome.error != null -> AiAnswer(title, false, null, outcome.error)
                 else -> AiAnswer(title, false, outcome.text.orEmpty(), null)
             }

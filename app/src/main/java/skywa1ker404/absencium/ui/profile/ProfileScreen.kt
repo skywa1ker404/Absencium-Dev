@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.AiHubScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.appContainer
@@ -87,107 +87,124 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
     val details = listOf(loaded.profileCourse, loaded.profileYear, loaded.profileCollege).filter { it.isNotBlank() }
 
     ScreenScaffold(title = "Profile", onBack = { navigator.navigateUp() }, largeTitle = true) {
-        // Who: one centred card, the avatar with its attendance ring, the name and the details; Edit opens the fields in place.
-        AppCard(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                ProfileAvatar(name = loaded.displayName, percent = overall.percent, threshold = threshold)
-                Text(
-                    text = loaded.displayName.ifBlank { "Add your name" },
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                )
-                Text(
-                    text = if (details.isEmpty()) "Course, year and college stay on this phone" else details.joinToString(" · "),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = editing,
-                    enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.spring(0.8f, 380f)) + androidx.compose.animation.fadeIn(),
-                    exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.spring(1f, 500f)) + androidx.compose.animation.fadeOut(),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 10.dp)) {
-                        AppTextField(
-                            value = name, onValueChange = { name = it }, label = { Text("Your name") }, singleLine = true,
-                            shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
-                        )
-                        AppTextField(
-                            value = course, onValueChange = { course = it }, label = { Text("Course or class") }, singleLine = true,
-                            shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
-                        )
-                        AppTextField(
-                            value = year, onValueChange = { year = it }, label = { Text("Year or semester") }, singleLine = true,
-                            shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
-                        )
-                        AppTextField(
-                            value = college, onValueChange = { college = it }, label = { Text("College") }, singleLine = true,
-                            shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 8.dp)) {
-                    if (editing) {
+        // Who: the avatar with its attendance ring straight on the page, then the name and details.
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            ProfileAvatar(name = loaded.displayName, percent = overall.percent, threshold = threshold)
+            Text(
+                text = loaded.displayName.ifBlank { "Add your name" },
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                modifier = Modifier.padding(top = 10.dp),
+            )
+            Text(
+                text = if (details.isEmpty()) "Add your course and college" else details.joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            if (!editing) {
+                PillButton(text = "Edit profile", onClick = { editing = true }, tonal = true, compact = true, modifier = Modifier.padding(top = 10.dp))
+            }
+        }
+
+        androidx.compose.animation.AnimatedVisibility(
+            visible = editing,
+            enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.spring(0.8f, 380f)) + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.spring(1f, 500f)) + androidx.compose.animation.fadeOut(),
+        ) {
+            AppCard(modifier = Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    AppTextField(
+                        value = name, onValueChange = { name = it }, label = { Text("Name") }, singleLine = true,
+                        shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
+                    )
+                    AppTextField(
+                        value = course, onValueChange = { course = it }, label = { Text("Course") }, singleLine = true,
+                        shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
+                    )
+                    AppTextField(
+                        value = year, onValueChange = { year = it }, label = { Text("Year or semester") }, singleLine = true,
+                        shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
+                    )
+                    AppTextField(
+                        value = college, onValueChange = { college = it }, label = { Text("College") }, singleLine = true,
+                        shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
                         PillButton(text = "Save", onClick = {
                             settingsViewModel.setDisplayName(name.trim())
                             settingsViewModel.setProfileDetails(course, year, college)
                             editing = false
                         })
-                        PillButton(text = "Cancel", onClick = {
+                        PillButton(text = "Cancel", tonal = true, onClick = {
                             name = loaded.displayName; course = loaded.profileCourse; year = loaded.profileYear; college = loaded.profileCollege
                             editing = false
                         })
-                    } else {
-                        PillButton(text = "Edit profile", onClick = { editing = true })
                     }
                 }
             }
         }
 
-        // Numbers at a glance.
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            val notesCount = vault?.notes?.count { it.status != NoteStatus.DRAFT } ?: 0
-            StatTile(overall.percent?.let { "${it.roundToInt()}%" } ?: "–", "Attendance", Modifier.weight(1f))
-            StatTile("$notesCount", "Notes", Modifier.weight(1f))
-            StatTile("${vault?.guides?.size ?: 0}", "Material", Modifier.weight(1f))
-        }
-
-        // Attendance: one card, the overall line then a row per subject.
-        SectionTitle("Attendance")
+        // Overview: the overall percentage large, what it means, and three counts underneath.
+        val percent = overall.percent
+        val notesCount = vault?.notes?.count { it.status != NoteStatus.DRAFT } ?: 0
         AppCard(modifier = Modifier.fillMaxWidth()) {
-            val percent = overall.percent
-            if (percent == null) {
-                HintText("Add subjects and log lectures to see attendance here.")
-            } else {
-                val margin = attendanceMargin(overall.present, overall.held, threshold)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
-                    text = if (margin.mustAttend > 0) "Attend the next ${margin.mustAttend} to reach your $threshold% target"
-                    else "You can skip ${margin.canSkip} and stay above your $threshold% target",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (margin.mustAttend > 0) colors.error else colors.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 6.dp),
+                    text = percent?.let { "${it.roundToInt()}%" } ?: "–",
+                    style = MaterialTheme.typography.displaySmall,
+                    color = if (percent != null && percent < threshold) colors.error else colors.primary,
                 )
+                Column(modifier = Modifier.weight(1f)) {
+                    if (percent == null) {
+                        Text("No attendance yet", style = MaterialTheme.typography.titleMedium)
+                        Text("Log lectures to see it here", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    } else {
+                        val margin = attendanceMargin(overall.present, overall.held, threshold)
+                        Text(
+                            text = if (margin.mustAttend > 0) "Below target" else "On track",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            text = if (margin.mustAttend > 0) "Attend the next ${margin.mustAttend} lectures to reach $threshold%"
+                            else "You can skip ${margin.canSkip} lectures and stay above $threshold%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (margin.mustAttend > 0) colors.error else colors.onSurfaceVariant,
+                        )
+                    }
+                }
             }
-            rows.forEachIndexed { index, item ->
-                if (index > 0 || percent != null) SettingDivider()
-                val p = item.percent
-                val margin = attendanceMargin(item.present, item.held, threshold)
-                ProgressRow(
-                    title = item.subject.name,
-                    subtitle = if (p == null) "No lectures logged" else "${item.present} of ${item.held} · " +
-                        (if (margin.mustAttend > 0) "attend ${margin.mustAttend}" else "can skip ${margin.canSkip}"),
-                    value = p?.let { (it / 100.0).toFloat() },
-                    valueText = p?.let { "${it.roundToInt()}%" } ?: "–",
-                    color = if (p != null && p < threshold) colors.error else subjectColor(item.subject.id),
-                )
+            SettingDivider()
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Count("${rows.size}", "Subjects")
+                Count("$notesCount", "Notes")
+                Count("${vault?.guides?.size ?: 0}", "Material")
             }
         }
 
-        // Syllabus: the same rows.
+        if (rows.isNotEmpty()) {
+            SectionTitle("Attendance")
+            AppCard(modifier = Modifier.fillMaxWidth()) {
+                rows.forEachIndexed { index, item ->
+                    if (index > 0) SettingDivider()
+                    val p = item.percent
+                    val margin = attendanceMargin(item.present, item.held, threshold)
+                    ProgressRow(
+                        title = item.subject.name,
+                        subtitle = if (p == null) "No lectures yet" else "${item.present} of ${item.held} lectures" +
+                            (if (margin.mustAttend > 0) " · attend ${margin.mustAttend}" else ""),
+                        value = p?.let { (it / 100.0).toFloat() },
+                        valueText = p?.let { "${it.roundToInt()}%" } ?: "–",
+                        color = if (p != null && p < threshold) colors.error else subjectColor(item.subject.id),
+                    )
+                }
+            }
+        }
+
         val withSyllabus = rows.map { it.subject }.filter { subject -> syllabus.any { it.subjectId == subject.id } }
         if (withSyllabus.isNotEmpty()) {
             SectionTitle("Syllabus")
@@ -197,7 +214,7 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
                     val progress = SyllabusTree.progress(syllabus.filter { it.subjectId == subject.id }, null)
                     ProgressRow(
                         title = subject.name,
-                        subtitle = "Covered so far",
+                        subtitle = null,
                         value = progress,
                         valueText = "${(progress * 100).roundToInt()}%",
                         color = subjectColor(subject.id),
@@ -206,11 +223,10 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        // What is next.
         val today = LocalDate.now()
         val upcoming = remember(data) { data?.exams.orEmpty().filter { !it.date.isBefore(today) }.sortedBy { it.date }.take(3) }
         if (upcoming.isNotEmpty()) {
-            SectionTitle("Next exams")
+            SectionTitle("Upcoming exams")
             SettingGroup {
                 upcoming.forEachIndexed { index, exam ->
                     if (index > 0) SettingDivider()
@@ -221,7 +237,7 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
                         subtitle = listOfNotNull(subject, exam.date.toString()).joinToString(" · "),
                         trailing = {
                             Text(
-                                text = when (days) { 0L -> "today"; 1L -> "tomorrow"; else -> "in $days days" },
+                                text = when (days) { 0L -> "Today"; 1L -> "Tomorrow"; else -> "In $days days" },
                                 style = MaterialTheme.typography.labelLarge,
                                 color = if (days <= 7) colors.error else colors.primary,
                             )
@@ -231,14 +247,12 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        // Where to go.
-        SectionTitle("More")
         CardStack {
             NavCard(
                 icon = AppIcons.AutoAwesome,
                 title = "Absencium AI",
-                subtitle = if (loaded.askAiEnabled) "Chat and attach files" else "AI Features are off",
-                onClick = { navigator.navigate(AiHubScreenDestination()) },
+                subtitle = null,
+                onClick = { navigator.navigate(AiSettingsScreenDestination) },
                 position = GroupPosition.First,
             )
             NavCard(
@@ -252,26 +266,24 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
     }
 }
 
-/** A small number with its label, in a tile. */
+/** A number with its label under it. */
 @Composable
-private fun StatTile(value: String, label: String, modifier: Modifier = Modifier) {
-    AppCard(modifier = modifier) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Text(value, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+private fun Count(value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleLarge)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 /** A title and a line under it, a number at the end, and a thin bar showing how far along it is. */
 @Composable
-private fun ProgressRow(title: String, subtitle: String, value: Float?, valueText: String, color: androidx.compose.ui.graphics.Color) {
+private fun ProgressRow(title: String, subtitle: String?, value: Float?, valueText: String, color: androidx.compose.ui.graphics.Color) {
     val colors = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleSmall)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
             Text(valueText, style = MaterialTheme.typography.titleMedium, color = color)
         }

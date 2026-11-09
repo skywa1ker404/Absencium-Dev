@@ -62,7 +62,7 @@ fun HostAnimatesSize(content: @Composable () -> Unit) {
 
 /**
  * The app's expand and collapse: content fades in and its container grows with the Material 3 Expressive spring, the same
- * motion as the "Did you collect today's notes?" list. Use it instead of a bare AnimatedVisibility so every
+ * motion as the "Collected today's notes?" list. Use it instead of a bare AnimatedVisibility so every
  * expansion in the app moves the same way.
  */
 @Composable
@@ -201,7 +201,7 @@ data class DropdownOption<K>(val key: K, val label: String, val supporting: Stri
 
 /**
  * The app's dropdown: a field that opens its list right below it, inside the screen, instead of a floating menu.
- * It looks and moves like the "Did you collect today's notes?" list: a bouncy chevron and a springy expansion.
+ * It looks and moves like the "Collected today's notes?" list: a bouncy chevron and a springy expansion.
  */
 @Composable
 fun <K> InlineDropdown(

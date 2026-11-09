@@ -632,7 +632,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         if (current.transcribe) {
             val settings = container.settingsState.value
             if (settings == null || !aiUsable(settings, container.activeKeySaved())) {
-                _state.update { it.copy(message = "Turning a recording into text needs an AI. Set one up in Settings, AI & Integrations, or switch the option off.") }
+                _state.update { it.copy(message = "Turning a recording into text needs an AI. Set one up in Settings, then Absencium AI, or switch the option off.") }
                 return
             }
         }
@@ -681,7 +681,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
     fun setAiPrompt(text: String) = _state.update { it.copy(aiPrompt = text) }
 
-    /** Which image sources the user switched on in Settings, AI & Integrations. Both are off until they do. */
+    /** Which image sources the user switched on in Settings, then Absencium AI. Both are off until they do. */
     data class ImageSources(val search: Boolean = false, val generate: Boolean = false)
 
     val imageSources: StateFlow<ImageSources> = container.settingsState

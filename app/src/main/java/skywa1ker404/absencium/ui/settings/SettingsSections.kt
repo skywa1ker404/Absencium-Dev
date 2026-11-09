@@ -134,13 +134,13 @@ fun MomentumToggle(settings: AppSettings, viewModel: SettingsViewModel) {
 @Composable
 fun StorageModuleToggles(settings: AppSettings, viewModel: SettingsViewModel) {
     SwitchCard(
-        title = "Semester transition and archive manager",
+        title = "Semester archive",
         subtitle = "Archive a finished semester. $OPTIONAL_NOTE",
         checked = settings.semesterManagerEnabled,
         onCheckedChange = { viewModel.setSemesterManagerEnabled(it) },
     )
     SwitchCard(
-        title = "Low storage media compressor",
+        title = "Media compressor",
         subtitle = "Shrink photos and audio. $OPTIONAL_NOTE",
         checked = settings.lowStorageCompressorEnabled,
         onCheckedChange = { viewModel.setLowStorageCompressorEnabled(it) },

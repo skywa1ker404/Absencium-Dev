@@ -18,7 +18,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 
 /**
- * The date chooser, built on the app's popup card so it is frosted glass whenever "Apply frosted glass on other elements"
+ * The date chooser, built on the app's popup card so it is frosted glass whenever "Frosted popups"
  * is on and a solid card otherwise (a platform dialog could do neither). Place it through [AnimatedPopup].
  */
 @OptIn(ExperimentalMaterial3Api::class)

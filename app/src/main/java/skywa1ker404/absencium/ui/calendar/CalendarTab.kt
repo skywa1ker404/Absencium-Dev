@@ -801,7 +801,7 @@ internal fun TodayCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (uncollected.isEmpty()) "Today's notes collected" else "Did you collect today's notes?",
+                            text = if (uncollected.isEmpty()) "Today's notes collected" else "Collected today's notes?",
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Text(

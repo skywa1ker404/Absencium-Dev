@@ -654,7 +654,7 @@ private fun ExtractionPanel(state: AddEntryState, viewModel: AddEntryViewModel, 
             Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
             Text(
                 "Reading text from photos needs an AI provider, a model that accepts images and your API key. " +
-                    "Add them in Settings, AI & Integrations, or continue without the text.",
+                    "Add them in Settings, then Absencium AI, or continue without the text.",
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSecondaryContainer,
             )
@@ -861,7 +861,7 @@ private fun YouTubeStage(
                 text = if (canWatch) {
                     "Gemini can watch the video from its link, so a transcript is optional. If you paste one, the notes are written from it."
                 } else {
-                    "Your AI provider cannot watch a link. On YouTube open the video, tap the description, choose Show transcript, copy it and paste it here."
+                    "Your provider cannot watch a link. On YouTube, choose Show transcript, copy it and paste it here."
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
@@ -895,7 +895,7 @@ private fun YouTubeStage(
             ) {
                 Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
                 Text(
-                    "Add an AI provider, a model and your API key in Settings, AI & Integrations, then come back. " +
+                    "Add an AI provider, a model and your API key in Settings, then Absencium AI, then come back. " +
                         "Or skip the AI and keep just the transcript you pasted.",
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSecondaryContainer,

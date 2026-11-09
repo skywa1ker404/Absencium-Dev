@@ -92,7 +92,7 @@ class ShareService(private val context: Context) {
             Result.failure(IOException(e.message ?: "The export could not be written."))
         } catch (e: Exception) {
             DebugLogger.e(TAG, "Export failed", e)
-            Result.failure(IOException("The export could not be prepared. See debug.log for details."))
+            Result.failure(IOException("The export could not be prepared."))
         }
     }
 

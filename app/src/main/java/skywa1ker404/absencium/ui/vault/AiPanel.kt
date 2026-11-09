@@ -194,7 +194,7 @@ fun AiPanel(
                 ) {
                     Text("AI is off or not set up", style = MaterialTheme.typography.titleSmall, color = colors.onSecondaryContainer)
                     Text(
-                        "Add a provider, a model and your API key in Settings, AI & Integrations.",
+                        "Add a provider, a model and your API key in Settings, then Absencium AI.",
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSecondaryContainer,
                     )

@@ -34,13 +34,13 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
 
         SectionTitle("Weekends")
         SwitchCard(
-            title = "Sunday is always holiday",
+            title = "Sunday is a holiday",
             subtitle = null,
             checked = settings.sundayHoliday,
             onCheckedChange = { viewModel.setSundayHoliday(it) },
         )
         SwitchCard(
-            title = "Saturday is always holiday",
+            title = "Saturday is a holiday",
             subtitle = null,
             checked = settings.saturdayHoliday,
             onCheckedChange = { viewModel.setSaturdayHoliday(it) },

@@ -189,12 +189,12 @@ class AiClient(private val keyVault: ApiKeyVault) {
             val key = keyFor(connection)
             val base = connection.baseUrl.trim().trimEnd('/')
             val model = connection.model.trim()
-            if (model.isEmpty()) throw AiException("Choose a model in Settings, AI & Integrations first.")
+            if (model.isEmpty()) throw AiException("Choose a model in Settings, then Absencium AI first.")
             when (connection.style) {
                 ApiStyle.OPENAI_COMPATIBLE -> {
                     val content = JSONArray().put(JSONObject().put("type", "text").put("text", prompt))
                     if (base.contains("groq", ignoreCase = true)) {
-                        if (images.any { it.isPdf }) throw AiException("Groq cannot read PDF files. Pick a Google Gemini or Claude model in Settings, AI & Integrations for PDFs.")
+                        if (images.any { it.isPdf }) throw AiException("Groq cannot read PDF files. Pick a Google Gemini or Claude model in Settings, then Absencium AI for PDFs.")
                         if (images.size > GROQ_MAX_IMAGES) throw AiException("Groq takes at most $GROQ_MAX_IMAGES pictures in one request.")
                     }
                     images.forEach {
@@ -211,7 +211,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                                     "audio/wav", "audio/x-wav", "audio/wave" -> "wav"
                                     else -> throw AiException(
                                         "This kind of API only takes WAV or MP3 audio, and Absencium records M4A. " +
-                                            "Pick a Google Gemini model in Settings, AI & Integrations to turn recordings into text.",
+                                            "Pick a Google Gemini model in Settings, then Absencium AI to turn recordings into text.",
                                     )
                                 }
                                 content.put(JSONObject().put("type", "input_audio").put("input_audio", JSONObject().put("data", it.base64).put("format", format)))
@@ -234,7 +234,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
                     val content = JSONArray()
                     images.forEach {
                         if (it.isAudio) {
-                            throw AiException("Claude models cannot listen to audio. Pick a Google Gemini model in Settings, AI & Integrations to turn recordings into text.")
+                            throw AiException("Claude models cannot listen to audio. Pick a Google Gemini model in Settings, then Absencium AI to turn recordings into text.")
                         }
                         content.put(
                             JSONObject().put("type", if (it.isPdf) "document" else "image").put(
@@ -340,7 +340,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
 
     /** The wire work (request, reasoning, reply, token counts) is done by the LastChat provider layer; the rules about what each service accepts stay here. */
     private suspend fun chatRaw(connection: AiConnection, system: String, turns: List<ChatTurn>, options: ChatOptions, key: String?): ChatReply {
-        if (connection.model.isBlank()) throw AiException("Choose a model in Settings, AI & Integrations first.")
+        if (connection.model.isBlank()) throw AiException("Choose a model in Settings, then Absencium AI first.")
         if (connection.style != ApiStyle.GEMINI && turns.any { t -> t.images.any { it.isAudio || it.mimeType.startsWith("video/") } }) {
             throw AiException("Recordings and videos need a Google Gemini model. Pick one for this chat, or remove the file.")
         }

@@ -143,7 +143,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                     )
                 }
                 Text(
-                    text = "Restart to apply it. This erases the data you have now and replaces it with this backup (one safety copy of the current data is kept). Discard to keep what you have.",
+                    text = "Restart to apply. This replaces your current data with the backup; one safety copy is kept. Discard to keep what you have.",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp),
                 )
