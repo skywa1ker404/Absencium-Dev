@@ -111,10 +111,13 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     if (phase == AppPhase.APP) {
+                        androidx.compose.runtime.LaunchedEffect(Unit) {
+                            skywa1ker404.absencium.ui.AbsenciumAi.appSettingsRequests.collect { openAiSettings = true }
+                        }
                         androidx.compose.runtime.LaunchedEffect(openAiSettings) {
                             if (openAiSettings) {
                                 openAiSettings = false
-                                navController.navigate(com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination.route)
+                                navController.navigate(com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination.route) { launchSingleTop = true }
                             }
                         }
                         val mini by container.readingMini.collectAsStateWithLifecycle()
@@ -127,6 +130,8 @@ class MainActivity : ComponentActivity() {
                             onDismiss = { container.readingMini.value = null },
                         )
                     }
+                    // Absencium AI grows in over the page, inside this same window.
+                    if (phase == AppPhase.APP) skywa1ker404.absencium.ui.AiLayer(dark = dark)
                     if (phase == AppPhase.APP) UndoHost(container.undoBus)
                     if (phase == AppPhase.APP) skywa1ker404.absencium.ui.components.AiErrorHost(container.aiClient.failures)
                     // The in-app splash sits on top once per launch, in the chosen theme, then fades into the app.

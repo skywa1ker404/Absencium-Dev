@@ -45,7 +45,8 @@ fun RikkahubTheme(
     // Inside Absencium the host's theme engine (Default, Monet, Liquid Glass, presets) decides every colour, shape and font.
     val host = me.rerere.rikkahub.LastChatHost.theme
     if (host != null) {
-        host { dark -> HostedChatTheme(dark, content) }
+        val embeddedDark = me.rerere.rikkahub.LocalEmbeddedDark.current
+        if (embeddedDark != null) HostedChatTheme(embeddedDark, content) else host { dark -> HostedChatTheme(dark, content) }
         return
     }
     val settings by rememberUserSettingsState()
@@ -114,7 +115,8 @@ private fun HostedChatTheme(dark: Boolean, content: @Composable () -> Unit) {
     val barColor = MaterialTheme.colorScheme.background
     val glass = me.rerere.rikkahub.LocalHostGlass.current
     val view = LocalView.current
-    if (!view.isInEditMode) {
+    val embedded = me.rerere.rikkahub.LocalEmbeddedDark.current != null
+    if (!view.isInEditMode && !embedded) {
         SideEffect {
             val window = (view.context as Activity).window
             WindowCompat.getInsetsController(window, view).apply {

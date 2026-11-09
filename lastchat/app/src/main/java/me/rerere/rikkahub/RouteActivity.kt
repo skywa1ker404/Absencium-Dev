@@ -314,19 +314,6 @@ class RouteActivity : ComponentActivity() {
         if (returnToHostSettings) overridePendingTransition(R.anim.ai_page_back_enter, R.anim.ai_page_back_exit)
     }
 
-    private fun settingsScreenFor(name: String?): Screen? = when (name) {
-        "models" -> Screen.SettingModels
-        "providers" -> Screen.SettingProvider
-        "assistants" -> Screen.Assistant
-        "search" -> Screen.SettingSearch
-        "mcp" -> Screen.SettingMcp
-        "skills" -> Screen.SettingSkills()
-        "android" -> Screen.SettingAndroidIntegration
-        "tts" -> Screen.SettingTTS
-        "storage" -> Screen.SettingChatStorage
-        "about" -> Screen.SettingAbout
-        else -> null
-    }
     private var pendingTextSelection by mutableStateOf<QuickAskContinuationData?>(null)
     private var pendingConversationId by mutableStateOf<String?>(null)
     private var pendingResolvedSpontaneousTarget by mutableStateOf<ResolvedSpontaneousChatTarget?>(null)
@@ -737,625 +724,636 @@ class RouteActivity : ComponentActivity() {
     }
 
     @Composable
-    fun AppRoutes(navBackStack: NavHostController, startDestination: Screen.Chat) {
-        val toastState = rememberAppToasterState()
-        val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
-        val tts = rememberCustomTtsState()
-        val stt = rememberCustomSttState()
-        val motionPolicy = rememberSystemMotionPolicy()
-        SharedTransitionLayout {
-            CompositionLocalProvider(
-                LocalNavController provides navBackStack,
-                LocalSharedTransitionScope provides this,
-                LocalSettings provides settings,
-                LocalHighlighter provides highlighter,
-                LocalMotionPolicy provides motionPolicy,
-                LocalToaster provides toastState,
-                LocalTTSState provides tts,
-                LocalSTTState provides stt,
-            ) {
-                // Listen for API key authentication / quota errors and notify user
-                LaunchedEffect(Unit) {
-                    KeyRoulette.default().authErrorEvents.collect { event ->
-                        val keyLabel = event.keyName.ifBlank { "API Key" }
-                        toastState.show(
-                            message = this@RouteActivity.getString(R.string.api_key_auth_error_toast, keyLabel),
-                            type = ToastType.Error,
-                            action = ToastAction(
-                                label = this@RouteActivity.getString(R.string.api_key_auth_error_action),
-                                onClick = {
-                                    if (event.providerId != kotlin.uuid.Uuid.NIL) {
-                                        navBackStack.navigate(Screen.SettingProviderDetail(event.providerId.toString()))
-                                    } else {
-                                        navBackStack.navigate(Screen.SettingProvider)
-                                    }
+    fun AppRoutes(navBackStack: NavHostController, startDestination: Screen.Chat) =
+        ChatAppRoutes(navBackStack, startDestination, hasSuccessfulReplyBeforeSetup)
+}
+
+@Composable
+fun ChatAppRoutes(
+    navBackStack: NavHostController,
+    startDestination: Screen.Chat,
+    hasSuccessfulReplyBeforeSetup: Boolean?,
+) {
+    val context = LocalContext.current
+    val settingsStore = org.koin.compose.koinInject<SettingsStore>()
+    val highlighter = org.koin.compose.koinInject<Highlighter>()
+    val toastState = rememberAppToasterState()
+    val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
+    val tts = rememberCustomTtsState()
+    val stt = rememberCustomSttState()
+    val motionPolicy = rememberSystemMotionPolicy()
+    SharedTransitionLayout {
+        CompositionLocalProvider(
+            LocalNavController provides navBackStack,
+            LocalSharedTransitionScope provides this,
+            LocalSettings provides settings,
+            LocalHighlighter provides highlighter,
+            LocalMotionPolicy provides motionPolicy,
+            LocalToaster provides toastState,
+            LocalTTSState provides tts,
+            LocalSTTState provides stt,
+        ) {
+            // Listen for API key authentication / quota errors and notify user
+            LaunchedEffect(Unit) {
+                KeyRoulette.default().authErrorEvents.collect { event ->
+                    val keyLabel = event.keyName.ifBlank { "API Key" }
+                    toastState.show(
+                        message = context.getString(R.string.api_key_auth_error_toast, keyLabel),
+                        type = ToastType.Error,
+                        action = ToastAction(
+                            label = context.getString(R.string.api_key_auth_error_action),
+                            onClick = {
+                                if (event.providerId != kotlin.uuid.Uuid.NIL) {
+                                    navBackStack.navigate(Screen.SettingProviderDetail(event.providerId.toString()))
+                                } else {
+                                    navBackStack.navigate(Screen.SettingProvider)
                                 }
+                            }
+                        )
+                    )
+                }
+            }
+
+            // Check for backup cleanup results and show toast
+            LaunchedEffect(Unit) {
+                val prefs = context.getSharedPreferences("backup_cleanup", android.content.Context.MODE_PRIVATE)
+                val unsupportedBytes = prefs.getLong("unsupported_bytes", 0)
+                val issuesFixed = prefs.getInt("issues_fixed", 0)
+                val skippedRows = prefs.getInt("db_skipped_rows", 0)
+                
+                if (unsupportedBytes > 0 || issuesFixed > 0 || skippedRows > 0) {
+                    // Clear the stored values
+                    prefs.edit().clear().apply()
+                    
+                    // Build cleanup message
+                    val parts = mutableListOf<String>()
+                    if (unsupportedBytes > 0) {
+                        parts.add(
+                            context.getString(
+                                R.string.backup_restore_import_cleanup_unsupported,
+                                unsupportedBytes.fileSizeToString()
                             )
                         )
+                    }
+                    if (issuesFixed > 0) {
+                        parts.add(
+                            context.getString(
+                                R.string.backup_restore_import_cleanup_invalid_references,
+                                issuesFixed
+                            )
+                        )
+                    }
+                    if (skippedRows > 0) {
+                        parts.add(
+                            context.getString(
+                                R.string.backup_restore_import_cleanup_corrupt_removed,
+                                skippedRows
+                            )
+                        )
+                    }
+                    
+                    val message = context.getString(
+                        R.string.backup_restore_import_cleanup_summary,
+                        parts.joinToString(", ")
+                    )
+                    toastState.show(message, type = me.rerere.rikkahub.ui.components.ui.ToastType.Info)
+                }
+            }
+            Box(modifier = Modifier.fillMaxSize()) {
+            TTSController()
+            val shouldShowSetup = !settings.init &&
+                !settings.setupCompleted &&
+                hasSuccessfulReplyBeforeSetup == false
+            LaunchedEffect(shouldShowSetup) {
+                if (shouldShowSetup) {
+                    navBackStack.navigate(Screen.Setup) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
+            val actualStartDestination: Screen = if (shouldShowSetup) {
+                Screen.Setup
+            } else {
+                startDestination
+            }
+            val windowSize = currentWindowDpSize()
+            val useWideSettingsLayout = windowSize.width >= 840.dp && windowSize.height >= 600.dp
+            NavHost(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                startDestination = actualStartDestination,
+                navController = navBackStack,
+                enterTransition = {
+                    if (
+                        useWideSettingsLayout &&
+                        isSettingsPaneRoute(initialState.destination.route) &&
+                        isSettingsPaneRoute(targetState.destination.route)
+                    ) {
+                        EnterTransition.None
+                    } else {
+                        rootEnterTransition(motionPolicy)
+                    }
+                },
+                exitTransition = {
+                    if (
+                        useWideSettingsLayout &&
+                        isSettingsPaneRoute(initialState.destination.route) &&
+                        isSettingsPaneRoute(targetState.destination.route)
+                    ) {
+                        ExitTransition.None
+                    } else {
+                        rootExitTransition(motionPolicy)
+                    }
+                },
+                popEnterTransition = {
+                    if (
+                        useWideSettingsLayout &&
+                        isSettingsPaneRoute(initialState.destination.route) &&
+                        isSettingsPaneRoute(targetState.destination.route)
+                    ) {
+                        EnterTransition.None
+                    } else {
+                        rootPopEnterTransition(motionPolicy)
+                    }
+                },
+                popExitTransition = {
+                    if (
+                        useWideSettingsLayout &&
+                        isSettingsPaneRoute(initialState.destination.route) &&
+                        isSettingsPaneRoute(targetState.destination.route)
+                    ) {
+                        ExitTransition.None
+                    } else {
+                        rootPopExitTransition(motionPolicy)
+                    }
+                }
+            ) {
+                composable<Screen.Chat> { backStackEntry ->
+                    val route = backStackEntry.toRoute<Screen.Chat>()
+                    val initialChatTarget = route.toChatRouteTarget()
+                    val activeChatTarget by backStackEntry.savedStateHandle
+                        .getStateFlow(CHAT_ROUTE_TARGET_KEY, initialChatTarget)
+                        .collectAsStateWithLifecycle()
+                    ChatPage(
+                        target = activeChatTarget,
+                    )
+                }
+
+                composable<Screen.ShareHandler> { backStackEntry ->
+                    val route = backStackEntry.toRoute<Screen.ShareHandler>()
+                    ShareHandlerPage(
+                        text = route.text,
+                        files = route.files
+                    )
+                }
+
+                composable<Screen.Setup> {
+                    OnboardingPage()
+                }
+
+
+
+                // All assistant-related routes share the same AnimatedVisibilityScope
+                // for seamless hero animations across all screens
+                composable<Screen.Assistant> {
+                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides this@composable) {
+                        AdaptiveSettingsScaffold(selected = SettingsDestination.Assistants) {
+                            AssistantPage()
+                        }
                     }
                 }
 
-                // Check for backup cleanup results and show toast
-                LaunchedEffect(Unit) {
-                    val prefs = this@RouteActivity.getSharedPreferences("backup_cleanup", MODE_PRIVATE)
-                    val unsupportedBytes = prefs.getLong("unsupported_bytes", 0)
-                    val issuesFixed = prefs.getInt("issues_fixed", 0)
-                    val skippedRows = prefs.getInt("db_skipped_rows", 0)
-                    
-                    if (unsupportedBytes > 0 || issuesFixed > 0 || skippedRows > 0) {
-                        // Clear the stored values
-                        prefs.edit().clear().apply()
-                        
-                        // Build cleanup message
-                        val parts = mutableListOf<String>()
-                        if (unsupportedBytes > 0) {
-                            parts.add(
-                                this@RouteActivity.getString(
-                                    R.string.backup_restore_import_cleanup_unsupported,
-                                    unsupportedBytes.fileSizeToString()
-                                )
+                composable<Screen.AssistantDetail> { backStackEntry ->
+                    val route = backStackEntry.toRoute<Screen.AssistantDetail>()
+                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides this@composable) {
+                        AdaptiveSettingsScaffold(selected = SettingsDestination.Assistants) {
+                            AssistantDetailPage(
+                                id = route.id,
+                                startRoute = route.startRoute,
+                                initialMemoryTab = route.initialMemoryTab,
+                                scrollToMemoryId = route.scrollToMemoryId
                             )
-                        }
-                        if (issuesFixed > 0) {
-                            parts.add(
-                                this@RouteActivity.getString(
-                                    R.string.backup_restore_import_cleanup_invalid_references,
-                                    issuesFixed
-                                )
-                            )
-                        }
-                        if (skippedRows > 0) {
-                            parts.add(
-                                this@RouteActivity.getString(
-                                    R.string.backup_restore_import_cleanup_corrupt_removed,
-                                    skippedRows
-                                )
-                            )
-                        }
-                        
-                        val message = this@RouteActivity.getString(
-                            R.string.backup_restore_import_cleanup_summary,
-                            parts.joinToString(", ")
-                        )
-                        toastState.show(message, type = me.rerere.rikkahub.ui.components.ui.ToastType.Info)
-                    }
-                }
-                Box(modifier = Modifier.fillMaxSize()) {
-                TTSController()
-                val shouldShowSetup = !settings.init &&
-                    !settings.setupCompleted &&
-                    hasSuccessfulReplyBeforeSetup == false
-                LaunchedEffect(shouldShowSetup) {
-                    if (shouldShowSetup) {
-                        navBackStack.navigate(Screen.Setup) {
-                            popUpTo(0) { inclusive = true }
                         }
                     }
                 }
-                val actualStartDestination: Screen = if (shouldShowSetup) {
-                    Screen.Setup
-                } else {
-                    startDestination
+
+                composable<Screen.Menu> {
+                    MenuPage()
                 }
-                val windowSize = currentWindowDpSize()
-                val useWideSettingsLayout = windowSize.width >= 840.dp && windowSize.height >= 600.dp
-                NavHost(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
-                    startDestination = actualStartDestination,
-                    navController = navBackStack,
+
+                composable<Screen.Setting> {
+                    AdaptiveSettingsScaffold(
+                        selected = SettingsDestination.Display,
+                        compactContent = { SettingPage() },
+                    ) {
+                        SettingDisplayPage()
+                    }
+                }
+
+                composable<Screen.Backup> { backStackEntry ->
+                    val route = backStackEntry.toRoute<Screen.Backup>()
+                    val initialTab = me.rerere.rikkahub.ui.pages.backup.BackupTab.fromRoute(route.tab)
+                    AdaptiveSettingsScaffold(
+                        selected = SettingsDestination.BackupLocal
+                    ) {
+                        BackupPage(initialTab = initialTab)
+                    }
+                }
+
+                composable<Screen.BackupWebDav> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.BackupLocal) {
+                        BackupPage(initialTab = me.rerere.rikkahub.ui.pages.backup.BackupTab.Local)
+                    }
+                }
+
+                composable<Screen.BackupLocal> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.BackupLocal) {
+                        BackupPage(initialTab = me.rerere.rikkahub.ui.pages.backup.BackupTab.Local)
+                    }
+                }
+
+
+                composable<Screen.SettingLocalLlm> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Providers) {
+                        me.rerere.rikkahub.ui.pages.setting.localstt.SettingLocalSttPage()
+                    }
+                }
+
+                composable<Screen.ImageGen> {
+                    ImageGenPage()
+                }
+
+                composable<Screen.WebView> { backStackEntry ->
+                    val route = backStackEntry.toRoute<Screen.WebView>()
+                    WebViewPage(route.url, route.content)
+                }
+
+                composable<Screen.SettingDisplay> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Display) {
+                        SettingDisplayPage()
+                    }
+                }
+
+                composable<Screen.SettingProvider>(
                     enterTransition = {
-                        if (
-                            useWideSettingsLayout &&
-                            isSettingsPaneRoute(initialState.destination.route) &&
-                            isSettingsPaneRoute(targetState.destination.route)
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (
+                            initialState.destination.route?.contains("SettingSearch") == true ||
+                            initialState.destination.route?.contains("SettingTTS") == true
                         ) {
-                            EnterTransition.None
+                            lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
-                            rootEnterTransition(motionPolicy)
+                            null
                         }
                     },
                     exitTransition = {
-                        if (
-                            useWideSettingsLayout &&
-                            isSettingsPaneRoute(initialState.destination.route) &&
-                            isSettingsPaneRoute(targetState.destination.route)
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (
+                            targetState.destination.route?.contains("SettingSearch") == true ||
+                            targetState.destination.route?.contains("SettingTTS") == true
                         ) {
-                            ExitTransition.None
+                            lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
-                            rootExitTransition(motionPolicy)
+                            null
                         }
                     },
                     popEnterTransition = {
-                        if (
-                            useWideSettingsLayout &&
-                            isSettingsPaneRoute(initialState.destination.route) &&
-                            isSettingsPaneRoute(targetState.destination.route)
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (
+                            initialState.destination.route?.contains("SettingSearch") == true ||
+                            initialState.destination.route?.contains("SettingTTS") == true
                         ) {
-                            EnterTransition.None
+                            lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
-                            rootPopEnterTransition(motionPolicy)
+                            null
                         }
                     },
                     popExitTransition = {
-                        if (
-                            useWideSettingsLayout &&
-                            isSettingsPaneRoute(initialState.destination.route) &&
-                            isSettingsPaneRoute(targetState.destination.route)
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (
+                            targetState.destination.route?.contains("SettingSearch") == true ||
+                            targetState.destination.route?.contains("SettingTTS") == true
                         ) {
-                            ExitTransition.None
+                            lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
-                            rootPopExitTransition(motionPolicy)
+                            null
                         }
                     }
                 ) {
-                    composable<Screen.Chat> { backStackEntry ->
-                        val route = backStackEntry.toRoute<Screen.Chat>()
-                        val initialChatTarget = route.toChatRouteTarget()
-                        val activeChatTarget by backStackEntry.savedStateHandle
-                            .getStateFlow(CHAT_ROUTE_TARGET_KEY, initialChatTarget)
-                            .collectAsStateWithLifecycle()
-                        ChatPage(
-                            target = activeChatTarget,
-                        )
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.ProviderModels) {
+                        SettingProviderPage()
                     }
-
-                    composable<Screen.ShareHandler> { backStackEntry ->
-                        val route = backStackEntry.toRoute<Screen.ShareHandler>()
-                        ShareHandlerPage(
-                            text = route.text,
-                            files = route.files
-                        )
-                    }
-
-                    composable<Screen.Setup> {
-                        OnboardingPage()
-                    }
-
-
-
-                    // All assistant-related routes share the same AnimatedVisibilityScope
-                    // for seamless hero animations across all screens
-                    composable<Screen.Assistant> {
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this@composable) {
-                            AdaptiveSettingsScaffold(selected = SettingsDestination.Assistants) {
-                                AssistantPage()
-                            }
-                        }
-                    }
-
-                    composable<Screen.AssistantDetail> { backStackEntry ->
-                        val route = backStackEntry.toRoute<Screen.AssistantDetail>()
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this@composable) {
-                            AdaptiveSettingsScaffold(selected = SettingsDestination.Assistants) {
-                                AssistantDetailPage(
-                                    id = route.id,
-                                    startRoute = route.startRoute,
-                                    initialMemoryTab = route.initialMemoryTab,
-                                    scrollToMemoryId = route.scrollToMemoryId
-                                )
-                            }
-                        }
-                    }
-
-                    composable<Screen.Menu> {
-                        MenuPage()
-                    }
-
-                    composable<Screen.Setting> {
-                        AdaptiveSettingsScaffold(
-                            selected = SettingsDestination.Display,
-                            compactContent = { SettingPage() },
-                        ) {
-                            SettingDisplayPage()
-                        }
-                    }
-
-                    composable<Screen.Backup> { backStackEntry ->
-                        val route = backStackEntry.toRoute<Screen.Backup>()
-                        val initialTab = me.rerere.rikkahub.ui.pages.backup.BackupTab.fromRoute(route.tab)
-                        AdaptiveSettingsScaffold(
-                            selected = SettingsDestination.BackupLocal
-                        ) {
-                            BackupPage(initialTab = initialTab)
-                        }
-                    }
-
-                    composable<Screen.BackupWebDav> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.BackupLocal) {
-                            BackupPage(initialTab = me.rerere.rikkahub.ui.pages.backup.BackupTab.Local)
-                        }
-                    }
-
-                    composable<Screen.BackupLocal> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.BackupLocal) {
-                            BackupPage(initialTab = me.rerere.rikkahub.ui.pages.backup.BackupTab.Local)
-                        }
-                    }
-
-
-                    composable<Screen.SettingLocalLlm> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Providers) {
-                            me.rerere.rikkahub.ui.pages.setting.localstt.SettingLocalSttPage()
-                        }
-                    }
-
-                    composable<Screen.ImageGen> {
-                        ImageGenPage()
-                    }
-
-                    composable<Screen.WebView> { backStackEntry ->
-                        val route = backStackEntry.toRoute<Screen.WebView>()
-                        WebViewPage(route.url, route.content)
-                    }
-
-                    composable<Screen.SettingDisplay> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Display) {
-                            SettingDisplayPage()
-                        }
-                    }
-
-                    composable<Screen.SettingProvider>(
-                        enterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (
-                                initialState.destination.route?.contains("SettingSearch") == true ||
-                                initialState.destination.route?.contains("SettingTTS") == true
-                            ) {
-                                lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        },
-                        exitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (
-                                targetState.destination.route?.contains("SettingSearch") == true ||
-                                targetState.destination.route?.contains("SettingTTS") == true
-                            ) {
-                                lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        },
-                        popEnterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (
-                                initialState.destination.route?.contains("SettingSearch") == true ||
-                                initialState.destination.route?.contains("SettingTTS") == true
-                            ) {
-                                lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        },
-                        popExitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (
-                                targetState.destination.route?.contains("SettingSearch") == true ||
-                                targetState.destination.route?.contains("SettingTTS") == true
-                            ) {
-                                lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        }
-                    ) {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.ProviderModels) {
-                            SettingProviderPage()
-                        }
-                    }
-
-                    composable<Screen.SettingProviderDetail> {
-                        val route = it.toRoute<Screen.SettingProviderDetail>()
-                        val id = Uuid.parse(route.providerId)
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Providers) {
-                            SettingProviderDetailPage(id = id)
-                        }
-                    }
-
-                    composable<Screen.SettingTTSProviderDetail> {
-                        val route = it.toRoute<Screen.SettingTTSProviderDetail>()
-                        val id = Uuid.parse(route.providerId)
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Tts) {
-                            SettingTTSProviderDetailPage(id = id)
-                        }
-                    }
-
-                    composable<Screen.SettingModels> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Models) {
-                            SettingModelPage()
-                        }
-                    }
-
-                    composable<Screen.SettingAbout> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.About) {
-                            SettingAboutPage()
-                        }
-                    }
-
-                    composable<Screen.SettingChatStorage> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.ChatStorage) {
-                            SettingChatStoragePage()
-                        }
-                    }
-
-                    composable<Screen.SettingSearch>(
-                        enterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (initialState.destination.route?.contains("SettingProvider") == true) {
-                                lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
-                            } else if (initialState.destination.route?.contains("SettingTTS") == true) {
-                                lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        },
-                        exitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (targetState.destination.route?.contains("SettingProvider") == true) {
-                                lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
-                            } else if (targetState.destination.route?.contains("SettingTTS") == true) {
-                                lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        },
-                        popEnterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (initialState.destination.route?.contains("SettingProvider") == true) {
-                                lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
-                            } else if (initialState.destination.route?.contains("SettingTTS") == true) {
-                                lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        },
-                        popExitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (targetState.destination.route?.contains("SettingProvider") == true) {
-                                lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
-                            } else if (targetState.destination.route?.contains("SettingTTS") == true) {
-                                lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        }
-                    ) {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Search) {
-                            SettingProviderPage(initialTab = me.rerere.rikkahub.ui.pages.setting.ProvidersTab.Search)
-                        }
-                    }
-
-                    composable<Screen.SettingTTS>(
-                        enterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (
-                                initialState.destination.route?.contains("SettingProvider") == true ||
-                                initialState.destination.route?.contains("SettingSearch") == true
-                            ) {
-                                lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        },
-                        exitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (
-                                targetState.destination.route?.contains("SettingProvider") == true ||
-                                targetState.destination.route?.contains("SettingSearch") == true
-                            ) {
-                                lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        },
-                        popEnterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (
-                                initialState.destination.route?.contains("SettingProvider") == true ||
-                                initialState.destination.route?.contains("SettingSearch") == true
-                            ) {
-                                lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        },
-                        popExitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (
-                                targetState.destination.route?.contains("SettingProvider") == true ||
-                                targetState.destination.route?.contains("SettingSearch") == true
-                            ) {
-                                lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
-                            } else {
-                                null
-                            }
-                        }
-                    ) {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Tts) {
-                            SettingProviderPage(initialTab = me.rerere.rikkahub.ui.pages.setting.ProvidersTab.Tts)
-                        }
-                    }
-
-
-                    composable<Screen.SettingMcp> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Mcp) {
-                            SettingMcpPage()
-                        }
-                    }
-
-                    composable<Screen.SettingRpOptimizations> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.RpOptimizations) {
-                            SettingRpOptimizationsPage()
-                        }
-                    }
-
-                    composable<Screen.SettingPromptInjections> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.PromptInjections) {
-                            SettingPromptInjectionsPage()
-                        }
-                    }
-
-                    composable<Screen.SettingLorebooks>(
-                        enterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (initialState.destination.route?.contains("SettingSkills") == true) {
-                                lateralEnterTransition(
-                                    offset = { it },
-                                    motionPolicy = motionPolicy
-                                )
-                            } else {
-                                null
-                            }
-                        },
-                        exitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (targetState.destination.route?.contains("SettingSkills") == true) {
-                                lateralExitTransition(
-                                    offset = { it },
-                                    motionPolicy = motionPolicy
-                                )
-                            } else {
-                                null
-                            }
-                        },
-                        popEnterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (initialState.destination.route?.contains("SettingSkills") == true) {
-                                lateralEnterTransition(
-                                    offset = { it },
-                                    motionPolicy = motionPolicy
-                                )
-                            } else {
-                                null
-                            }
-                        },
-                        popExitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (targetState.destination.route?.contains("SettingSkills") == true) {
-                                lateralExitTransition(
-                                    offset = { it },
-                                    motionPolicy = motionPolicy
-                                )
-                            } else {
-                                null
-                            }
-                        }
-                    ) {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Lorebooks) {
-                            SettingLorebooksPage()
-                        }
-                    }
-
-                    composable<Screen.SettingLorebookDetail> { backStackEntry ->
-                        val route = backStackEntry.toRoute<Screen.SettingLorebookDetail>()
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Lorebooks) {
-                            SettingLorebookDetailPage(id = route.id, scrollToEntryId = route.scrollToEntryId)
-                        }
-                    }
-
-                    composable<Screen.SettingSkills>(
-                        enterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (initialState.destination.route?.contains("SettingLorebooks") == true) {
-                                lateralEnterTransition(
-                                    offset = { -it },
-                                    motionPolicy = motionPolicy
-                                )
-                            } else {
-                                null
-                            }
-                        },
-                        exitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (targetState.destination.route?.contains("SettingLorebooks") == true) {
-                                lateralExitTransition(
-                                    offset = { -it },
-                                    motionPolicy = motionPolicy
-                                )
-                            } else {
-                                null
-                            }
-                        },
-                        popEnterTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (initialState.destination.route?.contains("SettingLorebooks") == true) {
-                                lateralEnterTransition(
-                                    offset = { -it },
-                                    motionPolicy = motionPolicy
-                                )
-                            } else {
-                                null
-                            }
-                        },
-                        popExitTransition = {
-                            if (useWideSettingsLayout) {
-                                null
-                            } else if (targetState.destination.route?.contains("SettingLorebooks") == true) {
-                                lateralExitTransition(
-                                    offset = { -it },
-                                    motionPolicy = motionPolicy
-                                )
-                            } else {
-                                null
-                            }
-                        }
-                    ) { backStackEntry ->
-                        val route = backStackEntry.toRoute<Screen.SettingSkills>()
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Skills) {
-                            SettingSkillsPage(scrollToSkillId = route.scrollToSkillId)
-                        }
-                    }
-
-                    composable<Screen.Developer> {
-                        DeveloperPage()
-                    }
-
-                    composable<Screen.SettingAndroidIntegration> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.AndroidIntegration) {
-                            SettingAndroidIntegrationPage()
-                        }
-                    }
-
-                    composable<Screen.SettingUICustomization> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.UiCustomization) {
-                            SettingUICustomizationPage()
-                        }
-                    }
-
-                    composable<Screen.SettingFonts> {
-                        AdaptiveSettingsScaffold(selected = SettingsDestination.Fonts) {
-                            SettingFontsPage()
-                        }
-                    }
-
-
-
                 }
-                // Toast host must be last so it renders on top of all content
-                AppToasterHost(state = toastState)
+
+                composable<Screen.SettingProviderDetail> {
+                    val route = it.toRoute<Screen.SettingProviderDetail>()
+                    val id = Uuid.parse(route.providerId)
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Providers) {
+                        SettingProviderDetailPage(id = id)
+                    }
                 }
+
+                composable<Screen.SettingTTSProviderDetail> {
+                    val route = it.toRoute<Screen.SettingTTSProviderDetail>()
+                    val id = Uuid.parse(route.providerId)
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Tts) {
+                        SettingTTSProviderDetailPage(id = id)
+                    }
+                }
+
+                composable<Screen.SettingModels> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Models) {
+                        SettingModelPage()
+                    }
+                }
+
+                composable<Screen.SettingAbout> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.About) {
+                        SettingAboutPage()
+                    }
+                }
+
+                composable<Screen.SettingChatStorage> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.ChatStorage) {
+                        SettingChatStoragePage()
+                    }
+                }
+
+                composable<Screen.SettingSearch>(
+                    enterTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (initialState.destination.route?.contains("SettingProvider") == true) {
+                            lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
+                        } else if (initialState.destination.route?.contains("SettingTTS") == true) {
+                            lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
+                        } else {
+                            null
+                        }
+                    },
+                    exitTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (targetState.destination.route?.contains("SettingProvider") == true) {
+                            lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
+                        } else if (targetState.destination.route?.contains("SettingTTS") == true) {
+                            lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
+                        } else {
+                            null
+                        }
+                    },
+                    popEnterTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (initialState.destination.route?.contains("SettingProvider") == true) {
+                            lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
+                        } else if (initialState.destination.route?.contains("SettingTTS") == true) {
+                            lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
+                        } else {
+                            null
+                        }
+                    },
+                    popExitTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (targetState.destination.route?.contains("SettingProvider") == true) {
+                            lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
+                        } else if (targetState.destination.route?.contains("SettingTTS") == true) {
+                            lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
+                        } else {
+                            null
+                        }
+                    }
+                ) {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Search) {
+                        SettingProviderPage(initialTab = me.rerere.rikkahub.ui.pages.setting.ProvidersTab.Search)
+                    }
+                }
+
+                composable<Screen.SettingTTS>(
+                    enterTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (
+                            initialState.destination.route?.contains("SettingProvider") == true ||
+                            initialState.destination.route?.contains("SettingSearch") == true
+                        ) {
+                            lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
+                        } else {
+                            null
+                        }
+                    },
+                    exitTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (
+                            targetState.destination.route?.contains("SettingProvider") == true ||
+                            targetState.destination.route?.contains("SettingSearch") == true
+                        ) {
+                            lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
+                        } else {
+                            null
+                        }
+                    },
+                    popEnterTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (
+                            initialState.destination.route?.contains("SettingProvider") == true ||
+                            initialState.destination.route?.contains("SettingSearch") == true
+                        ) {
+                            lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
+                        } else {
+                            null
+                        }
+                    },
+                    popExitTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (
+                            targetState.destination.route?.contains("SettingProvider") == true ||
+                            targetState.destination.route?.contains("SettingSearch") == true
+                        ) {
+                            lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
+                        } else {
+                            null
+                        }
+                    }
+                ) {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Tts) {
+                        SettingProviderPage(initialTab = me.rerere.rikkahub.ui.pages.setting.ProvidersTab.Tts)
+                    }
+                }
+
+
+                composable<Screen.SettingMcp> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Mcp) {
+                        SettingMcpPage()
+                    }
+                }
+
+                composable<Screen.SettingRpOptimizations> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.RpOptimizations) {
+                        SettingRpOptimizationsPage()
+                    }
+                }
+
+                composable<Screen.SettingPromptInjections> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.PromptInjections) {
+                        SettingPromptInjectionsPage()
+                    }
+                }
+
+                composable<Screen.SettingLorebooks>(
+                    enterTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (initialState.destination.route?.contains("SettingSkills") == true) {
+                            lateralEnterTransition(
+                                offset = { it },
+                                motionPolicy = motionPolicy
+                            )
+                        } else {
+                            null
+                        }
+                    },
+                    exitTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (targetState.destination.route?.contains("SettingSkills") == true) {
+                            lateralExitTransition(
+                                offset = { it },
+                                motionPolicy = motionPolicy
+                            )
+                        } else {
+                            null
+                        }
+                    },
+                    popEnterTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (initialState.destination.route?.contains("SettingSkills") == true) {
+                            lateralEnterTransition(
+                                offset = { it },
+                                motionPolicy = motionPolicy
+                            )
+                        } else {
+                            null
+                        }
+                    },
+                    popExitTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (targetState.destination.route?.contains("SettingSkills") == true) {
+                            lateralExitTransition(
+                                offset = { it },
+                                motionPolicy = motionPolicy
+                            )
+                        } else {
+                            null
+                        }
+                    }
+                ) {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Lorebooks) {
+                        SettingLorebooksPage()
+                    }
+                }
+
+                composable<Screen.SettingLorebookDetail> { backStackEntry ->
+                    val route = backStackEntry.toRoute<Screen.SettingLorebookDetail>()
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Lorebooks) {
+                        SettingLorebookDetailPage(id = route.id, scrollToEntryId = route.scrollToEntryId)
+                    }
+                }
+
+                composable<Screen.SettingSkills>(
+                    enterTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (initialState.destination.route?.contains("SettingLorebooks") == true) {
+                            lateralEnterTransition(
+                                offset = { -it },
+                                motionPolicy = motionPolicy
+                            )
+                        } else {
+                            null
+                        }
+                    },
+                    exitTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (targetState.destination.route?.contains("SettingLorebooks") == true) {
+                            lateralExitTransition(
+                                offset = { -it },
+                                motionPolicy = motionPolicy
+                            )
+                        } else {
+                            null
+                        }
+                    },
+                    popEnterTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (initialState.destination.route?.contains("SettingLorebooks") == true) {
+                            lateralEnterTransition(
+                                offset = { -it },
+                                motionPolicy = motionPolicy
+                            )
+                        } else {
+                            null
+                        }
+                    },
+                    popExitTransition = {
+                        if (useWideSettingsLayout) {
+                            null
+                        } else if (targetState.destination.route?.contains("SettingLorebooks") == true) {
+                            lateralExitTransition(
+                                offset = { -it },
+                                motionPolicy = motionPolicy
+                            )
+                        } else {
+                            null
+                        }
+                    }
+                ) { backStackEntry ->
+                    val route = backStackEntry.toRoute<Screen.SettingSkills>()
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Skills) {
+                        SettingSkillsPage(scrollToSkillId = route.scrollToSkillId)
+                    }
+                }
+
+                composable<Screen.Developer> {
+                    DeveloperPage()
+                }
+
+                composable<Screen.SettingAndroidIntegration> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.AndroidIntegration) {
+                        SettingAndroidIntegrationPage()
+                    }
+                }
+
+                composable<Screen.SettingUICustomization> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.UiCustomization) {
+                        SettingUICustomizationPage()
+                    }
+                }
+
+                composable<Screen.SettingFonts> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Fonts) {
+                        SettingFontsPage()
+                    }
+                }
+
+
+
+            }
+            // Toast host must be last so it renders on top of all content
+            AppToasterHost(state = toastState)
             }
         }
     }

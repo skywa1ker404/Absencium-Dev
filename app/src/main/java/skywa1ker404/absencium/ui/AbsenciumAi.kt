@@ -3,22 +3,55 @@ package skywa1ker404.absencium.ui
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import me.rerere.rikkahub.RouteActivity
 
-/** The one door into Absencium AI, the embedded chat. Every AI button in the app goes through here. */
+/** One request to show the chat. [id] changes on every request so a second request restarts it. */
+data class AiRequest(val id: Int, val destination: String?)
+
+/**
+ * The one door into Absencium AI, the embedded chat. Every AI button in the app goes through here. While the app's window is showing,
+ * the chat opens as a layer of that same window (see [AiLayer]); only when there is no such window (a notification, the share sheet)
+ * does it fall back to its own activity.
+ */
 object AbsenciumAi {
+    private var counter = 0
+    private val _request = MutableStateFlow<AiRequest?>(null)
+
+    /** The chat to show, or null when it is closed. */
+    val request: StateFlow<AiRequest?> = _request
+
+    /** True while the app's window is there to host the chat. */
+    @Volatile var hostActive: Boolean = false
+
+    /** Asked for by the chat's settings gear: close the chat and show the app's own AI settings page. */
+    val appSettingsRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
     /** Opens the chat, or with [settings] straight on its settings (providers, models, assistants). */
     fun open(context: Context, settings: Boolean = false, destination: String? = null) {
+        val page = destination ?: if (settings) "settings" else null
+        if (hostActive) {
+            _request.value = AiRequest(++counter, page)
+            return
+        }
         val intent = Intent(context, RouteActivity::class.java)
         if (settings) intent.putExtra(RouteActivity.EXTRA_OPEN_SETTINGS, true)
         if (destination != null) intent.putExtra(RouteActivity.EXTRA_SETTINGS_DESTINATION, destination)
         if (context !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        // A springy grow-in instead of the default cut, so opening the chat never flashes.
-        val options = android.app.ActivityOptions.makeCustomAnimation(
-            context,
-            if (destination != null) me.rerere.rikkahub.R.anim.ai_page_enter else skywa1ker404.absencium.R.anim.ai_open_enter,
-            if (destination != null) me.rerere.rikkahub.R.anim.ai_page_exit else skywa1ker404.absencium.R.anim.ai_open_exit,
-        )
-        context.startActivity(intent, options.toBundle())
+        context.startActivity(intent)
+    }
+
+    fun close() {
+        _request.value = null
+    }
+
+    /** From the chat: leave it and open the app's AI settings page. Returns false when the chat is not in the app's window. */
+    fun showAppSettings(): Boolean {
+        if (!hostActive || _request.value == null) return false
+        _request.value = null
+        appSettingsRequests.tryEmit(Unit)
+        return true
     }
 }

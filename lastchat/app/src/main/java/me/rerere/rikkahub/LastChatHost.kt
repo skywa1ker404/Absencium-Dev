@@ -47,3 +47,6 @@ object LastChatHost {
 
 /** True while the host runs Liquid Glass: the chat then lets its backgrounds and panes show the host's wallpaper through. */
 val LocalHostGlass = staticCompositionLocalOf { false }
+
+/** Set while the chat is drawn inside the host app's own window (not its own activity): the host's dark flag. The host then already owns the theme and the system bars. */
+val LocalEmbeddedDark = staticCompositionLocalOf<Boolean?> { null }
