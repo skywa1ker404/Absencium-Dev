@@ -40,7 +40,7 @@ fun LastChatModelFeatureCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (darkTheme) {
                 MaterialTheme.colorScheme.surfaceContainerLow

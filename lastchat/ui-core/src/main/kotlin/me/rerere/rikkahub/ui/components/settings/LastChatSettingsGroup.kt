@@ -41,7 +41,7 @@ fun LastChatSettingsGroup(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(start = titleStartPadding, bottom = 4.dp),

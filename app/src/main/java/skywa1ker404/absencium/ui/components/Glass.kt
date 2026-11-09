@@ -304,7 +304,7 @@ fun sheetScrimColor(): Color =
  * Liquid Glass only a faint veil, so the wallpaper runs all the way up to the top of the screen instead of ending in a white or black slab.
  */
 @androidx.compose.runtime.Composable
-fun pageTitleFade(background: androidx.compose.ui.graphics.Color, top: Float = 1f, mid: Float = 0.97f, midAt: Float = 0.68f): androidx.compose.ui.graphics.Brush =
+fun pageTitleFade(background: androidx.compose.ui.graphics.Color, top: Float = 1f, mid: Float = 1f, midAt: Float = 0.82f): androidx.compose.ui.graphics.Brush =
     if (skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current) androidx.compose.ui.graphics.Brush.verticalGradient(
         0f to background.copy(alpha = 0.26f),
         0.6f to background.copy(alpha = 0.1f),
@@ -322,7 +322,7 @@ fun pageTitleFade(background: androidx.compose.ui.graphics.Color, top: Float = 1
  * `matchParentSize()`; the header goes on top. Without Liquid Glass (or a backdrop) it is the plain [pageTitleFade].
  */
 @Composable
-fun Modifier.pageHeaderGlass(background: Color, top: Float = 1f, mid: Float = 0.97f, midAt: Float = 0.68f): Modifier {
+fun Modifier.pageHeaderGlass(background: Color, top: Float = 1f, mid: Float = 1f, midAt: Float = 0.82f): Modifier {
     val backdrop = skywa1ker404.absencium.ui.theme.LocalBackdrop.current
     if (!LocalGlassEnabled.current || backdrop == null) return this.background(pageTitleFade(background, top, mid, midAt))
     val blurDp = maxOf(LocalGlassBlur.current, 14.dp)

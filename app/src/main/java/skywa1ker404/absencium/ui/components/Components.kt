@@ -204,7 +204,7 @@ fun ScreenScaffold(
                             val handOver = with(androidx.compose.ui.platform.LocalDensity.current) { 110.dp.toPx() }
                             Text(
                                 title,
-                                style = MaterialTheme.typography.headlineSmall,
+                                style = MaterialTheme.typography.titleLarge,
                                 modifier = if (largeTitle) Modifier.graphicsLayer {
                                     alpha = ((pageScroll.value - handOver * 0.6f) / (handOver * 0.4f)).coerceIn(0f, 1f)
                                 } else Modifier,
@@ -292,9 +292,9 @@ fun ScreenScaffold(
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.labelLarge,
         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = MaterialTheme.colorScheme.primary,
         modifier = modifier.padding(top = 14.dp, start = 4.dp),
     )
 }
