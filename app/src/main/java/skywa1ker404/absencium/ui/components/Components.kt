@@ -396,7 +396,7 @@ fun CardStack(modifier: Modifier = Modifier, content: @Composable ColumnScope.()
 fun NavCard(
     icon: ImageVector,
     title: String,
-    subtitle: String,
+    subtitle: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     position: GroupPosition = GroupPosition.Only,
@@ -422,11 +422,13 @@ fun NavCard(
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Icon(
                 imageVector = AppIcons.ChevronRight,
