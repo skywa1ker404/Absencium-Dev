@@ -59,7 +59,6 @@ fun TestLabScreen(navigator: DestinationsNavigator) {
     var copied by remember { mutableStateOf(false) }
 
     ScreenScaffold(title = "Test Lab", onBack = { navigator.navigateUp() }) {
-        HintText("Each check below runs for real on this device and writes to debug.log.")
 
         SectionTitle("This device")
         AppCard(modifier = Modifier.fillMaxWidth()) {

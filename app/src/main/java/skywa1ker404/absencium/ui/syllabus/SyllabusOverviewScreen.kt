@@ -61,7 +61,6 @@ fun SyllabusOverviewScreen(navigator: DestinationsNavigator) {
 
     ScreenScaffold(title = "Syllabus", onBack = { navigator.navigateUp() }) {
         if (summaries.isEmpty()) ExpressiveEmptyState(AppIcons.School, "No subjects yet", "Add a subject first (Vault, Edit subjects), then build its syllabus here.")
-        else HintText("Units, chapters and topics for each subject. Notes and study material can be filed under any of them.")
         summaries.forEachIndexed { index, s ->
             AppCard(
                 modifier = Modifier.fillMaxWidth().bounceIn((index * 45).coerceAtMost(450)),

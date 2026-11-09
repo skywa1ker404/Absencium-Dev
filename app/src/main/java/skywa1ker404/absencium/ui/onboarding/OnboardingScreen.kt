@@ -412,7 +412,6 @@ private fun LookPage(
     Column(modifier = Modifier.fillMaxWidth()) {
         Reveal(visible = panel == PANEL_QUALITY) {
             PanelColumn {
-                HintText("Pick what suits your phone. Every feature stays in all three.")
                 VisualQuality.entries.forEach { level ->
                     OptionCard(
                         title = level.label(),
@@ -464,7 +463,7 @@ private fun LookPage(
             PanelColumn {
                 SwitchCard(
                     title = "Liquid Glass",
-                    subtitle = "Frosted, see-through glass on every surface, in the colours of your theme. Shown in Quality mode.",
+                    subtitle = "See-through glass in your theme colours",
                     checked = settings.liquidGlass,
                     onCheckedChange = { viewModel.setLiquidGlass(it) },
                 )
@@ -473,7 +472,7 @@ private fun LookPage(
                         GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
                         SwitchCard(
                             title = "Apply frosted glass on all elements",
-                            subtitle = "Also frost the profile, search, Add Entry, import and colour dialogs. Turn it off to keep them solid.",
+                            subtitle = "Profile, search, Add Entry and dialogs",
                             checked = settings.frostedOverlays,
                             onCheckedChange = { viewModel.setFrostedOverlays(it) },
                         )
@@ -537,7 +536,7 @@ private fun AttendanceStep(settings: AppSettings, viewModel: SettingsViewModel) 
     SectionTitle("Target attendance threshold")
     SliderCard(
         title = "Minimum safe attendance",
-        subtitle = "Absencium warns you when a subject approaches this limit. You can change it later.",
+        subtitle = "Warn me below this",
         value = settings.attendanceThresholdPercent,
         range = AppSettings.MIN_ATTENDANCE_THRESHOLD..AppSettings.MAX_ATTENDANCE_THRESHOLD,
         valueLabel = { "$it%" },
@@ -546,13 +545,13 @@ private fun AttendanceStep(settings: AppSettings, viewModel: SettingsViewModel) 
     SectionTitle("Weekends")
     SwitchCard(
         title = "Sunday is always holiday",
-        subtitle = "Turn off if you have lectures on Sunday. You can change it later in Settings.",
+        subtitle = "Turn off if you have lectures",
         checked = settings.sundayHoliday,
         onCheckedChange = { viewModel.setSundayHoliday(it) },
     )
     SwitchCard(
         title = "Saturday is always holiday",
-        subtitle = "Turn off if you have lectures on Saturday. You can change it later in Settings.",
+        subtitle = "Turn off if you have lectures",
         checked = settings.saturdayHoliday,
         onCheckedChange = { viewModel.setSaturdayHoliday(it) },
     )

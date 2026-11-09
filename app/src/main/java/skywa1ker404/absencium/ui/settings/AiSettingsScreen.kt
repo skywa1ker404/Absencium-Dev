@@ -41,35 +41,35 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
         SettingGroup {
             SettingRow(
                 title = "Open Absencium AI",
-                subtitle = "Chat, attach files, ask it to look things up or change your notes, timetable and more",
+                subtitle = "Chat, attach files, change your notes",
                 onClick = { AbsenciumAi.open(context) },
                 leading = { androidx.compose.material3.Icon(AppIcons.AutoAwesome, contentDescription = null, tint = primary) },
             )
             SettingDivider()
             SettingRow(
                 title = "Default models",
-                subtitle = "The model that answers, writes titles and reads text",
+                subtitle = "The model that answers",
                 onClick = { AbsenciumAi.open(context, destination = "models") },
                 leading = { androidx.compose.material3.Icon(AppIcons.AutoAwesome, contentDescription = null, tint = primary) },
             )
             SettingDivider()
             SettingRow(
                 title = "Providers and keys",
-                subtitle = "Gemini, OpenAI, OpenRouter, Claude and others; your key stays on this phone",
+                subtitle = "Your key stays on this phone",
                 onClick = { AbsenciumAi.open(context, destination = "providers") },
                 leading = { androidx.compose.material3.Icon(AppIcons.Edit, contentDescription = null, tint = primary) },
             )
             SettingDivider()
             SettingRow(
                 title = "Assistants",
-                subtitle = "Study, exam coach, writing and your own",
+                subtitle = "Study, exam coach and your own",
                 onClick = { AbsenciumAi.open(context, destination = "assistants") },
                 leading = { androidx.compose.material3.Icon(AppIcons.Person, contentDescription = null, tint = primary) },
             )
             SettingDivider()
             SettingRow(
                 title = "Web search",
-                subtitle = "Which search the AI uses when you ask it to look something up",
+                subtitle = "Web search for the AI",
                 onClick = { AbsenciumAi.open(context, destination = "search") },
                 leading = { androidx.compose.material3.Icon(AppIcons.Search, contentDescription = null, tint = primary) },
             )
@@ -79,7 +79,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
         SettingGroup {
             SettingRow(
                 title = "Advanced",
-                subtitle = "Plugins, skills, voice, storage, pictures and approvals",
+                subtitle = "Plugins, voice, storage, pictures",
                 onClick = { advanced = !advanced },
             )
         }
@@ -90,15 +90,15 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
         ) {
             androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 SettingGroup {
-                    SettingRow(title = "Plugins (MCP)", subtitle = "Tool servers the AI can call", onClick = { AbsenciumAi.open(context, destination = "mcp") })
+                    SettingRow(title = "Plugins (MCP)", subtitle = "Tool servers", onClick = { AbsenciumAi.open(context, destination = "mcp") })
                     SettingDivider()
-                    SettingRow(title = "Skills", subtitle = "Saved know-how the AI can load when needed", onClick = { AbsenciumAi.open(context, destination = "skills") })
+                    SettingRow(title = "Skills", subtitle = "Saved know-how", onClick = { AbsenciumAi.open(context, destination = "skills") })
                     SettingDivider()
-                    SettingRow(title = "Voice", subtitle = "Read answers aloud and dictate with your voice", onClick = { AbsenciumAi.open(context, destination = "tts") })
+                    SettingRow(title = "Voice", subtitle = "Read aloud and dictate", onClick = { AbsenciumAi.open(context, destination = "tts") })
                     SettingDivider()
-                    SettingRow(title = "Android integration", subtitle = "Assistant overlay and quick ways to ask", onClick = { AbsenciumAi.open(context, destination = "android") })
+                    SettingRow(title = "Android integration", subtitle = "Overlay and quick ask", onClick = { AbsenciumAi.open(context, destination = "android") })
                     SettingDivider()
-                    SettingRow(title = "Chat storage and backup", subtitle = "See what chats take up, clear them, back them up", onClick = { AbsenciumAi.open(context, destination = "storage") })
+                    SettingRow(title = "Chat storage and backup", subtitle = "Clear and back up chats", onClick = { AbsenciumAi.open(context, destination = "storage") })
                 }
 
                 AutoApproveSection(settings.aiAutoApprove, settingsViewModel::setAiAutoApprove)
@@ -107,14 +107,14 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
                 SettingGroup {
                     SettingSwitchRow(
                         title = "Search images (experimental)",
-                        subtitle = "Looks for free pictures on Wikimedia Commons and Openverse. Only search words leave the phone; check each result.",
+                        subtitle = "Free pictures from Wikimedia and Openverse. Only search words leave the phone.",
                         checked = settings.searchImagesEnabled,
                         onCheckedChange = settingsViewModel::setSearchImagesEnabled,
                     )
                     SettingDivider()
                     SettingSwitchRow(
                         title = "Generate images (Imagine)",
-                        subtitle = "Shows Imagine in the chat and lets your AI draw pictures. Off by default; needs a paid Google Gemini or OpenAI plan.",
+                        subtitle = "Shows Imagine in the chat. Needs a paid Gemini or OpenAI plan.",
                         checked = settings.generateImagesEnabled,
                         onCheckedChange = settingsViewModel::setGenerateImagesEnabled,
                     )
@@ -124,14 +124,13 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
                 SettingGroup {
                     SettingSwitchRow(
                         title = "Momentum tracker",
-                        subtitle = "Daily streak and study momentum. $OPTIONAL_NOTE",
+                        subtitle = "Daily streak. $OPTIONAL_NOTE",
                         checked = settings.momentumTrackerEnabled,
                         onCheckedChange = settingsViewModel::setMomentumTrackerEnabled,
                     )
                 }
             }
         }
-        HintText("Absencium works fully offline. AI is only used when you turn it on and ask.")
     }
 }
 
@@ -142,7 +141,7 @@ private fun AutoApproveSection(auto: Set<String>, onChange: (Set<String>) -> Uni
     SettingGroup {
         SettingRow(
             title = "Do without asking",
-            subtitle = if (auto.isEmpty()) "Everything it changes waits for your approval" else "${auto.size} kinds of change run on their own",
+            subtitle = if (auto.isEmpty()) "Every change asks first" else "${auto.size} kinds of change run on their own",
             onClick = { open = !open },
         )
         androidx.compose.animation.AnimatedVisibility(
@@ -155,7 +154,7 @@ private fun AutoApproveSection(auto: Set<String>, onChange: (Set<String>) -> Uni
                     SettingDivider()
                     SettingSwitchRow(
                         title = label,
-                        subtitle = "Adding and changing. Deleting still asks.",
+                        subtitle = "Deleting still asks",
                         checked = key in auto,
                         onCheckedChange = { on -> onChange(if (on) auto + key else auto - key) },
                     )
@@ -163,7 +162,6 @@ private fun AutoApproveSection(auto: Set<String>, onChange: (Set<String>) -> Uni
             }
         }
     }
-    HintText("A plan with several changes is shown once and approved once. Anything you switch on here skips even that.")
 }
 
 private val AUTO_KINDS = listOf(

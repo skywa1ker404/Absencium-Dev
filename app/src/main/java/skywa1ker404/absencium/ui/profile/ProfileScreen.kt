@@ -237,14 +237,14 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
             NavCard(
                 icon = AppIcons.AutoAwesome,
                 title = "Absencium AI",
-                subtitle = if (loaded.askAiEnabled) "Chat, attach files, and let it look things up or change your notes" else "AI Features are off. Turn them on in AI settings.",
+                subtitle = if (loaded.askAiEnabled) "Chat and attach files" else "AI Features are off",
                 onClick = { navigator.navigate(AiHubScreenDestination()) },
                 position = GroupPosition.First,
             )
             NavCard(
                 icon = AppIcons.Tune,
                 title = "Settings",
-                subtitle = "General, appearance, storage and AI",
+                subtitle = null,
                 onClick = { navigator.navigate(SettingsHubScreenDestination) },
                 position = GroupPosition.Last,
             )

@@ -166,7 +166,6 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
         }
 
         SectionTitle("Optional tools")
-        HintText("Both are off by default.")
         StorageModuleToggles(settings, settingsViewModel)
     }
 

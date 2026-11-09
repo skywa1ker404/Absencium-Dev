@@ -234,10 +234,6 @@ fun AddEntrySheet(
                     )
                 }
             }
-            HintText(
-                "High shows an emergency banner on Home within 48 hours. Normal only appears in the countdown. " +
-                    "Low stays quiet.",
-            )
 
             if (type == EntryType.HOLIDAY) {
                 Row(

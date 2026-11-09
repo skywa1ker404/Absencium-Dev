@@ -84,7 +84,6 @@ fun VisualQualityChoices(
     onSelect: (VisualQuality) -> Unit,
 ) {
     SectionTitle("Visual quality")
-    HintText("Pick what suits your phone. Every feature stays in all three.")
     VisualQuality.entries.forEach { level ->
         OptionCard(
             title = level.label(),
@@ -126,7 +125,6 @@ fun ThemeModeChoices(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
             }
         }
     }
-    HintText(selected.description())
 }
 
 /**
@@ -204,7 +202,7 @@ fun ColorEngineChoices(
         GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
             SwitchCard(
                 title = "Frosted Popups",
-                subtitle = "Profile, search, Add Entry and dialogs. Turn off if they are hard to read.",
+                subtitle = "Profile, search, Add Entry and dialogs",
                 checked = settings.frostedOverlays,
                 onCheckedChange = onFrostedToggle,
             )
@@ -225,7 +223,7 @@ fun ColorEngineChoices(
 fun GlassBlurSlider(value: Int, onChange: (Int) -> Unit) {
     SliderCard(
         title = "Frosted glass blur",
-        subtitle = "How strongly the floating bars blur the content behind them.",
+        subtitle = "Blur strength of floating bars",
         value = value,
         range = AppSettings.MIN_GLASS_BLUR..AppSettings.MAX_GLASS_BLUR,
         valueLabel = { "$it px" },

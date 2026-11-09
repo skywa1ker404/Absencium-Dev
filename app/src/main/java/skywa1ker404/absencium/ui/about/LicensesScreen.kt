@@ -120,7 +120,6 @@ fun LicensesScreen(navigator: DestinationsNavigator) {
                     contentPadding = PaddingValues(bottom = 24.dp),
                 ) {
                     item(key = "intro") {
-                        HintText("Absencium is built with open-source components. Their notices and licence texts are below.")
                     }
                     items(rows.size, key = { it }) { index ->
                         when (val row = rows[index]) {

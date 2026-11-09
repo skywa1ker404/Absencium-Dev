@@ -175,7 +175,7 @@ fun CalendarTab(
         NavCard(
             icon = AppIcons.Schedule,
             title = "Timetable",
-            subtitle = "Weekly lectures with times and rooms",
+            subtitle = "Weekly lectures",
             onClick = onOpenTimetable,
         )
     }
@@ -707,7 +707,6 @@ private fun DayPanel(
         }
     }
     if (lectures.map { it.subject.id }.distinct().size < lectures.size) {
-        HintText("A subject with two lectures on one day shares one attendance record.")
     }
 }
 

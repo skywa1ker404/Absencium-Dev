@@ -42,7 +42,7 @@ import skywa1ker404.absencium.ui.components.SectionTitle
 import skywa1ker404.absencium.ui.components.SwitchCard
 
 internal const val OPTIONAL_NOTE =
-    "Optional and off by default. The feature itself arrives in a later update; for now this records your choice."
+    "Off by default. Coming in a later update."
 
 /** Where notes are stored: the app folder or a folder picked with the system folder picker. */
 @Composable
@@ -55,21 +55,19 @@ fun StorageLocationSection(viewModel: StorageViewModel) {
     SectionTitle("Notes location")
     OptionCard(
         title = "App folder",
-        subtitle = "Private to Absencium, no permission needed. It is removed if you uninstall the app.",
+        subtitle = "Private, removed on uninstall",
         selected = state.mode == NotesStorageMode.APP_FILES,
         onClick = { viewModel.useAppFiles() },
     )
     OptionCard(
         title = "Choose a folder",
-        subtitle = "Pick any folder, for example in Documents. Your notes stay if you uninstall the app.",
+        subtitle = "Any folder, kept on uninstall",
         selected = state.mode == NotesStorageMode.CUSTOM_FOLDER,
         onClick = { folderPicker.launch(null) },
     )
     val path = state.path
     if (path != null) {
         HintText("Current location: $path")
-    } else if (state.mode == null) {
-        HintText("Choose one of the two options above.")
     }
     val message = state.message
     if (message != null) MessageCard(message)
@@ -85,9 +83,9 @@ fun AskAiToggle(settings: AppSettings, viewModel: SettingsViewModel, ready: Bool
     SwitchCard(
         title = "AI Features",
         subtitle = when {
-            !settings.askAiEnabled -> "Off. Nothing is ever sent anywhere. Only reading text on this phone works."
-            ready -> "On. AI help, text from files, notes and homework use your own provider."
-            else -> "On, but no provider is saved yet. Set up a provider, URL, model and key below."
+            !settings.askAiEnabled -> "Off. Nothing leaves the phone."
+            ready -> "On"
+            else -> "On, but no provider set up yet"
         },
         checked = settings.askAiEnabled,
         onCheckedChange = { turnOn -> if (turnOn) asking = true else viewModel.setAskAiEnabled(false) },
@@ -127,7 +125,7 @@ fun aiUsable(settings: AppSettings, hasKey: Boolean): Boolean = settings.askAiEn
 fun MomentumToggle(settings: AppSettings, viewModel: SettingsViewModel) {
     SwitchCard(
         title = "Momentum tracker",
-        subtitle = "Daily streak and study momentum. $OPTIONAL_NOTE",
+        subtitle = "Daily streak. $OPTIONAL_NOTE",
         checked = settings.momentumTrackerEnabled,
         onCheckedChange = { viewModel.setMomentumTrackerEnabled(it) },
     )
@@ -137,13 +135,13 @@ fun MomentumToggle(settings: AppSettings, viewModel: SettingsViewModel) {
 fun StorageModuleToggles(settings: AppSettings, viewModel: SettingsViewModel) {
     SwitchCard(
         title = "Semester transition and archive manager",
-        subtitle = "Archive a finished semester in one step. $OPTIONAL_NOTE",
+        subtitle = "Archive a finished semester. $OPTIONAL_NOTE",
         checked = settings.semesterManagerEnabled,
         onCheckedChange = { viewModel.setSemesterManagerEnabled(it) },
     )
     SwitchCard(
         title = "Low storage media compressor",
-        subtitle = "Shrink photos and audio when space runs low. $OPTIONAL_NOTE",
+        subtitle = "Shrink photos and audio. $OPTIONAL_NOTE",
         checked = settings.lowStorageCompressorEnabled,
         onCheckedChange = { viewModel.setLowStorageCompressorEnabled(it) },
     )

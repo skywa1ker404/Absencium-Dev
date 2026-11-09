@@ -211,7 +211,6 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Lo
             )
         } else {
             SectionTitle("Units, chapters and topics")
-            HintText("Tap a circle to move a status on. On a unit or chapter it sets everything inside.")
         }
 
         // One card per unit; its chapters, topics and subtopics are rows inside it.

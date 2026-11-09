@@ -105,7 +105,7 @@ fun TrashScreen(navigator: DestinationsNavigator) {
     val list = items
 
     ScreenScaffold(title = "Trash", onBack = { navigator.navigateUp() }) {
-        HintText("Deleted items stay here for ${TrashRepository.RETENTION_DAYS} days and can be restored. After that they are removed for good.")
+        HintText("Items are removed for good after ${TrashRepository.RETENTION_DAYS} days.")
         message?.let { MessageCard(it) }
         if (list != null && list.isEmpty()) {
             ExpressiveEmptyState(

@@ -109,7 +109,7 @@ fun AboutScreen(navigator: DestinationsNavigator) {
         NavCard(
             icon = AppIcons.History,
             title = "Changelog",
-            subtitle = "What changed in each version",
+            subtitle = null,
             onClick = { navigator.navigate(ChangelogScreenDestination) },
         )
 
@@ -117,7 +117,7 @@ fun AboutScreen(navigator: DestinationsNavigator) {
         NavCard(
             icon = AppIcons.Description,
             title = "Open-source licences",
-            subtitle = "Fonts, icons, libraries and colour schemes used in Absencium",
+            subtitle = "Fonts, icons, libraries",
             onClick = { navigator.navigate(LicensesScreenDestination) },
         )
     }

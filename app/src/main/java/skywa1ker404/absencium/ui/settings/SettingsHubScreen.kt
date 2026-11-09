@@ -27,28 +27,28 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
             NavCard(
                 icon = AppIcons.School,
                 title = "General",
-                subtitle = "Attendance threshold, Focus Guard, Exam Mode, subjects",
+                subtitle = null,
                 onClick = { navigator.navigate(GeneralSettingsScreenDestination) },
                 position = GroupPosition.First,
             )
             NavCard(
                 icon = AppIcons.Palette,
                 title = "Appearance",
-                subtitle = "Visual quality, theme mode, color engine, accent color",
+                subtitle = null,
                 onClick = { navigator.navigate(AppearanceSettingsScreenDestination) },
                 position = GroupPosition.Middle,
             )
             NavCard(
                 icon = AppIcons.Storage,
                 title = "Storage & Data",
-                subtitle = "Notes folder, backup and restore, archive tools",
+                subtitle = null,
                 onClick = { navigator.navigate(StorageSettingsScreenDestination) },
                 position = GroupPosition.Middle,
             )
             NavCard(
                 icon = AppIcons.AutoAwesome,
                 title = "Absencium AI",
-                subtitle = "AI Features, providers and models, Momentum tracker",
+                subtitle = null,
                 onClick = { navigator.navigate(AiSettingsScreenDestination) },
                 position = GroupPosition.Last,
             )
@@ -59,21 +59,21 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
             NavCard(
                 icon = AppIcons.PlayCircle,
                 title = "Replay intro",
-                subtitle = "A short tour of what Absencium is for",
+                subtitle = null,
                 onClick = { navigator.navigate(IntroTourScreenDestination) },
                 position = GroupPosition.First,
             )
             NavCard(
                 icon = AppIcons.History,
                 title = "Changelog",
-                subtitle = "What changed in each version",
+                subtitle = null,
                 onClick = { navigator.navigate(ChangelogScreenDestination) },
                 position = GroupPosition.Middle,
             )
             NavCard(
                 icon = AppIcons.Info,
                 title = "About",
-                subtitle = "Version, developer and source code",
+                subtitle = null,
                 onClick = { navigator.navigate(AboutScreenDestination) },
                 position = GroupPosition.Last,
             )
@@ -84,7 +84,7 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
             NavCard(
                 icon = AppIcons.Science,
                 title = "Test Lab",
-                subtitle = "Check the database, storage and debug log on this device",
+                subtitle = null,
                 onClick = { navigator.navigate(TestLabScreenDestination) },
                 position = GroupPosition.Only,
             )

@@ -25,7 +25,7 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
         SectionTitle("Attendance")
         SliderCard(
             title = "Attendance threshold",
-            subtitle = "Absencium warns you when a subject falls below this percentage.",
+            subtitle = "Warn me below this",
             value = settings.attendanceThresholdPercent,
             range = AppSettings.MIN_ATTENDANCE_THRESHOLD..AppSettings.MAX_ATTENDANCE_THRESHOLD,
             valueLabel = { "$it%" },
@@ -35,13 +35,13 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
         SectionTitle("Weekends")
         SwitchCard(
             title = "Sunday is always holiday",
-            subtitle = "No lectures are expected on Sundays. Turn off if you have classes on Sunday.",
+            subtitle = null,
             checked = settings.sundayHoliday,
             onCheckedChange = { viewModel.setSundayHoliday(it) },
         )
         SwitchCard(
             title = "Saturday is always holiday",
-            subtitle = "No lectures are expected on Saturdays. Turn off if you have classes on Saturday.",
+            subtitle = null,
             checked = settings.saturdayHoliday,
             onCheckedChange = { viewModel.setSaturdayHoliday(it) },
         )
@@ -49,7 +49,7 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
         SectionTitle("Focus")
         SliderCard(
             title = "Focus Guard grace timer",
-            subtitle = "How long you can step away before Focus Guard steps in.",
+            subtitle = "Time away before Focus Guard steps in",
             value = settings.focusGraceMinutes,
             range = 1..30,
             valueLabel = { "$it min" },
@@ -57,8 +57,7 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
         )
         SwitchCard(
             title = "Exam Mode auto-silence",
-            subtitle = "Silence notifications automatically while an exam is on. " +
-                "Your choice is saved now and used once exams are added to the calendar.",
+            subtitle = "Silence notifications during exams",
             checked = settings.examModeAutoSilence,
             onCheckedChange = { viewModel.setExamModeAutoSilence(it) },
         )
@@ -67,7 +66,7 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
         NavCard(
             icon = AppIcons.Book,
             title = "Subjects",
-            subtitle = "Add subjects, mute them, or mark them active or inactive",
+            subtitle = null,
             onClick = { navigator.navigate(SubjectsScreenDestination) },
         )
     }
