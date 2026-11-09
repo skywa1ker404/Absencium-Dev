@@ -292,6 +292,7 @@ fun SettingLorebookDetailPage(
                             Icon(Icons.Rounded.Upload, contentDescription = stringResource(R.string.export_label))
                         }
                         DropdownMenu(
+                            containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                             expanded = showExportMenu,
                             onDismissRequest = { showExportMenu = false }
                         ) {

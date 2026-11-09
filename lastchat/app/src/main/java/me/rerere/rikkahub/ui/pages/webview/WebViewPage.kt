@@ -102,6 +102,7 @@ fun WebViewPage(url: String, content: String) {
                         Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.webview_more_options))
 
                         DropdownMenu(
+                            containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                             expanded = showDropdown,
                             onDismissRequest = { showDropdown = false }
                         ) {

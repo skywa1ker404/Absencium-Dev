@@ -43,6 +43,7 @@ fun UserMessageDropdown(
     offset: DpOffset = DpOffset(0.dp, 0.dp),
 ) {
     DropdownMenu(
+        containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
         expanded = expanded,
         onDismissRequest = onDismissRequest,
         modifier = modifier,

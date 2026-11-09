@@ -74,6 +74,22 @@ val LocalGlassEnabled = staticCompositionLocalOf { false }
  */
 val LocalBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
+/**
+ * The theme's own colours with every surface fully opaque. Inside Liquid Glass the surfaces of a screen are translucent (see
+ * [glassSurfaces]); windows that cannot show what is behind them (dialogs, menus, popups) switch back to this one.
+ */
+val LocalSolidColorScheme = staticCompositionLocalOf<ColorScheme?> { null }
+
+/** The same scheme with its surface containers see-through, so a plain Surface or background on a glass screen shows the wallpaper. */
+fun ColorScheme.glassSurfaces(alpha: Float = 0.5f): ColorScheme = copy(
+    surfaceContainerLowest = surfaceContainerLowest.copy(alpha = alpha * 0.8f),
+    surfaceContainerLow = surfaceContainerLow.copy(alpha = alpha),
+    surfaceContainer = surfaceContainer.copy(alpha = alpha),
+    surfaceContainerHigh = surfaceContainerHigh.copy(alpha = alpha),
+    surfaceContainerHighest = surfaceContainerHighest.copy(alpha = alpha),
+    surfaceVariant = surfaceVariant.copy(alpha = alpha),
+)
+
 private val AbsenciumShapes = Shapes(
     small = RoundedCornerShape(12.dp),
     medium = RoundedCornerShape(20.dp),
@@ -164,6 +180,7 @@ fun AbsenciumTheme(
         CompositionLocalProvider(
             LocalQuality provides quality,
             LocalGlassEnabled provides glassActive,
+            LocalSolidColorScheme provides colorScheme,
             LocalFrostedOverlays provides (glassActive && settings.frostedOverlays),
             LocalGlassBlur provides settings.glassBlurDp.dp,
             // Text outside a Surface would otherwise fall back to black, which is unreadable on dark themes.

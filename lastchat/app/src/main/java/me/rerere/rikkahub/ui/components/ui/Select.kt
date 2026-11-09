@@ -97,6 +97,7 @@ fun <T> Select(
             }
         }
         ExposedDropdownMenu(
+            containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
             expanded = expanded,
             onDismissRequest = {
                 expanded = false

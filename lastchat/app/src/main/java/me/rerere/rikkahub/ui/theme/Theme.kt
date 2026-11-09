@@ -135,6 +135,8 @@ private fun HostedChatTheme(dark: Boolean, content: @Composable () -> Unit) {
             // Same colour at zero alpha, not Color.Transparent: fades drawn from the background colour then blend to the wallpaper, not to black.
             background = scheme.background.copy(alpha = 0f),
             surfaceContainer = scheme.surfaceContainer.copy(alpha = 0.55f),
+            surfaceContainerHighest = scheme.surfaceContainerHighest.copy(alpha = 0.55f),
+            surfaceContainerLowest = scheme.surfaceContainerLowest.copy(alpha = 0.45f),
         ) else scheme
     }
     CompositionLocalProvider(
@@ -161,3 +163,7 @@ val MaterialTheme.extendColors
 @ReadOnlyComposable
 fun glassCard(base: androidx.compose.ui.graphics.Color): androidx.compose.ui.graphics.Color =
     if (me.rerere.rikkahub.LocalHostGlass.current) base.copy(alpha = 0.42f) else base
+
+/** A menu's fill: the theme's container colour, never see-through, because a menu floats above text and must stay readable under glass. */
+@Composable @ReadOnlyComposable
+fun solidMenuColor(): androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 1f)

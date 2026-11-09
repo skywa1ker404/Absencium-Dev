@@ -244,6 +244,7 @@ fun AssistantDetailPage(
                             }
                             
                             DropdownMenu(
+                                containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                                 expanded = showExportMenu,
                                 onDismissRequest = { showExportMenu = false }
                             ) {

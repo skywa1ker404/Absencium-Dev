@@ -195,7 +195,7 @@ fun PhotoCropDialog(
     Dialog(
         onDismissRequest = { if (!saving) onCancel() },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false, dismissOnClickOutside = false),
-    ) {
+    ) { skywa1ker404.absencium.ui.components.SolidSurfaces {
         Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0B0B0B)).statusBarsPadding().navigationBarsPadding()) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -429,7 +429,7 @@ fun PhotoCropDialog(
                 }
             }
         }
-    }
+    }}
 }
 
 /** A round icon button of the photo editor, light on its dark page. [mirrored] flips the icon sideways (rotate left). */

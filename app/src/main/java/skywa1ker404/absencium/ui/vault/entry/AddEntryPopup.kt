@@ -707,7 +707,7 @@ fun PhotoPreviewDialog(
     Dialog(
         onDismissRequest = onBack,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
+    ) { skywa1ker404.absencium.ui.components.SolidSurfaces {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.94f))) {
             HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { page ->
                 val bitmap by rememberPhoto(paths[page], 2048, version)
@@ -739,7 +739,7 @@ fun PhotoPreviewDialog(
                 }
             }
         }
-    }
+    }}
 }
 
 /** ". .. ..." that keeps counting up while something runs. */

@@ -1017,6 +1017,7 @@ private fun ManageMemoriesSection(
                         )
                     }
                     DropdownMenu(
+                        containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                         expanded = showSortMenu,
                         onDismissRequest = { showSortMenu = false }
                     ) {

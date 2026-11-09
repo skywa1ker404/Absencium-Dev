@@ -76,10 +76,10 @@ class MenuAction(val label: String, val icon: ImageVector, val destructive: Bool
  */
 @Composable
 fun IconMenu(title: String?, actions: List<MenuAction>, onDismiss: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     val columns = if (actions.size <= 4) 2 else 3
     val open = remember { MutableTransitionState(false).also { it.targetState = true } }
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss) { skywa1ker404.absencium.ui.components.SolidSurfaces {
         AnimatedVisibility(
             visibleState = open,
             enter = fadeIn(tween(120)) + scaleIn(spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow), initialScale = 0.9f),
@@ -122,7 +122,7 @@ fun IconMenu(title: String?, actions: List<MenuAction>, onDismiss: () -> Unit) {
                 }
             }
         }
-    }
+    }}
 }
 
 /**
@@ -139,7 +139,7 @@ fun ExtractChoiceDialog(
     skipLabel: String? = null,
     onSkip: (() -> Unit)? = null,
 ) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     val open = remember { MutableTransitionState(false).also { it.targetState = true } }
     val noun = when (kind) {
         FileKind.IMAGE -> "picture"
@@ -147,7 +147,7 @@ fun ExtractChoiceDialog(
         FileKind.AUDIO -> "recording"
         else -> "document"
     }
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = true)) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = true)) { skywa1ker404.absencium.ui.components.SolidSurfaces {
         AnimatedVisibility(
             visibleState = open,
             enter = fadeIn(tween(140)) + scaleIn(spring(dampingRatio = 0.78f, stiffness = Spring.StiffnessMediumLow), initialScale = 0.88f),
@@ -198,12 +198,12 @@ fun ExtractChoiceDialog(
                 }
             }
         }
-    }
+    }}
 }
 
 @Composable
 private fun ChoiceCard(icon: ImageVector, title: String, body: String, enabled: Boolean, highlighted: Boolean, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -229,8 +229,8 @@ private fun ChoiceCard(icon: ImageVector, title: String, body: String, enabled: 
 /** What an extraction is doing right now, shown over the page. [step] is a short phrase such as "Reading page 3". */
 @Composable
 fun ExtractRunningDialog(step: String, onCancel: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
+    Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) { skywa1ker404.absencium.ui.components.SolidSurfaces {
         Surface(shape = RoundedCornerShape(28.dp), color = colors.surfaceContainerHigh, tonalElevation = 6.dp) {
             Row(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
@@ -244,7 +244,7 @@ fun ExtractRunningDialog(step: String, onCancel: () -> Unit) {
                 ) { Icon(AppIcons.Stop, contentDescription = null) }
             }
         }
-    }
+    }}
 }
 
 /** The text that came out, for a last look and fixes before it is used. */
@@ -257,9 +257,9 @@ fun ExtractResultDialog(
     onAccept: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     var edited by remember(text) { mutableStateOf(text) }
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = true)) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = true)) { skywa1ker404.absencium.ui.components.SolidSurfaces {
         Surface(shape = RoundedCornerShape(30.dp), color = colors.surfaceContainerHigh, tonalElevation = 6.dp) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
@@ -290,14 +290,14 @@ fun ExtractResultDialog(
                 }
             }
         }
-    }
+    }}
 }
 
 /** A message that needs one tap to dismiss (a failed extraction, AI not set up). */
 @Composable
 fun ExtractProblemDialog(message: String, setupMissing: Boolean, onOpenSettings: () -> Unit, onDismiss: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Dialog(onDismissRequest = onDismiss) {
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
+    Dialog(onDismissRequest = onDismiss) { skywa1ker404.absencium.ui.components.SolidSurfaces {
         Surface(shape = RoundedCornerShape(28.dp), color = colors.surfaceContainerHigh, tonalElevation = 6.dp) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(if (setupMissing) "AI is off or not set up" else "Could not get the text", style = MaterialTheme.typography.titleMedium)
@@ -323,7 +323,7 @@ fun ExtractProblemDialog(message: String, setupMissing: Boolean, onOpenSettings:
                 }
             }
         }
-    }
+    }}
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -335,7 +335,7 @@ private val PdfThread: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1
  */
 @Composable
 fun PdfViewerDialog(path: String, name: String, onClose: () -> Unit, onExtract: (() -> Unit)?, onOpenElsewhere: (() -> Unit)?) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     val density = LocalDensity.current
     val file = remember(path) { java.io.File(path) }
     val renderer by produceState<PdfRenderer?>(null, path) {
@@ -358,7 +358,7 @@ fun PdfViewerDialog(path: String, name: String, onClose: () -> Unit, onExtract: 
         val open = renderer
         onDispose { if (open != null) runCatching { open.close() } }
     }
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) { skywa1ker404.absencium.ui.components.SolidSurfaces {
         Column(modifier = Modifier.fillMaxSize().background(colors.surface).statusBarsPadding().navigationBarsPadding()) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -437,5 +437,5 @@ fun PdfViewerDialog(path: String, name: String, onClose: () -> Unit, onExtract: 
                 }
             }
         }
-    }
+    }}
 }

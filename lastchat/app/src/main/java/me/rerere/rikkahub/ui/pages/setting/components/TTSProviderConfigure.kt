@@ -253,6 +253,7 @@ private fun OpenAITTSConfiguration(
             
             if (availableModels != null) {
                 ExposedDropdownMenu(
+                    containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                     expanded = modelExpanded,
                     onDismissRequest = { modelExpanded = false }
                 ) {
@@ -297,6 +298,7 @@ private fun OpenAITTSConfiguration(
                     shape = me.rerere.rikkahub.ui.theme.AppShapes.InputField,
                 )
                 ExposedDropdownMenu(
+                    containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                     expanded = voiceExpanded,
                     onDismissRequest = { voiceExpanded = false }
                 ) {
@@ -419,6 +421,7 @@ private fun MiniMaxTTSConfiguration(
                     shape = me.rerere.rikkahub.ui.theme.AppShapes.InputField,
                 )
                 ExposedDropdownMenu(
+                    containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                     expanded = voiceIdExpanded,
                     onDismissRequest = { voiceIdExpanded = false }
                 ) {
@@ -461,6 +464,7 @@ private fun MiniMaxTTSConfiguration(
                     shape = me.rerere.rikkahub.ui.theme.AppShapes.InputField,
                 )
                 ExposedDropdownMenu(
+                    containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                     expanded = emotionExpanded,
                     onDismissRequest = { emotionExpanded = false }
                 ) {
@@ -648,6 +652,7 @@ private fun SystemTTSConfiguration(
                     shape = me.rerere.rikkahub.ui.theme.AppShapes.InputField,
                 )
                 ExposedDropdownMenu(
+                    containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                     expanded = voiceExpanded,
                     onDismissRequest = { voiceExpanded = false }
                 ) {
@@ -803,6 +808,7 @@ private fun QwenTTSConfiguration(
                     shape = me.rerere.rikkahub.ui.theme.AppShapes.InputField,
                 )
                 ExposedDropdownMenu(
+                    containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                     expanded = voiceExpanded,
                     onDismissRequest = { voiceExpanded = false }
                 ) {
@@ -844,6 +850,7 @@ private fun QwenTTSConfiguration(
                     shape = me.rerere.rikkahub.ui.theme.AppShapes.InputField,
                 )
                 ExposedDropdownMenu(
+                    containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                     expanded = languageExpanded,
                     onDismissRequest = { languageExpanded = false }
                 ) {
@@ -945,6 +952,7 @@ private fun ElevenLabsTTSConfiguration(
                 shape = me.rerere.rikkahub.ui.theme.AppShapes.InputField,
             )
             ExposedDropdownMenu(
+                containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                 expanded = modelExpanded,
                 onDismissRequest = { modelExpanded = false }
             ) {

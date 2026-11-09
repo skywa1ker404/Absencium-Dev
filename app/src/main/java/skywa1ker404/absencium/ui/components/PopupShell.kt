@@ -95,7 +95,7 @@ fun PopupShell(
     content: @Composable () -> Unit,
 ) {
     val q = LocalQuality.current
-    val colors = MaterialTheme.colorScheme
+    val colors = solidColors()
     val supplied = LocalPopupTransition.current
     val own = remember { MutableTransitionState(false).also { it.targetState = true } }
     val transition = supplied ?: own
@@ -159,10 +159,12 @@ fun PopupShell(
                         LocalHostAnimatesSize provides true,
                         LocalFrostedPopup provides frosted,
                     ) {
-                        if (scrollable) {
-                            Box(modifier = Modifier.verticalScroll(rememberScrollState())) { content() }
-                        } else {
-                            content()
+                        SolidSurfaces {
+                            if (scrollable) {
+                                Box(modifier = Modifier.verticalScroll(rememberScrollState())) { content() }
+                            } else {
+                                content()
+                            }
                         }
                     }
                 }

@@ -243,7 +243,7 @@ private fun backgroundOf(bitmap: Bitmap): Int? {
  */
 @Composable
 fun DoodleDialog(existingPath: String?, onCancel: () -> Unit, onDone: (Bitmap) -> Unit) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     val base by produceState<Bitmap?>(null, existingPath) {
         value = if (existingPath == null) null else withContext(Dispatchers.IO) { ImageTools.decode(existingPath, 2048) }
     }
@@ -253,7 +253,7 @@ fun DoodleDialog(existingPath: String?, onCancel: () -> Unit, onDone: (Bitmap) -
     Dialog(
         onDismissRequest = onCancel,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
+    ) { skywa1ker404.absencium.ui.components.SolidSurfaces {
         if (page == null) {
             if (existingPath == null) {
                 DoodleSetup(onStart = { chosen = it }, onCancel = onCancel)
@@ -265,14 +265,14 @@ fun DoodleDialog(existingPath: String?, onCancel: () -> Unit, onDone: (Bitmap) -
         } else {
             DoodlePage(base = base, page = page, onCancel = onCancel, onDone = onDone)
         }
-    }
+    }}
 }
 
 private enum class PageTab { BRUSH, COLOUR, PAPER }
 
 @Composable
 private fun DoodlePage(base: Bitmap?, page: PageSetup, onCancel: () -> Unit, onDone: (Bitmap) -> Unit) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     val strokes = remember { mutableStateListOf<Ink>() }
     val undone = remember { mutableStateListOf<Ink>() }
     var live by remember { mutableStateOf<Ink?>(null) }
@@ -475,7 +475,7 @@ private fun shaded(hue: Float, shade: Float): Int =
 /** A gradient bar you tap or drag; [onChange] gets a position from 0 to 1. */
 @Composable
 private fun SpectrumBar(brush: Brush, fraction: Float, label: String, thumb: Color, onChange: (Float) -> Unit) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(30.dp)) {
         val barWidth = maxWidth
         Box(
@@ -502,7 +502,7 @@ private fun SpectrumBar(brush: Brush, fraction: Float, label: String, thumb: Col
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DoodleSetup(onStart: (PageSetup) -> Unit, onCancel: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     var background by remember { mutableStateOf<Int?>(null) }
     var preset by remember { mutableStateOf<Int>(1) }
     var customWidth by remember { mutableStateOf("1600") }
@@ -593,7 +593,7 @@ private fun DoodleSetup(onStart: (PageSetup) -> Unit, onCancel: () -> Unit) {
 
 @Composable
 private fun RoundToolIcon(label: String, selected: Boolean, onClick: () -> Unit, content: @Composable () -> Unit) {
-    val colors = MaterialTheme.colorScheme
+    val colors = skywa1ker404.absencium.ui.components.solidColors()
     Box(
         modifier = Modifier
             .size(46.dp)

@@ -456,6 +456,7 @@ private fun ConversationItem(
                 )
             }
             DropdownMenu(
+                containerColor = me.rerere.rikkahub.ui.theme.solidMenuColor(),
                 expanded = showDropdownMenu,
                 onDismissRequest = { showDropdownMenu = false },
                 shape = RoundedCornerShape(20.dp),

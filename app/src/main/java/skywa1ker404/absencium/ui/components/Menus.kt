@@ -37,7 +37,7 @@ fun AppMenu(
     offset: androidx.compose.ui.unit.DpOffset = androidx.compose.ui.unit.DpOffset(0.dp, 0.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val colors = MaterialTheme.colorScheme
+    val colors = solidColors()
     val glass = LocalGlassEnabled.current
     DropdownMenu(
         expanded = expanded,
@@ -49,7 +49,7 @@ fun AppMenu(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
         border = BorderStroke(0.6.dp, Color.White.copy(alpha = if (glass) 0.18f else 0.08f)),
-        content = content,
+        content = { SolidSurfaces { Column(content = content) } },
     )
 }
 

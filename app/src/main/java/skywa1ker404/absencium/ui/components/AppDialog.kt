@@ -75,7 +75,7 @@ fun AlertDialog(
     textContentColor: Color = Color.Unspecified,
     properties: DialogProperties = DialogProperties(),
 ) {
-    val colors = MaterialTheme.colorScheme
+    val colors = solidColors()
     val context = LocalContext.current
     val frosted = LocalGlassEnabled.current && LocalFrostedOverlays.current
     val blur = frosted && remember { crossWindowBlur(context) }
@@ -85,6 +85,7 @@ fun AlertDialog(
         else -> colors.surfaceContainerHigh
     }
     BasicAlertDialog(onDismissRequest = onDismissRequest, modifier = modifier, properties = properties) {
+      SolidSurfaces {
         if (blur) BlurBehindDialog(radiusDp = 24)
         Surface(
             shape = shape,
@@ -114,5 +115,6 @@ fun AlertDialog(
                 }
             }
         }
+      }
     }
 }

@@ -77,7 +77,8 @@ class AbsenciumApp : Application() {
             settings?.let { loaded ->
                 AbsenciumTheme(settings = loaded) {
                     // Liquid Glass: the same wallpaper layer the app's own screens sit on, so the chat's panes are glass over it.
-                    skywa1ker404.absencium.ui.components.GlassStage(Modifier.fillMaxSize()) {
+                    // The chat keeps its own glass colours (see HostedChatTheme), so its popups stay solid.
+                    skywa1ker404.absencium.ui.components.GlassStage(Modifier.fillMaxSize(), glassSurfaces = false) {
                         androidx.compose.runtime.CompositionLocalProvider(
                             me.rerere.rikkahub.LocalHostGlass provides skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current,
                         ) { content(isDarkTheme(loaded)) }

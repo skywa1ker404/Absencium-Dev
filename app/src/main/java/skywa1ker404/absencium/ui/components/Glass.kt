@@ -11,6 +11,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.ui.draw.clip
@@ -31,6 +32,8 @@ import com.kyant.backdrop.isRuntimeShaderSupported
 import skywa1ker404.absencium.ui.theme.LocalGlassBlur
 import skywa1ker404.absencium.ui.theme.LocalGlassEnabled
 import skywa1ker404.absencium.ui.theme.LocalQuality
+import skywa1ker404.absencium.ui.theme.LocalSolidColorScheme
+import skywa1ker404.absencium.ui.theme.glassSurfaces
 
 /**
  * The look of a floating element (top bar, floating navigation bar). With a [backdrop] (Liquid Glass
@@ -42,7 +45,7 @@ import skywa1ker404.absencium.ui.theme.LocalQuality
 fun Modifier.floatingGlass(
     backdrop: LayerBackdrop?,
     shape: Shape,
-    tint: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    tint: Color = solidColors().surfaceContainerHigh,
     bordered: Boolean = true,
     /** Large surfaces (popups) skip the lens: it would bend the whole screen behind them on every frame of their motion. */
     lens: Boolean = true,
@@ -90,6 +93,28 @@ fun Modifier.floatingGlass(
             onDrawSurface = { drawRect(veil) },
         )
         .then(rim)
+}
+
+/** The theme's colours with opaque surfaces: for popups, dialogs and menus, which sit in their own window or pane. */
+@Composable
+fun solidColors(): androidx.compose.material3.ColorScheme = LocalSolidColorScheme.current ?: MaterialTheme.colorScheme
+
+/** Runs [content] with opaque surface colours (inside Liquid Glass the screen's own are see-through). A plain pass-through otherwise. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun SolidSurfaces(content: @Composable () -> Unit) {
+    val solid = LocalSolidColorScheme.current
+    if (solid == null || MaterialTheme.colorScheme.surfaceContainerHigh == solid.surfaceContainerHigh) {
+        content()
+    } else {
+        androidx.compose.material3.MaterialExpressiveTheme(
+            colorScheme = solid,
+            motionScheme = MaterialTheme.motionScheme,
+            shapes = MaterialTheme.shapes,
+            typography = MaterialTheme.typography,
+            content = content,
+        )
+    }
 }
 
 /** The backdrop that cards and tiles sample: only the wallpaper behind the content, never the content itself. */
@@ -188,14 +213,33 @@ fun GlassWallpaper(modifier: Modifier = Modifier) {
  * Without glass it is transparent to its content.
  */
 @Composable
-fun GlassStage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun GlassStage(modifier: Modifier = Modifier, glassSurfaces: Boolean = true, content: @Composable () -> Unit) {
     val glass = LocalGlassEnabled.current
     val wallpaper = rememberLayerBackdrop()
     // The same layout with Liquid Glass on or off, so switching it never rebuilds the content below (which would reset
     // scroll positions and open sections); only the wallpaper layer and the backdrop appear or go.
     Box(modifier = modifier) {
         if (glass) GlassWallpaper(Modifier.matchParentSize().layerBackdrop(wallpaper))
-        CompositionLocalProvider(LocalCardBackdrop provides if (glass) wallpaper else null) { content() }
+        CompositionLocalProvider(LocalCardBackdrop provides if (glass) wallpaper else null) { GlassSurfaces(glass && glassSurfaces, content) }
+    }
+}
+
+/** Under Liquid Glass the colours of everything on a screen are see-through, so no plain Surface becomes an opaque slab. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun GlassSurfaces(glass: Boolean, content: @Composable () -> Unit) {
+    val solid = LocalSolidColorScheme.current
+    if (!glass || solid == null) {
+        content()
+    } else {
+        val scheme = remember(solid) { solid.glassSurfaces() }
+        androidx.compose.material3.MaterialExpressiveTheme(
+            colorScheme = scheme,
+            motionScheme = MaterialTheme.motionScheme,
+            shapes = MaterialTheme.shapes,
+            typography = MaterialTheme.typography,
+            content = content,
+        )
     }
 }
 
@@ -208,7 +252,7 @@ val LocalFrostedOverlays = androidx.compose.runtime.staticCompositionLocalOf { f
  */
 @Composable
 fun OverlayStage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalCardBackdrop provides null) { Box(modifier = modifier) { content() } }
+    CompositionLocalProvider(LocalCardBackdrop provides null) { SolidSurfaces { Box(modifier = modifier) { content() } } }
 }
 
 /**
