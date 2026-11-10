@@ -87,8 +87,17 @@ import skywa1ker404.absencium.ui.containerViewModel
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.theme.LocalQuality
 
+/** What is open on a subject's syllabus: collapsed rows, the text dialog, a delete question and the import dialog. Held apart so a page can show several subjects. */
+@androidx.compose.runtime.Stable
+internal class SyllabusUiState {
+    var collapsed by mutableStateOf(emptySet<Long>())
+    var editing by mutableStateOf<Editing?>(null)
+    var deleting by mutableStateOf<SyllabusNodeEntity?>(null)
+    var showImport by mutableStateOf(false)
+}
+
 /** What a text dialog is for: adding a node under a parent, renaming one, or writing its details. */
-private sealed interface Editing {
+internal sealed interface Editing {
     data class Add(val parentId: Long?, val level: String) : Editing
     data class Rename(val node: SyllabusNodeEntity) : Editing
     data class Details(val node: SyllabusNodeEntity) : Editing
@@ -106,37 +115,7 @@ private fun statusLabel(status: SyllabusStatus) = when (status) {
 @Composable
 fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Long? = null) {
     val viewModel = containerViewModel { SyllabusViewModel(it, subjectId) }
-    val nodes by viewModel.nodes.collectAsStateWithLifecycle()
-    val counts by viewModel.linkCounts.collectAsStateWithLifecycle()
-    val subjectName by viewModel.subjectName.collectAsStateWithLifecycle()
-    val importState by viewModel.importState.collectAsStateWithLifecycle()
-
-    var collapsed by remember { mutableStateOf(emptySet<Long>()) }
-    var editing by remember { mutableStateOf<Editing?>(null) }
-    var deleting by remember { mutableStateOf<SyllabusNodeEntity?>(null) }
-    var showImport by remember { mutableStateOf(false) }
-
-    // Opened from a unit card, the screen shows that unit's own tree and nothing else; the unit becomes the top of the tree.
-    val scoped = remember(nodes, rootId) {
-        if (rootId == null) {
-            nodes
-        } else {
-            val inside = SyllabusTree.withDescendants(nodes, rootId).toSet()
-            nodes.filter { it.id in inside }.map { if (it.id == rootId) it.copy(parentId = null) else it }
-        }
-    }
-    LaunchedEffect(rootId, nodes.isEmpty(), scoped.isEmpty()) {
-        // The unit was deleted from here: go back to the list.
-        if (rootId != null && nodes.isNotEmpty() && scoped.isEmpty()) navigator.navigateUp()
-    }
-    val rows = remember(scoped, collapsed) { SyllabusTree.rows(scoped, collapsed) }
-    val overall = remember(scoped) { SyllabusTree.progress(scoped, null) }
-    val animatedOverall by animateFloatAsState(
-        targetValue = overall,
-        animationSpec = LocalQuality.current.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
-        label = "overall",
-    )
-
+    val ui = remember { SyllabusUiState() }
     val pillScroll = skywa1ker404.absencium.ui.main.rememberPillScroll()
 
     ScreenScaffold(
@@ -158,7 +137,7 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Lo
                         ShellFab(
                             icon = AppIcons.AutoAwesome,
                             label = "Import outline",
-                            onClick = { viewModel.dismissImport(); showImport = true },
+                            onClick = { viewModel.dismissImport(); ui.showImport = true },
                             backdrop = LocalBackdrop.current,
                             expanded = !pillScroll.compact.value,
                         )
@@ -166,7 +145,7 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Lo
                     ShellFab(
                         icon = AppIcons.Add,
                         label = if (rootId == null) "Add unit" else "Add chapter",
-                        onClick = { editing = Editing.Add(rootId, SyllabusTree.levelName(if (rootId == null) 0 else 1)) },
+                        onClick = { ui.editing = Editing.Add(rootId, SyllabusTree.levelName(if (rootId == null) 0 else 1)) },
                         backdrop = LocalBackdrop.current,
                         expanded = !pillScroll.compact.value,
                     )
@@ -174,84 +153,128 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Lo
             }
         },
     ) {
-        val headHue = hueFor(0)
-        AppCard(modifier = Modifier.fillMaxWidth().bounceIn(0), container = headHue.container.copy(alpha = 0.75f)) {
-            Text(
-                if (rootId == null) subjectName.ifEmpty { "Subject" } else scoped.firstOrNull { it.id == rootId }?.title.orEmpty(),
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                color = headHue.onContainer,
-            )
-            if (scoped.isEmpty()) {
-                Text("No syllabus yet", style = MaterialTheme.typography.bodyMedium, color = headHue.onContainer.copy(alpha = 0.8f))
-            } else {
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("${(overall * 100).toInt()}%", style = MaterialTheme.typography.displaySmall, color = headHue.onContainer)
-                    Text(
-                        if (rootId == null) "of the syllabus studied" else "of this unit studied",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = headHue.onContainer.copy(alpha = 0.8f),
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
-                }
-                LinearWavyProgressIndicator(
-                    progress = { animatedOverall },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = headHue.accent,
-                    trackColor = headHue.accent.copy(alpha = 0.18f),
+        SyllabusContent(viewModel, ui, rootId, onUnitGone = { navigator.navigateUp() })
+        Spacer(Modifier.height(168.dp))
+    }
+    SyllabusDialogs(viewModel, ui)
+}
+
+/**
+ * The body of a subject's syllabus: the progress card and one card per unit with its chapters, topics and subtopics. Shared by the
+ * subject's own screen and the page that shows every subject, so both have the same features.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun SyllabusContent(viewModel: SyllabusViewModel, ui: SyllabusUiState, rootId: Long?, onUnitGone: () -> Unit, showHeader: Boolean = true) {
+    val nodes by viewModel.nodes.collectAsStateWithLifecycle()
+    val counts by viewModel.linkCounts.collectAsStateWithLifecycle()
+    val subjectName by viewModel.subjectName.collectAsStateWithLifecycle()
+    val collapsed = ui.collapsed
+
+    // Opened from a unit card, the screen shows that unit's own tree and nothing else; the unit becomes the top of the tree.
+    val scoped = remember(nodes, rootId) {
+        if (rootId == null) {
+            nodes
+        } else {
+            val inside = SyllabusTree.withDescendants(nodes, rootId).toSet()
+            nodes.filter { it.id in inside }.map { if (it.id == rootId) it.copy(parentId = null) else it }
+        }
+    }
+    LaunchedEffect(rootId, nodes.isEmpty(), scoped.isEmpty()) {
+        // The unit was deleted from here: go back to the list.
+        if (rootId != null && nodes.isNotEmpty() && scoped.isEmpty()) onUnitGone()
+    }
+    val rows = remember(scoped, collapsed) { SyllabusTree.rows(scoped, collapsed) }
+    val overall = remember(scoped) { SyllabusTree.progress(scoped, null) }
+    val animatedOverall by animateFloatAsState(
+        targetValue = overall,
+        animationSpec = LocalQuality.current.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+        label = "overall",
+    )
+    val headHue = hueFor(0)
+    if (showHeader) AppCard(modifier = Modifier.fillMaxWidth().bounceIn(0), container = headHue.container.copy(alpha = 0.75f)) {
+        Text(
+            if (rootId == null) subjectName.ifEmpty { "Subject" } else scoped.firstOrNull { it.id == rootId }?.title.orEmpty(),
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            color = headHue.onContainer,
+        )
+        if (scoped.isEmpty()) {
+            Text("No syllabus yet", style = MaterialTheme.typography.bodyMedium, color = headHue.onContainer.copy(alpha = 0.8f))
+        } else {
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("${(overall * 100).toInt()}%", style = MaterialTheme.typography.displaySmall, color = headHue.onContainer)
+                Text(
+                    if (rootId == null) "of the syllabus studied" else "of this unit studied",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = headHue.onContainer.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
-        }
-
-        if (scoped.isEmpty()) {
-            HintText(
-                "Add the units of this subject, then the chapters and topics inside them. Notes and study material can be filed under " +
-                    "any of them. You can also paste an outline or pick a file and let your AI turn it into a tree.",
+            LinearWavyProgressIndicator(
+                progress = { animatedOverall },
+                modifier = Modifier.fillMaxWidth(),
+                color = headHue.accent,
+                trackColor = headHue.accent.copy(alpha = 0.18f),
             )
-        } else {
-            SectionTitle("Units, chapters and topics")
         }
+    }
 
-        // One card per unit; its chapters, topics and subtopics are rows inside it.
-        val groups = remember(rows) {
-            val out = ArrayList<MutableList<SyllabusTree.Row>>()
-            rows.forEach { r -> if (r.depth == 0) out += mutableListOf(r) else out.lastOrNull()?.add(r) }
-            out
-        }
-        groups.forEachIndexed { groupIndex, group ->
-            androidx.compose.runtime.key(group.first().node.id) {
-                val hue = hueFor((groupIndex + 1).toLong())
-                AppCard(
-                    modifier = Modifier.fillMaxWidth().bounceIn((groupIndex * 45).coerceAtMost(300)),
-                    container = hue.container.copy(alpha = 0.75f),
-                ) {
-                    group.forEach { row ->
-                        androidx.compose.runtime.key(row.node.id) {
-                            SyllabusRow(
-                                row = row,
-                                hue = hue,
-                                progress = SyllabusTree.progress(scoped, row.node.id),
-                                linked = counts[row.node.id] ?: 0,
-                                expanded = row.node.id !in collapsed,
-                                onToggle = { collapsed = if (row.node.id in collapsed) collapsed - row.node.id else collapsed + row.node.id },
-                                onCycle = { viewModel.cycleStatus(row.node.id) },
-                                onAddInside = { editing = Editing.Add(row.node.id, SyllabusTree.levelName(row.depth + 1)) },
-                                onRename = { editing = Editing.Rename(row.node) },
-                                onDetails = { editing = Editing.Details(row.node) },
-                                onMoveUp = { viewModel.move(row.node.id, up = true) },
-                                onMoveDown = { viewModel.move(row.node.id, up = false) },
-                                onDelete = { deleting = row.node },
-                            )
-                        }
+    if (scoped.isEmpty()) {
+        HintText(
+            "Add the units of this subject, then the chapters and topics inside them. Notes and study material can be filed under " +
+                "any of them. You can also paste an outline or pick a file and let your AI turn it into a tree.",
+        )
+    } else {
+        SectionTitle("Units, chapters and topics")
+    }
+
+    // One card per unit; its chapters, topics and subtopics are rows inside it.
+    val groups = remember(rows) {
+        val out = ArrayList<MutableList<SyllabusTree.Row>>()
+        rows.forEach { r -> if (r.depth == 0) out += mutableListOf(r) else out.lastOrNull()?.add(r) }
+        out
+    }
+    groups.forEachIndexed { groupIndex, group ->
+        androidx.compose.runtime.key(group.first().node.id) {
+            val hue = hueFor((groupIndex + 1).toLong())
+            AppCard(
+                modifier = Modifier.fillMaxWidth().bounceIn((groupIndex * 45).coerceAtMost(300)),
+                container = hue.container.copy(alpha = 0.75f),
+            ) {
+                group.forEach { row ->
+                    androidx.compose.runtime.key(row.node.id) {
+                        SyllabusRow(
+                            row = row,
+                            hue = hue,
+                            progress = SyllabusTree.progress(scoped, row.node.id),
+                            linked = counts[row.node.id] ?: 0,
+                            expanded = row.node.id !in collapsed,
+                            onToggle = { ui.collapsed = if (row.node.id in collapsed) collapsed - row.node.id else collapsed + row.node.id },
+                            onCycle = { viewModel.cycleStatus(row.node.id) },
+                            onAddInside = { ui.editing = Editing.Add(row.node.id, SyllabusTree.levelName(row.depth + 1)) },
+                            onRename = { ui.editing = Editing.Rename(row.node) },
+                            onDetails = { ui.editing = Editing.Details(row.node) },
+                            onMoveUp = { viewModel.move(row.node.id, up = true) },
+                            onMoveDown = { viewModel.move(row.node.id, up = false) },
+                            onDelete = { ui.deleting = row.node },
+                        )
                     }
                 }
             }
         }
-        Spacer(Modifier.height(168.dp))
     }
+}
 
-    editing?.let { current ->
+/** The dialogs of a subject's syllabus: add, rename, details, delete and import. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun SyllabusDialogs(viewModel: SyllabusViewModel, ui: SyllabusUiState) {
+    val nodes by viewModel.nodes.collectAsStateWithLifecycle()
+    val subjectName by viewModel.subjectName.collectAsStateWithLifecycle()
+    val importState by viewModel.importState.collectAsStateWithLifecycle()
+    ui.editing?.let { current ->
         TextDialog(
             title = when (current) {
                 is Editing.Add -> "Add ${current.level.lowercase()}"
@@ -266,23 +289,23 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Lo
             label = if (current is Editing.Details) "What this covers (optional)" else "Title",
             multiline = current is Editing.Details,
             allowBlank = current is Editing.Details,
-            onDismiss = { editing = null },
+            onDismiss = { ui.editing = null },
             onSave = { text ->
                 when (current) {
                     is Editing.Add -> viewModel.add(current.parentId, text)
                     is Editing.Rename -> viewModel.rename(current.node.id, text)
                     is Editing.Details -> viewModel.setDetails(current.node.id, text)
                 }
-                if (current is Editing.Add) current.parentId?.let { collapsed = collapsed - it }
-                editing = null
+                if (current is Editing.Add) current.parentId?.let { ui.collapsed = ui.collapsed - it }
+                ui.editing = null
             },
         )
     }
 
-    deleting?.let { node ->
+    ui.deleting?.let { node ->
         val inside = SyllabusTree.withDescendants(nodes, node.id).size - 1
         AlertDialog(
-            onDismissRequest = { deleting = null },
+            onDismissRequest = { ui.deleting = null },
             title = { Text("Delete \"${node.title}\"?") },
             text = {
                 Text(
@@ -290,12 +313,12 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Lo
                         "Notes and study material filed there are kept and go back to Uncategorized.",
                 )
             },
-            confirmButton = { TextButton(onClick = { viewModel.delete(node.id); deleting = null }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Keep") } },
+            confirmButton = { TextButton(onClick = { viewModel.delete(node.id); ui.deleting = null }) { Text("Delete") } },
+            dismissButton = { TextButton(onClick = { ui.deleting = null }) { Text("Keep") } },
         )
     }
 
-    if (showImport) {
+    if (ui.showImport) {
         ImportDialog(
             state = importState,
             aiReady = viewModel.aiReady(),
@@ -303,9 +326,9 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Lo
             onSources = viewModel::importSources,
             existing = nodes,
             subjectName = subjectName,
-            onAccept = { items, chosen -> viewModel.insertOutline(items, chosen); showImport = false },
+            onAccept = { items, chosen -> viewModel.insertOutline(items, chosen); ui.showImport = false },
             onBack = viewModel::dismissImport,
-            onClose = { viewModel.dismissImport(); showImport = false },
+            onClose = { viewModel.dismissImport(); ui.showImport = false },
         )
     }
 }

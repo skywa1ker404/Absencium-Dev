@@ -21,6 +21,7 @@ import skywa1ker404.absencium.data.db.AttendanceStatus
 import skywa1ker404.absencium.data.db.NoteStatus
 import skywa1ker404.absencium.data.db.Priority
 import skywa1ker404.absencium.data.db.SubjectEntity
+import skywa1ker404.absencium.data.db.SyllabusNodeEntity
 import skywa1ker404.absencium.data.db.SyllabusStatus
 import skywa1ker404.absencium.data.syllabus.SyllabusTree
 import skywa1ker404.absencium.logging.DebugLogger
@@ -87,6 +88,8 @@ class ChatAppTools(private val container: AppContainer) {
         private val parser = kotlinx.serialization.json.Json
 
         /** The tools that change something, with the category folder each is listed under; used to describe them on the approval card. */
+        const val MATERIAL_CHUNK = 12_000
+
         val KINDS = mapOf(
             "add_subject" to "subjects", "rename_subject" to "subjects",
             "add_note" to "notes", "update_note" to "notes", "append_to_note" to "notes", "set_note_status" to "notes",
@@ -105,7 +108,8 @@ class ChatAppTools(private val container: AppContainer) {
             listOf("list_exams", "add_exam", "update_exam", "delete_exam").forEach { put(it, "Exams") }
             listOf("list_holidays", "add_holiday", "delete_holiday").forEach { put(it, "Holidays") }
             listOf("get_attendance", "set_attendance").forEach { put(it, "Attendance") }
-            listOf("get_syllabus", "add_syllabus", "set_syllabus_status").forEach { put(it, "Syllabus") }
+            listOf("get_syllabus", "add_syllabus", "set_syllabus_status", "edit_syllabus_topic", "move_syllabus_topic", "delete_syllabus_topic").forEach { put(it, "Syllabus") }
+            put("read_material", "Materials")
         }
 
         /** What one step of a plan may be: only adding and changing, never deleting. */
@@ -114,7 +118,7 @@ class ChatAppTools(private val container: AppContainer) {
         val APP_PROMPT: String by lazy { """You are Absencium AI, the assistant built into Absencium, the student's offline college companion app (attendance, timetable, exams, holidays, notes, syllabus, Vault). The Vault is the student's notes and drafts, their attachments (photos, documents, recordings) and their study guides: use list_vault, search_notes, list_attachments and read_note for it.
 You can look things up and change them with the app tools. Look the answer up with a tool instead of guessing, and never say something was added, changed or deleted unless the tool answered ok.
 Rules for changes: (1) Today's date and weekday come from app_overview; work out every date from it and never guess one. Pass weekday along with a date when you know it. (2) Before adding anything, look it up first (list_subjects, get_timetable, list_exams, list_holidays, list_vault, get_syllabus) and do not add what already exists. (3) For two or more changes, or anything in bulk, use apply_plan once with a plain-words summary instead of many separate calls, so the student approves once. Do each change once; if a tool answered ok, do not repeat it, and if it refused, read why instead of trying again. (4) A syllabus goes into add_syllabus, a lecture into the timetable, an exam into exams, a holiday into holidays. Never put a syllabus, timetable, exam list or study material into a note. Notes are only for text the student asked to keep as a note. (5) Study material and files can only be added by the student in the app. (6) When the request is unclear (which subject, which date, which time), ask the student instead of guessing.
-A message may hold links the student attached from the Vault: [Vault note: title (id N)], [Vault syllabus: subject] and [Vault material: name, subject (id N)]. A link is only a reference, not the content: read a note with read_note, a syllabus with get_syllabus, and look a material up with list_vault only when the question needs it. A material's file itself cannot be read; say so if its contents are needed.
+A message may hold links the student attached from the Vault: [Vault note: title (id N)], [Vault syllabus: subject] and [Vault material: name, subject (id N)]. A link is only a reference, not the content: read a note with read_note, a syllabus with get_syllabus, and look a material up with list_vault only when the question needs it. Read a material's text with read_material (long ones in parts with offset) only when the question needs it.
 Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain.""" + "\n" + NOTE_RULES }
 
         private val NOTE_RULES: String = """
@@ -314,6 +318,70 @@ ${NotePrompts.EDITOR}
             val node = matches.singleOrNull() ?: return@write fail(if (matches.isEmpty()) "No syllabus topic matches \"$topic\"." else "Several topics match \"$topic\".")
             container.database.syllabusDao().update(node.copy(status = status, updatedAt = System.currentTimeMillis()))
             ok("Syllabus updated.")
+        },
+        write("edit_syllabus_topic", "Changes the title and/or the details (what it covers) of one syllabus topic.", mapOf("subject" to text("Subject name"), "topic" to text("Current topic title"), "new_title" to text("New title, optional"), "details" to text("New details, optional")), required = listOf("subject", "topic")) { a ->
+            val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
+            val node = syllabusNode(s.id, a.req("topic")) ?: return@write fail("No single syllabus topic matches \"${a.req("topic")}\".")
+            val title = a.str("new_title")?.trim()?.takeIf { it.isNotEmpty() }
+            val details = a.str("details")
+            if (title == null && details == null) return@write fail("Give a new title or new details.")
+            container.database.syllabusDao().update(node.copy(title = (title ?: node.title).take(120), details = if (details == null) node.details else details.trim().ifEmpty { null }, updatedAt = System.currentTimeMillis()))
+            ok("Syllabus topic updated.")
+        },
+        write("move_syllabus_topic", "Moves a syllabus topic under a different parent topic (or to the top level), and/or changes its place among its siblings.", mapOf("subject" to text("Subject name"), "topic" to text("Topic title"), "under" to text("New parent topic title, or TOP for the top level; leave out to keep the parent"), "position" to num("New place among its siblings, 1 is first; leave out to put it last when the parent changes")), required = listOf("subject", "topic")) { a ->
+            val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
+            val dao = container.database.syllabusDao()
+            val all = dao.observeAll().first().filter { it.subjectId == s.id }
+            val node = syllabusNode(s.id, a.req("topic")) ?: return@write fail("No single syllabus topic matches \"${a.req("topic")}\".")
+            val under = a.str("under")?.trim()?.takeIf { it.isNotEmpty() }
+            val newParent: Long? = when {
+                under == null -> node.parentId
+                under.equals("TOP", true) -> null
+                else -> (syllabusNode(s.id, under) ?: return@write fail("No single syllabus topic matches \"$under\".")).id
+            }
+            if (newParent != null && newParent in SyllabusTree.withDescendants(all, node.id)) return@write fail("A topic cannot be moved inside itself.")
+            val siblings = all.filter { it.parentId == newParent && it.id != node.id }.sortedWith(compareBy({ it.position }, { it.id })).toMutableList()
+            val place = a.long("position")?.let { (it.toInt() - 1).coerceIn(0, siblings.size) } ?: if (newParent != node.parentId) siblings.size else all.filter { it.parentId == node.parentId }.sortedWith(compareBy({ it.position }, { it.id })).indexOfFirst { it.id == node.id }.coerceIn(0, siblings.size)
+            siblings.add(place, node.copy(parentId = newParent))
+            val now = System.currentTimeMillis()
+            siblings.forEachIndexed { index, n -> if (n.id == node.id || n.position != index) dao.update(n.copy(position = index, updatedAt = now)) }
+            ok("Moved \"${node.title}\".")
+        },
+        write("delete_syllabus_topic", "Deletes one syllabus topic and everything inside it. Notes and materials filed there are kept and become Uncategorized.", mapOf("subject" to text("Subject name"), "topic" to text("Topic title")), required = listOf("subject", "topic")) { a ->
+            val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
+            val all = container.database.syllabusDao().observeAll().first().filter { it.subjectId == s.id }
+            val node = syllabusNode(s.id, a.req("topic")) ?: return@write fail("No single syllabus topic matches \"${a.req("topic")}\".")
+            val ids = SyllabusTree.withDescendants(all, node.id)
+            container.database.noteDao().clearSyllabusNodes(ids)
+            container.database.guideDao().clearSyllabusNodes(ids)
+            container.database.syllabusDao().delete(node.id)
+            ok("Deleted \"${node.title}\"${if (ids.size > 1) " and ${ids.size - 1} items inside it" else ""}.")
+        },
+        write("read_material", "Reads the text of one study material (a PDF in the Vault: question paper, syllabus, answer bank or guide). The student approves each time, because the text is sent to the AI provider. Long materials are read in parts with offset.", mapOf("material_id" to num("Material id from list_vault or a [Vault material] link"), "offset" to num("Character to start from, default 0")), required = listOf("material_id")) { a ->
+            val guide = container.database.guideDao().getById(a.long("material_id") ?: return@write fail("material_id is missing."))
+                ?: return@write fail("There is no material with that id.")
+            val cache = java.io.File(container.appContext.cacheDir, "guide-text-${guide.id}-${guide.updatedAt}.txt")
+            val full = if (cache.isFile) cache.readText() else {
+                val source = if (guide.localUri.startsWith("content://")) {
+                    val tmp = java.io.File(container.appContext.cacheDir, "guide-${guide.id}.pdf")
+                    container.appContext.contentResolver.openInputStream(android.net.Uri.parse(guide.localUri))?.use { input -> tmp.outputStream().use { input.copyTo(it) } }
+                    tmp
+                } else java.io.File(guide.localUri)
+                when (val r = container.textExtractor.extract(source.absolutePath, "application/pdf", guide.fileName, tidy = false)) {
+                    is skywa1ker404.absencium.data.ocr.Extracted.Text -> r.text.also { cache.writeText(it) }
+                    is skywa1ker404.absencium.data.ocr.Extracted.Failed -> return@write fail(r.message)
+                }
+            }
+            val from = (a.long("offset") ?: 0L).toInt().coerceIn(0, full.length)
+            val part = full.substring(from, minOf(full.length, from + MATERIAL_CHUNK))
+            buildJsonObject {
+                put("ok", true)
+                put("material", guide.fileName)
+                put("offset", from)
+                put("total_characters", full.length)
+                put("more", from + part.length < full.length)
+                put("text", part)
+            }
         },
     )
 
@@ -731,7 +799,7 @@ ${NotePrompts.EDITOR}
         build(name, description, props, required, ToolApprovalMode.Auto, run)
 
     private fun write(name: String, description: String, props: Map<String, Prop>, required: List<String> = emptyList(), needsApproval: Boolean = true, run: suspend (JsonObject) -> JsonElement) =
-        build(name, description, props, required, if (needsApproval) ToolApprovalMode.RequiresApproval else ToolApprovalMode.Auto, run, log = name != "read_note")
+        build(name, description, props, required, if (needsApproval) ToolApprovalMode.RequiresApproval else ToolApprovalMode.Auto, run, log = name !in setOf("read_note", "read_material"))
 
     private fun build(name: String, description: String, props: Map<String, Prop>, required: List<String>, mode: ToolApprovalMode, run: suspend (JsonObject) -> JsonElement, log: Boolean = false) = Tool(
         name = name,
@@ -805,8 +873,15 @@ ${NotePrompts.EDITOR}
         "add_timetable_slot" to "Added a lecture", "update_timetable_slot" to "Edited a lecture", "delete_timetable_slot" to "Moved a lecture to the Trash",
         "add_exam" to "Added an exam", "update_exam" to "Edited an exam", "delete_exam" to "Moved an exam to the Trash",
         "add_holiday" to "Added a holiday", "delete_holiday" to "Moved a holiday to the Trash",
-        "set_attendance" to "Marked attendance", "add_syllabus" to "Added syllabus topics", "set_syllabus_status" to "Changed a syllabus topic",
+        "set_attendance" to "Marked attendance", "add_syllabus" to "Added syllabus topics", "edit_syllabus_topic" to "Edited a syllabus topic", "move_syllabus_topic" to "Moved a syllabus topic", "delete_syllabus_topic" to "Deleted a syllabus topic", "set_syllabus_status" to "Changed a syllabus topic",
     )
+
+    /** The one syllabus topic of a subject matching [title] (exact first, then partly), or null when none or several do. */
+    private suspend fun syllabusNode(subjectId: Long, title: String): SyllabusNodeEntity? {
+        val nodes = container.database.syllabusDao().observeAll().first().filter { it.subjectId == subjectId }
+        val t = title.trim()
+        return nodes.filter { it.title.equals(t, true) }.ifEmpty { nodes.filter { it.title.contains(t, true) } }.singleOrNull()
+    }
 
     private fun JsonObject.str(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
     private fun JsonObject.req(key: String): String = str(key) ?: throw IllegalArgumentException("$key is missing.")

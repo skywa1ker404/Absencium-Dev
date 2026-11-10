@@ -249,11 +249,18 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
 
         CardStack {
             NavCard(
+                icon = AppIcons.School,
+                title = "Syllabus",
+                subtitle = null,
+                onClick = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.SyllabusOverviewScreenDestination) },
+                position = GroupPosition.First,
+            )
+            NavCard(
                 icon = AppIcons.AutoAwesome,
                 title = "Absencium AI",
                 subtitle = null,
                 onClick = { navigator.navigate(AiSettingsScreenDestination) },
-                position = GroupPosition.First,
+                position = GroupPosition.Middle,
             )
             NavCard(
                 icon = AppIcons.Tune,
