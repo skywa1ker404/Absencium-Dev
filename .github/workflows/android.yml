@@ -7,7 +7,7 @@ on:
     branches: [main, Absencium-ai]
     paths:
       - 'app/**'
-      - 'lastchat/**'
+      - 'aihub/**'
       - 'gradle/**'
       - 'gradlew'
       - 'gradlew.bat'
@@ -74,7 +74,7 @@ jobs:
         run: |
           set -o pipefail
           chmod +x ./gradlew
-          ./gradlew assembleRelease testDebugUnitTest -x :lastchat:app:testDebugUnitTest --console=plain 2>&1 | tee build.log
+          ./gradlew assembleRelease testDebugUnitTest -x :aihub:app:testDebugUnitTest --console=plain 2>&1 | tee build.log
 
       - name: Room schema guard
         if: success()

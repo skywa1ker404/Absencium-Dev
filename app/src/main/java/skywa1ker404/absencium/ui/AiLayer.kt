@@ -20,7 +20,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.rerere.rikkahub.EmbeddedLastChat
+import me.rerere.rikkahub.EmbeddedAbsencium AI
 import skywa1ker404.absencium.ui.components.GlassStage
 import skywa1ker404.absencium.ui.theme.LocalGlassEnabled
 
@@ -49,7 +49,7 @@ fun AiLayer(dark: Boolean) {
                 // Takes every touch, so nothing of the page underneath can be tapped through the chat.
                 Box(Modifier.fillMaxSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}) {
                     GlassStage(Modifier.fillMaxSize(), glassSurfaces = false) {
-                        EmbeddedLastChat(dark = dark, glass = LocalGlassEnabled.current, settingsPage = shown.destination)
+                        EmbeddedAbsencium AI(dark = dark, glass = LocalGlassEnabled.current, settingsPage = shown.destination)
                     }
                 }
             }

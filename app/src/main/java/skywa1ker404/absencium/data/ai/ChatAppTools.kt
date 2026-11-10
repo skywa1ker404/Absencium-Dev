@@ -512,18 +512,18 @@ ${NotePrompts.EDITOR}
      * What the chat's Vault option offers: notes, subjects that have a syllabus, and materials. Each carries the one-line reference that
      * goes into the message; only that line is sent, the content is read through the tools if the question needs it.
      */
-    suspend fun vaultLinks(): List<me.rerere.rikkahub.LastChatHost.VaultLink> {
+    suspend fun vaultLinks(): List<me.rerere.rikkahub.AiHost.VaultLink> {
         val names = container.database.subjectDao().observeAll().first().associate { it.id to it.name }
         val notes = container.database.noteDao().observeAll().first().sortedByDescending { it.updatedAt }.map {
-            me.rerere.rikkahub.LastChatHost.VaultLink("Notes", it.title.ifBlank { "Untitled note" }, names[it.subjectId].orEmpty(), "[Vault note: ${it.title.ifBlank { "Untitled" }} (id ${it.id})]")
+            me.rerere.rikkahub.AiHost.VaultLink("Notes", it.title.ifBlank { "Untitled note" }, names[it.subjectId].orEmpty(), "[Vault note: ${it.title.ifBlank { "Untitled" }} (id ${it.id})]")
         }
         val syllabus = container.database.syllabusDao().observeAll().first().groupBy { it.subjectId }.mapNotNull { (subjectId, nodes) ->
             val name = names[subjectId] ?: return@mapNotNull null
-            me.rerere.rikkahub.LastChatHost.VaultLink("Syllabus", name, "${nodes.size} topics", "[Vault syllabus: $name]")
+            me.rerere.rikkahub.AiHost.VaultLink("Syllabus", name, "${nodes.size} topics", "[Vault syllabus: $name]")
         }.sortedBy { it.title.lowercase() }
         val materials = container.database.guideDao().observeAll().first().map {
             val subject = names[it.subjectId].orEmpty()
-            me.rerere.rikkahub.LastChatHost.VaultLink("Materials", it.fileName, listOf(it.guideType.name.lowercase().replace('_', ' '), subject).filter { p -> p.isNotBlank() }.joinToString(" · "), "[Vault material: ${it.fileName}${if (subject.isNotBlank()) ", $subject" else ""} (id ${it.id})]")
+            me.rerere.rikkahub.AiHost.VaultLink("Materials", it.fileName, listOf(it.guideType.name.lowercase().replace('_', ' '), subject).filter { p -> p.isNotBlank() }.joinToString(" · "), "[Vault material: ${it.fileName}${if (subject.isNotBlank()) ", $subject" else ""} (id ${it.id})]")
         }
         return notes + syllabus + materials
     }

@@ -47,7 +47,7 @@ object AiWebSearch {
         .replace(Regex("\\s+"), " ").trim()
 
     /**
-     * LastChat's keyless search first (it picks the right sources for news, weather, encyclopedia and general questions, and merges them),
+     * Absencium AI's keyless search first (it picks the right sources for news, weather, encyclopedia and general questions, and merges them),
      * then the plain DuckDuckGo page when that finds nothing. Only the search words leave the phone.
      */
     suspend fun search(query: String, max: Int = 5): List<Hit> {
@@ -56,7 +56,7 @@ object AiWebSearch {
     }
 
     private suspend fun keyless(query: String, max: Int): List<Hit> {
-        LastChatSearch.install()
+        AiSearch.install()
         val result = SearchService.getService(SearchServiceOptions.KeylessOptions())
             .search(buildJsonObject { put("query", query.take(200)) }, SearchCommonOptions(resultSize = max), SearchServiceOptions.KeylessOptions())
             .getOrThrow()

@@ -67,12 +67,12 @@ class AbsenciumApp : Application() {
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         DebugLogger.w("Memory", "onTrimMemory level=$level")
-        me.rerere.rikkahub.LastChatApp.trim(level)
+        me.rerere.rikkahub.AiApp.trim(level)
     }
 
     /** The embedded Absencium AI chat wears this app's theme engine and follows its refresh-rate cap. */
     private fun installChatHost() {
-        me.rerere.rikkahub.LastChatHost.theme = { content ->
+        me.rerere.rikkahub.AiHost.theme = { content ->
             val settings by container.settingsState.collectAsStateWithLifecycle()
             settings?.let { loaded ->
                 AbsenciumTheme(settings = loaded) {
@@ -87,10 +87,10 @@ class AbsenciumApp : Application() {
             }
         }
         // The chat's user (name, avatar, {{user}}) is the student's Absencium profile.
-        me.rerere.rikkahub.LastChatHost.userName = container.settingsState
+        me.rerere.rikkahub.AiHost.userName = container.settingsState
             .map { it?.displayName.orEmpty() }
             .distinctUntilChanged()
-        me.rerere.rikkahub.LastChatHost.userAvatar = { name, modifier ->
+        me.rerere.rikkahub.AiHost.userAvatar = { name, modifier ->
             val colors = androidx.compose.material3.MaterialTheme.colorScheme
             val initials = skywa1ker404.absencium.ui.main.initialsOf(name)
             androidx.compose.foundation.layout.Box(
@@ -116,7 +116,7 @@ class AbsenciumApp : Application() {
             }
         }
         // The chat's gear opens the app's own AI settings page; Imagine shows in the chat drawer only when "Generate images" is on.
-        me.rerere.rikkahub.LastChatHost.openAppSettings = { context ->
+        me.rerere.rikkahub.AiHost.openAppSettings = { context ->
           // Inside the app's own window the chat just closes and the settings page opens; only the stand-alone chat starts the app.
           if (!skywa1ker404.absencium.ui.AbsenciumAi.showAppSettings()) {
             val intent = android.content.Intent(context, MainActivity::class.java)
@@ -126,29 +126,29 @@ class AbsenciumApp : Application() {
             context.startActivity(intent)
           }
         }
-        me.rerere.rikkahub.LastChatHost.imagineEnabled = container.settingsState
+        me.rerere.rikkahub.AiHost.imagineEnabled = container.settingsState
             .map { it?.generateImagesEnabled == true }
             .distinctUntilChanged()
         val chatTools = skywa1ker404.absencium.data.ai.ChatAppTools(container)
         // The AI actions folder under Statistics.
-        me.rerere.rikkahub.LastChatHost.actions = container.aiActionLog.entries.map { list ->
+        me.rerere.rikkahub.AiHost.actions = container.aiActionLog.entries.map { list ->
             list.map { e ->
-                me.rerere.rikkahub.LastChatHost.HostAction(
+                me.rerere.rikkahub.AiHost.HostAction(
                     id = e.id, time = e.time, action = e.action, title = e.title, fields = e.fields, ok = e.ok,
                     preview = e.preview, error = e.error, canOpen = e.ok && e.targetType != null,
                 )
             }
         }
-        me.rerere.rikkahub.LastChatHost.vaultLinks = { chatTools.vaultLinks() }
-        me.rerere.rikkahub.LastChatHost.openAction = { context, id ->
+        me.rerere.rikkahub.AiHost.vaultLinks = { chatTools.vaultLinks() }
+        me.rerere.rikkahub.AiHost.openAction = { context, id ->
             container.aiActionLog.find(id)?.let { e -> e.targetType?.let { skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, it, e.targetId) } }
         }
-        me.rerere.rikkahub.LastChatHost.removeAction = { id -> if (id == null) container.aiActionLog.clear() else container.aiActionLog.remove(id) }
-        me.rerere.rikkahub.LastChatHost.describe = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.describe(name, args) }
-        me.rerere.rikkahub.LastChatHost.planSteps = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.planSteps(name, args) }
-        me.rerere.rikkahub.LastChatHost.skipPlanSteps = { name, args, skipped -> skywa1ker404.absencium.data.ai.ChatAppTools.skipPlanSteps(name, args, skipped) }
-        me.rerere.rikkahub.LastChatHost.suggestions = { runCatching { ChatAppTools(container).suggestions() }.getOrDefault(emptyList()) }
-        me.rerere.rikkahub.LastChatHost.tools = { chatTools.tools() }
+        me.rerere.rikkahub.AiHost.removeAction = { id -> if (id == null) container.aiActionLog.clear() else container.aiActionLog.remove(id) }
+        me.rerere.rikkahub.AiHost.describe = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.describe(name, args) }
+        me.rerere.rikkahub.AiHost.planSteps = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.planSteps(name, args) }
+        me.rerere.rikkahub.AiHost.skipPlanSteps = { name, args, skipped -> skywa1ker404.absencium.data.ai.ChatAppTools.skipPlanSteps(name, args, skipped) }
+        me.rerere.rikkahub.AiHost.suggestions = { runCatching { ChatAppTools(container).suggestions() }.getOrDefault(emptyList()) }
+        me.rerere.rikkahub.AiHost.tools = { chatTools.tools() }
         val rates = HashMap<Activity, RefreshRatePreference>()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityStarted(activity: Activity) {

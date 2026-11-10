@@ -69,8 +69,8 @@ class AppContainer(context: Context) {
     /** True when Absencium AI has a chat model with a key (or a local server) ready for the app's own AI features. */
     fun activeKeySaved(): Boolean = chatChoice() != null
 
-    private fun chatChoice(): me.rerere.rikkahub.LastChatApi.Choice? =
-        runCatching { me.rerere.rikkahub.LastChatApi.choice(appContext as android.app.Application) }.getOrNull()
+    private fun chatChoice(): me.rerere.rikkahub.AiApi.Choice? =
+        runCatching { me.rerere.rikkahub.AiApi.choice(appContext as android.app.Application) }.getOrNull()
             ?.takeIf { it.apiKey.isNotBlank() || it.baseUrl.contains("localhost") || it.baseUrl.contains("127.0.0.1") || it.baseUrl.contains("192.168.") }
 
     /**
@@ -84,14 +84,14 @@ class AppContainer(context: Context) {
             c.baseUrl.contains("openrouter") -> skywa1ker404.absencium.data.ai.AiProvider.OPENROUTER
             c.baseUrl.contains("groq") -> skywa1ker404.absencium.data.ai.AiProvider.GROQ
             c.baseUrl.contains("11434") -> skywa1ker404.absencium.data.ai.AiProvider.OLLAMA
-            c.kind == me.rerere.rikkahub.LastChatApi.Kind.GOOGLE -> skywa1ker404.absencium.data.ai.AiProvider.GEMINI
-            c.kind == me.rerere.rikkahub.LastChatApi.Kind.CLAUDE -> skywa1ker404.absencium.data.ai.AiProvider.ANTHROPIC
+            c.kind == me.rerere.rikkahub.AiApi.Kind.GOOGLE -> skywa1ker404.absencium.data.ai.AiProvider.GEMINI
+            c.kind == me.rerere.rikkahub.AiApi.Kind.CLAUDE -> skywa1ker404.absencium.data.ai.AiProvider.ANTHROPIC
             c.baseUrl.contains("api.openai.com") -> skywa1ker404.absencium.data.ai.AiProvider.OPENAI
             else -> skywa1ker404.absencium.data.ai.AiProvider.CUSTOM
         }
         val style = when (c.kind) {
-            me.rerere.rikkahub.LastChatApi.Kind.GOOGLE -> skywa1ker404.absencium.data.ai.ApiStyle.GEMINI
-            me.rerere.rikkahub.LastChatApi.Kind.CLAUDE -> skywa1ker404.absencium.data.ai.ApiStyle.ANTHROPIC
+            me.rerere.rikkahub.AiApi.Kind.GOOGLE -> skywa1ker404.absencium.data.ai.ApiStyle.GEMINI
+            me.rerere.rikkahub.AiApi.Kind.CLAUDE -> skywa1ker404.absencium.data.ai.ApiStyle.ANTHROPIC
             else -> skywa1ker404.absencium.data.ai.ApiStyle.OPENAI_COMPATIBLE
         }
         return skywa1ker404.absencium.data.ai.AiConnection(provider, style, c.baseUrl, c.modelId, apiKey = c.apiKey)

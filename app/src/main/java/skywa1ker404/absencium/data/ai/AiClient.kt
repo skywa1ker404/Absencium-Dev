@@ -115,7 +115,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
 
     private val imageLimits = HashMap<String, Int>()
 
-    private val bridge by lazy { LastChatBridge() }
+    private val bridge by lazy { AiBridge() }
 
     /** How many pictures one request to [connection]'s model may carry: [default], or less once the provider has said so. */
     fun imageLimit(connection: AiConnection, default: Int): Int = minOf(default, imageLimits["${connection.style}|${connection.model}"] ?: default)
@@ -338,7 +338,7 @@ class AiClient(private val keyVault: ApiKeyVault) {
         throw last ?: AiException("No AI key is available.")
     }
 
-    /** The wire work (request, reasoning, reply, token counts) is done by the LastChat provider layer; the rules about what each service accepts stay here. */
+    /** The wire work (request, reasoning, reply, token counts) is done by the Absencium AI provider layer; the rules about what each service accepts stay here. */
     private suspend fun chatRaw(connection: AiConnection, system: String, turns: List<ChatTurn>, options: ChatOptions, key: String?): ChatReply {
         if (connection.model.isBlank()) throw AiException("Choose a model in Settings, then Absencium AI first.")
         if (connection.style != ApiStyle.GEMINI && turns.any { t -> t.images.any { it.isAudio || it.mimeType.startsWith("video/") } }) {
