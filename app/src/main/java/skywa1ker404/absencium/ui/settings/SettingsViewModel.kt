@@ -65,7 +65,6 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setAskAiEnabled(value: Boolean) = launch { repository.setAskAiEnabled(value) }
 
-    fun setAiAutoApprove(kinds: Set<String>) = launch { repository.setAiAutoApprove(kinds) }
 
     fun setSearchImagesEnabled(value: Boolean) = launch { repository.setSearchImagesEnabled(value) }
 

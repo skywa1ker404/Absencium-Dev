@@ -88,6 +88,10 @@ data class Assistant(
     val mcpServers: Set<Uuid> = emptySet(),
     @Serializable(with = LocalToolOptionListSerializer::class)
     val localTools: List<LocalToolOption> = emptyList(),
+    /** Absencium tools this assistant may not use, tools that run without asking, and tools that always ask (see AiHost.ToolPolicy). */
+    val hostToolsOff: Set<String> = emptySet(),
+    val hostToolsAuto: Set<String> = emptySet(),
+    val hostToolsAsk: Set<String> = emptySet(),
     val background: String? = null,
     val backgroundDim: Float = 0.6f,
     val useAssistantMaterialYouColors: Boolean = false,

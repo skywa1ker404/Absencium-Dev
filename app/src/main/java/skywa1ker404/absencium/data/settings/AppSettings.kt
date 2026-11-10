@@ -53,8 +53,6 @@ data class AppSettings(
     val focusGraceMinutes: Int = 5,
     val examModeAutoSilence: Boolean = false,
     val askAiEnabled: Boolean = false,
-    /** The kinds of change Absencium AI may make without asking (subjects, notes, timetable, exams, holidays, attendance, syllabus). Deleting always asks. */
-    val aiAutoApprove: Set<String> = emptySet(),
     /** EXPERIMENTAL: lets Generate Notes look for pictures online. Off by default. */
     val searchImagesEnabled: Boolean = false,
     /** Lets Generate Notes ask a paid Gemini or OpenAI plan to draw pictures. Off by default. */

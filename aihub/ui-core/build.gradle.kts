@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Ported from Absencium AI / RikkaHub (AGPL-3.0). See THIRD_PARTY_NOTICES.md.
+// Ported from LastChat / RikkaHub (AGPL-3.0). See THIRD_PARTY_NOTICES.md.
 android {
     namespace = "me.rerere.rikkahub.ui.core"
     compileSdk = 37

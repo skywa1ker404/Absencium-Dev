@@ -102,8 +102,6 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
                     )
                 }
 
-                AutoApproveSection(settings.aiAutoApprove, settingsViewModel::setAiAutoApprove)
-
                 SectionTitle("Pictures")
                 SettingGroup {
                     SettingSwitchRow(
@@ -188,42 +186,3 @@ private fun AdvancedHeader(expanded: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** The kinds of change Absencium AI can make without asking. Closed by default; deleting always asks. */
-@Composable
-private fun AutoApproveSection(auto: Set<String>, onChange: (Set<String>) -> Unit) {
-    var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-    SettingGroup {
-        SettingRow(
-            title = "Do without asking",
-            subtitle = if (auto.isEmpty()) "Every change asks first. Deleting always does" else "${auto.size} kinds run automatically",
-            onClick = { open = !open },
-        )
-        androidx.compose.animation.AnimatedVisibility(
-            visible = open,
-            enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.spring(0.8f, 380f)) + androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.spring(1f, 500f)) + androidx.compose.animation.fadeOut(),
-        ) {
-            androidx.compose.foundation.layout.Column {
-                AUTO_KINDS.forEach { (key, label) ->
-                    SettingDivider()
-                    SettingSwitchRow(
-                        title = label,
-                        subtitle = null,
-                        checked = key in auto,
-                        onCheckedChange = { on -> onChange(if (on) auto + key else auto - key) },
-                    )
-                }
-            }
-        }
-    }
-}
-
-private val AUTO_KINDS = listOf(
-    "subjects" to "Subjects",
-    "notes" to "Notes",
-    "timetable" to "Timetable",
-    "exams" to "Exams",
-    "holidays" to "Holidays",
-    "attendance" to "Attendance",
-    "syllabus" to "Syllabus",
-)

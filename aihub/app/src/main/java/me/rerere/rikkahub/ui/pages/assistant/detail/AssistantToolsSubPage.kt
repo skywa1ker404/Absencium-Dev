@@ -118,6 +118,9 @@ fun AssistantToolsSubPage(
             .imePadding(),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
+        // ABSENCIUM TOOLS: every tool of the app in category folders
+        AssistantHostToolsGroup(assistant = assistant, onUpdate = onUpdate)
+
         // SEARCH GROUP
         SettingsGroup(title = stringResource(R.string.assistant_tools_search_group)) {
             // Build options list for Select

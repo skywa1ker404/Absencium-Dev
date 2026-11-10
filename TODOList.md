@@ -83,7 +83,7 @@ Last updated: 031126 (web search made universal; last green build `b5918fe`, 031
 | # | Task | Status |
 |---|---|---|
 | 42.1 | **Remove every LastChat mention except credits (owner 2026-11-10: "many mentions of lastchat in the code and app").** Class and file names (`LastChat*`, `LastChatHost`, `LastChatBridge`, `LastChatSearch`), the `lastchat` module folder and Gradle path, URI scheme, file provider and its paths, resources, launcher icon names, comments and visible strings become Absencium AI. Credits stay only in Licenses and `THIRD_PARTY_NOTICES.md` because the AGPL requires them. Own CI build so a failure is isolated. **Built, CI pending:** folder `lastchat/` is now `aihub/` (Gradle `:aihub:*`, namespaces `me.rerere.aihub.*`), `LastChat*` classes and files are `Ai*`, scheme `aihub://`, the chat database `aihub_ai` (an existing one is moved across once; that block is on the cleanup list), export formats `aihub*`; external links to the upstream project and the remote catalog file keep their real addresses | pending |
-| 42.2 | **Hub tools in category folders, "Do without asking" removed** (Step 11) | pending |
+| 42.2 | **Hub tools in category folders, "Do without asking" removed** (Step 11). **Built, CI pending:** the assistant's Tools tab lists every Absencium tool in a category folder (Overview and search, Subjects, Vault and notes, Timetable, Exams, Holidays, Attendance, Syllabus) with a search field; each tool has an on/off switch and an Ask first switch, stored per assistant; the AI settings page no longer has "Do without asking" and its setting is deleted | pending |
 | 42.3 | **Every AI action through the hub; AI actions folder as read-only hub chats** (Step 11); first version (`AiActionLog`, rows 41.5) is replaced | pending |
 | 42.4 | **New and changed hub tools:** syllabus delete, edit, move, reorder; `read_material`; notes, attachments, tags, duplicate, bulk; timetable, exams, attendance and study tools from the owner's list (Steps 6, 7, 8, 9, 10, 11, 12) | pending |
 | 42.5 | **Profile Syllabus button and the main syllabus page** (Step 10) | pending |
@@ -695,7 +695,6 @@ The owner asked to remove everything related to sync and interval backup. There 
 | Chat settings pages reachable only through the chat's own Settings hub (Display, Prompt injections, RP optimisations, UI customization, Fonts, Lorebooks, Local LLM, Backup local and WebDAV, Developer) | chat module `ui/pages/setting` | decide per page: link from AI settings or delete |
 | Old separate AI paths replaced by the hub: Add Entry's own generator (`NotePrompts` calls), `AiActionRunner`, `AiHistory`, `AiActionLog` | `data/ai`, `ui/vault/entry` | delete after 42.3 is verified on a device |
 | One-time move of the chat database from its old name | `DataSourceModule.kt` | delete the block once every test phone has opened the app |
-| "Do without asking" settings (`aiAutoApprove`) and its page | `AppSettings`, AI settings | delete after 42.2 |
 
 ## Why this order
 

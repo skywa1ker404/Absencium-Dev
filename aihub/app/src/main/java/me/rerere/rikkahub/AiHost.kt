@@ -14,8 +14,20 @@ object AiHost {
      */
     var theme: (@Composable (content: @Composable (dark: Boolean) -> Unit) -> Unit)? = null
 
+    /**
+     * What one assistant allows of the host's tools: tools it switched [off], tools that run by themselves ([auto]) and tools that
+     * always ask first ([ask]). Anything in neither list keeps its own default (looking things up runs by itself, changes ask first).
+     */
+    data class ToolPolicy(val off: Set<String> = emptySet(), val auto: Set<String> = emptySet(), val ask: Set<String> = emptySet())
+
+    /** One of the host's tools as listed in the assistant's Tools page, under its category folder. */
+    data class ToolInfo(val name: String, val title: String, val description: String, val category: String, val asksByDefault: Boolean)
+
     /** Extra tools the host app offers the chat (Absencium's attendance, timetable, notes and so on). Asked again for every request. */
-    var tools: () -> List<Tool> = { emptyList() }
+    var tools: (ToolPolicy) -> List<Tool> = { emptyList() }
+
+    /** Every tool the host offers, for the assistant's Tools page (grouped by category, searchable). */
+    var toolCatalog: () -> List<ToolInfo> = { emptyList() }
 
     /**
      * Words for the approval card of one of the host's tools: a title and the lines of what it is about to do, in plain words.

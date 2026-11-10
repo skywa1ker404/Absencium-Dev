@@ -148,7 +148,8 @@ class AbsenciumApp : Application() {
         me.rerere.rikkahub.AiHost.planSteps = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.planSteps(name, args) }
         me.rerere.rikkahub.AiHost.skipPlanSteps = { name, args, skipped -> skywa1ker404.absencium.data.ai.ChatAppTools.skipPlanSteps(name, args, skipped) }
         me.rerere.rikkahub.AiHost.suggestions = { runCatching { ChatAppTools(container).suggestions() }.getOrDefault(emptyList()) }
-        me.rerere.rikkahub.AiHost.tools = { chatTools.tools() }
+        me.rerere.rikkahub.AiHost.tools = { policy -> chatTools.tools(policy) }
+        me.rerere.rikkahub.AiHost.toolCatalog = { chatTools.catalog() }
         val rates = HashMap<Activity, RefreshRatePreference>()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityStarted(activity: Activity) {

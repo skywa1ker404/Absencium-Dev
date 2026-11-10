@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.library)
 }
 
-// Ported from Absencium AI / RikkaHub (AGPL-3.0); bundles MuPDF (AGPL-3.0). See THIRD_PARTY_NOTICES.md.
+// Ported from LastChat / RikkaHub (AGPL-3.0); bundles MuPDF (AGPL-3.0). See THIRD_PARTY_NOTICES.md.
 android {
     namespace = "me.rerere.document"
     compileSdk = 37

@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-// Ported from Absencium AI / RikkaHub (AGPL-3.0). See THIRD_PARTY_NOTICES.md.
+// Ported from LastChat / RikkaHub (AGPL-3.0). See THIRD_PARTY_NOTICES.md.
 val sherpaOnnxVersion = "1.13.4"
 val sherpaOnnxSha256 = "03f9c4df965f21c71269365a7951a7f23b5696fddd093fa318c80d65550ab780"
 val sherpaOnnxAar = layout.buildDirectory.file("sherpa/sherpa-onnx-$sherpaOnnxVersion.aar")

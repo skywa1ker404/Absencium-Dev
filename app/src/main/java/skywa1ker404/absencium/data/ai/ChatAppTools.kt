@@ -86,7 +86,7 @@ class ChatAppTools(private val container: AppContainer) {
 
         private val parser = kotlinx.serialization.json.Json
 
-        /** Which "Do without asking" switch unlocks which tool. Deleting and reading a whole note are not in it: they always ask. */
+        /** The tools that change something, with the category folder each is listed under; used to describe them on the approval card. */
         val KINDS = mapOf(
             "add_subject" to "subjects", "rename_subject" to "subjects",
             "add_note" to "notes", "update_note" to "notes", "append_to_note" to "notes", "set_note_status" to "notes",
@@ -96,6 +96,18 @@ class ChatAppTools(private val container: AppContainer) {
             "set_attendance" to "attendance",
             "add_syllabus" to "syllabus", "set_syllabus_status" to "syllabus",
         )
+        /** The category folder of every tool in the assistant's Tools page. */
+        val CATEGORIES: Map<String, String> = buildMap {
+            put("app_overview", "Overview and search"); put("search_app", "Overview and search")
+            listOf("list_subjects", "add_subject", "rename_subject", "delete_subject").forEach { put(it, "Subjects") }
+            listOf("search_notes", "list_vault", "list_attachments", "read_note", "add_note", "update_note", "append_to_note", "delete_note", "set_note_status").forEach { put(it, "Vault and notes") }
+            listOf("get_timetable", "add_timetable_slot", "update_timetable_slot", "delete_timetable_slot").forEach { put(it, "Timetable") }
+            listOf("list_exams", "add_exam", "update_exam", "delete_exam").forEach { put(it, "Exams") }
+            listOf("list_holidays", "add_holiday", "delete_holiday").forEach { put(it, "Holidays") }
+            listOf("get_attendance", "set_attendance").forEach { put(it, "Attendance") }
+            listOf("get_syllabus", "add_syllabus", "set_syllabus_status").forEach { put(it, "Syllabus") }
+        }
+
         /** What one step of a plan may be: only adding and changing, never deleting. */
         val PLAN_OPS = listOf("add_subject", "add_note", "append_to_note", "add_timetable_slot", "add_exam", "add_holiday", "set_attendance", "add_syllabus", "set_syllabus_status", "set_note_status")
 
@@ -115,20 +127,33 @@ ${NotePrompts.EDITOR}
     }
 
     /**
-     * The tools for one request. Asked again every time, so a change in "Do without asking" applies at once: a kind of change the student
-     * switched on runs on its own, everything else (and every delete, and reading a whole note) waits for approval.
+     * The tools for one request, as the assistant allows them: a tool it switched off is left out (and cannot be part of a plan either),
+     * one it set to run by itself never asks, one it set to ask always asks, and every other tool keeps its own default.
+     * Looking things up runs by itself and every change asks first, unless the assistant says otherwise.
      */
-    fun tools(): List<Tool> {
-        val auto = container.settingsState.value?.aiAutoApprove.orEmpty()
-        val base = baseTools()
-        val byName = base.associateBy { it.name }
-        fun unlocked(t: Tool) = KINDS[t.name]?.let { it in auto } == true
-        val plan = planTool(byName)
-        val all = base + plan
-        return all.map { t ->
-            val skip = if (t.name == "apply_plan") KINDS.values.toSet().all { it in auto } else unlocked(t)
-            if (t.approvalMode == ToolApprovalMode.RequiresApproval && skip) t.copy(approvalMode = ToolApprovalMode.Auto) else t
+    fun tools(policy: me.rerere.rikkahub.AiHost.ToolPolicy = me.rerere.rikkahub.AiHost.ToolPolicy()): List<Tool> {
+        val base = baseTools().filter { it.name !in policy.off }
+        fun effective(t: Tool) = when {
+            t.name in policy.auto -> ToolApprovalMode.Auto
+            t.name in policy.ask -> ToolApprovalMode.RequiresApproval
+            else -> t.approvalMode
         }
+        val byName = base.associateBy { it.name }
+        val plan = planTool(byName)
+        // A plan asks once, unless every kind of step it may hold has been set to run by itself.
+        val planAuto = byName.filterKeys { it in PLAN_OPS }.values.all { effective(it) == ToolApprovalMode.Auto }
+        return base.map { it.copy(approvalMode = effective(it)) } + plan.copy(approvalMode = if (planAuto) ToolApprovalMode.Auto else ToolApprovalMode.RequiresApproval)
+    }
+
+    /** Every tool with its category folder, for the assistant's Tools page. */
+    fun catalog(): List<me.rerere.rikkahub.AiHost.ToolInfo> = baseTools().map { t ->
+        me.rerere.rikkahub.AiHost.ToolInfo(
+            name = t.name,
+            title = t.name.replace("_", " ").replaceFirstChar { it.uppercase() },
+            description = t.description.substringBefore(". ").trim().removeSuffix("."),
+            category = CATEGORIES[t.name] ?: "Other",
+            asksByDefault = t.approvalMode == ToolApprovalMode.RequiresApproval,
+        )
     }
 
     private fun baseTools(): List<Tool> = listOf(

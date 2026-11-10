@@ -98,7 +98,6 @@ class SettingsRepository(context: Context) {
     suspend fun setExamModeAutoSilence(value: Boolean) = write(Keys.EXAM_MODE_AUTO_SILENCE, value)
 
     suspend fun setAskAiEnabled(value: Boolean) = write(Keys.ASK_AI_ENABLED, value)
-    suspend fun setAiAutoApprove(kinds: Set<String>) = write(Keys.AI_AUTO_APPROVE, kinds.sorted().joinToString(","))
     suspend fun setSearchImagesEnabled(value: Boolean) = write(Keys.SEARCH_IMAGES_ENABLED, value)
     suspend fun setGenerateImagesEnabled(value: Boolean) = write(Keys.GENERATE_IMAGES_ENABLED, value)
 
@@ -210,7 +209,6 @@ class SettingsRepository(context: Context) {
         val AI_BASE_URL = stringPreferencesKey("ai_base_url")
         val AI_MODEL = stringPreferencesKey("ai_model")
         val AI_API_STYLE = stringPreferencesKey("ai_api_style")
-        val AI_AUTO_APPROVE = stringPreferencesKey("ai_auto_approve")
         val MOMENTUM_ENABLED = booleanPreferencesKey("momentum_tracker_enabled")
         val SEMESTER_MANAGER_ENABLED = booleanPreferencesKey("semester_manager_enabled")
         val LOW_STORAGE_COMPRESSOR_ENABLED = booleanPreferencesKey("low_storage_compressor_enabled")
@@ -230,7 +228,7 @@ class SettingsRepository(context: Context) {
         ).map { it.name }.toSet()
         val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES).map { it.name }.toSet()
         val STRINGS = setOf(
-            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, COLOR_ENGINE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE, AI_AUTO_APPROVE,
+            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, COLOR_ENGINE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
         ).map { it.name }.toSet()
     }
 
@@ -261,7 +259,6 @@ class SettingsRepository(context: Context) {
             focusGraceMinutes = this[Keys.FOCUS_GRACE_MINUTES] ?: defaults.focusGraceMinutes,
             examModeAutoSilence = this[Keys.EXAM_MODE_AUTO_SILENCE] ?: defaults.examModeAutoSilence,
             askAiEnabled = this[Keys.ASK_AI_ENABLED] ?: defaults.askAiEnabled,
-            aiAutoApprove = this[Keys.AI_AUTO_APPROVE]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: defaults.aiAutoApprove,
             searchImagesEnabled = this[Keys.SEARCH_IMAGES_ENABLED] ?: defaults.searchImagesEnabled,
             generateImagesEnabled = this[Keys.GENERATE_IMAGES_ENABLED] ?: defaults.generateImagesEnabled,
             aiProvider = enumOrDefault(this[Keys.AI_PROVIDER], defaults.aiProvider),

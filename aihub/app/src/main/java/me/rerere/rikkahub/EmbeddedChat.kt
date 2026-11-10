@@ -45,7 +45,7 @@ internal fun settingsScreenFor(name: String?): Screen? = when (name) {
  * With [settingsPage] it opens straight on that settings page, and going back from it leaves the chat.
  */
 @Composable
-fun EmbeddedAbsencium AI(dark: Boolean, glass: Boolean, settingsPage: String?) {
+fun EmbeddedAi(dark: Boolean, glass: Boolean, settingsPage: String?) {
     val context = LocalContext.current
     remember { AiApp.start(context.applicationContext as Application); true }
     CompositionLocalProvider(LocalHostGlass provides glass, LocalEmbeddedDark provides dark) {
