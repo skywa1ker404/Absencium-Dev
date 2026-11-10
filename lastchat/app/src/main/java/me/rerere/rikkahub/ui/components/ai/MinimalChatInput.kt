@@ -82,6 +82,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Book
 import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
@@ -1916,6 +1917,7 @@ private fun MinimalPickerContent(
     
     // Sub-picker states
     var showModelPicker by remember { mutableStateOf(false) }
+    var showVaultPicker by remember { mutableStateOf(false) }
     var showReasoningPicker by remember { mutableStateOf(false) }
     var showSkillsPicker by remember { mutableStateOf(false) }
     var showLorebooksPicker by remember { mutableStateOf(false) }
@@ -2135,6 +2137,16 @@ private fun MinimalPickerContent(
             )
         }
         
+        // Vault: link a note, syllabus or material to the message. Only a reference goes in; nothing is uploaded.
+        if (me.rerere.rikkahub.LastChatHost.vaultLinks != null) {
+            MinimalPickerItem(
+                icon = { Icon(imageVector = Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                title = "Vault",
+                subtitle = "Link a note, syllabus or material",
+                onClick = { showVaultPicker = true },
+            )
+        }
+
         // Model picker - uses actual model icon, full-width clickable
         val currentModel = currentChatModel
         val provider = currentModel?.findProvider(providers = settings.providers)
@@ -2330,6 +2342,18 @@ private fun MinimalPickerContent(
         )
     }
     
+    if (showVaultPicker) {
+        VaultLinkSheet(
+            onPick = { link ->
+                val current = state.textContent.text.toString()
+                state.setMessageText(if (current.isBlank()) link.reference + " " else current.trimEnd() + "\n" + link.reference + " ")
+                showVaultPicker = false
+                onDismiss()
+            },
+            onDismiss = { showVaultPicker = false },
+        )
+    }
+
     // Model picker sheet - direct ModalBottomSheet (not ModelSelector which shows its own button)
     if (showModelPicker) {
         val modelPickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -3134,4 +3158,56 @@ private fun findDialogWindow(view: View): Window? {
         current = (current as? View)?.parent
     }
     return null
+}
+
+
+/** The Vault option of the attach menu: pick a note, a subject's syllabus or a material to link to the message (nothing is uploaded). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VaultLinkSheet(onPick: (me.rerere.rikkahub.LastChatHost.VaultLink) -> Unit, onDismiss: () -> Unit) {
+    val load = me.rerere.rikkahub.LastChatHost.vaultLinks ?: return
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var items by remember { mutableStateOf<List<me.rerere.rikkahub.LastChatHost.VaultLink>?>(null) }
+    var kind by remember { mutableStateOf("Notes") }
+    var query by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) { items = runCatching { load() }.getOrDefault(emptyList()) }
+    ModalBottomSheet(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(modifier = Modifier.fillMaxHeight(0.8f).imePadding().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Link from the Vault", style = MaterialTheme.typography.titleLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            Text("Only a reference is added to your message. Nothing is uploaded.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("Notes", "Syllabus", "Materials").forEach { label ->
+                    androidx.compose.material3.FilterChip(selected = kind == label, onClick = { kind = label }, label = { Text(label) })
+                }
+            }
+            androidx.compose.material3.OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                singleLine = true,
+                placeholder = { Text("Search") },
+                shape = me.rerere.rikkahub.ui.theme.AppShapes.InputField,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            val shown = items.orEmpty().filter { it.kind == kind && (query.isBlank() || it.title.contains(query, true) || it.subtitle.contains(query, true)) }
+            when {
+                items == null -> Text("Loading", style = MaterialTheme.typography.bodyMedium)
+                shown.isEmpty() -> Text("Nothing here", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else -> androidx.compose.foundation.lazy.LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    items(shown.size) { index ->
+                        val link = shown[index]
+                        MinimalPickerItem(
+                            icon = { Icon(imageVector = Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                            title = link.title,
+                            subtitle = link.subtitle,
+                            onClick = { onPick(link) },
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

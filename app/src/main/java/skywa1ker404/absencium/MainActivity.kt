@@ -18,7 +18,12 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.generated.destinations.MainScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ReadingScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SubjectFolderScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SyllabusScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.TrashScreenDestination
 import skywa1ker404.absencium.ui.vault.ReadingMiniPlayer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -113,6 +118,26 @@ class MainActivity : ComponentActivity() {
                     if (phase == AppPhase.APP) {
                         androidx.compose.runtime.LaunchedEffect(Unit) {
                             skywa1ker404.absencium.ui.AbsenciumAi.appSettingsRequests.collect { openAiSettings = true }
+                        }
+                        // An AI action's Open button: show the entry or page it made or changed.
+                        androidx.compose.runtime.LaunchedEffect(Unit) {
+                            skywa1ker404.absencium.ui.AbsenciumAi.pendingOpen.collect { open ->
+                                if (open == null) return@collect
+                                skywa1ker404.absencium.ui.AbsenciumAi.pendingOpen.value = null
+                                val dest = when (open.type) {
+                                    skywa1ker404.absencium.data.ai.AiTargetType.NOTE -> NoteEditorScreenDestination(noteId = open.id).route
+                                    skywa1ker404.absencium.data.ai.AiTargetType.SUBJECT -> SubjectFolderScreenDestination(subjectId = open.id).route
+                                    skywa1ker404.absencium.data.ai.AiTargetType.SYLLABUS -> SyllabusScreenDestination(subjectId = open.id).route
+                                    skywa1ker404.absencium.data.ai.AiTargetType.TRASH -> TrashScreenDestination.route
+                                    skywa1ker404.absencium.data.ai.AiTargetType.ATTENDANCE -> null
+                                }
+                                if (dest != null) {
+                                    navController.navigate(dest) { launchSingleTop = true }
+                                } else {
+                                    skywa1ker404.absencium.ui.AbsenciumAi.pendingTab.value = 1
+                                    navController.popBackStack(MainScreenDestination.route, false)
+                                }
+                            }
                         }
                         androidx.compose.runtime.LaunchedEffect(openAiSettings) {
                             if (openAiSettings) {

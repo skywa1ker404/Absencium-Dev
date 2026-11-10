@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -15,11 +16,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -31,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import skywa1ker404.absencium.ui.components.AppMenu
 import skywa1ker404.absencium.ui.components.AppTextField
 import skywa1ker404.absencium.ui.components.DropdownOption
 import skywa1ker404.absencium.ui.components.ExpressiveChip
@@ -185,31 +191,30 @@ internal fun AiTaskStage(
                 }
             }
         }
-        OptionGroup(title = if (solve) "Answer length" else "Notes length", icon = AppIcons.Description, help = state.noteLength.guide.substringBefore(":")) {
-            ChoiceBar(
-                options = skywa1ker404.absencium.data.ai.NoteLength.entries,
-                selected = state.noteLength,
-                label = { it.label },
-                onSelect = viewModel::setNoteLength,
-                enabled = idle,
-            )
-            if (!solve) {
+        if (!solve) {
+            // One size setting, and its words change with the kind of notes: length for a full note, detail for key
+            // details, the time you have for last-minute preparation, and so on. What goes into the notes is decided
+            // per topic by the planning step, so there are no switches for tables, comparisons or questions.
+            val template = state.noteTemplate
+            OptionGroup(title = "Kind of notes", icon = AppIcons.Description, help = template.guide) {
                 InlineDropdown(
                     options = skywa1ker404.absencium.data.ai.NoteTemplate.entries.map { DropdownOption(it, it.label) },
-                    selected = state.noteTemplate,
+                    selected = template,
                     onSelect = viewModel::setNoteTemplate,
                     label = "Kind of notes",
                     enabled = idle,
                 )
-            }
-        }
-        OptionGroup(title = "Include", icon = AppIcons.AddRow, help = "Tap to switch each on or off") {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ExpressiveChip(selected = state.genTables, onClick = { viewModel.setGenTables(!state.genTables) }, label = { Text("Tables and comparisons") }, enabled = idle)
-                ExpressiveChip(selected = state.genPyq, onClick = { viewModel.setGenPyq(!state.genPyq) }, label = { Text("Previous year questions") }, enabled = idle)
-                if (solve) {
-                    ExpressiveChip(selected = state.genAssignment, onClick = { viewModel.setGenAssignment(!state.genAssignment) }, label = { Text("Assignment format") }, enabled = idle)
-                }
+                val depths = template.depths
+                val picked = depths.getOrElse(state.noteDepth) { depths.first() }
+                Text(template.depthTitle, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                ChoiceBar(
+                    options = depths.indices.toList(),
+                    selected = depths.indexOf(picked),
+                    label = { depths[it].label },
+                    onSelect = viewModel::setNoteDepth,
+                    enabled = idle,
+                )
+                Text(picked.guide.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
         }
         val sources by viewModel.imageSources.collectAsStateWithLifecycle()
@@ -235,6 +240,7 @@ internal fun AiTaskStage(
                 }
             }
         }
+        val courseOptions by viewModel.courseOptions.collectAsStateWithLifecycle()
         OptionGroup(title = "Your course", icon = AppIcons.Edit, help = "Keeps the answer inside what you are taught") {
             if (choices.isNotEmpty()) {
                 InlineDropdown(
@@ -246,14 +252,11 @@ internal fun AiTaskStage(
                     maxListHeight = 320.dp,
                 )
             }
-            AppTextField(
+            CourseField(
                 value = state.courseInfo,
-                onValueChange = viewModel::setCourseInfo,
-                label = { Text("Course, year or semester (optional)") },
+                options = courseOptions,
+                onChange = viewModel::setCourseInfo,
                 enabled = idle,
-                singleLine = true,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth(),
             )
         }
         if (state.aiRunning) LoadingDots(state.aiStep.ifBlank { if (solve) "Working on the answer" else "Writing your notes" })
@@ -281,6 +284,50 @@ internal fun AiTaskStage(
                     text = if (solve) "Solve" else "Generate",
                     onClick = { viewModel.runAiTask(solve, subjectName, onSaved) },
                     modifier = Modifier.weight(2f),
+                )
+            }
+        }
+    }
+}
+
+
+/**
+ * The course, year or semester. It starts as the course and year from the Profile; the arrow lists the Profile's values to pick
+ * from, the cross clears it, and anything can be typed instead. Left blank, the notes do not assume a course.
+ */
+@Composable
+private fun CourseField(value: String, options: List<String>, onChange: (String) -> Unit, enabled: Boolean) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        AppTextField(
+            value = value,
+            onValueChange = onChange,
+            label = { Text("Course, year or semester") },
+            placeholder = { Text("Optional") },
+            enabled = enabled,
+            singleLine = true,
+            shape = RoundedCornerShape(20.dp),
+            trailingIcon = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (value.isNotEmpty()) {
+                        IconButton(onClick = { onChange("") }, enabled = enabled) { Icon(AppIcons.Close, contentDescription = "Clear") }
+                    }
+                    if (options.isNotEmpty()) {
+                        IconButton(onClick = { open = true }, enabled = enabled) { Icon(AppIcons.ExpandMore, contentDescription = "Choose from your profile") }
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        AppMenu(expanded = open, onDismiss = { open = false }, solid = true) {
+            Text("From your profile", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp))
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onChange(option)
+                        open = false
+                    },
                 )
             }
         }

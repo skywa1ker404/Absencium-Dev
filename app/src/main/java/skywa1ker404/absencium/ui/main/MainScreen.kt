@@ -160,6 +160,15 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var editExam by remember { mutableStateOf<ExamEntity?>(null) }
     var editHoliday by remember { mutableStateOf<HolidayEntity?>(null) }
 
+    // The AI actions folder's Open button can ask for a tab.
+    LaunchedEffect(Unit) {
+        skywa1ker404.absencium.ui.AbsenciumAi.pendingTab.collect { wanted ->
+            if (wanted != null) {
+                tab = wanted
+                skywa1ker404.absencium.ui.AbsenciumAi.pendingTab.value = null
+            }
+        }
+    }
     BackHandler(enabled = fabOpen) { fabOpen = false }
     BackHandler(enabled = tab != TAB_HOME && !fabOpen) { tab = TAB_HOME }
     LaunchedEffect(tab) {

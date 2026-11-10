@@ -54,6 +54,9 @@ class AppContainer(context: Context) {
     val shareService: skywa1ker404.absencium.data.share.ShareService by lazy { skywa1ker404.absencium.data.share.ShareService(appContext) }
     val backupManager = BackupManager(appContext)
     val aiHistory = skywa1ker404.absencium.data.ai.AiHistory(appContext)
+
+    /** What Absencium AI made or changed, for the AI actions folder in the chat's Statistics. */
+    val aiActionLog = skywa1ker404.absencium.data.ai.AiActionLog(appContext)
     val aiUsage = skywa1ker404.absencium.data.ai.AiUsage(appContext)
     val aiClient = AiClient(apiKeyVault).also {
         it.history = aiHistory

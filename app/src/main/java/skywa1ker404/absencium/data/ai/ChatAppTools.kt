@@ -102,6 +102,7 @@ class ChatAppTools(private val container: AppContainer) {
         val APP_PROMPT: String by lazy { """You are Absencium AI, the assistant built into Absencium, the student's offline college companion app (attendance, timetable, exams, holidays, notes, syllabus, Vault). The Vault is the student's notes and drafts, their attachments (photos, documents, recordings) and their study guides: use list_vault, search_notes, list_attachments and read_note for it.
 You can look things up and change them with the app tools. Look the answer up with a tool instead of guessing, and never say something was added, changed or deleted unless the tool answered ok.
 Rules for changes: (1) Today's date and weekday come from app_overview; work out every date from it and never guess one. Pass weekday along with a date when you know it. (2) Before adding anything, look it up first (list_subjects, get_timetable, list_exams, list_holidays, list_vault, get_syllabus) and do not add what already exists. (3) For two or more changes, or anything in bulk, use apply_plan once with a plain-words summary instead of many separate calls, so the student approves once. Do each change once; if a tool answered ok, do not repeat it, and if it refused, read why instead of trying again. (4) A syllabus goes into add_syllabus, a lecture into the timetable, an exam into exams, a holiday into holidays. Never put a syllabus, timetable, exam list or study material into a note. Notes are only for text the student asked to keep as a note. (5) Study material and files can only be added by the student in the app. (6) When the request is unclear (which subject, which date, which time), ask the student instead of guessing.
+A message may hold links the student attached from the Vault: [Vault note: title (id N)], [Vault syllabus: subject] and [Vault material: name, subject (id N)]. A link is only a reference, not the content: read a note with read_note, a syllabus with get_syllabus, and look a material up with list_vault only when the question needs it. A material's file itself cannot be read; say so if its contents are needed.
 Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain.""" + "\n" + NOTE_RULES }
 
         private val NOTE_RULES: String = """
@@ -507,6 +508,26 @@ ${NotePrompts.EDITOR}
         }
     }
 
+    /**
+     * What the chat's Vault option offers: notes, subjects that have a syllabus, and materials. Each carries the one-line reference that
+     * goes into the message; only that line is sent, the content is read through the tools if the question needs it.
+     */
+    suspend fun vaultLinks(): List<me.rerere.rikkahub.LastChatHost.VaultLink> {
+        val names = container.database.subjectDao().observeAll().first().associate { it.id to it.name }
+        val notes = container.database.noteDao().observeAll().first().sortedByDescending { it.updatedAt }.map {
+            me.rerere.rikkahub.LastChatHost.VaultLink("Notes", it.title.ifBlank { "Untitled note" }, names[it.subjectId].orEmpty(), "[Vault note: ${it.title.ifBlank { "Untitled" }} (id ${it.id})]")
+        }
+        val syllabus = container.database.syllabusDao().observeAll().first().groupBy { it.subjectId }.mapNotNull { (subjectId, nodes) ->
+            val name = names[subjectId] ?: return@mapNotNull null
+            me.rerere.rikkahub.LastChatHost.VaultLink("Syllabus", name, "${nodes.size} topics", "[Vault syllabus: $name]")
+        }.sortedBy { it.title.lowercase() }
+        val materials = container.database.guideDao().observeAll().first().map {
+            val subject = names[it.subjectId].orEmpty()
+            me.rerere.rikkahub.LastChatHost.VaultLink("Materials", it.fileName, listOf(it.guideType.name.lowercase().replace('_', ' '), subject).filter { p -> p.isNotBlank() }.joinToString(" · "), "[Vault material: ${it.fileName}${if (subject.isNotBlank()) ", $subject" else ""} (id ${it.id})]")
+        }
+        return notes + syllabus + materials
+    }
+
     private suspend fun readNote(id: Long?): JsonElement {
         val note = container.vaultRepository.getNote(id ?: return fail("note_id is missing.")) ?: return fail("No such note.")
         return buildJsonObject { put("title", note.title); put("text", note.bodyText.take(20_000)) }
@@ -685,16 +706,17 @@ ${NotePrompts.EDITOR}
         build(name, description, props, required, ToolApprovalMode.Auto, run)
 
     private fun write(name: String, description: String, props: Map<String, Prop>, required: List<String> = emptyList(), needsApproval: Boolean = true, run: suspend (JsonObject) -> JsonElement) =
-        build(name, description, props, required, if (needsApproval) ToolApprovalMode.RequiresApproval else ToolApprovalMode.Auto, run)
+        build(name, description, props, required, if (needsApproval) ToolApprovalMode.RequiresApproval else ToolApprovalMode.Auto, run, log = name != "read_note")
 
-    private fun build(name: String, description: String, props: Map<String, Prop>, required: List<String>, mode: ToolApprovalMode, run: suspend (JsonObject) -> JsonElement) = Tool(
+    private fun build(name: String, description: String, props: Map<String, Prop>, required: List<String>, mode: ToolApprovalMode, run: suspend (JsonObject) -> JsonElement, log: Boolean = false) = Tool(
         name = name,
         description = description,
         parameters = { schema(props, required) },
         approvalMode = mode,
         execute = { input ->
-            try {
-                run(input as? JsonObject ?: JsonObject(emptyMap()))
+            val args = input as? JsonObject ?: JsonObject(emptyMap())
+            val result = try {
+                run(args)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: IllegalArgumentException) {
@@ -703,7 +725,62 @@ ${NotePrompts.EDITOR}
                 DebugLogger.e("ChatTools", "Tool $name failed", e)
                 fail("That could not be done.")
             }
+            if (log) record(name, args, result)
+            result
         },
+    )
+
+    /** Adds one line to the AI actions folder: what the student approved and what came of it. Never breaks the tool call. */
+    private suspend fun record(name: String, args: JsonObject, result: JsonElement) {
+        try {
+            val answer = result as? JsonObject
+            val ok = (answer?.get("ok") as? JsonPrimitive)?.booleanOrNull == true
+            val message = (answer?.get("message") as? JsonPrimitive)?.contentOrNull
+            fun shown(e: JsonElement) = (e as? JsonPrimitive)?.contentOrNull ?: e.toString()
+            val longText = setOf("body", "text", "append_text", "outline")
+            val fields = args.entries.filter { it.key !in longText && it.key != "note_id" }
+                .map { (k, v) -> k.replace("_", " ").replaceFirstChar { c -> c.uppercase() } to shown(v) }
+            val preview = longText.firstNotNullOfOrNull { k -> args.str(k) }
+            val title = listOf("title", "name", "new_name", "match", "subject", "date").firstNotNullOfOrNull { k -> args.str(k) }
+                ?: (answer?.get("title") as? JsonPrimitive)?.contentOrNull.orEmpty()
+            val (type, id) = if (ok) target(name, args, answer) else null to 0L
+            container.aiActionLog.add(
+                action = ACTION_LABELS[name] ?: name.replace("_", " ").replaceFirstChar { it.uppercase() },
+                title = title,
+                fields = fields,
+                ok = ok,
+                preview = preview,
+                error = if (ok) null else message,
+                targetType = type,
+                targetId = id,
+            )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            DebugLogger.e("ChatTools", "The AI action could not be recorded", e)
+        }
+    }
+
+    /** The place in the app where the outcome of a change can be seen, for the Open button of the AI actions folder. */
+    private suspend fun target(name: String, args: JsonObject, answer: JsonObject?): Pair<AiTargetType?, Long> = when {
+        name.startsWith("delete_") -> AiTargetType.TRASH to 0L
+        name in setOf("add_note", "update_note", "append_to_note", "set_note_status") ->
+            AiTargetType.NOTE to ((answer?.get("note_id") as? JsonPrimitive)?.longOrNull ?: args.long("note_id") ?: noteId(args.str("note_id").orEmpty()) ?: 0L)
+        name == "add_subject" || name == "rename_subject" ->
+            subject(args.str("new_name") ?: args.str("name").orEmpty())?.let { AiTargetType.SUBJECT to it.id } ?: (null to 0L)
+        name == "add_syllabus" || name == "set_syllabus_status" ->
+            subject(args.str("subject").orEmpty())?.let { AiTargetType.SYLLABUS to it.id } ?: (null to 0L)
+        else -> AiTargetType.ATTENDANCE to 0L
+    }
+
+    private val ACTION_LABELS = mapOf(
+        "add_subject" to "Added a subject", "rename_subject" to "Renamed a subject", "delete_subject" to "Deleted a subject",
+        "add_note" to "Added a note", "update_note" to "Edited a note", "append_to_note" to "Added to a note",
+        "delete_note" to "Moved a note to the Trash", "set_note_status" to "Changed a note's status",
+        "add_timetable_slot" to "Added a lecture", "update_timetable_slot" to "Edited a lecture", "delete_timetable_slot" to "Moved a lecture to the Trash",
+        "add_exam" to "Added an exam", "update_exam" to "Edited an exam", "delete_exam" to "Moved an exam to the Trash",
+        "add_holiday" to "Added a holiday", "delete_holiday" to "Moved a holiday to the Trash",
+        "set_attendance" to "Marked attendance", "add_syllabus" to "Added syllabus topics", "set_syllabus_status" to "Changed a syllabus topic",
     )
 
     private fun JsonObject.str(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }

@@ -130,6 +130,20 @@ class AbsenciumApp : Application() {
             .map { it?.generateImagesEnabled == true }
             .distinctUntilChanged()
         val chatTools = skywa1ker404.absencium.data.ai.ChatAppTools(container)
+        // The AI actions folder under Statistics.
+        me.rerere.rikkahub.LastChatHost.actions = container.aiActionLog.entries.map { list ->
+            list.map { e ->
+                me.rerere.rikkahub.LastChatHost.HostAction(
+                    id = e.id, time = e.time, action = e.action, title = e.title, fields = e.fields, ok = e.ok,
+                    preview = e.preview, error = e.error, canOpen = e.ok && e.targetType != null,
+                )
+            }
+        }
+        me.rerere.rikkahub.LastChatHost.vaultLinks = { chatTools.vaultLinks() }
+        me.rerere.rikkahub.LastChatHost.openAction = { context, id ->
+            container.aiActionLog.find(id)?.let { e -> e.targetType?.let { skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, it, e.targetId) } }
+        }
+        me.rerere.rikkahub.LastChatHost.removeAction = { id -> if (id == null) container.aiActionLog.clear() else container.aiActionLog.remove(id) }
         me.rerere.rikkahub.LastChatHost.describe = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.describe(name, args) }
         me.rerere.rikkahub.LastChatHost.planSteps = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.planSteps(name, args) }
         me.rerere.rikkahub.LastChatHost.skipPlanSteps = { name, args, skipped -> skywa1ker404.absencium.data.ai.ChatAppTools.skipPlanSteps(name, args, skipped) }

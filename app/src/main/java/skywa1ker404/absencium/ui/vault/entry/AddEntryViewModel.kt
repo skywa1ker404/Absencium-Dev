@@ -91,15 +91,13 @@ data class AddEntryState(
     val aiStep: String = "",
     /** Audio Note: also turn the recording into text with the user's AI when it is saved. */
     val transcribe: Boolean = false,
-    val noteLength: skywa1ker404.absencium.data.ai.NoteLength = skywa1ker404.absencium.data.ai.NoteLength.MODERATE,
+    /** Which choice of the kind's own size setting is picked (see NoteTemplate.depths). */
+    val noteDepth: Int = 0,
     val noteTemplate: skywa1ker404.absencium.data.ai.NoteTemplate = skywa1ker404.absencium.data.ai.NoteTemplate.FULL,
     val syllabusNodeId: Long? = null,
     val courseInfo: String = "",
     val genSearchDiagrams: Boolean = false,
     val genDrawDiagrams: Boolean = false,
-    val genTables: Boolean = true,
-    val genPyq: Boolean = false,
-    val genAssignment: Boolean = false,
     /** Audio Note: a recording in progress or waiting to be saved. */
     val recording: Boolean = false,
     val recordedPath: String? = null,
@@ -497,6 +495,10 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             try {
                 val id = container.vaultRepository.createEntry(current.subjectId, "$subjectName notes", NoteKind.TEXT, "", current.date, emptyList())
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
+                container.aiActionLog.add(
+                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = reply,
+                    targetType = skywa1ker404.absencium.data.ai.AiTargetType.NOTE, targetId = id,
+                )
                 _state.value = AddEntryState()
                 onSaved(id)
             } catch (e: CancellationException) {
@@ -565,6 +567,10 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 val id = container.vaultRepository.createEntry(current.subjectId, title, NoteKind.DOCUMENT, body.toString().trim(), current.date, attachments)
                 putPicturesOnPage(id, current.subjectId, title, body.toString().trim())
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
+                container.aiActionLog.add(
+                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = reply,
+                    targetType = skywa1ker404.absencium.data.ai.AiTargetType.NOTE, targetId = id,
+                )
                 _state.value = AddEntryState()
                 onSaved(id)
             } catch (e: CancellationException) {
@@ -662,6 +668,10 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     container.vaultRepository.saveNote(id, current.subjectId, title, body, NoteStatus.ACTIVE)
                 }
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
+                container.aiActionLog.add(
+                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = reply,
+                    targetType = skywa1ker404.absencium.data.ai.AiTargetType.NOTE, targetId = id,
+                )
                 _state.value = AddEntryState()
                 onSaved(id)
             } catch (e: CancellationException) {
@@ -677,7 +687,13 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
     fun openSolve() = _state.update { it.copy(stage = EntryStage.SOLVE, message = null, aiError = null, aiSetupMissing2 = false) }
 
-    fun openGenerate() = _state.update { it.copy(stage = EntryStage.GENERATE, message = null, aiError = null, aiSetupMissing2 = false) }
+    /** The Generate page starts with the course and year from the Profile filled in; the student can clear it or type another. */
+    fun openGenerate() = _state.update {
+        it.copy(
+            stage = EntryStage.GENERATE, message = null, aiError = null, aiSetupMissing2 = false,
+            courseInfo = profileCourseChoices(container.settingsState.value).firstOrNull().orEmpty(),
+        )
+    }
 
     fun setAiPrompt(text: String) = _state.update { it.copy(aiPrompt = text) }
 
@@ -690,15 +706,25 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
 
     fun setTranscribe(v: Boolean) = _state.update { it.copy(transcribe = v) }
 
-    fun setNoteLength(v: skywa1ker404.absencium.data.ai.NoteLength) = _state.update { it.copy(noteLength = v) }
-    fun setNoteTemplate(v: skywa1ker404.absencium.data.ai.NoteTemplate) = _state.update { it.copy(noteTemplate = v) }
+    fun setNoteDepth(v: Int) = _state.update { it.copy(noteDepth = v) }
+    /** Each kind has its own size setting, so a new kind starts at its default choice (the shortest for the full note, else the middle one). */
+    fun setNoteTemplate(v: skywa1ker404.absencium.data.ai.NoteTemplate) =
+        _state.update { it.copy(noteTemplate = v, noteDepth = if (v == skywa1ker404.absencium.data.ai.NoteTemplate.FULL) 0 else 1) }
     fun setSyllabusNode(id: Long?) = _state.update { it.copy(syllabusNodeId = id) }
     fun setCourseInfo(v: String) = _state.update { it.copy(courseInfo = v) }
     fun setGenSearchDiagrams(v: Boolean) = _state.update { it.copy(genSearchDiagrams = v) }
     fun setGenDrawDiagrams(v: Boolean) = _state.update { it.copy(genDrawDiagrams = v) }
-    fun setGenTables(v: Boolean) = _state.update { it.copy(genTables = v) }
-    fun setGenPyq(v: Boolean) = _state.update { it.copy(genPyq = v) }
-    fun setGenAssignment(v: Boolean) = _state.update { it.copy(genAssignment = v) }
+
+    /** The course, year and college from the Profile, as the choices of the course field; empty until the Profile is filled in. */
+    val courseOptions: StateFlow<List<String>> = container.settingsState
+        .map { profileCourseChoices(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private fun profileCourseChoices(s: skywa1ker404.absencium.data.settings.AppSettings?): List<String> {
+        if (s == null) return emptyList()
+        val courseAndYear = listOf(s.profileCourse, s.profileYear).filter { it.isNotBlank() }.joinToString(", ")
+        return listOf(courseAndYear, s.profileCourse, s.profileYear, s.profileCollege).map { it.trim() }.filter { it.isNotBlank() }.distinct()
+    }
 
     /** The chosen subject's syllabus tree as dropdown choices; empty when it has none. */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -731,6 +757,22 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             return
         }
         _state.update { it.copy(aiRunning = true, aiError = null, aiSetupMissing2 = false) }
+        // What the AI actions folder shows: only what the student typed and chose, never the instructions sent to the model.
+        val logAction = if (solve) "Solved homework" else "Generated notes"
+        val logTitle = (if (solve) "Homework: " else "") + (prompt.lineSequence().firstOrNull { it.isNotBlank() }?.take(60) ?: "$subjectName homework")
+        val logFields = buildList {
+            add("Subject" to subjectName)
+            if (!solve) {
+                add("Kind of notes" to current.noteTemplate.label)
+                current.noteTemplate.depths.getOrNull(current.noteDepth)?.let { add(current.noteTemplate.depthTitle to it.label) }
+            }
+            add((if (solve) "Question" else "Request") to prompt)
+            if (solve && current.pictures.isNotEmpty()) add("Photos" to current.pictures.size.toString())
+            syllabusChoices.value.firstOrNull { it.id == current.syllabusNodeId }?.let { add("Syllabus topic" to it.label) }
+            add("Course" to current.courseInfo)
+            val pictures = listOfNotNull("Search online".takeIf { current.genSearchDiagrams }, "Generate with AI".takeIf { current.genDrawDiagrams })
+            if (pictures.isNotEmpty()) add("Images" to pictures.joinToString(", "))
+        }
         aiJob = viewModelScope.launch {
             try {
                 val connection = AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
@@ -748,20 +790,33 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 val brief = skywa1ker404.absencium.data.ai.NoteBrief(
                     request = prompt,
                     subject = subjectName,
-                    length = current.noteLength,
-                    template = current.noteTemplate,
+                    template = if (solve) skywa1ker404.absencium.data.ai.NoteTemplate.FULL else current.noteTemplate,
+                    depthIndex = current.noteDepth,
                     syllabus = skywa1ker404.absencium.data.ai.SyllabusPath.context(nodes, current.syllabusNodeId, current.courseInfo)
                         .let { if (it.isEmpty && current.courseInfo.isNotBlank()) it.copy(course = current.courseInfo.trim()) else it },
                     searchDiagrams = useSearch,
                     drawDiagrams = useDraw,
-                    tablesAndGraphs = current.genTables,
-                    pyq = current.genPyq,
-                    assignment = solve && current.genAssignment,
                     hasPhotos = images.isNotEmpty(),
                 )
+                // Notes are planned first: a short call decides which parts this topic needs, and the writing call follows
+                // that plan. If planning fails the notes are still written, with the model told to decide the parts itself.
+                var plan: String? = null
+                if (!solve) {
+                    _state.update { it.copy(aiStep = "Working out what the topic needs") }
+                    plan = try {
+                        skywa1ker404.absencium.data.ai.NotePrompts.parsePlan(
+                            container.aiClient.generate(connection, skywa1ker404.absencium.data.ai.NotePrompts.plan(brief), emptyList(), maxTokens = PLAN_TOKENS, record = false),
+                        )
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Throwable) {
+                        DebugLogger.e("Vault", "Planning the notes failed; the notes are written without a plan", e)
+                        null
+                    }
+                }
                 _state.update { it.copy(aiStep = if (solve) "Working on the answer" else "Writing your notes") }
-                val ask = if (solve) skywa1ker404.absencium.data.ai.NotePrompts.homework(brief) else skywa1ker404.absencium.data.ai.NotePrompts.notes(brief)
-                val raw = container.aiClient.generate(connection, ask, images, maxTokens = current.noteLength.maxTokens)
+                val ask = if (solve) skywa1ker404.absencium.data.ai.NotePrompts.homework(brief) else skywa1ker404.absencium.data.ai.NotePrompts.notes(brief, plan)
+                val raw = container.aiClient.generate(connection, ask, images, maxTokens = if (solve) HOMEWORK_TOKENS else brief.depth.maxTokens)
                 if (raw.isBlank()) throw AiException("The model sent back an empty answer.")
                 val reply = try {
                     skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(raw)
@@ -831,15 +886,21 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     container.vaultRepository.saveNote(id, current.subjectId, title, body, NoteStatus.ACTIVE)
                 }
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
+                container.aiActionLog.add(
+                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = reply,
+                    targetType = skywa1ker404.absencium.data.ai.AiTargetType.NOTE, targetId = id,
+                )
                 _state.value = AddEntryState()
                 onSaved(id)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: AiException) {
+                container.aiActionLog.add(logAction, logTitle, logFields, ok = false, error = e.message?.lineSequence()?.firstOrNull())
                 _state.update { it.copy(aiRunning = false, aiError = skywa1ker404.absencium.data.ai.AI_FAILED_INLINE) }
             } catch (e: Throwable) {
                 // Errors (not only exceptions) are shown instead of ending the app; the stack trace goes to debug.log.
                 DebugLogger.e("Vault", "The AI task failed", e)
+                container.aiActionLog.add(logAction, logTitle, logFields, ok = false, error = e.message ?: e.javaClass.simpleName)
                 _state.update { it.copy(aiRunning = false, aiError = "Something went wrong: ${e.message ?: e.javaClass.simpleName}") }
             }
         }
@@ -862,6 +923,8 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
         const val NEEDS_TRANSCRIPT = "Paste the video's transcript below. Only Gemini can write notes from the link alone."
         const val MAX_EXTRACT_PHOTOS = 8
         const val EXTRACT_EDGE = 1600
+        const val PLAN_TOKENS = 900
+        const val HOMEWORK_TOKENS = 12_000
     }
 
     override fun onCleared() {

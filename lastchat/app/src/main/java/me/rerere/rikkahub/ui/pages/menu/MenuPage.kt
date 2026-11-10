@@ -54,6 +54,7 @@ import me.rerere.rikkahub.ui.modifier.shimmer
 import me.rerere.rikkahub.ui.motion.LocalMotionPolicy
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.utils.plus
+import me.rerere.rikkahub.LastChatHost
 import me.rerere.rikkahub.R
 import kotlinx.coroutines.delay
 import me.rerere.common.calendar.CalendarHeatmapDay
@@ -258,6 +259,10 @@ private fun MenuStatsContent(
                     }
                 }
             )
+        }
+
+        if (LastChatHost.actions != null) {
+            item { AiActionsFolder() }
         }
 
         item {

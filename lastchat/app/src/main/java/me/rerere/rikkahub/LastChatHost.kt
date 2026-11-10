@@ -38,6 +38,35 @@ object LastChatHost {
 
     var describe: (toolName: String, arguments: String) -> Pair<String, String>? = { _, _ -> null }
 
+    /** One thing the host's AI did, for the AI actions folder under Statistics. [fields] are only what the student typed or chose. */
+    data class HostAction(
+        val id: Long,
+        val time: Long,
+        val action: String,
+        val title: String,
+        val fields: List<Pair<String, String>>,
+        val ok: Boolean,
+        val preview: String?,
+        val error: String?,
+        /** True when the host can show the entry or page this action belongs to (the Open button). */
+        val canOpen: Boolean,
+    )
+
+    /** Something in the host's Vault that can be linked to a message. [reference] is the line put into the message; nothing is uploaded. */
+    data class VaultLink(val kind: String, val title: String, val subtitle: String, val reference: String)
+
+    /** What the Vault option of the attach menu offers. When null, the menu has no Vault option. */
+    var vaultLinks: (suspend () -> List<VaultLink>)? = null
+
+    /** The host's AI actions, newest first. When null, the chat shows no AI actions folder. */
+    var actions: kotlinx.coroutines.flow.Flow<List<HostAction>>? = null
+
+    /** Shows the entry or page of an action in the host (and leaves the chat). */
+    var openAction: (android.content.Context, Long) -> Unit = { _, _ -> }
+
+    /** Removes one action from the list, or all of them when the id is null. */
+    var removeAction: (Long?) -> Unit = {}
+
     /** The steps of a plan-like tool call, one line each, so the approval card can show a tick box per step. Null when the call has none. */
     var planSteps: (toolName: String, arguments: String) -> List<String>? = { _, _ -> null }
 

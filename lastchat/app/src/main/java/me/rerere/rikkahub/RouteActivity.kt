@@ -942,6 +942,10 @@ fun ChatAppRoutes(
                     MenuPage()
                 }
 
+                composable<Screen.AiActions> {
+                    me.rerere.rikkahub.ui.pages.menu.AiActionsPage()
+                }
+
                 composable<Screen.Setting> {
                     AdaptiveSettingsScaffold(
                         selected = SettingsDestination.Display,
@@ -1390,6 +1394,9 @@ sealed interface Screen {
 
     @Serializable
     data object Menu : Screen
+
+    @Serializable
+    data object AiActions : Screen
 
     @Serializable
     data object Setting : Screen
