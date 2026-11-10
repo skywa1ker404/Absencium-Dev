@@ -495,10 +495,6 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             try {
                 val id = container.vaultRepository.createEntry(current.subjectId, "$subjectName notes", NoteKind.TEXT, "", current.date, emptyList())
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
-                container.aiActionLog.add(
-                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = reply,
-                    targetType = skywa1ker404.absencium.data.ai.AiTargetType.NOTE, targetId = id,
-                )
                 _state.value = AddEntryState()
                 onSaved(id)
             } catch (e: CancellationException) {
@@ -567,10 +563,6 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 val id = container.vaultRepository.createEntry(current.subjectId, title, NoteKind.DOCUMENT, body.toString().trim(), current.date, attachments)
                 putPicturesOnPage(id, current.subjectId, title, body.toString().trim())
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
-                container.aiActionLog.add(
-                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = reply,
-                    targetType = skywa1ker404.absencium.data.ai.AiTargetType.NOTE, targetId = id,
-                )
                 _state.value = AddEntryState()
                 onSaved(id)
             } catch (e: CancellationException) {
@@ -668,10 +660,6 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     container.vaultRepository.saveNote(id, current.subjectId, title, body, NoteStatus.ACTIVE)
                 }
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
-                container.aiActionLog.add(
-                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = reply,
-                    targetType = skywa1ker404.absencium.data.ai.AiTargetType.NOTE, targetId = id,
-                )
                 _state.value = AddEntryState()
                 onSaved(id)
             } catch (e: CancellationException) {
@@ -887,7 +875,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 }
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
                 container.aiActionLog.add(
-                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = reply,
+                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(reply),
                     targetType = skywa1ker404.absencium.data.ai.AiTargetType.NOTE, targetId = id,
                 )
                 _state.value = AddEntryState()
