@@ -213,7 +213,7 @@ class HolidayImporter(private val client: AiClient, private val tasks: AiTasks) 
 data class ExamCandidate(val subject: String, val title: String, val date: LocalDate, val room: String?)
 
 /** Asks the user's AI model to read an exam timetable and returns what it found, for the user to review. */
-class ExamImporter(private val client: AiClient) {
+class ExamImporter(private val client: AiClient, private val tasks: AiTasks) {
 
     suspend fun extract(
         connection: AiConnection,

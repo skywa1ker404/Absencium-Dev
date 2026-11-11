@@ -110,7 +110,7 @@ data class ImportState(
 class ImportViewModel(private val container: AppContainer) : ViewModel() {
 
     private val holidayImporter = HolidayImporter(container.aiClient, container.aiTasks)
-    private val examImporter = ExamImporter(container.aiClient)
+    private val examImporter = ExamImporter(container.aiClient, container.aiTasks)
     private val store = container.attachmentStore
 
     val subjects: StateFlow<List<SubjectEntity>> = container.database.subjectDao().observeAll()
