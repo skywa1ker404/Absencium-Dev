@@ -51,6 +51,7 @@ class AppContainer(context: Context) {
     val apiKeyVault = ApiKeyVault(appContext).also { vault -> vault.legacyOwner = { settingsState.value?.aiProvider } }
     /** URL, model and request style of every provider the student has set up (keys stay in [apiKeyVault]). */
     val attachmentStore = AttachmentStore(appContext)
+    val studyExport: skywa1ker404.absencium.data.export.StudyExport by lazy { skywa1ker404.absencium.data.export.StudyExport(appContext) }
     val shareService: skywa1ker404.absencium.data.share.ShareService by lazy { skywa1ker404.absencium.data.share.ShareService(appContext) }
     val backupManager = BackupManager(appContext)
     val aiHistory = skywa1ker404.absencium.data.ai.AiHistory(appContext)
