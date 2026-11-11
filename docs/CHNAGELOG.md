@@ -129,3 +129,4 @@ working on it
 - Changed (branch Absencium-ai): Add Entry notes and homework are made by Absencium AI in a hidden chat that saves the note itself, instead of a separate AI path.
 - Added (branch Absencium-ai): an Excused attendance status (a medical or approved absence) in the day sheet; like Cancelled it is left out of the percentage.
 - Added (branch Absencium-ai): Absencium AI tools to list and restore Trash items, move, duplicate and bulk move or delete notes, view a month of the calendar, mark attendance over a range of days, and filter the timetable by room; exams show days left.
+- Changed (branch Absencium-ai): syllabus outline import, holiday and exam import, text from photos and the editor's AI requests are now hidden Absencium AI chats listed in AI actions, instead of separate AI calls.
