@@ -127,3 +127,5 @@ working on it
 - Added (branch Absencium-ai): Absencium AI tools to edit, move and delete a syllabus topic and to read the text of a Vault material (the student approves each read); the tools are listed in category folders in the assistant's Tools tab.
 - Changed (branch Absencium-ai): the AI actions folder now lists hidden Absencium AI chats, one per action, like the normal chat list; they can be opened and read but not written to (the prompt field says Read only).
 - Changed (branch Absencium-ai): Add Entry notes and homework are made by Absencium AI in a hidden chat that saves the note itself, instead of a separate AI path.
+- Added (branch Absencium-ai): an Excused attendance status (a medical or approved absence) in the day sheet; like Cancelled it is left out of the percentage.
+- Added (branch Absencium-ai): Absencium AI tools to list and restore Trash items, move, duplicate and bulk move or delete notes, view a month of the calendar, mark attendance over a range of days, and filter the timetable by room; exams show days left.

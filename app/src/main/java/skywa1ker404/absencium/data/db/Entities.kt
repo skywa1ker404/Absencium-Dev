@@ -13,7 +13,8 @@ import java.util.UUID
 // Enums are stored as their name (TEXT). Dates are stored as ISO-8601 text
 // (see Converters), so ordering by a date column sorts chronologically.
 
-enum class AttendanceStatus { PRESENT, ABSENT, CANCELLED }
+/** EXCUSED (a medical or approved absence) is left out of the percentage, exactly like CANCELLED. */
+enum class AttendanceStatus { PRESENT, ABSENT, CANCELLED, EXCUSED }
 
 /** DRAFT is a note that was saved from the Create New Entry screen but is not filed in its folder yet. */
 enum class NoteStatus { ACTIVE, FINISHED, DRAFT }

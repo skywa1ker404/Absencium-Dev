@@ -111,6 +111,10 @@ class ChatAppTools(private val container: AppContainer, private val chatId: Stri
             listOf("get_attendance", "set_attendance").forEach { put(it, "Attendance") }
             listOf("get_syllabus", "add_syllabus", "set_syllabus_status", "edit_syllabus_topic", "move_syllabus_topic", "delete_syllabus_topic").forEach { put(it, "Syllabus") }
             put("read_material", "Materials")
+            put("list_trash", "Trash"); put("restore_from_trash", "Trash")
+            put("calendar_view", "Overview and search")
+            listOf("move_note", "bulk_move_notes", "bulk_delete_notes", "duplicate_note").forEach { put(it, "Vault and notes") }
+            put("bulk_set_attendance", "Attendance")
         }
 
         /** What one step of a plan may be: only adding and changing, never deleting. */
@@ -165,7 +169,7 @@ ${NotePrompts.EDITOR}
         // Looking things up
         read("app_overview", "Today's date, the subjects, the lectures today, upcoming exams and the attendance percentage per subject. Call this first when the question is about the student's college life.", emptyMap()) { overview() }.copy(systemPrompt = { _, _ -> APP_PROMPT }),
         read("list_subjects", "All subjects.", emptyMap()) { subjectsJson() },
-        read("get_timetable", "The weekly timetable. Optional day (MONDAY..SUNDAY) to get one day only.", mapOf("day" to text("MONDAY..SUNDAY"))) { a -> timetable(a.str("day")) },
+        read("get_timetable", "The weekly timetable. Optional day (MONDAY..SUNDAY) to get one day only, and an optional room to list only the lectures held there.", mapOf("day" to text("MONDAY..SUNDAY"), "room" to text("Room, optional"))) { a -> timetable(a.str("day"), a.str("room")) },
         read("list_exams", "Exams with dates and rooms. upcoming_only defaults to true.", mapOf("upcoming_only" to bool("Only exams from today on"))) { a -> exams(a.bool("upcoming_only") ?: true) },
         read("list_holidays", "Holidays from today on, or all of them when all is true.", mapOf("all" to bool("Include past holidays"))) { a -> holidays(a.bool("all") ?: false) },
         read("get_attendance", "Attendance counts (present, absent, cancelled, percentage) for one subject or all, and its last 15 marked days.", mapOf("subject" to text("Subject name; leave out for all"))) { a -> attendance(a.str("subject")) },
@@ -173,6 +177,8 @@ ${NotePrompts.EDITOR}
         read("search_notes", "Searches note titles, text, tags and attachment text. Returns id, subject, title and a short snippet.", mapOf("query" to text("Words to look for"), "subject" to text("Optional subject name")), required = listOf("query")) { a -> searchNotes(a.req("query"), a.str("subject")) },
         read("list_vault", "The Vault: the student's notes (with status ACTIVE, FINISHED or DRAFT, tags and how many attachments each has) and the study guides (question papers, syllabus files, answer banks) per subject. Optional subject and status filters.", mapOf("subject" to text("Optional subject name"), "status" to text("Optional ACTIVE, FINISHED or DRAFT"))) { a -> vault(a.str("subject"), a.str("status")) },
         read("list_attachments", "The photos, documents, recordings and sketches attached to one note, with the text read from them.", mapOf("note_id" to num("Note id from list_vault or search_notes")), required = listOf("note_id")) { a -> attachments(a.long("note_id")) },
+        read("list_trash", "Everything in the Trash (notes, exams, holidays, lectures) with the key to restore each.", emptyMap()) { trashJson() },
+        read("calendar_view", "One month of the calendar: per day the holiday, the exams and the attendance marked. month is YYYY-MM (default this month).", mapOf("month" to text("YYYY-MM"))) { a -> calendarView(a.str("month")) },
         read("search_app", "Searches everything by words: subjects, notes, exams, holidays and syllabus topics.", mapOf("query" to text("Words to look for")), required = listOf("query")) { a -> searchApp(a.req("query")) },
         write("read_note", "Reads the whole text of one note (the student approves each time, because it is sent to the AI provider).", mapOf("note_id" to num("Note id from search_notes")), required = listOf("note_id"), needsApproval = true) { a -> readNote(a.long("note_id")) },
 
@@ -288,9 +294,9 @@ ${NotePrompts.EDITOR}
             container.calendarRepository.deleteHoliday(h)
             ok("Moved the holiday to the Trash.")
         },
-        write("set_attendance", "Marks a subject PRESENT, ABSENT or CANCELLED on a date that is today or earlier. Marking the same status again does nothing.", mapOf("subject" to text("Subject name"), "date" to text("YYYY-MM-DD"), "status" to text("PRESENT, ABSENT or CANCELLED"), "weekday" to text("Weekday of that date, to double-check it")), required = listOf("subject", "date", "status")) { a ->
+        write("set_attendance", "Marks a subject PRESENT, ABSENT, CANCELLED or EXCUSED (a medical or approved absence, left out of the percentage like CANCELLED) on a date that is today or earlier. Marking the same status again does nothing.", mapOf("subject" to text("Subject name"), "date" to text("YYYY-MM-DD"), "status" to text("PRESENT, ABSENT or CANCELLED"), "weekday" to text("Weekday of that date, to double-check it")), required = listOf("subject", "date", "status")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
-            val status = runCatching { AttendanceStatus.valueOf(a.req("status").trim().uppercase()) }.getOrNull() ?: return@write fail("Status must be PRESENT, ABSENT or CANCELLED.")
+            val status = runCatching { AttendanceStatus.valueOf(a.req("status").trim().uppercase()) }.getOrNull() ?: return@write fail("Status must be PRESENT, ABSENT, CANCELLED or EXCUSED.")
             val d = date(a.req("date")) ?: return@write fail("Date must look like 2026-12-05.")
             dateProblem(d, a.str("weekday"), future = false)?.let { return@write fail(it) }
             if (d.isAfter(LocalDate.now())) return@write fail("Attendance can only be marked for today or an earlier day.")
@@ -300,6 +306,63 @@ ${NotePrompts.EDITOR}
             if (current?.status == status) return@write ok("Already marked ${status.name}.")
             container.calendarRepository.setAttendance(s.id, d, status)
             ok("Attendance marked.")
+        },
+        write("restore_from_trash", "Brings one item back from the Trash. key is from list_trash, like NOTE-12.", mapOf("key" to text("Key from list_trash")), required = listOf("key")) { a ->
+            val item = container.trashRepository.items.first().firstOrNull { it.key.equals(a.req("key").trim(), true) } ?: return@write fail("Nothing in the Trash has that key.")
+            container.trashRepository.restore(item)
+            ok("Restored \"${item.title}\".")
+        },
+        write("move_note", "Moves a note to another subject.", mapOf("note_id" to num("Note id"), "subject" to text("Subject to move it to")), required = listOf("note_id", "subject")) { a ->
+            val note = container.vaultRepository.getNote(a.long("note_id") ?: return@write fail("note_id is missing.")) ?: return@write fail("No such note.")
+            val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
+            container.vaultRepository.saveNote(note.id, s.id, note.title, note.bodyText, note.status, note.tags)
+            ok("Moved the note to ${s.name}.")
+        },
+        write("bulk_move_notes", "Moves several notes to another subject.", mapOf("note_ids" to text("Note ids separated by commas"), "subject" to text("Subject to move them to")), required = listOf("note_ids", "subject")) { a ->
+            val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
+            var moved = 0
+            for (id in a.req("note_ids").split(',', ' ', ';').mapNotNull { it.trim().toLongOrNull() }.distinct().take(50)) {
+                val note = container.vaultRepository.getNote(id) ?: continue
+                container.vaultRepository.saveNote(note.id, s.id, note.title, note.bodyText, note.status, note.tags)
+                moved++
+            }
+            ok("Moved $moved notes to ${s.name}.")
+        },
+        write("bulk_delete_notes", "Moves several notes to the Trash.", mapOf("note_ids" to text("Note ids separated by commas")), required = listOf("note_ids")) { a ->
+            var gone = 0
+            for (id in a.req("note_ids").split(',', ' ', ';').mapNotNull { it.trim().toLongOrNull() }.distinct().take(50)) {
+                val note = container.vaultRepository.getNote(id) ?: continue
+                container.vaultRepository.deleteNote(note)
+                gone++
+            }
+            ok("Moved $gone notes to the Trash.")
+        },
+        write("duplicate_note", "Makes a copy of a note's title and text in the same subject (attachments are not copied).", mapOf("note_id" to num("Note id")), required = listOf("note_id")) { a ->
+            val note = container.vaultRepository.getNote(a.long("note_id") ?: return@write fail("note_id is missing.")) ?: return@write fail("No such note.")
+            val title = note.title + " (copy)"
+            val id = container.vaultRepository.saveNote(0, note.subjectId, title, note.bodyText, note.status, note.tags)
+            saved("Duplicated the note.", id, title, note.bodyText)
+        },
+        write("bulk_set_attendance", "Marks one subject on every lecture day between two dates (both included, today or earlier). Holidays and days without a lecture of that subject are skipped.", mapOf("subject" to text("Subject name"), "from" to text("First day YYYY-MM-DD"), "to" to text("Last day YYYY-MM-DD"), "status" to text("PRESENT, ABSENT, CANCELLED or EXCUSED")), required = listOf("subject", "from", "to", "status")) { a ->
+            val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
+            val status = runCatching { AttendanceStatus.valueOf(a.req("status").trim().uppercase()) }.getOrNull() ?: return@write fail("Status must be PRESENT, ABSENT, CANCELLED or EXCUSED.")
+            val from = date(a.req("from")) ?: return@write fail("from must look like 2026-12-05.")
+            val to = date(a.req("to")) ?: return@write fail("to must look like 2026-12-05.")
+            if (to.isBefore(from)) return@write fail("to is before from.")
+            if (java.time.temporal.ChronoUnit.DAYS.between(from, to) > 120) return@write fail("Mark at most 120 days at a time.")
+            val lectureDays = container.database.timetableDao().observeAll().first().filter { it.subjectId == s.id }.map { it.dayOfWeek }.toSet()
+            val today = LocalDate.now()
+            val holidays = container.database.holidayDao().observeAll().first().map { it.date }.toSet()
+            var marked = 0
+            var d = from
+            while (!d.isAfter(to)) {
+                if (!d.isAfter(today) && d.dayOfWeek in lectureDays && d !in holidays) {
+                    if (container.database.attendanceDao().getFor(s.id, d)?.status != status) container.calendarRepository.setAttendance(s.id, d, status)
+                    marked++
+                }
+                d = d.plusDays(1)
+            }
+            if (marked == 0) fail("No lecture days of ${s.name} fall between those dates.") else ok("Marked $marked days ${status.name}.")
         },
         write("add_syllabus", "Adds syllabus topics to a subject's Syllabus (not to notes). outline has one title per line, nested by two spaces of indentation per level (unit, chapter, topic, subtopic). Titles already in the syllabus are skipped.", mapOf("subject" to text("Subject name"), "outline" to text("One topic per line, indented to nest"), "under" to text("Optional existing topic to add below")), required = listOf("subject", "outline")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
@@ -423,13 +486,13 @@ ${NotePrompts.EDITOR}
         })
     }
 
-    private suspend fun timetable(dayName: String?): JsonElement {
+    private suspend fun timetable(dayName: String?, room: String? = null): JsonElement {
         val data = container.calendarRepository.data.first()
         val names = data.subjects.associate { it.id to it.name }
         val wanted = dayName?.let { day(it) ?: return fail("Unknown day.") }
         return buildJsonObject {
             put("lectures", buildJsonArray {
-                data.timetable.filter { wanted == null || it.dayOfWeek == wanted }
+                data.timetable.filter { (wanted == null || it.dayOfWeek == wanted) && (room == null || it.roomNumber.orEmpty().contains(room.trim(), true)) }
                     .sortedWith(compareBy({ it.dayOfWeek }, { it.startTime })).forEach { add(slotJson(it, names)) }
             })
         }
@@ -716,12 +779,14 @@ ${NotePrompts.EDITOR}
         val present = rows.count { it.status == AttendanceStatus.PRESENT }
         val absent = rows.count { it.status == AttendanceStatus.ABSENT }
         val cancelled = rows.count { it.status == AttendanceStatus.CANCELLED }
+        val excused = rows.count { it.status == AttendanceStatus.EXCUSED }
         val counted = present + absent
         return buildJsonObject {
             put("subject", s.name)
             put("present", present)
             put("absent", absent)
             put("cancelled", cancelled)
+            put("excused", excused)
             put("percentage", if (counted == 0) JsonPrimitive("no classes counted yet") else JsonPrimitive(String.format(Locale.US, "%.1f", present * 100.0 / counted)))
         }
     }
@@ -734,12 +799,49 @@ ${NotePrompts.EDITOR}
         t.roomNumber?.let { put("room", it) }
     }
 
+    private suspend fun trashJson(): JsonElement {
+        val items = container.trashRepository.items.first()
+        return buildJsonObject {
+            put("items", buildJsonArray {
+                items.forEach { add(buildJsonObject { put("key", it.key); put("kind", it.kind.label); put("title", it.title); put("detail", it.detail) }) }
+            })
+        }
+    }
+
+    private suspend fun calendarView(month: String?): JsonElement {
+        val ym = runCatching { month?.trim()?.takeIf { it.isNotEmpty() }?.let { java.time.YearMonth.parse(it) } }.getOrNull() ?: if (month.isNullOrBlank()) java.time.YearMonth.now() else return fail("month must look like 2026-12.")
+        val data = container.calendarRepository.data.first()
+        val names = data.subjects.associate { it.id to it.name }
+        return buildJsonObject {
+            put("month", ym.toString())
+            put("days", buildJsonArray {
+                for (day in 1..ym.lengthOfMonth()) {
+                    val d = ym.atDay(day)
+                    val holiday = data.holidays.firstOrNull { it.date == d }
+                    val exams = data.exams.filter { it.date == d }
+                    val marks = data.attendance.filter { it.date == d }
+                    val lectures = data.timetable.count { it.dayOfWeek == d.dayOfWeek }
+                    if (holiday == null && exams.isEmpty() && marks.isEmpty() && lectures == 0) continue
+                    add(buildJsonObject {
+                        put("date", d.toString())
+                        put("weekday", d.dayOfWeek.name)
+                        put("lectures", if (holiday != null) 0 else lectures)
+                        holiday?.let { put("holiday", it.title) }
+                        if (exams.isNotEmpty()) put("exams", buildJsonArray { exams.forEach { add("${names[it.subjectId].orEmpty()}: ${it.title}") } })
+                        if (marks.isNotEmpty()) put("attendance", buildJsonArray { marks.forEach { add("${names[it.subjectId].orEmpty()}: ${it.status.name}") } })
+                    })
+                }
+            })
+        }
+    }
+
     private fun examJson(e: skywa1ker404.absencium.data.db.ExamEntity, names: Map<Long, String>) = buildJsonObject {
         put("subject", names[e.subjectId].orEmpty())
         put("title", e.title)
         put("date", e.date.toString())
         e.room?.let { put("room", it) }
         e.weightage?.let { put("weightage", it) }
+        put("days_left", java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), e.date))
     }
 
     private suspend fun subject(name: String): SubjectEntity? {
@@ -862,8 +964,11 @@ ${NotePrompts.EDITOR}
 
     /** The place in the app where the outcome of a change can be seen, for the Open button of the AI actions folder. */
     private suspend fun target(name: String, args: JsonObject, answer: JsonObject?): Pair<AiTargetType?, Long> = when {
-        name.startsWith("delete_") -> AiTargetType.TRASH to 0L
-        name in setOf("add_note", "update_note", "append_to_note", "set_note_status") ->
+        name == "delete_syllabus_topic" || name == "edit_syllabus_topic" || name == "move_syllabus_topic" ->
+            subject(args.str("subject").orEmpty())?.let { AiTargetType.SYLLABUS to it.id } ?: (null to 0L)
+        name.startsWith("delete_") || name == "bulk_delete_notes" || name == "restore_from_trash" -> AiTargetType.TRASH to 0L
+        name == "bulk_move_notes" -> subject(args.str("subject").orEmpty())?.let { AiTargetType.SUBJECT to it.id } ?: (null to 0L)
+        name in setOf("add_note", "update_note", "append_to_note", "set_note_status", "duplicate_note", "move_note") ->
             AiTargetType.NOTE to ((answer?.get("note_id") as? JsonPrimitive)?.longOrNull ?: args.long("note_id") ?: noteId(args.str("note_id").orEmpty()) ?: 0L)
         name == "add_subject" || name == "rename_subject" ->
             subject(args.str("new_name") ?: args.str("name").orEmpty())?.let { AiTargetType.SUBJECT to it.id } ?: (null to 0L)
@@ -879,7 +984,7 @@ ${NotePrompts.EDITOR}
         "add_timetable_slot" to "Added a lecture", "update_timetable_slot" to "Edited a lecture", "delete_timetable_slot" to "Moved a lecture to the Trash",
         "add_exam" to "Added an exam", "update_exam" to "Edited an exam", "delete_exam" to "Moved an exam to the Trash",
         "add_holiday" to "Added a holiday", "delete_holiday" to "Moved a holiday to the Trash",
-        "set_attendance" to "Marked attendance", "add_syllabus" to "Added syllabus topics", "edit_syllabus_topic" to "Edited a syllabus topic", "move_syllabus_topic" to "Moved a syllabus topic", "delete_syllabus_topic" to "Deleted a syllabus topic", "set_syllabus_status" to "Changed a syllabus topic",
+        "set_attendance" to "Marked attendance", "add_syllabus" to "Added syllabus topics", "edit_syllabus_topic" to "Edited a syllabus topic", "restore_from_trash" to "Restored from the Trash", "move_note" to "Moved a note", "bulk_move_notes" to "Moved notes", "bulk_delete_notes" to "Moved notes to the Trash", "duplicate_note" to "Duplicated a note", "bulk_set_attendance" to "Marked attendance", "move_syllabus_topic" to "Moved a syllabus topic", "delete_syllabus_topic" to "Deleted a syllabus topic", "set_syllabus_status" to "Changed a syllabus topic",
     )
 
     /** The one syllabus topic of a subject matching [title] (exact first, then partly), or null when none or several do. */

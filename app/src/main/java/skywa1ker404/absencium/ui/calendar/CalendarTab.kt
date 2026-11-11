@@ -714,6 +714,7 @@ private fun AttendanceStatus.chipLabel(): String = when (this) {
     AttendanceStatus.PRESENT -> "Present"
     AttendanceStatus.ABSENT -> "Absent"
     AttendanceStatus.CANCELLED -> "Cancelled"
+    AttendanceStatus.EXCUSED -> "Excused"
 }
 
 /**
