@@ -14,6 +14,9 @@ enum class ThemeMode {
     SYSTEM_AUTO,
 }
 
+/** How marks and grade points are shown on the Grades page. */
+enum class MarksScale { PERCENTAGE, CGPA_10, GPA_4 }
+
 enum class ColorEngine {
     /** The built-in olive and grey palette, in light and dark. Works on every Android version. */
     DEFAULT_PALETTE,
@@ -37,6 +40,7 @@ data class AppSettings(
     val profileYear: String = "",
     val profileCollege: String = "",
     val themeMode: ThemeMode = ThemeMode.SYSTEM_AUTO,
+    val marksScale: MarksScale = MarksScale.PERCENTAGE,
     val colorEngine: ColorEngine = ColorEngine.DEFAULT_PALETTE,
     /** Used while [colorEngine] is [ColorEngine.PRESET]; remembered otherwise. */
     val themePreset: ThemePreset = ThemePreset.CATPPUCCIN,

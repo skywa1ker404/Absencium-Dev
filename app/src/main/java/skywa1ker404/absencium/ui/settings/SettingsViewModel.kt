@@ -32,6 +32,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setThemeMode(mode: ThemeMode) = launch { repository.setThemeMode(mode) }
 
+    fun setMarksScale(scale: skywa1ker404.absencium.data.settings.MarksScale) = launch { repository.setMarksScale(scale) }
+
     fun setColorEngine(engine: ColorEngine) = launch { repository.setColorEngine(engine) }
 
     fun setThemePreset(preset: ThemePreset) = launch {

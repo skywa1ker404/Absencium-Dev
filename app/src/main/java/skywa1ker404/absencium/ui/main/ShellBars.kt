@@ -599,7 +599,7 @@ fun ShellSearchButton(
 
 /** The top bar: the app name on the left and the profile avatar (initials) on the right. */
 @Composable
-fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier = Modifier) {
+fun ShellTopBar(displayName: String, onProfile: () -> Unit, onStudyTools: () -> Unit, modifier: Modifier = Modifier) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     Row(
@@ -611,6 +611,29 @@ fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier =
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AbsenciumWordmark(color = colors.primary)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        val toolsInteraction = remember { MutableInteractionSource() }
+        val toolsPressed by toolsInteraction.collectIsPressedAsState()
+        val toolsScale by animateFloatAsState(
+            targetValue = if (toolsPressed) 0.9f else 1f,
+            animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+            label = "toolsPress",
+        )
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .graphicsLayer {
+                    scaleX = toolsScale
+                    scaleY = toolsScale
+                }
+                .clip(CircleShape)
+                .background(colors.secondaryContainer)
+                .clickable(interactionSource = toolsInteraction, indication = LocalIndication.current, onClick = onStudyTools)
+                .semantics { contentDescription = "Study Tools" },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(AppIcons.School, contentDescription = null, tint = colors.onSecondaryContainer)
+        }
         val interaction = remember { MutableInteractionSource() }
         val pressed by interaction.collectIsPressedAsState()
         val scale by animateFloatAsState(
@@ -641,6 +664,7 @@ fun ShellTopBar(displayName: String, onProfile: () -> Unit, modifier: Modifier =
                     color = colors.onPrimaryContainer,
                 )
             }
+        }
         }
     }
 }

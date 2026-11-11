@@ -65,6 +65,8 @@ class SettingsRepository(context: Context) {
 
     suspend fun setThemeMode(value: ThemeMode) = write(Keys.THEME_MODE, value.name)
 
+    suspend fun setMarksScale(value: skywa1ker404.absencium.data.settings.MarksScale) = write(Keys.MARKS_SCALE, value.name)
+
     suspend fun setColorEngine(value: ColorEngine) = write(Keys.COLOR_ENGINE, value.name)
 
     /** Picking a preset also switches the engine to Presets, in one write, so the theme changes at once. */
@@ -192,6 +194,7 @@ class SettingsRepository(context: Context) {
         val PROFILE_YEAR = stringPreferencesKey("profile_year")
         val PROFILE_COLLEGE = stringPreferencesKey("profile_college")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val MARKS_SCALE = stringPreferencesKey("marks_scale")
         val COLOR_ENGINE = stringPreferencesKey("color_engine")
         val THEME_PRESET = stringPreferencesKey("theme_preset")
         val INTRO_SEEN = booleanPreferencesKey("intro_seen")
@@ -228,7 +231,7 @@ class SettingsRepository(context: Context) {
         ).map { it.name }.toSet()
         val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES).map { it.name }.toSet()
         val STRINGS = setOf(
-            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, COLOR_ENGINE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
+            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, MARKS_SCALE, COLOR_ENGINE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
         ).map { it.name }.toSet()
     }
 
@@ -242,6 +245,7 @@ class SettingsRepository(context: Context) {
             profileYear = this[Keys.PROFILE_YEAR] ?: defaults.profileYear,
             profileCollege = this[Keys.PROFILE_COLLEGE] ?: defaults.profileCollege,
             themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode),
+            marksScale = enumOrDefault(this[Keys.MARKS_SCALE], defaults.marksScale),
             // Before Liquid Glass became a toggle it was a theme of its own; that setting becomes the toggle on top of
             // the default theme, and Solid Accent (also gone) falls back to the default as well.
             // Everforest is now the Default Theme, so anyone who had picked it as a preset lands on the Default Theme.

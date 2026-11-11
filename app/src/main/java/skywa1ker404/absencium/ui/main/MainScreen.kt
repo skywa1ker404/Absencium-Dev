@@ -302,7 +302,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
             ) {
                 // No bar: a soft fade of the background colour (frosted under Liquid Glass) so scrolling content never collides with the title.
                 Box(Modifier.matchParentSize().pageHeaderGlass(colors.background, top = 0.88f, mid = 0.5f, midAt = 0.7f))
-                ShellTopBar(displayName = settings.displayName, onProfile = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination) })
+                ShellTopBar(displayName = settings.displayName, onProfile = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination) }, onStudyTools = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.StudyToolsScreenDestination) })
             }
 
             if (message != null) {
