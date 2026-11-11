@@ -2,6 +2,10 @@ package skywa1ker404.absencium.ui.calendar
 
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import skywa1ker404.absencium.ui.components.hueFor
 import skywa1ker404.absencium.ui.components.bounceIn
 import skywa1ker404.absencium.ui.theme.LocalQuality
@@ -672,28 +676,68 @@ private fun DayPanel(
                     )
                 }
             }
-            // Present / Absent / Cancelled as one connected Material 3 Expressive button group.
+            // Present / Absent / Cancelled as one connected Material 3 Expressive button group. Once Absent is chosen it becomes a split
+            // button: its arrow opens a menu with Absent and Excused (a medical or approved absence, left out of the percentage).
+            val shown = listOf(AttendanceStatus.PRESENT, AttendanceStatus.ABSENT, AttendanceStatus.CANCELLED)
             Row(
                 modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
-                AttendanceStatus.entries.forEachIndexed { i, status ->
-                    ToggleButton(
-                        checked = logged == status,
-                        onCheckedChange = { onSetStatus(lecture.subject.id, status) },
-                        enabled = !isFuture,
-                        modifier = Modifier.weight(1f),
-                        shapes = when (i) {
-                            0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                            AttendanceStatus.entries.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                            else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                        },
-                    ) {
-                        Text(status.chipLabel(), maxLines = 1)
+                shown.forEachIndexed { i, status ->
+                    val shapes = when (i) {
+                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                        shown.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                    }
+                    val absentChosen = status == AttendanceStatus.ABSENT && (logged == AttendanceStatus.ABSENT || logged == AttendanceStatus.EXCUSED)
+                    if (absentChosen) {
+                        var menuOpen by remember(lecture.subject.id) { mutableStateOf(false) }
+                        Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
+                            ToggleButton(
+                                checked = true,
+                                onCheckedChange = { onSetStatus(lecture.subject.id, logged!!) },
+                                enabled = !isFuture,
+                                modifier = Modifier.weight(1f),
+                                shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
+                            ) {
+                                Text(logged!!.chipLabel(), maxLines = 1)
+                            }
+                            Box {
+                                ToggleButton(
+                                    checked = menuOpen,
+                                    onCheckedChange = { menuOpen = it },
+                                    enabled = !isFuture,
+                                    shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
+                                ) {
+                                    Icon(Icons.Filled.ArrowDropDown, contentDescription = "More absence types")
+                                }
+                                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                    listOf(AttendanceStatus.ABSENT, AttendanceStatus.EXCUSED).forEach { choice ->
+                                        DropdownMenuItem(
+                                            text = { Text(choice.chipLabel()) },
+                                            onClick = {
+                                                menuOpen = false
+                                                if (logged != choice) onSetStatus(lecture.subject.id, choice)
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        ToggleButton(
+                            checked = logged == status,
+                            onCheckedChange = { onSetStatus(lecture.subject.id, status) },
+                            enabled = !isFuture,
+                            modifier = Modifier.weight(1f),
+                            shapes = shapes,
+                        ) {
+                            Text(status.chipLabel(), maxLines = 1)
+                        }
                     }
                 }
             }
-            if (record != null && record.status == AttendanceStatus.ABSENT) {
+            if (record != null && (record.status == AttendanceStatus.ABSENT || record.status == AttendanceStatus.EXCUSED)) {
                 ExpressiveChip(
                     selected = record.notesCollected,
                     onClick = { onSetNotes(lecture.subject.id, !record.notesCollected) },
