@@ -14,6 +14,9 @@ import java.util.UUID
 // (see Converters), so ordering by a date column sorts chronologically.
 
 /** EXCUSED (a medical or approved absence) is left out of the percentage, exactly like CANCELLED. */
+/** What kind of session a timetable slot is. Practicals, labs and tutorials show their own label. */
+enum class LectureType { LECTURE, PRACTICAL, LAB, TUTORIAL }
+
 enum class AttendanceStatus { PRESENT, ABSENT, CANCELLED, EXCUSED }
 
 /** DRAFT is a note that was saved from the Create New Entry screen but is not filed in its folder yet. */
@@ -45,6 +48,10 @@ data class SubjectEntity(
     val name: String,
     @ColumnInfo(name = "is_active") val isActive: Boolean = true,
     @ColumnInfo(name = "is_muted") val isMuted: Boolean = false,
+    /** Percent of the marks needed to pass this subject. */
+    @ColumnInfo(name = "pass_mark", defaultValue = "40.0") val passMark: Double = 40.0,
+    /** The attendance percent the student wants to keep in this subject; null uses the general threshold. */
+    @ColumnInfo(name = "attendance_goal") val attendanceGoal: Int? = null,
     /** Stable identity that survives export and import; the numeric id is local to one database. */
     @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
     /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
@@ -116,6 +123,9 @@ data class ExamEntity(
     val room: String? = null,
     @ColumnInfo(name = "syllabus_notes") val syllabusNotes: String? = null,
     @ColumnInfo(defaultValue = "'HIGH'") val priority: Priority = Priority.HIGH,
+    /** The marks the student got and what the exam was out of, once the result is known. */
+    @ColumnInfo(name = "marks_obtained") val marksObtained: Double? = null,
+    @ColumnInfo(name = "max_marks") val maxMarks: Double? = null,
     /** Stable identity that survives export and import; the numeric id is local to one database. */
     @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
     /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
@@ -145,6 +155,8 @@ data class TimetableEntity(
     @ColumnInfo(name = "room_number") val roomNumber: String? = null,
     /** The teacher of the lecture, shown on the timetable. */
     val teacher: String? = null,
+    /** Lecture, practical, lab or tutorial. */
+    @ColumnInfo(name = "lecture_type", defaultValue = "'LECTURE'") val type: LectureType = LectureType.LECTURE,
     /** Stable identity that survives export and import; the numeric id is local to one database. */
     @ColumnInfo(defaultValue = "''") val uuid: String = UUID.randomUUID().toString(),
     /** Epoch milliseconds of the last change; kept current by a database trigger (see AbsenciumDatabase). */
@@ -394,3 +406,28 @@ data class RecallAttemptEntity(
     /** Epoch milliseconds. */
     @ColumnInfo(name = "answered_at") val answeredAt: Long = System.currentTimeMillis(),
 )
+
+/** An earlier text of a note, kept so an edit can be undone. The newest [VERSIONS_KEPT] per note are kept. */
+@Entity(
+    tableName = "Note_Versions_Table",
+    foreignKeys = [
+        ForeignKey(
+            entity = NoteEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["note_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("note_id")],
+)
+data class NoteVersionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "note_id") val noteId: Long,
+    val title: String,
+    @ColumnInfo(name = "body_text") val bodyText: String,
+    @ColumnInfo(name = "saved_at") val savedAt: Long = System.currentTimeMillis(),
+) {
+    companion object {
+        const val VERSIONS_KEPT = 20
+    }
+}

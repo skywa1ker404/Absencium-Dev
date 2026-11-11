@@ -170,8 +170,8 @@ class CalendarRepository(
     suspend fun updateSlot(slot: TimetableEntity) = database.timetableDao().update(slot)
 
     /** Adds the same lecture to every weekday in [days] (the "same time every day" option). */
-    suspend fun addSlots(days: Collection<DayOfWeek>, subjectId: Long, start: LocalTime, end: LocalTime, room: String?) {
-        for (day in days) addSlot(day, subjectId, start, end, room)
+    suspend fun addSlots(days: Collection<DayOfWeek>, subjectId: Long, start: LocalTime, end: LocalTime, room: String?, type: skywa1ker404.absencium.data.db.LectureType = skywa1ker404.absencium.data.db.LectureType.LECTURE) {
+        for (day in days) addSlot(day, subjectId, start, end, room, type)
     }
 
     suspend fun addSlot(
@@ -180,9 +180,10 @@ class CalendarRepository(
         start: LocalTime,
         end: LocalTime,
         room: String?,
+        type: skywa1ker404.absencium.data.db.LectureType = skywa1ker404.absencium.data.db.LectureType.LECTURE,
     ) {
         database.timetableDao().insert(
-            TimetableEntity(dayOfWeek = day, subjectId = subjectId, startTime = start, endTime = end, roomNumber = room),
+            TimetableEntity(dayOfWeek = day, subjectId = subjectId, startTime = start, endTime = end, roomNumber = room, type = type),
         )
     }
 

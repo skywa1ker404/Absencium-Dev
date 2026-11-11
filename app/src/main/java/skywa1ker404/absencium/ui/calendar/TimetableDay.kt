@@ -223,6 +223,7 @@ private fun SlotCard(
                 }
                 Text(name, style = MaterialTheme.typography.titleMedium, color = ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 val extra = listOfNotNull(
+                    slot.type.takeIf { it != skywa1ker404.absencium.data.db.LectureType.LECTURE }?.let { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } },
                     slot.roomNumber?.takeIf { it.isNotBlank() }?.let { "Room $it" },
                     slot.teacher?.takeIf { it.isNotBlank() },
                 ).joinToString(" · ")

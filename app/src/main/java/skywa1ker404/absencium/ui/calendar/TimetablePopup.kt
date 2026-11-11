@@ -71,6 +71,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
     var start by remember { mutableStateOf("") }
     var end by remember { mutableStateOf("") }
     var room by remember { mutableStateOf("") }
+    var lectureType by remember { mutableStateOf(skywa1ker404.absencium.data.db.LectureType.LECTURE) }
     var sameEveryDay by remember { mutableStateOf(false) }
     // The saved lecture being changed, or null while adding a new one.
     var editing by remember { mutableStateOf<TimetableEntity?>(null) }
@@ -113,6 +114,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                 start = slot.startTime.hm()
                 end = slot.endTime.hm()
                 room = slot.roomNumber.orEmpty()
+                lectureType = slot.type
             },
             onDelete = { slot ->
                 if (editing?.id == slot.id) editing = null
@@ -211,6 +213,19 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
+            Row(
+                modifier = Modifier.padding(top = 8.dp).horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                skywa1ker404.absencium.data.db.LectureType.entries.forEach { option ->
+                    ExpressiveChip(
+                        selected = lectureType == option,
+                        onClick = { lectureType = option },
+                        label = { Text(option.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                    )
+                }
+            }
             if (startBad || endBad) {
                 HintText("Use 24 hour times like 9:30 or 14:00.", modifier = Modifier.padding(top = 8.dp))
             } else if (order) {
@@ -232,13 +247,14 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                                     startTime = startTime,
                                     endTime = endTime,
                                     roomNumber = roomText,
+                                    type = lectureType,
                                 ),
                             )
                             editing = null
                         } else if (sameEveryDay) {
-                            viewModel.addSlots(weekDays, chosen, startTime, endTime, roomText)
+                            viewModel.addSlots(weekDays, chosen, startTime, endTime, roomText, lectureType)
                         } else {
-                            viewModel.addSlot(day, chosen, startTime, endTime, roomText)
+                            viewModel.addSlot(day, chosen, startTime, endTime, roomText, lectureType)
                         }
                         start = ""
                         end = ""

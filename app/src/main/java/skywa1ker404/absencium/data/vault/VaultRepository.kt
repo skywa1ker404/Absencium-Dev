@@ -5,6 +5,7 @@ import skywa1ker404.absencium.data.db.GuideEntity
 import skywa1ker404.absencium.data.db.GuideType
 import skywa1ker404.absencium.data.db.NoteEntity
 import skywa1ker404.absencium.data.db.NoteKind
+import skywa1ker404.absencium.data.db.NoteVersionEntity
 import skywa1ker404.absencium.data.db.NoteStatus
 import skywa1ker404.absencium.data.db.SubjectEntity
 import skywa1ker404.absencium.data.db.AbsenciumDatabase
@@ -66,6 +67,11 @@ class VaultRepository(private val database: AbsenciumDatabase) {
                 ),
             )
         } else {
+            // The text it had until now is kept as a version (the newest 20 per note), so an edit can be undone.
+            if (existing.title != title || existing.bodyText != body) {
+                database.noteVersionDao().insert(NoteVersionEntity(noteId = existing.id, title = existing.title, bodyText = existing.bodyText))
+                database.noteVersionDao().trim(existing.id, NoteVersionEntity.VERSIONS_KEPT)
+            }
             dao.update(
                 existing.copy(
                     subjectId = subjectId,

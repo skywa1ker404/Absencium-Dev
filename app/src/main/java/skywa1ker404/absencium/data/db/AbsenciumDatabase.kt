@@ -32,8 +32,9 @@ import skywa1ker404.absencium.logging.DebugLogger
         RecallAttemptEntity::class,
         AttachmentEntity::class,
         SyllabusNodeEntity::class,
+        NoteVersionEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -56,6 +57,7 @@ abstract class AbsenciumDatabase : RoomDatabase() {
     abstract fun attachmentDao(): AttachmentDao
     abstract fun entryDao(): EntryDao
     abstract fun syllabusDao(): SyllabusDao
+    abstract fun noteVersionDao(): NoteVersionDao
 
     companion object {
         const val DATABASE_NAME = "Absencium.db"
@@ -64,7 +66,7 @@ abstract class AbsenciumDatabase : RoomDatabase() {
         // Absencium's schema history: version 1 is the first released schema. Every change after it needs a version bump
         // and a Migration added to the list below, never a destructive reset. The schema JSON of each version is exported
         // to app/schemas and checked by CI, so an edit without a version bump fails the build.
-        private val MIGRATIONS: Array<Migration> = arrayOf(Migration2, Migration3)
+        private val MIGRATIONS: Array<Migration> = arrayOf(Migration2, Migration3, Migration4)
 
         @Volatile
         private var instance: AbsenciumDatabase? = null
@@ -195,4 +197,26 @@ internal object TouchTriggers : RoomDatabase.Callback() {
             "UPDATE `$table` SET `updated_at` = CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) " +
             "WHERE `rowid` = NEW.`rowid`; END"
     }
+}
+
+/**
+ * Version 4: a pass mark and an attendance goal per subject, the marks of an exam, the kind of a lecture and the history of a note's
+ * text. Every statement only adds, so existing rows keep all their data.
+ */
+internal object Migration4 : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        for (sql in statements()) db.execSQL(sql)
+    }
+
+    fun statements(): List<String> = listOf(
+        "ALTER TABLE `Subjects_Table` ADD COLUMN `pass_mark` REAL NOT NULL DEFAULT 40.0",
+        "ALTER TABLE `Subjects_Table` ADD COLUMN `attendance_goal` INTEGER",
+        "ALTER TABLE `Exams_Table` ADD COLUMN `marks_obtained` REAL",
+        "ALTER TABLE `Exams_Table` ADD COLUMN `max_marks` REAL",
+        "ALTER TABLE `Timetable_Table` ADD COLUMN `lecture_type` TEXT NOT NULL DEFAULT 'LECTURE'",
+        "CREATE TABLE IF NOT EXISTS `Note_Versions_Table` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+            "`note_id` INTEGER NOT NULL, `title` TEXT NOT NULL, `body_text` TEXT NOT NULL, `saved_at` INTEGER NOT NULL, " +
+            "FOREIGN KEY(`note_id`) REFERENCES `Notes_Table`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "CREATE INDEX IF NOT EXISTS `index_Note_Versions_Table_note_id` ON `Note_Versions_Table` (`note_id`)",
+    )
 }

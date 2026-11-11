@@ -439,3 +439,19 @@ abstract class SubjectCascadeDao {
         deleteSubject(id)
     }
 }
+
+@Dao
+interface NoteVersionDao {
+    @Insert
+    suspend fun insert(version: NoteVersionEntity): Long
+
+    @Query("SELECT * FROM Note_Versions_Table WHERE note_id = :noteId ORDER BY saved_at DESC, id DESC")
+    suspend fun forNote(noteId: Long): List<NoteVersionEntity>
+
+    @Query("SELECT * FROM Note_Versions_Table WHERE id = :id")
+    suspend fun getById(id: Long): NoteVersionEntity?
+
+    /** Keeps only the newest [keep] versions of a note. */
+    @Query("DELETE FROM Note_Versions_Table WHERE note_id = :noteId AND id NOT IN (SELECT id FROM Note_Versions_Table WHERE note_id = :noteId ORDER BY saved_at DESC, id DESC LIMIT :keep)")
+    suspend fun trim(noteId: Long, keep: Int)
+}

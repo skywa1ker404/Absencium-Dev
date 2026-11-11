@@ -113,6 +113,9 @@ class ChatAppTools(private val container: AppContainer, private val chatId: Stri
             put("read_material", "Materials")
             put("list_trash", "Trash"); put("restore_from_trash", "Trash")
             put("calendar_view", "Overview and search")
+            listOf("set_exam_marks", "get_grades").forEach { put(it, "Exams") }
+            put("set_subject_goals", "Attendance")
+            listOf("list_note_versions", "restore_note_version").forEach { put(it, "Vault and notes") }
             listOf("move_note", "bulk_move_notes", "bulk_delete_notes", "duplicate_note").forEach { put(it, "Vault and notes") }
             put("bulk_set_attendance", "Attendance")
         }
@@ -177,6 +180,15 @@ ${NotePrompts.EDITOR}
         read("search_notes", "Searches note titles, text, tags and attachment text. Returns id, subject, title and a short snippet.", mapOf("query" to text("Words to look for"), "subject" to text("Optional subject name")), required = listOf("query")) { a -> searchNotes(a.req("query"), a.str("subject")) },
         read("list_vault", "The Vault: the student's notes (with status ACTIVE, FINISHED or DRAFT, tags and how many attachments each has) and the study guides (question papers, syllabus files, answer banks) per subject. Optional subject and status filters.", mapOf("subject" to text("Optional subject name"), "status" to text("Optional ACTIVE, FINISHED or DRAFT"))) { a -> vault(a.str("subject"), a.str("status")) },
         read("list_attachments", "The photos, documents, recordings and sketches attached to one note, with the text read from them.", mapOf("note_id" to num("Note id from list_vault or search_notes")), required = listOf("note_id")) { a -> attachments(a.long("note_id")) },
+        read("list_note_versions", "The earlier texts of a note (the newest 20), newest first, with their ids.", mapOf("note_id" to num("Note id")), required = listOf("note_id")) { a ->
+            val versions = container.database.noteVersionDao().forNote(a.long("note_id") ?: return@read fail("note_id is missing."))
+            buildJsonObject {
+                put("versions", buildJsonArray {
+                    versions.forEach { add(buildJsonObject { put("id", it.id); put("title", it.title); put("saved_at", java.time.Instant.ofEpochMilli(it.savedAt).toString()); put("characters", it.bodyText.length); put("start", it.bodyText.take(120)) }) }
+                })
+            }
+        },
+        read("get_grades", "Marks per subject from the exams that have marks: percentage, pass mark, pass or fail, and the overall percentage with CGPA on 10 and GPA on 4.", emptyMap()) { gradesJson() },
         read("list_trash", "Everything in the Trash (notes, exams, holidays, lectures) with the key to restore each.", emptyMap()) { trashJson() },
         read("calendar_view", "One month of the calendar: per day the holiday, the exams and the attendance marked. month is YYYY-MM (default this month).", mapOf("month" to text("YYYY-MM"))) { a -> calendarView(a.str("month")) },
         read("search_app", "Searches everything by words: subjects, notes, exams, holidays and syllabus topics.", mapOf("query" to text("Words to look for")), required = listOf("query")) { a -> searchApp(a.req("query")) },
@@ -231,7 +243,7 @@ ${NotePrompts.EDITOR}
             container.vaultRepository.setNoteStatus(note, status)
             ok("Note is now ${status.name}.")
         },
-        write("add_timetable_slot", "Adds a weekly lecture.", mapOf("subject" to text("Subject name"), "day" to text("MONDAY..SUNDAY"), "start" to text("HH:mm"), "end" to text("HH:mm"), "room" to text("Room, optional")), required = listOf("subject", "day", "start", "end")) { a ->
+        write("add_timetable_slot", "Adds a weekly lecture.", mapOf("subject" to text("Subject name"), "day" to text("MONDAY..SUNDAY"), "start" to text("HH:mm"), "end" to text("HH:mm"), "room" to text("Room, optional"), "type" to text("LECTURE (default), PRACTICAL, LAB or TUTORIAL")), required = listOf("subject", "day", "start", "end")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
             val start = time(a.req("start")) ?: return@write fail("Start must look like 09:30.")
             val end = time(a.req("end")) ?: return@write fail("End must look like 10:30.")
@@ -241,7 +253,7 @@ ${NotePrompts.EDITOR}
             container.database.timetableDao().observeAll().first()
                 .firstOrNull { it.dayOfWeek == d && it.startTime < end && start < it.endTime && (it.subjectId == s.id || it.startTime == start) }
                 ?.let { return@write fail("${d.name} already has ${names[it.subjectId].orEmpty()} at ${it.startTime}-${it.endTime}, which overlaps. Change that lecture with update_timetable_slot instead of adding another.") }
-            container.calendarRepository.addSlot(d, s.id, start, end, a.str("room"))
+            container.calendarRepository.addSlot(d, s.id, start, end, a.str("room"), a.str("type")?.let { t -> runCatching { skywa1ker404.absencium.data.db.LectureType.valueOf(t.trim().uppercase()) }.getOrNull() } ?: skywa1ker404.absencium.data.db.LectureType.LECTURE)
             ok("Added to the timetable.")
         },
         write("update_timetable_slot", "Moves or edits a lecture. Identify it by subject and day (and start when the subject has several that day).", mapOf("subject" to text("Subject name"), "day" to text("Current day"), "start" to text("Current start HH:mm, only if needed"), "new_day" to text("New day"), "new_start" to text("New start HH:mm"), "new_end" to text("New end HH:mm"), "room" to text("New room")), required = listOf("subject", "day")) { a ->
@@ -306,6 +318,31 @@ ${NotePrompts.EDITOR}
             if (current?.status == status) return@write ok("Already marked ${status.name}.")
             container.calendarRepository.setAttendance(s.id, d, status)
             ok("Attendance marked.")
+        },
+        write("set_exam_marks", "Records the marks of an exam once the result is known.", mapOf("subject" to text("Subject name"), "title" to text("Exam title"), "marks_obtained" to num("Marks the student got"), "max_marks" to num("What the exam was out of")), required = listOf("subject", "title", "marks_obtained", "max_marks")) { a ->
+            val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
+            val exam = container.database.examDao().observeAll().first().filter { it.subjectId == s.id && it.title.contains(a.req("title").trim(), true) }.singleOrNull()
+                ?: return@write fail("No single exam of ${s.name} matches \"${a.req("title")}\".")
+            val got = a.dbl("marks_obtained") ?: return@write fail("marks_obtained is missing.")
+            val max = a.dbl("max_marks") ?: return@write fail("max_marks is missing.")
+            if (max <= 0 || got < 0 || got > max) return@write fail("Marks must be between 0 and the maximum.")
+            container.database.examDao().update(exam.copy(marksObtained = got, maxMarks = max))
+            ok("Saved ${trim(got)} out of ${trim(max)} for ${exam.title}.")
+        },
+        write("set_subject_goals", "Sets the pass mark (percent of marks) and/or the attendance goal (percent) of a subject.", mapOf("subject" to text("Subject name"), "pass_mark" to num("Percent needed to pass, 1 to 100"), "attendance_goal" to num("Attendance percent to keep, 1 to 100")), required = listOf("subject")) { a ->
+            val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
+            val pass = a.dbl("pass_mark")
+            val goal = a.long("attendance_goal")
+            if (pass == null && goal == null) return@write fail("Give a pass_mark or an attendance_goal.")
+            if (pass != null && pass !in 1.0..100.0 || goal != null && goal !in 1L..100L) return@write fail("Percentages must be between 1 and 100.")
+            container.database.subjectDao().update(s.copy(passMark = pass ?: s.passMark, attendanceGoal = goal?.toInt() ?: s.attendanceGoal))
+            ok("Updated the goals of ${s.name}.")
+        },
+        write("restore_note_version", "Puts back an earlier text of a note (from list_note_versions). The current text is kept as a version first.", mapOf("version_id" to num("Version id")), required = listOf("version_id")) { a ->
+            val v = container.database.noteVersionDao().getById(a.long("version_id") ?: return@write fail("version_id is missing.")) ?: return@write fail("There is no such version.")
+            val note = container.vaultRepository.getNote(v.noteId) ?: return@write fail("The note no longer exists.")
+            container.vaultRepository.saveNote(note.id, note.subjectId, v.title, v.bodyText, note.status, note.tags)
+            ok("Restored the earlier text of \"${v.title}\".")
         },
         write("restore_from_trash", "Brings one item back from the Trash. key is from list_trash, like NOTE-12.", mapOf("key" to text("Key from list_trash")), required = listOf("key")) { a ->
             val item = container.trashRepository.items.first().firstOrNull { it.key.equals(a.req("key").trim(), true) } ?: return@write fail("Nothing in the Trash has that key.")
@@ -799,6 +836,35 @@ ${NotePrompts.EDITOR}
         t.roomNumber?.let { put("room", it) }
     }
 
+    private suspend fun gradesJson(): JsonElement {
+        val subjects = container.database.subjectDao().observeAll().first()
+        val exams = container.database.examDao().observeAll().first().filter { it.marksObtained != null && (it.maxMarks ?: 0.0) > 0 }
+        val percents = mutableListOf<Double>()
+        return buildJsonObject {
+            put("subjects", buildJsonArray {
+                for (s in subjects) {
+                    val mine = exams.filter { it.subjectId == s.id }
+                    if (mine.isEmpty()) continue
+                    val got = mine.sumOf { it.marksObtained!! }
+                    val max = mine.sumOf { it.maxMarks!! }
+                    val pct = got / max * 100
+                    percents += pct
+                    add(buildJsonObject {
+                        put("subject", s.name); put("marks_obtained", got); put("max_marks", max)
+                        put("percentage", Math.round(pct * 10) / 10.0); put("pass_mark", s.passMark); put("result", if (pct >= s.passMark) "PASS" else "FAIL")
+                        put("exams", mine.size)
+                    })
+                }
+            })
+            if (percents.isNotEmpty()) {
+                val avg = percents.average()
+                put("overall_percentage", Math.round(avg * 10) / 10.0)
+                put("cgpa_10", Math.round(avg / 9.5 * 100) / 100.0)
+                put("gpa_4", Math.round(percents.map { when { it >= 90 -> 4.0; it >= 80 -> 3.0; it >= 70 -> 2.0; it >= 60 -> 1.0; else -> 0.0 } }.average() * 100) / 100.0)
+            } else put("note", "No exam has marks yet. Use set_exam_marks.")
+        }
+    }
+
     private suspend fun trashJson(): JsonElement {
         val items = container.trashRepository.items.first()
         return buildJsonObject {
@@ -842,6 +908,8 @@ ${NotePrompts.EDITOR}
         e.room?.let { put("room", it) }
         e.weightage?.let { put("weightage", it) }
         put("days_left", java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), e.date))
+        e.marksObtained?.let { put("marks_obtained", it) }
+        e.maxMarks?.let { put("max_marks", it) }
     }
 
     private suspend fun subject(name: String): SubjectEntity? {
@@ -984,7 +1052,7 @@ ${NotePrompts.EDITOR}
         "add_timetable_slot" to "Added a lecture", "update_timetable_slot" to "Edited a lecture", "delete_timetable_slot" to "Moved a lecture to the Trash",
         "add_exam" to "Added an exam", "update_exam" to "Edited an exam", "delete_exam" to "Moved an exam to the Trash",
         "add_holiday" to "Added a holiday", "delete_holiday" to "Moved a holiday to the Trash",
-        "set_attendance" to "Marked attendance", "add_syllabus" to "Added syllabus topics", "edit_syllabus_topic" to "Edited a syllabus topic", "restore_from_trash" to "Restored from the Trash", "move_note" to "Moved a note", "bulk_move_notes" to "Moved notes", "bulk_delete_notes" to "Moved notes to the Trash", "duplicate_note" to "Duplicated a note", "bulk_set_attendance" to "Marked attendance", "move_syllabus_topic" to "Moved a syllabus topic", "delete_syllabus_topic" to "Deleted a syllabus topic", "set_syllabus_status" to "Changed a syllabus topic",
+        "set_attendance" to "Marked attendance", "add_syllabus" to "Added syllabus topics", "edit_syllabus_topic" to "Edited a syllabus topic", "restore_from_trash" to "Restored from the Trash", "set_exam_marks" to "Saved exam marks", "set_subject_goals" to "Set subject goals", "restore_note_version" to "Restored an earlier note text", "move_note" to "Moved a note", "bulk_move_notes" to "Moved notes", "bulk_delete_notes" to "Moved notes to the Trash", "duplicate_note" to "Duplicated a note", "bulk_set_attendance" to "Marked attendance", "move_syllabus_topic" to "Moved a syllabus topic", "delete_syllabus_topic" to "Deleted a syllabus topic", "set_syllabus_status" to "Changed a syllabus topic",
     )
 
     /** The one syllabus topic of a subject matching [title] (exact first, then partly), or null when none or several do. */
@@ -998,5 +1066,6 @@ ${NotePrompts.EDITOR}
     private fun JsonObject.req(key: String): String = str(key) ?: throw IllegalArgumentException("$key is missing.")
     private fun JsonObject.long(key: String): Long? = (this[key] as? JsonPrimitive)?.let { it.longOrNull ?: it.doubleOrNull?.toLong() }
     private fun JsonObject.dbl(key: String): Double? = (this[key] as? JsonPrimitive)?.doubleOrNull
+    private fun trim(v: Double): String = if (v % 1.0 == 0.0) v.toLong().toString() else v.toString()
     private fun JsonObject.bool(key: String): Boolean? = (this[key] as? JsonPrimitive)?.booleanOrNull
 }

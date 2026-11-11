@@ -98,11 +98,11 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
 
     fun updateSlot(slot: TimetableEntity) = perform("save the lecture") { repository.updateSlot(slot) }
 
-    fun addSlot(day: DayOfWeek, subjectId: Long, start: LocalTime, end: LocalTime, room: String?) =
-        perform("add the lecture") { repository.addSlot(day, subjectId, start, end, room) }
+    fun addSlot(day: DayOfWeek, subjectId: Long, start: LocalTime, end: LocalTime, room: String?, type: skywa1ker404.absencium.data.db.LectureType = skywa1ker404.absencium.data.db.LectureType.LECTURE) =
+        perform("add the lecture") { repository.addSlot(day, subjectId, start, end, room, type) }
 
-    fun addSlots(days: Collection<DayOfWeek>, subjectId: Long, start: LocalTime, end: LocalTime, room: String?) =
-        perform("add the lectures") { repository.addSlots(days, subjectId, start, end, room) }
+    fun addSlots(days: Collection<DayOfWeek>, subjectId: Long, start: LocalTime, end: LocalTime, room: String?, type: skywa1ker404.absencium.data.db.LectureType = skywa1ker404.absencium.data.db.LectureType.LECTURE) =
+        perform("add the lectures") { repository.addSlots(days, subjectId, start, end, room, type) }
 
     fun deleteSlot(slot: TimetableEntity) = perform("delete the lecture") {
         repository.deleteSlot(slot)
