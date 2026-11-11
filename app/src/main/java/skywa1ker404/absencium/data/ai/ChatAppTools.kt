@@ -827,8 +827,8 @@ ${NotePrompts.EDITOR}
                         put("weekday", d.dayOfWeek.name)
                         put("lectures", if (holiday != null) 0 else lectures)
                         holiday?.let { put("holiday", it.title) }
-                        if (exams.isNotEmpty()) put("exams", buildJsonArray { exams.forEach { add("${names[it.subjectId].orEmpty()}: ${it.title}") } })
-                        if (marks.isNotEmpty()) put("attendance", buildJsonArray { marks.forEach { add("${names[it.subjectId].orEmpty()}: ${it.status.name}") } })
+                        if (exams.isNotEmpty()) put("exams", buildJsonArray { exams.forEach { add(JsonPrimitive("${names[it.subjectId].orEmpty()}: ${it.title}")) } })
+                        if (marks.isNotEmpty()) put("attendance", buildJsonArray { marks.forEach { add(JsonPrimitive("${names[it.subjectId].orEmpty()}: ${it.status.name}")) } })
                     })
                 }
             })

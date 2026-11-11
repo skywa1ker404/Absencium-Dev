@@ -251,12 +251,11 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
                 }
             }
             if (images.isEmpty()) return OutlineImport.Problem("The pictures could not be opened.")
-            val reply = container.aiClient.generate(
-                connection,
+            _import.value = OutlineImport.Working("The AI is reading the pictures")
+            val reply = container.aiTasks.answer(
+                "Syllabus pictures: $subject",
                 outlinePrompt(subject).replace("Text:\n", "The syllabus is in the attached ${if (images.size == 1) "picture" else "${images.size} pictures, in order"}."),
                 images,
-                maxTokens = 8000,
-                onUpload = { f -> _import.value = if (f >= 1f) OutlineImport.Working("Uploaded. The AI is reading the pictures") else OutlineImport.Working("Uploading the pictures", f) },
             )
             if (reply.trim().equals("NONE", ignoreCase = true)) {
                 return OutlineImport.Problem("The pictures do not seem to show a syllabus for $subject.")
@@ -389,7 +388,7 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
             ?: return OutlineImport.Problem("AI Features are off or not set up. You can still add the outline as typed text.", setupMissing = true)
         val subject = _subjectName.value.ifEmpty { container.database.subjectDao().getById(subjectId)?.name.orEmpty() }
         return try {
-            val reply = container.aiClient.generate(connection, outlinePrompt(subject) + sourceFor(text, subject), maxTokens = 8000)
+            val reply = container.aiTasks.answer("Syllabus outline: $subject", outlinePrompt(subject) + sourceFor(text, subject))
             if (reply.trim().equals("NONE", ignoreCase = true)) {
                 return OutlineImport.Problem("The text does not seem to contain a syllabus for $subject. Check the subject name, or paste just its part.")
             }

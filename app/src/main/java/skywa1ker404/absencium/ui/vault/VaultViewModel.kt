@@ -230,7 +230,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
         return viewModelScope.launch {
             try {
                 val connection = skywa1ker404.absencium.data.ai.AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
-                val reply = container.aiClient.generate(connection, request)
+                val reply = container.aiTasks.answer("Editor: " + request.lineSequence().firstOrNull { it.isNotBlank() }.orEmpty().take(50), request)
                 onResult(if (reply.isBlank()) AiOutcome(error = "The model sent back an empty answer.") else AiOutcome(text = skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(reply)))
             } catch (e: CancellationException) {
                 throw e

@@ -109,7 +109,7 @@ data class ImportState(
  */
 class ImportViewModel(private val container: AppContainer) : ViewModel() {
 
-    private val holidayImporter = HolidayImporter(container.aiClient)
+    private val holidayImporter = HolidayImporter(container.aiClient, container.aiTasks)
     private val examImporter = ExamImporter(container.aiClient)
     private val store = container.attachmentStore
 

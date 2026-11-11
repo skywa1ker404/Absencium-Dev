@@ -271,7 +271,7 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                     }
                 }
                 if (images.isEmpty()) throw AiException("The photos could not be read from storage.")
-                val reply = container.aiClient.generate(connection, extractPrompt(images.size), images)
+                val reply = container.aiTasks.answer("Text from photos", extractPrompt(images.size), images)
                 if (reply.isBlank()) throw AiException("The model did not find any text in the photo${if (images.size > 1) "s" else ""}.")
                 _state.update { it.copy(extractStep = ExtractStep.REVIEW, extractedText = reply.trim()) }
             } catch (e: CancellationException) {

@@ -140,7 +140,7 @@ object AttachmentReader {
 }
 
 /** Asks the user's AI model to read a holiday list and returns what it found, for the user to review. */
-class HolidayImporter(private val client: AiClient) {
+class HolidayImporter(private val client: AiClient, private val tasks: AiTasks) {
 
     suspend fun extract(
         connection: AiConnection,
@@ -165,7 +165,7 @@ class HolidayImporter(private val client: AiClient) {
             append("If a date has no year, use the next occurrence on or after today. If there are none, reply [].")
             if (pastedText.isNotEmpty()) append("\n\nText:\n").append(pastedText)
         }
-        val reply = client.generate(connection, prompt, images)
+        val reply = tasks.answer("Holidays from a calendar", prompt, images)
         return parseHolidays(reply)
     }
 
@@ -240,7 +240,7 @@ class ExamImporter(private val client: AiClient) {
             append("If a date has no year, use the next occurrence on or after today. If there are none, reply [].")
             if (pastedText.isNotEmpty()) append("\n\nText:\n").append(pastedText)
         }
-        return parseExams(client.generate(connection, prompt, images))
+        return parseExams(tasks.answer("Exams from a timetable", prompt, images))
     }
 
     companion object {
