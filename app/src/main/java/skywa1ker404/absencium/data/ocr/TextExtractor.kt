@@ -120,7 +120,20 @@ class TextExtractor(
             }
             FileKind.AUDIO -> {
                 val audioMime = if (mime.startsWith("audio/")) mime else "audio/mp4"
-                ai.generate(conn, AUDIO_PROMPT, listOf(AiImage(audioMime, encode(file, "recording"))))
+                // OpenAI-style APIs only take WAV or MP3, and Absencium records M4A, so it is converted on the phone first.
+                val readyForApi = audioMime in setOf("audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave")
+                if (conn.style == skywa1ker404.absencium.data.ai.ApiStyle.OPENAI_COMPATIBLE && !readyForApi) {
+                    onStep("Converting the recording")
+                    val wav = File.createTempFile("recording-", ".wav")
+                    try {
+                        AudioWav.convert(file, wav)
+                        ai.generate(conn, AUDIO_PROMPT, listOf(AiImage("audio/wav", encode(wav, "recording"))))
+                    } finally {
+                        wav.delete()
+                    }
+                } else {
+                    ai.generate(conn, AUDIO_PROMPT, listOf(AiImage(audioMime, encode(file, "recording"))))
+                }
             }
             FileKind.WORD, FileKind.PLAIN -> {
                 val raw = readDocument(file, kind)

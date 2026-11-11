@@ -4,8 +4,6 @@ import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import skywa1ker404.absencium.ui.components.hueFor
 import skywa1ker404.absencium.ui.components.bounceIn
 import skywa1ker404.absencium.ui.theme.LocalQuality
@@ -709,7 +707,7 @@ private fun DayPanel(
                                     enabled = !isFuture,
                                     shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
                                 ) {
-                                    Icon(Icons.Filled.ArrowDropDown, contentDescription = "More absence types")
+                                    Icon(AppIcons.ExpandMore, contentDescription = "More absence types")
                                 }
                                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                                     listOf(AttendanceStatus.ABSENT, AttendanceStatus.EXCUSED).forEach { choice ->

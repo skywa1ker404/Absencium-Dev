@@ -145,7 +145,7 @@ fun ColumnScope.ChatMessageActionButtons(
                 .size(16.dp)
         )
 
-        if (showRegenerate) {
+        if (showRegenerate && !me.rerere.rikkahub.ui.context.LocalReadOnlyChat.current) {
             Icon(
                 Icons.Rounded.Refresh, stringResource(R.string.regenerate), modifier = Modifier
                     .clip(CircleShape)
@@ -214,6 +214,7 @@ fun ChatMessageActionsSheet(
     val groupContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val hasTextContent = message.parts.filterIsInstance<UIMessagePart.Text>()
         .any { it.text.isNotBlank() }
+    val readOnly = me.rerere.rikkahub.ui.context.LocalReadOnlyChat.current
 
     ModalBottomSheet(
 containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLow,
@@ -246,7 +247,7 @@ containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceCon
                     MessageActionGroupItem(
                         label = stringResource(R.string.render_with_webview),
                         icon = { Icon(Icons.Rounded.OpenInBrowser, null, modifier = Modifier.padding(4.dp)) },
-                        position = MessageActionItemPosition.MIDDLE,
+                        position = if (readOnly) MessageActionItemPosition.LAST else MessageActionItemPosition.MIDDLE,
                         containerColor = groupContainerColor,
                         onClick = {
                             haptics.perform(HapticPattern.Pop)
@@ -255,7 +256,7 @@ containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceCon
                         }
                     )
                 }
-                MessageActionGroupItem(
+                if (!readOnly) MessageActionGroupItem(
                     label = stringResource(R.string.edit),
                     icon = { Icon(Icons.Rounded.Edit, null, modifier = Modifier.padding(4.dp)) },
                     position = MessageActionItemPosition.MIDDLE,
@@ -266,7 +267,7 @@ containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceCon
                         onEdit()
                     }
                 )
-                MessageActionGroupItem(
+                if (!readOnly) MessageActionGroupItem(
                     label = stringResource(R.string.create_fork),
                     icon = { Icon(Icons.AutoMirrored.Rounded.CallSplit, null, modifier = Modifier.padding(4.dp)) },
                     position = MessageActionItemPosition.LAST,
@@ -282,7 +283,7 @@ containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceCon
             Spacer(modifier = Modifier.size(4.dp))
 
             // Delete
-            Card(
+            if (!readOnly) Card(
                 onClick = {
                     haptics.perform(HapticPattern.Thud)
                     onDismissRequest()

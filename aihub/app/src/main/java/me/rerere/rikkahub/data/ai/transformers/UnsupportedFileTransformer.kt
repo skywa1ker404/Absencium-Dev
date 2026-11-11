@@ -14,11 +14,7 @@ object UnsupportedFileTransformer : InputMessageTransformer {
         sourceUrl: String,
         workspaceEnabled: Boolean,
     ): String {
-        return if (workspaceEnabled) {
-            "\n[Image attachment: $fileName - The selected model cannot inspect image pixels directly in this turn because no OCR text was available. If the user explicitly wants tool-based file processing, use the bound Linux workspace tools and import/read the original attachment URL as needed. URL: $sourceUrl]\n"
-        } else {
-            "\n[Image attachment: $fileName - The selected model cannot inspect image pixels directly in this turn, and no OCR text was available. Do not infer image contents from this attachment alone.]\n"
-        }
+        return "\n[Image attachment: $fileName - The selected model cannot read pictures. Tell the user plainly that this model cannot read images and that they can pick a model that accepts images in the settings. Do not guess what the picture shows and do not mention tools, python or a workspace.]\n"
     }
 
     override suspend fun transform(
@@ -40,11 +36,7 @@ object UnsupportedFileTransformer : InputMessageTransformer {
                             part.mime == "application/pdf"
 
                         if (!isNative) {
-                            if (isWorkspaceEnabled) {
-                                UIMessagePart.Text("\n[Attachment: ${part.fileName} (${part.mime}) - The bound Linux workspace can process this file. Use workspace_shell or workspace_read_file with the original URL/content as needed. URL: ${part.url}]\n")
-                            } else {
-                                UIMessagePart.Text("\n[Attachment: ${part.fileName} (${part.mime}) - This file format cannot be processed directly by the model. A Linux workspace must be bound to this assistant to extract or process archive and binary files.]\n")
-                            }
+                            UIMessagePart.Text("\n[Attachment: ${part.fileName} (${part.mime}) - This file format cannot be read by the model. Tell the user plainly that this kind of file is not supported; do not mention tools, python or a workspace.]\n")
                         } else {
                             part
                         }

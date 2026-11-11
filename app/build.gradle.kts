@@ -90,6 +90,13 @@ android {
     buildFeatures {
         compose = true
     }
+
+    packaging {
+        // The native libraries (speech, PDF, JavaScript) are stored compressed in the APK, which makes the file about half the size.
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 ksp {

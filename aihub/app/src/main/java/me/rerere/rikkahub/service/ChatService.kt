@@ -939,6 +939,12 @@ class ChatService(
      * first message, waits until the assistant has finished, and returns what it ended with.
      */
     suspend fun runHostTask(title: String, parts: List<UIMessagePart>): me.rerere.rikkahub.AiHost.TaskResult {
+        // Say plainly, before anything is sent, when the chosen model cannot take what the action needs.
+        val model = settingsStore.settingsFlow.value.resolveConversationContext(me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID).chatModel
+            ?: return me.rerere.rikkahub.AiHost.TaskResult("", "", "No chat model is chosen. Pick one in Absencium AI's settings.")
+        if (parts.any { it is UIMessagePart.Image } && !model.inputModalities.contains(Modality.IMAGE)) {
+            return me.rerere.rikkahub.AiHost.TaskResult("", "", "${model.displayName} cannot read pictures. Pick a model that accepts images (for example Gemini or GPT-4o) in Absencium AI's settings.")
+        }
         val conversation = Conversation.ofId(id = Uuid.random(), assistantId = me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID)
             .copy(title = title, isConsolidated = true)
         saveConversation(conversation.id, conversation)

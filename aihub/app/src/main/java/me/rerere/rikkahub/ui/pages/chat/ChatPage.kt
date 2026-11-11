@@ -1375,7 +1375,10 @@ private fun ChatPageContent(
     }
 
     AssistantChatTheme(assistant = currentAssistant) {
-        CompositionLocalProvider(LocalAiBlur provides blur) {
+        CompositionLocalProvider(
+            LocalAiBlur provides blur,
+            me.rerere.rikkahub.ui.context.LocalReadOnlyChat provides (conversation.assistantId == me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID),
+        ) {
             Surface(
                 color = if (renderBackground) {
                     MaterialTheme.colorScheme.background
