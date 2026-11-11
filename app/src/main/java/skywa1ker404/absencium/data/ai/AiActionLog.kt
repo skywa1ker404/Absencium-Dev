@@ -1,9 +1,11 @@
 package skywa1ker404.absencium.data.ai
 
 import android.content.Context
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
 import skywa1ker404.absencium.logging.DebugLogger
@@ -30,6 +32,8 @@ data class AiActionEntry(
     val error: String?,
     val targetType: AiTargetType?,
     val targetId: Long,
+    /** The hidden hub chat this happened in, when it happened in one. */
+    val chatId: String? = null,
 )
 
 /**
@@ -51,6 +55,7 @@ class AiActionLog(context: Context) {
         error: String? = null,
         targetType: AiTargetType? = null,
         targetId: Long = 0,
+        chatId: String? = null,
     ) {
         val now = System.currentTimeMillis()
         synchronized(lock) {
@@ -59,7 +64,7 @@ class AiActionLog(context: Context) {
             val entry = AiActionEntry(
                 id, now, action, title.take(120),
                 fields.filter { it.second.isNotBlank() }.map { it.first to it.second.trim().take(MAX_FIELD) },
-                ok, preview?.take(MAX_PREVIEW), error?.take(300), targetType, targetId,
+                ok, preview?.take(MAX_PREVIEW), error?.take(300), targetType, targetId, chatId,
             )
             _entries.value = (listOf(entry) + _entries.value).take(MAX_ENTRIES)
             save(_entries.value)
@@ -82,6 +87,19 @@ class AiActionLog(context: Context) {
 
     fun find(id: Long): AiActionEntry? = _entries.value.firstOrNull { it.id == id }
 
+    /** The first thing a hidden chat made or changed that the app can show, or null when it made nothing. */
+    fun targetOf(chatId: String): AiActionEntry? = _entries.value.lastOrNull { it.chatId == chatId && it.ok && it.targetType != null }
+
+    /** The hidden chats that made or changed something the app can show. */
+    val chatsWithTargets: Flow<Set<String>> = _entries.map { list -> list.filter { it.ok && it.targetType != null }.mapNotNull { it.chatId }.toSet() }
+
+    fun removeChat(chatId: String) {
+        synchronized(lock) {
+            _entries.value = _entries.value.filterNot { it.chatId == chatId }
+            save(_entries.value)
+        }
+    }
+
     private fun load(): List<AiActionEntry> = try {
         if (!file.isFile) emptyList() else {
             val array = JSONArray(file.readText())
@@ -99,6 +117,7 @@ class AiActionLog(context: Context) {
                     error = if (o.has("error")) o.optString("error") else null,
                     targetType = o.optString("targetType").takeIf { it.isNotEmpty() }?.let { runCatching { AiTargetType.valueOf(it) }.getOrNull() },
                     targetId = o.optLong("targetId"),
+                    chatId = o.optString("chatId").takeIf { it.isNotEmpty() },
                 )
             }
         }
@@ -119,6 +138,7 @@ class AiActionLog(context: Context) {
                             e.preview?.let { put("preview", it) }
                             e.error?.let { put("error", it) }
                             e.targetType?.let { put("targetType", it.name); put("targetId", e.targetId) }
+                            e.chatId?.let { put("chatId", it) }
                         },
                 )
             }

@@ -130,25 +130,24 @@ class AbsenciumApp : Application() {
             .map { it?.generateImagesEnabled == true }
             .distinctUntilChanged()
         val chatTools = skywa1ker404.absencium.data.ai.ChatAppTools(container)
-        // The AI actions folder under Statistics.
-        me.rerere.rikkahub.AiHost.actions = container.aiActionLog.entries.map { list ->
-            list.map { e ->
-                me.rerere.rikkahub.AiHost.HostAction(
-                    id = e.id, time = e.time, action = e.action, title = e.title, fields = e.fields, ok = e.ok,
-                    preview = e.preview, error = e.error, canOpen = e.ok && e.targetType != null,
-                )
-            }
-        }
+        // The AI actions folder under Statistics lists the hidden hub chats; these say which of them made something that can be opened.
+        me.rerere.rikkahub.AiHost.actionTargets = container.aiActionLog.chatsWithTargets
         me.rerere.rikkahub.AiHost.vaultLinks = { chatTools.vaultLinks() }
-        me.rerere.rikkahub.AiHost.openAction = { context, id ->
-            container.aiActionLog.find(id)?.let { e -> e.targetType?.let { skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, it, e.targetId) } }
+        me.rerere.rikkahub.AiHost.openActionTarget = { context, chatId ->
+            container.aiActionLog.targetOf(chatId)?.let { e -> e.targetType?.let { skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, it, e.targetId) } }
         }
-        me.rerere.rikkahub.AiHost.removeAction = { id -> if (id == null) container.aiActionLog.clear() else container.aiActionLog.remove(id) }
+        me.rerere.rikkahub.AiHost.forgetAction = { chatId -> container.aiActionLog.removeChat(chatId) }
         me.rerere.rikkahub.AiHost.describe = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.describe(name, args) }
         me.rerere.rikkahub.AiHost.planSteps = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.planSteps(name, args) }
         me.rerere.rikkahub.AiHost.skipPlanSteps = { name, args, skipped -> skywa1ker404.absencium.data.ai.ChatAppTools.skipPlanSteps(name, args, skipped) }
         me.rerere.rikkahub.AiHost.suggestions = { runCatching { ChatAppTools(container).suggestions() }.getOrDefault(emptyList()) }
-        me.rerere.rikkahub.AiHost.tools = { policy -> chatTools.tools(policy) }
+        me.rerere.rikkahub.AiHost.tools = { policy, chatId -> ChatAppTools(container, chatId).tools(policy) }
+        // An action chat has nobody to approve: changes run by themselves, except deleting, which only a normal chat may ask for.
+        me.rerere.rikkahub.AiHost.actionToolPolicy = {
+            val names = chatTools.catalog().map { it.name }
+            val off = names.filter { it.startsWith("delete_") || it.startsWith("bulk_delete") || it == "empty_trash" }.toSet()
+            me.rerere.rikkahub.AiHost.ToolPolicy(off = off, auto = names.toSet() - off)
+        }
         me.rerere.rikkahub.AiHost.toolCatalog = { chatTools.catalog() }
         val rates = HashMap<Activity, RefreshRatePreference>()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {

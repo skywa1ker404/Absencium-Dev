@@ -934,6 +934,22 @@ class ChatService(
         }
     }
 
+    /**
+     * Runs one host action as a hidden, read-only chat (see [me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID]): sends [parts] as the
+     * first message, waits until the assistant has finished, and returns what it ended with.
+     */
+    suspend fun runHostTask(title: String, parts: List<UIMessagePart>): me.rerere.rikkahub.AiHost.TaskResult {
+        val conversation = Conversation.ofId(id = Uuid.random(), assistantId = me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID)
+            .copy(title = title, isConsolidated = true)
+        saveConversation(conversation.id, conversation)
+        sendMessage(conversation.id, parts, answer = true, suppressCompletionNotification = true)
+        getConversationJobs().first { it[conversation.id] == null }
+        val done = getConversationFlow(conversation.id).value
+        val reply = done.messageNodes.lastOrNull { it.role == MessageRole.ASSISTANT }?.currentMessage?.toText().orEmpty()
+        val error = if (done.hasPendingToolApprovals()) "The AI asked for approval, which an action cannot give." else if (reply.isBlank()) "The AI did not answer." else null
+        return me.rerere.rikkahub.AiHost.TaskResult(conversation.id.toString(), reply, error)
+    }
+
     suspend fun createConversation(assistantId: Uuid): Conversation {
         val settings = settingsStore.settingsFlow.value
         val assistant = settings.getAssistantById(assistantId) ?: settings.getCurrentAssistant()
@@ -1818,6 +1834,8 @@ class ChatService(
                 return@onSuccess
             }
 
+            // An action chat keeps the title it was given and needs no suggestions or summary.
+            if (finalConversation.assistantId == me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID) return@onSuccess
             addConversationReference(conversationId) // 添加引用
             appScope.launch {
                 coroutineScope {
@@ -1865,6 +1883,10 @@ class ChatService(
         model: Model,
     ): List<Tool> {
         if (!model.abilities.contains(ModelAbility.TOOL)) return emptyList()
+        // An action chat gets only the host's tools, the ones the host allows for actions.
+        if (conversation.assistantId == me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID) {
+            return me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.actionToolPolicy(), conversation.id.toString())
+        }
         return buildList {
             val useBuiltInSearch = shouldUseBuiltInSearch(model, assistant)
 
@@ -1887,7 +1909,7 @@ class ChatService(
                 )
             )
 
-            addAll(me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.ToolPolicy(assistant.hostToolsOff, assistant.hostToolsAuto, assistant.hostToolsAsk)))
+            addAll(me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.ToolPolicy(assistant.hostToolsOff, assistant.hostToolsAuto, assistant.hostToolsAsk), conversation.id.toString()))
 
             mcpManager.getAvailableTools(assistant).forEach { (serverId, tool) ->
                 add(

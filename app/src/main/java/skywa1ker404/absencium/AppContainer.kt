@@ -65,6 +65,8 @@ class AppContainer(context: Context) {
     /** Bumped whenever a provider or key is added, changed, switched off or removed, so every screen showing them redraws at once. */
     val providersRevision = kotlinx.coroutines.flow.MutableStateFlow(0)
         /** Finds or draws the images AI notes ask for (both optional, off by default). */
+    /** Every AI action goes through the AI hub as a hidden chat. */
+    val aiTasks: skywa1ker404.absencium.data.ai.AiTasks by lazy { skywa1ker404.absencium.data.ai.AiTasks(appContext as android.app.Application) }
     val diagramService: skywa1ker404.absencium.data.ai.DiagramService by lazy { skywa1ker404.absencium.data.ai.DiagramService(aiClient) }
     /** True when Absencium AI has a chat model with a key (or a local server) ready for the app's own AI features. */
     fun activeKeySaved(): Boolean = chatChoice() != null

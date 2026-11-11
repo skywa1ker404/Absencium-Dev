@@ -36,7 +36,7 @@ import java.util.Locale
  * and everything can be undone the same way. Looking things up runs by itself; every change, and reading a whole note, waits for the
  * student to approve it in the chat. Each lookup by name must match exactly one thing, otherwise the tool says so instead of guessing.
  */
-class ChatAppTools(private val container: AppContainer) {
+class ChatAppTools(private val container: AppContainer, private val chatId: String? = null) {
 
     companion object {
         /**
@@ -846,6 +846,7 @@ ${NotePrompts.EDITOR}
                 error = if (ok) null else message,
                 targetType = type,
                 targetId = id,
+                chatId = chatId,
             )
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e

@@ -261,7 +261,7 @@ private fun MenuStatsContent(
             )
         }
 
-        if (AiHost.actions != null) {
+        if (AiHost.actionTargets != null) {
             item { AiActionsFolder() }
         }
 

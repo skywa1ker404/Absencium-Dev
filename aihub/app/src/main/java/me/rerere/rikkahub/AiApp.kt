@@ -74,6 +74,15 @@ object AiApp {
     private inline fun <reified T : Any> get(qualifier: org.koin.core.qualifier.Qualifier? = null): T =
         org.koin.core.context.GlobalContext.get().get<T>(qualifier)
 
+    /**
+     * Runs one of the host's AI actions as a hidden, read-only chat (listed in the AI actions folder): the chat's assistant decides what
+     * to do with the host's tools. Starts the chat runtime first when it has not started yet.
+     */
+    suspend fun runHostTask(application: Application, title: String, parts: List<me.rerere.ai.ui.UIMessagePart>): AiHost.TaskResult {
+        start(application)
+        return get<me.rerere.rikkahub.service.ChatService>().runHostTask(title, parts)
+    }
+
     @Synchronized
     fun start(application: Application) {
         if (started) return

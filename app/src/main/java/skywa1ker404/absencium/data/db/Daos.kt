@@ -266,6 +266,9 @@ interface GuideDao {
     @Query("SELECT * FROM Guides_Table ORDER BY file_name COLLATE NOCASE")
     fun observeAll(): Flow<List<GuideEntity>>
 
+    @Query("SELECT * FROM Guides_Table WHERE id = :id")
+    suspend fun getById(id: Long): GuideEntity?
+
     @Query("UPDATE Guides_Table SET syllabus_node_id = :nodeId WHERE id = :id")
     suspend fun setSyllabusNode(id: Long, nodeId: Long?)
 

@@ -1846,7 +1846,10 @@ private fun ChatPageContent(
                     null
                 }
 
-                if (showModeComposer) {
+                if (conversation.assistantId == me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID) {
+                    // A chat the host's AI made for an action: it can be read, never written to.
+                    ReadOnlyPrompt(modifier = Modifier.align(Alignment.BottomCenter).then(if (inputMaxWidth != Dp.Unspecified) Modifier.widthIn(max = inputMaxWidth) else Modifier))
+                } else if (showModeComposer) {
                     ChatModeBottomControls(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -4023,3 +4026,21 @@ private fun compactTokenCount(tokens: Int): String = when {
 /** The fades at the edges of the chat: full strength normally, only a faint veil under Liquid Glass so no dark slab sits over the wallpaper. */
 @androidx.compose.runtime.Composable
 private fun glassFadeAlpha(base: Float): Float = if (me.rerere.rikkahub.LocalHostGlass.current) base * 0.25f else base
+
+
+/** The prompt field of an AI action chat: the same pill as the real prompt, disabled, saying it is read only. */
+@Composable
+private fun ReadOnlyPrompt(modifier: Modifier = Modifier) {
+    androidx.compose.material3.Surface(
+        modifier = modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 24.dp).navigationBarsPadding(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+        color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        androidx.compose.material3.Text(
+            text = "Read only",
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+            style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        )
+    }
+}

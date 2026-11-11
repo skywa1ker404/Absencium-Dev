@@ -4,10 +4,10 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,13 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -30,37 +26,38 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import me.rerere.rikkahub.AiHost
-import me.rerere.rikkahub.AiHost.HostAction
 import me.rerere.rikkahub.Screen
+import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.AppShapes
+import org.koin.compose.koinInject
 import java.text.DateFormat
 import java.util.Date
 
 /** The folder on the Statistics page that opens the list of what the AI did. */
 @Composable
 internal fun AiActionsFolder() {
+    if (AiHost.actionTargets == null) return
     val navController = LocalNavController.current
-    val actions by (AiHost.actions ?: return).collectAsStateWithLifecycleSafe()
+    val repo: ConversationRepository = koinInject()
+    val chats by repo.getConversationsOfAssistant(AiHost.ACTIONS_ASSISTANT_ID).collectAsStateWithLifecycle(initialValue = emptyList())
     Card(
         onClick = { navController.navigate(Screen.AiActions) },
         modifier = Modifier.fillMaxWidth(),
@@ -78,7 +75,7 @@ internal fun AiActionsFolder() {
             Column(modifier = Modifier.weight(1f)) {
                 Text("AI actions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    if (actions.isEmpty()) "Notes, homework and changes made by AI appear here" else "${actions.size} recorded",
+                    if (chats.isEmpty()) "Notes, homework and changes made by AI appear here" else "${chats.size} chats",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -86,33 +83,30 @@ internal fun AiActionsFolder() {
     }
 }
 
-@Composable
-private fun kotlinx.coroutines.flow.Flow<List<HostAction>>.collectAsStateWithLifecycleSafe() =
-    this.collectAsStateWithLifecycle(initialValue = emptyList())
-
-/** Everything the AI made or changed: what was asked, a preview of the result, and a button to open it where it lives. */
+/** Every chat the app's AI had for an action, like the normal chat list: open one to read it, nothing can be sent. */
 @Composable
 fun AiActionsPage() {
-    val actions by (AiHost.actions ?: kotlinx.coroutines.flow.flowOf(emptyList())).collectAsStateWithLifecycleSafe()
+    val repo: ConversationRepository = koinInject()
+    val chats by repo.getConversationsOfAssistant(AiHost.ACTIONS_ASSISTANT_ID).collectAsStateWithLifecycle(initialValue = emptyList())
+    val withTarget by (AiHost.actionTargets ?: flowOf(emptySet())).collectAsStateWithLifecycle(initialValue = emptySet())
+    val navController = LocalNavController.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     Scaffold(
         topBar = {
             TopAppBar(
                 navigationIcon = { BackButton() },
                 title = { Text("AI actions", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
-                actions = {
-                    if (actions.isNotEmpty()) TextButton(onClick = { AiHost.removeAction(null) }) { Text("Clear all") }
-                },
             )
         },
     ) { innerPadding ->
-        if (actions.isEmpty()) {
+        if (chats.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(32.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Nothing yet", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Notes and homework made on Add Entry, and changes approved in the chat, are listed here.",
+                        "Notes and homework made on Add Entry, and everything else the app asks the AI to do, are listed here as chats you can read.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -121,74 +115,50 @@ fun AiActionsPage() {
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                contentPadding = PaddingValues(
                     start = 16.dp, end = 16.dp, top = innerPadding.calculateTopPadding() + 8.dp, bottom = innerPadding.calculateBottomPadding() + 24.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(actions, key = { it.id }) { action -> ActionCard(action, onOpen = { AiHost.openAction(context, action.id) }) }
+                items(chats, key = { it.id.toString() }) { chat ->
+                    ActionChatCard(
+                        chat = chat,
+                        canOpen = chat.id.toString() in withTarget,
+                        onRead = { navController.navigate(Screen.Chat(id = chat.id.toString())) },
+                        onOpen = { AiHost.openActionTarget(context, chat.id.toString()) },
+                        onDelete = {
+                            scope.launch {
+                                repo.deleteConversation(chat)
+                                AiHost.forgetAction(chat.id.toString())
+                            }
+                        },
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ActionCard(action: HostAction, onOpen: () -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
+private fun ActionChatCard(chat: Conversation, canOpen: Boolean, onRead: () -> Unit, onOpen: () -> Unit, onDelete: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Card(
+        onClick = onRead,
         modifier = Modifier.fillMaxWidth().animateContentSize(spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow)),
         colors = CardDefaults.cardColors(containerColor = colors.surfaceContainer, contentColor = colors.onSurface),
         shape = AppShapes.CardMedium,
     ) {
-        Column(modifier = Modifier.clickable { expanded = !expanded }.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Icon(
-                    if (action.ok) Icons.Rounded.CheckCircle else Icons.Rounded.Error,
-                    contentDescription = if (action.ok) "Done" else "Failed",
-                    tint = if (action.ok) colors.primary else colors.error,
-                    modifier = Modifier.size(24.dp),
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(chat.title.ifBlank { "AI action" }, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(chat.createAt.toEpochMilli())),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
                 )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(action.action, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    if (action.title.isNotBlank()) {
-                        Text(action.title, style = MaterialTheme.typography.bodyMedium, maxLines = if (expanded) 4 else 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    Text(
-                        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(action.time)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
             }
-            if (expanded) {
-                action.fields.forEach { (label, value) ->
-                    Column {
-                        Text(label, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-                        Text(value, style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-                action.error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.error) }
-                action.preview?.let { preview ->
-                    Text("Result", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-                    Text(
-                        preview,
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                        maxLines = 14,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHighest).padding(12.dp),
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (action.canOpen) FilledTonalButton(onClick = onOpen) { Text("Open") }
-                    Box(modifier = Modifier.weight(1f))
-                    IconButton(onClick = { AiHost.removeAction(action.id) }) {
-                        Icon(Icons.Rounded.Delete, contentDescription = "Remove from the list")
-                    }
-                }
-            } else if (action.canOpen) {
-                Row { FilledTonalButton(onClick = onOpen) { Text("Open") } }
-            }
+            if (canOpen) FilledTonalButton(onClick = onOpen) { Text("Open") }
+            IconButton(onClick = onDelete) { Icon(Icons.Rounded.Delete, contentDescription = "Delete this chat") }
         }
     }
 }
