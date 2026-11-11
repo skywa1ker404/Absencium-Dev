@@ -18,6 +18,7 @@ import me.rerere.ai.core.Tool
 import me.rerere.ai.core.ToolApprovalMode
 import skywa1ker404.absencium.AppContainer
 import skywa1ker404.absencium.data.db.AttendanceStatus
+import skywa1ker404.absencium.data.db.NoteKind
 import skywa1ker404.absencium.data.db.NoteStatus
 import skywa1ker404.absencium.data.db.Priority
 import skywa1ker404.absencium.data.db.SubjectEntity
@@ -185,14 +186,18 @@ ${NotePrompts.EDITOR}
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
             subjectResult(container.subjectRepository.delete(s), "Deleted the subject.")
         },
-        write("add_note", "Adds a text note to a subject's Vault, only when the student asked to keep something as a note. Never use it for a syllabus (use add_syllabus), a timetable, exams or study material.", mapOf("subject" to text("Subject name"), "title" to text("Note title"), "body" to text("Note text")), required = listOf("subject", "title", "body")) { a ->
+        write("add_note", "Adds a text note to a subject's Vault, only when the student asked to keep something as a note. Never use it for a syllabus (use add_syllabus), a timetable, exams or study material.", mapOf("subject" to text("Subject name"), "title" to text("Note title"), "body" to text("Note text"), "kind" to text("TEXT (default), AI_NOTES for notes written by the AI, or HOMEWORK for a solved homework"), "date" to text("Day the note is for, YYYY-MM-DD, optional"), "syllabus_topic" to text("Title of the syllabus topic to file it under, optional")), required = listOf("subject", "title", "body")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
             val title = a.req("title").trim()
             if (Regex("syllabus|timetable|time table|exam schedule", RegexOption.IGNORE_CASE).containsMatchIn(title)) return@write fail("A syllabus belongs in add_syllabus and a timetable in add_timetable_slot, not in a note.")
             val existing = container.database.noteDao().observeAll().first().filter { it.subjectId == s.id && similarTitle(it.title, title) }
             if (existing.isNotEmpty()) return@write fail("${s.name} already has ${existing.joinToString { "\"${it.title}\" (id ${it.id})" }}. Add to that note with append_to_note, or ask the student which note they mean. Only create a new note when they asked for a new one.")
             val body = a.req("body")
-            val id = container.vaultRepository.saveNote(0, s.id, title, body, NoteStatus.ACTIVE)
+            val kind = a.str("kind")?.let { k -> runCatching { NoteKind.valueOf(k.trim().uppercase()) }.getOrNull() } ?: NoteKind.TEXT
+            val day = a.str("date")?.let { date(it) }
+            val id = if (kind == NoteKind.TEXT && day == null) container.vaultRepository.saveNote(0, s.id, title, body, NoteStatus.ACTIVE)
+            else container.vaultRepository.createEntry(s.id, title, kind, body, day, emptyList())
+            a.str("syllabus_topic")?.let { t -> syllabusNode(s.id, t)?.let { container.database.noteDao().setSyllabusNode(id, it.id) } }
             saved("Added the note to ${s.name}.", id, title, body)
         },
         write("update_note", "Changes the title and/or text of a note. append_text is added to the end of the existing text.", mapOf("note_id" to num("Note id"), "title" to text("New title"), "body" to text("New full text (replaces the old text)"), "append_text" to text("Text to add at the end")), required = listOf("note_id")) { a ->

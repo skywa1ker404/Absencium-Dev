@@ -745,32 +745,11 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
             return
         }
         _state.update { it.copy(aiRunning = true, aiError = null, aiSetupMissing2 = false) }
-        // What the AI actions folder shows: only what the student typed and chose, never the instructions sent to the model.
-        val logAction = if (solve) "Solved homework" else "Generated notes"
-        val logTitle = (if (solve) "Homework: " else "") + (prompt.lineSequence().firstOrNull { it.isNotBlank() }?.take(60) ?: "$subjectName homework")
-        val logFields = buildList {
-            add("Subject" to subjectName)
-            if (!solve) {
-                add("Kind of notes" to current.noteTemplate.label)
-                current.noteTemplate.depths.getOrNull(current.noteDepth)?.let { add(current.noteTemplate.depthTitle to it.label) }
-            }
-            add((if (solve) "Question" else "Request") to prompt)
-            if (solve && current.pictures.isNotEmpty()) add("Photos" to current.pictures.size.toString())
-            syllabusChoices.value.firstOrNull { it.id == current.syllabusNodeId }?.let { add("Syllabus topic" to it.label) }
-            add("Course" to current.courseInfo)
-            val pictures = listOfNotNull("Search online".takeIf { current.genSearchDiagrams }, "Generate with AI".takeIf { current.genDrawDiagrams })
-            if (pictures.isNotEmpty()) add("Images" to pictures.joinToString(", "))
-        }
+        val logTitle = (if (solve) "Homework: " else "Notes: ") + (prompt.lineSequence().firstOrNull { it.isNotBlank() }?.take(60) ?: "$subjectName homework")
         aiJob = viewModelScope.launch {
             try {
                 val connection = AiConnection(settings.aiProvider, settings.effectiveAiStyle, settings.aiBaseUrl, settings.aiModel)
-                val images = if (solve) withContext(Dispatchers.IO) {
-                    current.pictures.take(MAX_EXTRACT_PHOTOS).mapNotNull { picture ->
-                        val bitmap = ImageTools.decode(picture.path, EXTRACT_EDGE) ?: return@mapNotNull null
-                        val bytes = java.io.ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray()
-                        AiImage("image/jpeg", android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
-                    }
-                } else emptyList()
+                val imagePaths = if (solve) current.pictures.take(MAX_EXTRACT_PHOTOS).map { it.path } else emptyList()
                 val sources = imageSources.value
                 val useSearch = current.genSearchDiagrams && sources.search
                 val useDraw = current.genDrawDiagrams && sources.generate
@@ -784,33 +763,25 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                         .let { if (it.isEmpty && current.courseInfo.isNotBlank()) it.copy(course = current.courseInfo.trim()) else it },
                     searchDiagrams = useSearch,
                     drawDiagrams = useDraw,
-                    hasPhotos = images.isNotEmpty(),
+                    hasPhotos = imagePaths.isNotEmpty(),
                 )
-                // Notes are planned first: a short call decides which parts this topic needs, and the writing call follows
-                // that plan. If planning fails the notes are still written, with the model told to decide the parts itself.
-                var plan: String? = null
-                if (!solve) {
-                    _state.update { it.copy(aiStep = "Working out what the topic needs") }
-                    plan = try {
-                        skywa1ker404.absencium.data.ai.NotePrompts.parsePlan(
-                            container.aiClient.generate(connection, skywa1ker404.absencium.data.ai.NotePrompts.plan(brief), emptyList(), maxTokens = PLAN_TOKENS, record = false),
-                        )
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Throwable) {
-                        DebugLogger.e("Vault", "Planning the notes failed; the notes are written without a plan", e)
-                        null
-                    }
-                }
+                // The AI hub does the work as a hidden chat (listed in AI actions): the assistant plans the parts, writes the note and saves it
+                // itself with add_note. The app only reads back what it saved and adds the pictures.
                 _state.update { it.copy(aiStep = if (solve) "Working on the answer" else "Writing your notes") }
-                val ask = if (solve) skywa1ker404.absencium.data.ai.NotePrompts.homework(brief) else skywa1ker404.absencium.data.ai.NotePrompts.notes(brief, plan)
-                val raw = container.aiClient.generate(connection, ask, images, maxTokens = if (solve) HOMEWORK_TOKENS else brief.depth.maxTokens)
-                if (raw.isBlank()) throw AiException("The model sent back an empty answer.")
+                val topic = nodes.firstOrNull { it.id == current.syllabusNodeId }?.title
+                val save = "\n\nWhen the " + (if (solve) "answer" else "notes") + " are finished, save them yourself with one add_note call: subject \"" + subjectName + "\", " +
+                    "a short title you choose, kind " + (if (solve) "HOMEWORK" else "AI_NOTES") + (current.date?.let { ", date $it" } ?: "") +
+                    (topic?.let { ", syllabus_topic \"$it\"" } ?: "") + ". Put the whole text in body and do not write it in the chat."
+                val ask = (if (solve) skywa1ker404.absencium.data.ai.NotePrompts.homework(brief) else skywa1ker404.absencium.data.ai.NotePrompts.notes(brief, null)) + save
+                val task = container.aiTasks.run(logTitle, ask, imagePaths)
+                val id = container.aiActionLog.targetOf(task.chatId, skywa1ker404.absencium.data.ai.AiTargetType.NOTE)?.targetId
+                    ?: throw AiException(task.error ?: "The AI did not save the " + (if (solve) "answer." else "notes."))
+                val saved = container.vaultRepository.getNote(id) ?: throw AiException("The saved note could not be found.")
                 val reply = try {
-                    skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(raw)
+                    skywa1ker404.absencium.data.ai.AiNoteCleaner.clean(saved.bodyText)
                 } catch (e: Throwable) {
-                    DebugLogger.e("Vault", "The note cleaner failed; the raw answer is used", e)
-                    raw.trim()
+                    DebugLogger.e("Vault", "The note cleaner failed; the saved text is used", e)
+                    saved.bodyText.trim()
                 }
 
                 // Diagrams: only when the user switched fetching or drawing on.
@@ -848,14 +819,13 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                 }
 
                 diagramNote?.let { DebugLogger.i("Vault", "Diagrams: $it") }
-                val title = (if (solve) "Homework: " else "") + (prompt.lineSequence().firstOrNull { it.isNotBlank() }?.take(60) ?: "$subjectName homework")
-                val attachments = (if (solve) current.pictures.map {
-                    AttachmentEntity(noteId = 0L, kind = AttachmentKind.IMAGE, filePath = it.path, displayName = it.name, mimeType = it.mimeType, sizeBytes = it.sizeBytes)
-                } else emptyList()) + found.values.map { it.first }
-                val id = container.vaultRepository.createEntry(
-                    current.subjectId, title, if (solve) NoteKind.HOMEWORK else NoteKind.AI_NOTES,
-                    skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(reply), current.date, attachments,
-                )
+                val title = saved.title
+                if (solve) current.pictures.forEach {
+                    container.vaultRepository.addAttachment(
+                        AttachmentEntity(noteId = id, kind = AttachmentKind.IMAGE, filePath = it.path, displayName = it.name, mimeType = it.mimeType, sizeBytes = it.sizeBytes),
+                    )
+                }
+                found.values.forEach { container.vaultRepository.addAttachment(it.first.copy(noteId = id)) }
                 if (found.isNotEmpty() || failedDiagrams.isNotEmpty()) {
                     val saved = container.vaultRepository.attachmentsFor(id).associateBy { it.filePath }
                     var body = reply
@@ -872,23 +842,20 @@ class AddEntryViewModel(private val container: AppContainer) : ViewModel() {
                         body = body.trimEnd() + "\n\n*No picture could be added for ${failedDiagrams.joinToString(", ") { "\"$it\"" }}$why*"
                     }
                     container.vaultRepository.saveNote(id, current.subjectId, title, body, NoteStatus.ACTIVE)
+                } else {
+                    val clean = skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(reply)
+                    if (clean != saved.bodyText) container.vaultRepository.saveNote(id, current.subjectId, title, clean, NoteStatus.ACTIVE)
                 }
                 current.date?.let { container.calendarRepository.setNotesCollected(listOf(current.subjectId), it, true) }
-                container.aiActionLog.add(
-                    action = logAction, title = logTitle, fields = logFields, ok = true, preview = skywa1ker404.absencium.data.ai.NotePrompts.withoutDiagramLines(reply),
-                    targetType = skywa1ker404.absencium.data.ai.AiTargetType.NOTE, targetId = id,
-                )
                 _state.value = AddEntryState()
                 onSaved(id)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: AiException) {
-                container.aiActionLog.add(logAction, logTitle, logFields, ok = false, error = e.message?.lineSequence()?.firstOrNull())
                 _state.update { it.copy(aiRunning = false, aiError = skywa1ker404.absencium.data.ai.AI_FAILED_INLINE) }
             } catch (e: Throwable) {
                 // Errors (not only exceptions) are shown instead of ending the app; the stack trace goes to debug.log.
                 DebugLogger.e("Vault", "The AI task failed", e)
-                container.aiActionLog.add(logAction, logTitle, logFields, ok = false, error = e.message ?: e.javaClass.simpleName)
                 _state.update { it.copy(aiRunning = false, aiError = "Something went wrong: ${e.message ?: e.javaClass.simpleName}") }
             }
         }

@@ -123,3 +123,7 @@ working on it
 - Added (branch Absencium-ai): AI actions folder on the chat's Statistics page listing notes, homework and chat changes with what was typed or chosen, a preview of the result and an Open button to the page it belongs to.
 - Added (branch Absencium-ai): Vault option in the chat's attach menu to link a note, syllabus or material by reference without uploading it.
 - Changed (branch Absencium-ai): every remaining LastChat name in the code and app is now Absencium AI (module folder, classes, files, resources, scheme, export formats, visible text); credits stay in the Licenses and THIRD_PARTY_NOTICES.md only; an existing chat database is moved across so chats are kept.
+- Added (branch Absencium-ai): Profile has a Syllabus button opening one page with every subject's syllabus and all the features of a subject's syllabus page.
+- Added (branch Absencium-ai): Absencium AI tools to edit, move and delete a syllabus topic and to read the text of a Vault material (the student approves each read); the tools are listed in category folders in the assistant's Tools tab.
+- Changed (branch Absencium-ai): the AI actions folder now lists hidden Absencium AI chats, one per action, like the normal chat list; they can be opened and read but not written to (the prompt field says Read only).
+- Changed (branch Absencium-ai): Add Entry notes and homework are made by Absencium AI in a hidden chat that saves the note itself, instead of a separate AI path.

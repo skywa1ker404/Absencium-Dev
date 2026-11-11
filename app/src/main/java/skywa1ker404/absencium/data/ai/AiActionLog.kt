@@ -88,7 +88,8 @@ class AiActionLog(context: Context) {
     fun find(id: Long): AiActionEntry? = _entries.value.firstOrNull { it.id == id }
 
     /** The first thing a hidden chat made or changed that the app can show, or null when it made nothing. */
-    fun targetOf(chatId: String): AiActionEntry? = _entries.value.lastOrNull { it.chatId == chatId && it.ok && it.targetType != null }
+    fun targetOf(chatId: String, type: AiTargetType? = null): AiActionEntry? =
+        _entries.value.lastOrNull { it.chatId == chatId && it.ok && it.targetType != null && (type == null || it.targetType == type) }
 
     /** The hidden chats that made or changed something the app can show. */
     val chatsWithTargets: Flow<Set<String>> = _entries.map { list -> list.filter { it.ok && it.targetType != null }.mapNotNull { it.chatId }.toSet() }
