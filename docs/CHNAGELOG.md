@@ -134,3 +134,6 @@ working on it
 - Added (branch Absencium-ai, CI green `43140074665`): Reminders settings (all off until chosen) for lectures, exams, your own events and low attendance, using one low-battery alarm that is set again after a restart.
 - Added (branch Absencium-ai, CI green `43140074665`): lecture types in the timetable, exam marks and pass marks, history of earlier note texts (last 20) with Restore in the note editor, and Absencium AI tools for flashcards, to-dos and events. The database is now version 5.
 - Changed (branch Absencium-ai, CI green `43003913457`): Absent is a split button with Excused inside; the read-only AI action chat hides Edit, Fork, Delete and Regenerate; models that cannot read images say so plainly; the app is 43.8 MB instead of 74.1 MB.
+- Changed (branch Absencium-ai, CI green `43202471499`): Study Tools and the calendar page redesigned (hero summary card, pastel tiles, shape badges, week strip, timeline, to-do progress).
+- Fixed (branch Absencium-ai, CI green `43203890335`): "Ask Absencium AI" in a note's menu opens the AI hub with the note linked in the message box.
+- Fixed (branch Absencium-ai, CI pending): the top Back button of the AI hub and its settings leaves the chat for the app when nothing is left to go back to.
