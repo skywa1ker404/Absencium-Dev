@@ -263,6 +263,8 @@ private fun handleSettingsPaneBack(navController: NavHostController) {
             return
         }
         if (!navController.popBackStack()) {
+            // The settings page was the only page on the chat's stack: Back leaves the chat for the host.
+            me.rerere.rikkahub.AiHost.onExit?.invoke()
             return
         }
     }

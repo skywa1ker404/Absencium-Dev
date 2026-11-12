@@ -57,6 +57,9 @@ object AiHost {
     /** Opens the host's own AI settings page. When set, the chat has no settings hub of its own: its gear goes here. */
     var openAppSettings: ((android.content.Context) -> Unit)? = null
 
+    /** Leaves the chat for the host when Back is pressed on the first page of the chat's own stack (nothing is left to pop). */
+    var onExit: (() -> Unit)? = null
+
     /** Whether the Imagine (image generation) entry shows in the chat drawer. Null: always shown. */
     var imagineEnabled: kotlinx.coroutines.flow.Flow<Boolean>? = null
 

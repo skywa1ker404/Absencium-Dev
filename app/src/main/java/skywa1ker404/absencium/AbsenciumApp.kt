@@ -126,6 +126,7 @@ class AbsenciumApp : Application() {
             }
         }
         // The chat's gear opens the app's own AI settings page; Imagine shows in the chat drawer only when "Generate images" is on.
+        me.rerere.rikkahub.AiHost.onExit = { skywa1ker404.absencium.ui.AbsenciumAi.close() }
         me.rerere.rikkahub.AiHost.openAppSettings = { context ->
           // Inside the app's own window the chat just closes and the settings page opens; only the stand-alone chat starts the app.
           if (!skywa1ker404.absencium.ui.AbsenciumAi.showAppSettings()) {

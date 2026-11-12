@@ -25,7 +25,7 @@ fun BackButton(modifier: Modifier = Modifier) {
     val haptics = rememberPremiumHaptics()
 
     AiBackButton(
-        onClick = { navController.popBackStack() },
+        onClick = { if (!navController.popBackStack()) me.rerere.rikkahub.AiHost.onExit?.invoke() },
         contentDescription = stringResource(R.string.back),
         modifier = modifier,
         onHaptic = { haptics.perform(HapticPattern.Pop) },
