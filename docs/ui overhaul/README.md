@@ -232,3 +232,25 @@ Owner rule (2026-10-28): redesign these three (notes list, syllabus tree, study 
 ## Absencium AI references (owner 2026-11-01)
 
 `docs/ui overhaul/Ai/` holds the Gemini-style chat screenshots; `docs/ui overhaul/Ai/Generical-reference/` holds pictures 05 to 19 from another AI app (settings hub, tools and search, memory and RAG, models and generation, system prompt editor, assistants, provider pickers, keyless search, read aloud) with a per-picture inspection, the owner's AI feature list and a table of what exists and what is planned (TODOList rows 11.28 to 11.35). Layout and feature references only; nothing is copied.
+
+## Batch 43 pictures (owner 2026-11-12)
+
+### 28 `28-vault-link-sheet-flat.jpg` (Add Entry / "Link from the Vault")
+- A bottom sheet with Notes / Syllabus / Materials chips, a search field and a **flat list** of every note with a folder icon, title and subject. No hierarchy. **Wrong:** it must work like the Vault (subject folders, then categories, then notes, with back and breadcrumb), and the topic trees inside collapse by default (TODOList 43.3, 43.4). The header behind shows the AI hub's loading ring.
+
+### 29 `29-appearance-reference.jpg` (Appearance reference from another app)
+- Live **Preview** pane on top. Then: "Appearance" as three big tiles (Light, Dark, System) with icons; a "Pure black in dark mode" switch row with an icon and a one-line help; "Display size" as four "Aa" tiles; "Color" as three phone-shaped previews (Default, Monet, Presets) with a check on the chosen one; "Styles" with "Themes style"; "Bottom bar" as two preview tiles (Anchored, Floating), "Show labels" switch, "Corner radius" slider with the value (28dp); "Avatars" as shape tiles (8-leaf, circle, 4-leaf, ghost, none) and a "Show frame" switch; "Visual Quality" as three preview tiles.
+- **Take:** every setting is a **picture tile with a label**, not a list row; the chosen tile has a bright outline; sections have small grey titles; the Liquid Glass / Pixelated / Nothing options go inside "Themes style" (43.10).
+
+### 30 `30-pixel-ui-kit.png` (Pixelated theme kit)
+- Three families of buttons: grey bevelled keys with a pixel font and pixel icons (play, stop, skip, pause, close, check, menu); pale-blue "stone" buttons with a dark stepped outline, a light top-left edge and a darker bottom edge (QUIT, RESET, SETTING, SAVE, round X and check, search, save, home); slim pill buttons with a two-tone outline and tiny letter-spaced caps.
+- **Take for Pixelated:** every edge is a **stepped pixel border** (no smooth curves, no blur), two-tone bevel (light top-left, dark bottom-right), a pixel font in capitals for labels, pixel icons, pressed state moves the face down by 2 px, and corners are cut in steps. Switches, chips, sliders, cards and dialogs all use the same stepped frame; colours come from the chosen preset.
+
+### 31 `31-profile-banner-overview.jpg` (Profile, top)
+- Full-width **banner picture** at the top with a small round settings button at the top right; the **avatar overlaps the banner** inside an expressive shape (flower); a dark rounded sheet starts under the banner holding two round buttons at the right (edit pencil, bell with a count). Name in very large bold type, a "Level" chip, a "Joined" line. A row of **tab chips** (Overview selected, Activity, ...) scrolls sideways. Section headers have a **vertical accent bar at the left and an arrow at the right**; the arrow opens that section's own page. A card for the latest update (cover, title, line, small actions). "Activity History" card with a Month / Week switch, a sentence ("20 activities across 17 days") with an info icon and a **heat-map of rounded squares**.
+
+### 32 `32-profile-statistics-genres.jpg` (Profile, Statistics)
+- Statistics card: three **large numbers** with small spaced capital labels and a caption under each; a divider; a **segmented capsule bar** (three tones) with a legend of dots and counts. "Top Genres": tiles with a big number, a star score, a name and "N entries"; the arrow opens the full page. The tab row at the top stays pinned (Social, Reviews, Statistics).
+
+### How these map to Absencium (TODOList 43.7)
+Banner = the profile picture / chosen colour band; flower avatar = the Appearance avatar shape; stats card = attendance %, notes, exams and marks with the capsule bar; Top Genres = subjects (big attendance number, marks, name); heat-map = attendance days; "Absencium AI" and Settings become small icons at the top right; the arrow of each section opens its page (Attendance, Vault, Exams, Grades, Syllabus).
