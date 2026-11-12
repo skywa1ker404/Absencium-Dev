@@ -42,6 +42,15 @@ fun AttendanceInsightsScreen(navigator: DestinationsNavigator) {
     val rows = remember(data) { data?.subjectAttendance().orEmpty() }
     val colors = MaterialTheme.colorScheme
     ScreenScaffold(title = "Attendance insights", onBack = { navigator.navigateUp() }, largeTitle = true) {
+        val held = rows.sumOf { it.held }
+        val overall = if (held > 0) rows.sumOf { it.present } * 100.0 / held else null
+        StudyHero(
+            label = "Overall attendance",
+            figure = overall?.let { String.format(Locale.US, "%.1f%%", it) } ?: "–",
+            caption = if (overall == null) "Log some lectures to see insights" else "Goal ${settings.attendanceThresholdPercent}% · $held lectures held",
+            icon = skywa1ker404.absencium.ui.icons.AppIcons.CalendarMonth,
+            hue = skywa1ker404.absencium.ui.components.hueFor(3), shape = BadgeShape.SUNNY,
+        )
         if (rows.isEmpty()) HintText("Log some lectures to see insights.")
         rows.forEach { item ->
             val goal = item.subject.attendanceGoal ?: settings.attendanceThresholdPercent
@@ -60,6 +69,7 @@ fun AttendanceInsightsScreen(navigator: DestinationsNavigator) {
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
+                if (p != null) CapsuleProgress((p / 100.0).toFloat(), if (p < goal) colors.error else colors.primary, Modifier.padding(top = 10.dp))
                 if (item.held > 0) {
                     Text(
                         text = if (margin.mustAttend > 0) "Attend the next ${margin.mustAttend} lectures to reach the goal"

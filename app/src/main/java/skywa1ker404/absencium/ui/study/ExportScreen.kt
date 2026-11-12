@@ -49,6 +49,11 @@ fun ExportScreen(navigator: DestinationsNavigator) {
     var message by remember { mutableStateOf<String?>(null) }
 
     ScreenScaffold(title = "Export & share", onBack = { navigator.navigateUp() }, largeTitle = true) {
+        StudyHero(
+            label = "Take it with you", figure = "4 formats", caption = "Calendar, attendance, marks and a PDF report",
+            icon = skywa1ker404.absencium.ui.icons.AppIcons.OpenInNew,
+            hue = skywa1ker404.absencium.ui.components.hueFor(4), shape = BadgeShape.BURST,
+        )
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 StudyExportKind.entries.forEachIndexed { index, kind ->

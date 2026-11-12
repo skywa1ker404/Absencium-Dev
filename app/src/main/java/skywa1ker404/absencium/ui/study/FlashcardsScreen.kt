@@ -122,14 +122,16 @@ fun FlashcardsScreen(navigator: DestinationsNavigator) {
                 }
             }
         } else {
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                Text("${due.size} due today", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
-                Text("${cards.size} cards in total", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                PillButton(
-                    text = "Review", enabled = due.isNotEmpty(), modifier = Modifier.padding(top = 12.dp),
-                    onClick = { queue.clear(); queue.addAll(due.shuffled()); reviewed = 0; revealed = false; reviewing = true },
-                )
-            }
+            StudyHero(
+                label = "Due today", figure = "${due.size} ${if (due.size == 1) "card" else "cards"}",
+                caption = "${cards.size} cards in total",
+                icon = skywa1ker404.absencium.ui.icons.AppIcons.Book,
+                hue = skywa1ker404.absencium.ui.components.hueFor(1), shape = BadgeShape.CLOVER,
+            )
+            PillButton(
+                text = "Review", enabled = due.isNotEmpty(),
+                onClick = { queue.clear(); queue.addAll(due.shuffled()); reviewed = 0; revealed = false; reviewing = true },
+            )
 
             SectionTitle("Add a card")
             AppCard(modifier = Modifier.fillMaxWidth()) {

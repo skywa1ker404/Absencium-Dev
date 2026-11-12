@@ -96,11 +96,14 @@ fun FocusTimerScreen(navigator: DestinationsNavigator, mode: String = FocusMode.
         animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessLow),
         label = "focusProgress",
     )
-    val track = colors.surfaceContainerHighest
-    val arc = if (focus) colors.primary else colors.tertiary
+    val hue = skywa1ker404.absencium.ui.components.hueFor(
+        when (mode) { FocusMode.STOPWATCH -> 1L; FocusMode.BREAK_10 -> 2L; FocusMode.BREAK_15 -> 3L; else -> if (focus) 0L else 2L },
+    )
+    val track = hue.accent.copy(alpha = 0.2f)
+    val arc = hue.accent
 
     ScreenScaffold(title = when (mode) { FocusMode.STOPWATCH -> "Stopwatch"; FocusMode.BREAK_10 -> "10-minute break"; FocusMode.BREAK_15 -> "15-minute break"; else -> "Pomodoro" }, onBack = { navigator.navigateUp() }, largeTitle = true) {
-        AppCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth(), container = hue.container, shape = MaterialTheme.shapes.extraLarge) {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(modifier = Modifier.size(220.dp), contentAlignment = Alignment.Center) {
                     Canvas(modifier = Modifier.size(220.dp)) {
@@ -111,8 +114,8 @@ fun FocusTimerScreen(navigator: DestinationsNavigator, mode: String = FocusMode.
                         drawArc(arc, -90f, 360f * progress, false, Offset(inset, inset), box, style = Stroke(stroke, cap = StrokeCap.Round))
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(if (left >= 3600) "%d:%02d:%02d".format(left / 3600, left % 3600 / 60, left % 60) else "%02d:%02d".format(left / 60, left % 60), style = MaterialTheme.typography.displayMedium)
-                        Text(if (stopwatch) "Studying" else if (focus) "Focus" else "Break", style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
+                        Text(if (left >= 3600) "%d:%02d:%02d".format(left / 3600, left % 3600 / 60, left % 60) else "%02d:%02d".format(left / 60, left % 60), style = MaterialTheme.typography.displayMedium, color = hue.onContainer)
+                        Text(if (stopwatch) "Studying" else if (focus) "Focus" else "Break", style = MaterialTheme.typography.titleMedium, color = hue.onContainer.copy(alpha = 0.8f))
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -122,7 +125,7 @@ fun FocusTimerScreen(navigator: DestinationsNavigator, mode: String = FocusMode.
                         onClick = { running = false; focus = !breakOnly; left = start },
                     )
                 }
-                if (mode == FocusMode.POMODORO) Text("$rounds rounds finished this session", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                if (mode == FocusMode.POMODORO) Text("$rounds rounds finished this session", style = MaterialTheme.typography.bodySmall, color = hue.onContainer.copy(alpha = 0.8f))
             }
         }
         HintText("Keep this page open while the timer runs.", modifier = Modifier.padding(top = 8.dp))

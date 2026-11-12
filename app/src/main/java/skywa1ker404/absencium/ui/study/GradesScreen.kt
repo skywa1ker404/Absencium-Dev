@@ -75,24 +75,20 @@ fun GradesScreen(navigator: DestinationsNavigator) {
             }
         }
         val overall = grades.overallPercent()
-        AppCard(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = overall?.let { formatMarks(it, scale) } ?: "–",
-                style = MaterialTheme.typography.displaySmall,
-                color = colors.primary,
-            )
-            Text(
-                text = if (overall == null) "Add marks to an exam below to see your average" else "Average over ${grades.count { it.percent != null }} subjects",
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
-            )
-        }
+        StudyHero(
+            label = "Overall",
+            figure = overall?.let { formatMarks(it, scale) } ?: "–",
+            caption = if (overall == null) "Add marks to an exam below to see your average" else "Average over ${grades.count { it.percent != null }} subjects",
+            icon = skywa1ker404.absencium.ui.icons.AppIcons.School,
+            hue = skywa1ker404.absencium.ui.components.hueFor(2), shape = BadgeShape.FLOWER,
+        )
         if (grades.isEmpty()) HintText("Add subjects and exams first.")
         grades.forEach { grade ->
             val subjectExams = exams.filter { it.subjectId == grade.subject.id }.sortedBy { it.date }
             SectionTitle(grade.subject.name)
             AppCard(modifier = Modifier.fillMaxWidth()) {
                 SubjectSummary(grade, scale)
+                grade.percent?.let { CapsuleProgress((it / 100.0).toFloat(), if (grade.passing == false) colors.error else colors.primary, Modifier.padding(top = 10.dp)) }
                 subjectExams.forEach { exam ->
                     SettingDivider()
                     ExamMarksRow(

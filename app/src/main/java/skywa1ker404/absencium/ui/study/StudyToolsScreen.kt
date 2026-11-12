@@ -3,101 +3,107 @@ package skywa1ker404.absencium.ui.study
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AttendanceInsightsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ExportScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.FocusTimerScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.FlashcardsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.FocusTimerScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.GradesScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.PlannerScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.appContainer
 import skywa1ker404.absencium.domain.overallPercent
 import skywa1ker404.absencium.domain.subjectGrades
-import skywa1ker404.absencium.ui.components.AppCard
-import skywa1ker404.absencium.ui.components.GroupPosition
-import skywa1ker404.absencium.ui.components.NavCard
 import skywa1ker404.absencium.ui.components.ScreenScaffold
-import skywa1ker404.absencium.ui.components.SectionTitle
+import skywa1ker404.absencium.ui.components.hueFor
 import skywa1ker404.absencium.ui.icons.AppIcons
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
 
-/** The home of the study helpers: quick timers on top, then grades, attendance insights and exports. */
+/** The home of the study helpers: a summary of today, quick timers, and the study tools. */
 @Destination<RootGraph>
 @Composable
 fun StudyToolsScreen(navigator: DestinationsNavigator) {
     val container = LocalContext.current.applicationContext.appContainer
     val data by container.calendarRepository.data.collectAsStateWithLifecycle(initialValue = null)
-    val average = data?.subjectGrades()?.overallPercent()
+    val cards by container.database.flashcardDao().observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val goals by container.database.studyGoalDao().observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val colors = MaterialTheme.colorScheme
-    ScreenScaffold(title = "Study Tools", onBack = { navigator.navigateUp() }, largeTitle = true) {
+    val today = LocalDate.now()
+    val average = data?.subjectGrades()?.overallPercent()
+    val due = cards.count { !it.dueDate.isAfter(today) }
+    val open = goals.count { !it.done }
+    val nextExam = data?.exams?.filter { it.deletedAt == null && !it.date.isBefore(today) }?.minByOrNull { it.date }
+    val examDays = nextExam?.let { ChronoUnit.DAYS.between(today, it.date).toInt() }
+    val examName = nextExam?.let { e -> data?.subjects?.firstOrNull { it.id == e.subjectId }?.name }
+
+    ScreenScaffold(title = "Study", onBack = { navigator.navigateUp() }, largeTitle = true) {
+        Text("Your focus space", style = MaterialTheme.typography.labelLarge, color = colors.primary, modifier = Modifier.padding(horizontal = 4.dp))
         Text("Choose a tool and make a little room to learn.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
-        SectionTitle("Quick start")
+
+        StudyHero(
+            label = if (examDays != null) "Next exam" else "Today",
+            figure = when {
+                examDays == null -> if (due + open == 0) "All clear" else "${due + open} to do"
+                examDays == 0 -> "Today"
+                examDays == 1 -> "Tomorrow"
+                else -> "In $examDays days"
+            },
+            caption = listOfNotNull(
+                examName?.takeIf { examDays != null },
+                "$due cards due".takeIf { due > 0 },
+                "$open to-dos".takeIf { open > 0 },
+            ).joinToString(" · ").ifBlank { "Nothing waiting for you" },
+            icon = AppIcons.School, hue = hueFor(0), shape = BadgeShape.SUNNY,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+
+        Text("Quick start", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, top = 12.dp))
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                QuickTile("Pomodoro", "25-minute focus rounds", colors.primaryContainer, colors.onPrimaryContainer, Modifier.weight(1f)) {
+                PastelTile("Pomodoro", "Open a 25-minute focus timer", hueFor(0), BadgeShape.COOKIE, AppIcons.Schedule, Modifier.weight(1f), 0) {
                     navigator.navigate(FocusTimerScreenDestination(mode = FocusMode.POMODORO))
                 }
-                QuickTile("Stopwatch", "Track open-ended study time", colors.secondaryContainer, colors.onSecondaryContainer, Modifier.weight(1f)) {
+                PastelTile("Stopwatch", "Track open-ended study time", hueFor(1), BadgeShape.CLOVER, AppIcons.PlayCircle, Modifier.weight(1f), 60) {
                     navigator.navigate(FocusTimerScreenDestination(mode = FocusMode.STOPWATCH))
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                QuickTile("10-minute break", "A reverse countdown", colors.tertiaryContainer, colors.onTertiaryContainer, Modifier.weight(1f)) {
+                PastelTile("10-minute break", "Open a reverse countdown", hueFor(2), BadgeShape.FLOWER, AppIcons.Refresh, Modifier.weight(1f), 120) {
                     navigator.navigate(FocusTimerScreenDestination(mode = FocusMode.BREAK_10))
                 }
-                QuickTile("15-minute break", "A longer reset timer", colors.surfaceContainerHighest, colors.onSurface, Modifier.weight(1f)) {
+                PastelTile("15-minute break", "Open a longer reset timer", hueFor(3), BadgeShape.BURST, AppIcons.Opacity, Modifier.weight(1f), 180) {
                     navigator.navigate(FocusTimerScreenDestination(mode = FocusMode.BREAK_15))
                 }
             }
         }
-        SectionTitle("Your study tools")
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            NavCard(
-                icon = AppIcons.Check, title = "To-do & upcoming",
-                subtitle = "Your list, exams, holidays and lectures ahead",
-                onClick = { navigator.navigate(PlannerScreenDestination) }, position = GroupPosition.First,
-            )
-            NavCard(
-                icon = AppIcons.Book, title = "Flashcards",
-                subtitle = "Review what is due, or make cards with AI",
-                onClick = { navigator.navigate(FlashcardsScreenDestination) }, position = GroupPosition.Middle,
-            )
-            NavCard(
-                icon = AppIcons.School, title = "Grades & GPA",
-                subtitle = average?.let { "Average ${it.roundToInt()}%" } ?: "Marks, weightage and pass marks",
-                onClick = { navigator.navigate(GradesScreenDestination) }, position = GroupPosition.Middle,
-            )
-            NavCard(
-                icon = AppIcons.CalendarMonth, title = "Attendance insights",
-                subtitle = "Goals and how many lectures you can skip",
-                onClick = { navigator.navigate(AttendanceInsightsScreenDestination) }, position = GroupPosition.Middle,
-            )
-            NavCard(
-                icon = AppIcons.OpenInNew, title = "Export & share",
-                subtitle = "Calendar (.ics), CSV and a PDF report",
-                onClick = { navigator.navigate(ExportScreenDestination) }, position = GroupPosition.Last,
-            )
-        }
-    }
-}
 
-@Composable
-private fun QuickTile(title: String, subtitle: String, container: Color, content: Color, modifier: Modifier, onClick: () -> Unit) {
-    AppCard(modifier = modifier, onClick = onClick, container = container) {
-        Text(title, style = MaterialTheme.typography.titleMedium, color = content)
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = content.copy(alpha = 0.8f), modifier = Modifier.padding(top = 4.dp))
+        Text("Your study tools", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, top = 12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            ToolCard("Calendar & to-do", "Your day, your list and your own events.", AppIcons.CalendarMonth, hueFor(0), BadgeShape.COOKIE9, delayMs = 0,
+                meta = if (open > 0) "$open open" else null) { navigator.navigate(PlannerScreenDestination) }
+            ToolCard("Flashcards", "Review decks and keep difficult cards close.", AppIcons.Book, hueFor(1), BadgeShape.CLOVER, delayMs = 60,
+                meta = if (due > 0) "$due due today" else null) { navigator.navigate(FlashcardsScreenDestination) }
+            ToolCard("Grades & GPA", "Marks, pass marks and your average.", AppIcons.School, hueFor(2), BadgeShape.FLOWER, delayMs = 120,
+                meta = average?.let { "Average ${it.roundToInt()}%" }) { navigator.navigate(GradesScreenDestination) }
+            ToolCard("Attendance insights", "Goals and how many lectures you can skip.", AppIcons.Check, hueFor(3), BadgeShape.SUNNY, delayMs = 180) {
+                navigator.navigate(AttendanceInsightsScreenDestination)
+            }
+            ToolCard("Export & share", "Calendar, CSV files and a PDF report.", AppIcons.OpenInNew, hueFor(4), BadgeShape.BURST, delayMs = 240) {
+                navigator.navigate(ExportScreenDestination)
+            }
+        }
     }
 }
