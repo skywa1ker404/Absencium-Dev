@@ -79,7 +79,7 @@ class StudyExport(private val context: Context) {
             }
             out.append(if (first) "" else " ").append(rest).append("\r\n")
         }
-        fun esc(text: String) = text.replace("\\", "\\\\").replace(";", "\;").replace(",", "\\,").replace("\n", "\\n")
+        fun esc(text: String) = text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
         fun byDay(d: DayOfWeek) = d.name.take(2)
 
         line("BEGIN:VCALENDAR")
