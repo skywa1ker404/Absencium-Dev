@@ -34,7 +34,7 @@ enum class StudyExportKind(val label: String, val extension: String, val mime: S
  */
 class StudyExport(private val context: Context) {
 
-    suspend fun prepare(kind: StudyExportKind, data: CalendarData, thresholdPercent: Int, today: LocalDate = LocalDate.now()): Result<PreparedShare> =
+    suspend fun prepare(kind: StudyExportKind, data: CalendarData, thresholdPercent: Int, events: List<skywa1ker404.absencium.data.db.EventEntity> = emptyList(), today: LocalDate = LocalDate.now()): Result<PreparedShare> =
         withContext(Dispatchers.IO) {
             try {
                 val dir = File(context.cacheDir, "share_exports").apply { if (!exists() && !mkdirs()) throw IOException("Could not create a folder for the export.") }
@@ -46,7 +46,7 @@ class StudyExport(private val context: Context) {
                 } + "." + kind.extension
                 val file = File(dir, name)
                 when (kind) {
-                    StudyExportKind.CALENDAR_ICS -> file.writeText(ics(data, today), Charsets.UTF_8)
+                    StudyExportKind.CALENDAR_ICS -> file.writeText(ics(data, events, today), Charsets.UTF_8)
                     StudyExportKind.ATTENDANCE_CSV -> file.writeText(attendanceCsv(data), Charsets.UTF_8)
                     StudyExportKind.MARKS_CSV -> file.writeText(marksCsv(data), Charsets.UTF_8)
                     StudyExportKind.REPORT_PDF -> file.outputStream().use { pdf(it, data, thresholdPercent, today) }
@@ -60,7 +60,7 @@ class StudyExport(private val context: Context) {
 
     // ---- .ics -------------------------------------------------------------------------------------------------
 
-    internal fun ics(data: CalendarData, today: LocalDate): String {
+    internal fun ics(data: CalendarData, events: List<skywa1ker404.absencium.data.db.EventEntity>, today: LocalDate): String {
         val names = data.subjects.associate { it.id to it.name }
         val stamp = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))
         val day = DateTimeFormatter.BASIC_ISO_DATE
@@ -121,6 +121,36 @@ class StudyExport(private val context: Context) {
             line("DTEND;VALUE=DATE:${holiday.date.plusDays(1).format(day)}")
             line("SUMMARY:${esc(holiday.title)}")
             line("TRANSP:TRANSPARENT")
+            line("END:VEVENT")
+        }
+        events.forEach { event ->
+            line("BEGIN:VEVENT")
+            line("UID:event-${event.id}-${event.createdAt}@absencium")
+            line("DTSTAMP:$stamp")
+            val start = event.startTime
+            if (start == null) {
+                line("DTSTART;VALUE=DATE:${event.date.format(day)}")
+                line("DTEND;VALUE=DATE:${event.date.plusDays(1).format(day)}")
+            } else {
+                line("DTSTART:${event.date.atTime(start).format(dateTime)}")
+                line("DTEND:${event.date.atTime(event.endTime ?: start.plusHours(1)).format(dateTime)}")
+            }
+            when (event.repeat) {
+                skywa1ker404.absencium.data.db.EventRepeat.DAILY -> line("RRULE:FREQ=DAILY")
+                skywa1ker404.absencium.data.db.EventRepeat.WEEKLY -> line("RRULE:FREQ=WEEKLY")
+                skywa1ker404.absencium.data.db.EventRepeat.MONTHLY -> line("RRULE:FREQ=MONTHLY")
+                skywa1ker404.absencium.data.db.EventRepeat.NONE -> Unit
+            }
+            line("SUMMARY:${esc(event.title)}")
+            line("CATEGORIES:${esc(event.category)}")
+            event.notes?.takeIf { it.isNotBlank() }?.let { line("DESCRIPTION:${esc(it)}") }
+            event.remindMinutes?.let {
+                line("BEGIN:VALARM")
+                line("ACTION:DISPLAY")
+                line("DESCRIPTION:${esc(event.title)}")
+                line("TRIGGER:-PT${it}M")
+                line("END:VALARM")
+            }
             line("END:VEVENT")
         }
         line("END:VCALENDAR")

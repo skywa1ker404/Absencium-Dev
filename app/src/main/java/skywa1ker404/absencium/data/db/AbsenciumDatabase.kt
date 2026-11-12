@@ -33,8 +33,11 @@ import skywa1ker404.absencium.logging.DebugLogger
         AttachmentEntity::class,
         SyllabusNodeEntity::class,
         NoteVersionEntity::class,
+        FlashcardEntity::class,
+        StudyGoalEntity::class,
+        EventEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -58,6 +61,9 @@ abstract class AbsenciumDatabase : RoomDatabase() {
     abstract fun entryDao(): EntryDao
     abstract fun syllabusDao(): SyllabusDao
     abstract fun noteVersionDao(): NoteVersionDao
+    abstract fun flashcardDao(): FlashcardDao
+    abstract fun studyGoalDao(): StudyGoalDao
+    abstract fun eventDao(): EventDao
 
     companion object {
         const val DATABASE_NAME = "Absencium.db"
@@ -66,7 +72,7 @@ abstract class AbsenciumDatabase : RoomDatabase() {
         // Absencium's schema history: version 1 is the first released schema. Every change after it needs a version bump
         // and a Migration added to the list below, never a destructive reset. The schema JSON of each version is exported
         // to app/schemas and checked by CI, so an edit without a version bump fails the build.
-        private val MIGRATIONS: Array<Migration> = arrayOf(Migration2, Migration3, Migration4)
+        private val MIGRATIONS: Array<Migration> = arrayOf(Migration2, Migration3, Migration4, Migration5)
 
         @Volatile
         private var instance: AbsenciumDatabase? = null
@@ -218,5 +224,29 @@ internal object Migration4 : Migration(3, 4) {
             "`note_id` INTEGER NOT NULL, `title` TEXT NOT NULL, `body_text` TEXT NOT NULL, `saved_at` INTEGER NOT NULL, " +
             "FOREIGN KEY(`note_id`) REFERENCES `Notes_Table`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "CREATE INDEX IF NOT EXISTS `index_Note_Versions_Table_note_id` ON `Note_Versions_Table` (`note_id`)",
+    )
+}
+
+/** Version 5: flashcards with their review schedule, study goals (the to-do list) and the student's own events. Three new tables; nothing existing changes. */
+internal object Migration5 : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        for (sql in statements()) db.execSQL(sql)
+    }
+
+    fun statements(): List<String> = listOf(
+        "CREATE TABLE IF NOT EXISTS `Flashcards_Table` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `subject_id` INTEGER, " +
+            "`front` TEXT NOT NULL, `back` TEXT NOT NULL, `due_date` TEXT NOT NULL, `interval_days` INTEGER NOT NULL DEFAULT 0, " +
+            "`ease` REAL NOT NULL DEFAULT 2.5, `reps` INTEGER NOT NULL DEFAULT 0, `lapses` INTEGER NOT NULL DEFAULT 0, `created_at` INTEGER NOT NULL)",
+        "CREATE INDEX IF NOT EXISTS `index_Flashcards_Table_subject_id` ON `Flashcards_Table` (`subject_id`)",
+        "CREATE INDEX IF NOT EXISTS `index_Flashcards_Table_due_date` ON `Flashcards_Table` (`due_date`)",
+        "CREATE TABLE IF NOT EXISTS `Study_Goals_Table` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `subject_id` INTEGER, " +
+            "`title` TEXT NOT NULL, `target_date` TEXT, `done` INTEGER NOT NULL DEFAULT 0, `priority` TEXT NOT NULL DEFAULT 'NORMAL', `created_at` INTEGER NOT NULL)",
+        "CREATE INDEX IF NOT EXISTS `index_Study_Goals_Table_subject_id` ON `Study_Goals_Table` (`subject_id`)",
+        "CREATE INDEX IF NOT EXISTS `index_Study_Goals_Table_target_date` ON `Study_Goals_Table` (`target_date`)",
+        "CREATE TABLE IF NOT EXISTS `Events_Table` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `date` TEXT NOT NULL, " +
+            "`start_time` TEXT, `end_time` TEXT, `category` TEXT NOT NULL DEFAULT 'Event', `notes` TEXT, `subject_id` INTEGER, " +
+            "`repeat` TEXT NOT NULL DEFAULT 'NONE', `remind_minutes` INTEGER, `created_at` INTEGER NOT NULL)",
+        "CREATE INDEX IF NOT EXISTS `index_Events_Table_date` ON `Events_Table` (`date`)",
+        "CREATE INDEX IF NOT EXISTS `index_Events_Table_subject_id` ON `Events_Table` (`subject_id`)",
     )
 }

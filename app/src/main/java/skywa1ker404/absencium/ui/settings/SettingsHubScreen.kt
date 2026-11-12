@@ -6,6 +6,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AboutScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AiSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ChangelogScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.RemindersScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.IntroTourScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AppearanceSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.GeneralSettingsScreenDestination
@@ -36,6 +37,13 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
                 title = "Appearance",
                 subtitle = null,
                 onClick = { navigator.navigate(AppearanceSettingsScreenDestination) },
+                position = GroupPosition.Middle,
+            )
+            NavCard(
+                icon = AppIcons.Schedule,
+                title = "Reminders",
+                subtitle = "All off until you choose",
+                onClick = { navigator.navigate(RemindersScreenDestination) },
                 position = GroupPosition.Middle,
             )
             NavCard(

@@ -455,3 +455,57 @@ interface NoteVersionDao {
     @Query("DELETE FROM Note_Versions_Table WHERE note_id = :noteId AND id NOT IN (SELECT id FROM Note_Versions_Table WHERE note_id = :noteId ORDER BY saved_at DESC, id DESC LIMIT :keep)")
     suspend fun trim(noteId: Long, keep: Int)
 }
+
+@Dao
+interface FlashcardDao {
+    @Insert
+    suspend fun insert(card: FlashcardEntity): Long
+
+    @Update
+    suspend fun update(card: FlashcardEntity)
+
+    @Query("DELETE FROM Flashcards_Table WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM Flashcards_Table ORDER BY due_date, id")
+    fun observeAll(): Flow<List<FlashcardEntity>>
+
+    @Query("SELECT * FROM Flashcards_Table WHERE id = :id")
+    suspend fun getById(id: Long): FlashcardEntity?
+}
+
+@Dao
+interface StudyGoalDao {
+    @Insert
+    suspend fun insert(goal: StudyGoalEntity): Long
+
+    @Update
+    suspend fun update(goal: StudyGoalEntity)
+
+    @Query("DELETE FROM Study_Goals_Table WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM Study_Goals_Table ORDER BY done, CASE WHEN target_date IS NULL THEN 1 ELSE 0 END, target_date, id")
+    fun observeAll(): Flow<List<StudyGoalEntity>>
+
+    @Query("SELECT * FROM Study_Goals_Table WHERE id = :id")
+    suspend fun getById(id: Long): StudyGoalEntity?
+}
+
+@Dao
+interface EventDao {
+    @Insert
+    suspend fun insert(event: EventEntity): Long
+
+    @Update
+    suspend fun update(event: EventEntity)
+
+    @Query("DELETE FROM Events_Table WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM Events_Table ORDER BY date, start_time, id")
+    fun observeAll(): Flow<List<EventEntity>>
+
+    @Query("SELECT * FROM Events_Table WHERE id = :id")
+    suspend fun getById(id: Long): EventEntity?
+}

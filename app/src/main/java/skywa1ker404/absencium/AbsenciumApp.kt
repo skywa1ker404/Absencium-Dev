@@ -19,6 +19,8 @@ import skywa1ker404.absencium.ui.theme.AbsenciumTheme
 import skywa1ker404.absencium.ui.theme.isDarkTheme
 import skywa1ker404.absencium.data.backup.BackupManager
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.debounce
 import skywa1ker404.absencium.data.db.AbsenciumDatabase
 import skywa1ker404.absencium.logging.DebugLogger
 import kotlin.concurrent.thread
@@ -37,6 +39,14 @@ class AbsenciumApp : Application() {
         BackupManager.applyStagedRestore(this)
         container = AppContainer(this)
         installChatHost()
+
+        // The reminder alarm follows the settings and the timetable, exams and holidays; a change sets it again after a pause.
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default).launch {
+            @OptIn(kotlinx.coroutines.FlowPreview::class)
+            val changes = kotlinx.coroutines.flow.combine(container.settingsRepository.settings, container.calendarRepository.data, container.database.eventDao().observeAll()) { a, b, c -> Triple(a, b, c) }
+                .debounce(2000)
+            changes.collect { runCatching { skywa1ker404.absencium.notify.ReminderScheduler.reschedule(this@AbsenciumApp) } }
+        }
 
         // Opening the database and touching storage are file operations, so keep them
         // off the main thread. Results and any failures go to debug.log.

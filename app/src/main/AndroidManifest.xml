@@ -4,6 +4,8 @@
     <!-- Only used when you turn on Ask AI or import holidays with AI. The app works fully offline without it. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Keeps an AI answer being written after the app is closed (a "working" notification shows only meanwhile). -->
 
     <application
@@ -27,6 +29,17 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Reminders: one alarm for the next event; it posts the notification and sets the next one. Nothing polls. -->
+        <receiver android:name=".notify.ReminderReceiver" android:exported="false" />
+        <receiver android:name=".notify.RescheduleReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"

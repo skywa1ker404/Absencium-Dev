@@ -19,7 +19,9 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AttendanceInsightsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ExportScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.FocusTimerScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.FlashcardsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.GradesScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.PlannerScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.appContainer
 import skywa1ker404.absencium.domain.overallPercent
@@ -64,9 +66,19 @@ fun StudyToolsScreen(navigator: DestinationsNavigator) {
         SectionTitle("Your study tools")
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             NavCard(
+                icon = AppIcons.Check, title = "To-do & upcoming",
+                subtitle = "Your list, exams, holidays and lectures ahead",
+                onClick = { navigator.navigate(PlannerScreenDestination) }, position = GroupPosition.First,
+            )
+            NavCard(
+                icon = AppIcons.Book, title = "Flashcards",
+                subtitle = "Review what is due, or make cards with AI",
+                onClick = { navigator.navigate(FlashcardsScreenDestination) }, position = GroupPosition.Middle,
+            )
+            NavCard(
                 icon = AppIcons.School, title = "Grades & GPA",
                 subtitle = average?.let { "Average ${it.roundToInt()}%" } ?: "Marks, weightage and pass marks",
-                onClick = { navigator.navigate(GradesScreenDestination) }, position = GroupPosition.First,
+                onClick = { navigator.navigate(GradesScreenDestination) }, position = GroupPosition.Middle,
             )
             NavCard(
                 icon = AppIcons.CalendarMonth, title = "Attendance insights",
@@ -79,12 +91,6 @@ fun StudyToolsScreen(navigator: DestinationsNavigator) {
                 onClick = { navigator.navigate(ExportScreenDestination) }, position = GroupPosition.Last,
             )
         }
-        Text(
-            "Study planner and flashcards are next.",
-            style = MaterialTheme.typography.bodySmall,
-            color = colors.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-        )
     }
 }
 

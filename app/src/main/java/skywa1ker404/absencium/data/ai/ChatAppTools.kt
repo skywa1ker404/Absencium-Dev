@@ -118,6 +118,7 @@ class ChatAppTools(private val container: AppContainer, private val chatId: Stri
             listOf("list_note_versions", "restore_note_version").forEach { put(it, "Vault and notes") }
             listOf("move_note", "bulk_move_notes", "bulk_delete_notes", "duplicate_note").forEach { put(it, "Vault and notes") }
             put("bulk_set_attendance", "Attendance")
+            listOf("add_flashcards", "list_flashcards", "add_study_goal", "list_study_goals", "complete_study_goal", "add_event", "list_events").forEach { put(it, "Study") }
         }
 
         /** What one step of a plan may be: only adding and changing, never deleting. */
@@ -379,6 +380,84 @@ ${NotePrompts.EDITOR}
             val title = note.title + " (copy)"
             val id = container.vaultRepository.saveNote(0, note.subjectId, title, note.bodyText, note.status, note.tags)
             saved("Duplicated the note.", id, title, note.bodyText)
+        },
+        write("add_flashcards", "Adds flashcards, one per line written as: question ||| answer. Short, single-fact cards; at most 40 at a time. Subject is optional.", mapOf("cards" to text("One card per line: question ||| answer"), "subject" to text("Subject name, optional")), required = listOf("cards"), needsApproval = false) { a ->
+            val s = a.str("subject")?.let { subject(it) ?: return@write missing(it) }
+            val dao = container.database.flashcardDao()
+            var added = 0
+            for (line in a.req("cards").lines().take(40)) {
+                val parts = line.split("|||", limit = 2)
+                if (parts.size < 2) continue
+                val front = parts[0].trim()
+                val back = parts[1].trim()
+                if (front.isEmpty() || back.isEmpty()) continue
+                dao.insert(skywa1ker404.absencium.data.db.FlashcardEntity(subjectId = s?.id, front = front.take(500), back = back.take(1500)))
+                added++
+            }
+            if (added == 0) fail("No card was found. Write each card as: question ||| answer") else ok("Added $added flashcards${s?.let { " to ${it.name}" }.orEmpty()}.")
+        },
+        read("list_flashcards", "Lists how many flashcards there are and how many are due today, by subject, and the first questions so you can avoid duplicates.", emptyMap()) { _ ->
+            val cards = container.database.flashcardDao().observeAll().first()
+            val names = container.database.subjectDao().observeAll().first().associate { it.id to it.name }
+            val today = LocalDate.now()
+            buildJsonObject {
+                put("total", cards.size)
+                put("due_today", cards.count { !it.dueDate.isAfter(today) })
+                put("questions", buildJsonArray { cards.take(60).forEach { add(JsonPrimitive("${names[it.subjectId] ?: "-"}: ${it.front}")) } })
+            }
+        },
+        write("add_study_goal", "Adds a study goal or to-do (for example \"Revise unit 3\"), optionally for a subject and by a date.", mapOf("title" to text("What to do"), "subject" to text("Subject name, optional"), "date" to text("Do it by YYYY-MM-DD, optional"), "priority" to text("LOW, NORMAL or HIGH, optional")), required = listOf("title"), needsApproval = false) { a ->
+            val s = a.str("subject")?.let { subject(it) ?: return@write missing(it) }
+            val day = a.str("date")?.let { date(it) ?: return@write fail("The date must be YYYY-MM-DD.") }
+            val id = container.database.studyGoalDao().insert(skywa1ker404.absencium.data.db.StudyGoalEntity(subjectId = s?.id, title = a.req("title").take(200), targetDate = day, priority = a.str("priority")?.let { p -> skywa1ker404.absencium.data.db.Priority.entries.firstOrNull { it.name.equals(p, true) } } ?: skywa1ker404.absencium.data.db.Priority.NORMAL))
+            ok("Added the goal (id $id).")
+        },
+        read("list_study_goals", "Lists the study goals with their id, subject, date and whether they are done.", emptyMap()) { _ ->
+            val goals = container.database.studyGoalDao().observeAll().first()
+            val names = container.database.subjectDao().observeAll().first().associate { it.id to it.name }
+            buildJsonObject {
+                put("goals", buildJsonArray {
+                    goals.take(100).forEach {
+                        add(buildJsonObject {
+                            put("id", it.id); put("title", it.title); put("done", it.done)
+                            it.subjectId?.let { id -> names[id]?.let { n -> put("subject", n) } }
+                            it.targetDate?.let { d -> put("date", d.toString()) }
+                        })
+                    }
+                })
+            }
+        },
+        write("complete_study_goal", "Marks a study goal done (or not done).", mapOf("goal_id" to num("Goal id"), "done" to text("true or false, default true")), required = listOf("goal_id"), needsApproval = false) { a ->
+            val dao = container.database.studyGoalDao()
+            val goal = dao.getById(a.long("goal_id") ?: return@write fail("goal_id is missing.")) ?: return@write fail("No such goal.")
+            dao.update(goal.copy(done = a.str("done")?.equals("false", ignoreCase = true) != true))
+            ok("Updated the goal.")
+        },
+        write("add_event", "Adds an event the student sets themselves (assignment due, test, meeting, birthday, trip, or any label) to Upcoming.", mapOf("title" to text("Title"), "date" to text("Day YYYY-MM-DD"), "time" to text("Start time HH:mm, optional"), "category" to text("Assignment, Test, Event, Meeting, Birthday, Trip, or the student's own word"), "repeat" to text("NONE, DAILY, WEEKLY or MONTHLY"), "remind_minutes" to num("Minutes before to remind, optional"), "subject" to text("Subject name, optional"), "notes" to text("Notes, optional")), required = listOf("title", "date"), needsApproval = false) { a ->
+            val day = date(a.req("date")) ?: return@write fail("The date must be YYYY-MM-DD.")
+            val at = a.str("time")?.let { skywa1ker404.absencium.domain.parseTimeInput(it) ?: return@write fail("The time must be HH:mm.") }
+            val s = a.str("subject")?.let { subject(it) ?: return@write missing(it) }
+            val repeat = a.str("repeat")?.let { r -> skywa1ker404.absencium.data.db.EventRepeat.entries.firstOrNull { it.name.equals(r, ignoreCase = true) } ?: return@write fail("repeat must be NONE, DAILY, WEEKLY or MONTHLY.") } ?: skywa1ker404.absencium.data.db.EventRepeat.NONE
+            val id = container.database.eventDao().insert(
+                skywa1ker404.absencium.data.db.EventEntity(
+                    title = a.req("title").take(120), date = day, startTime = at, category = (a.str("category") ?: "Event").take(30), notes = a.str("notes")?.take(500),
+                    subjectId = s?.id, repeat = repeat, remindMinutes = a.long("remind_minutes")?.toInt()?.coerceIn(0, 10080),
+                ),
+            )
+            ok("Added the event (id $id).")
+        },
+        read("list_events", "Lists the student's own events with id, date, time, category and repeat.", emptyMap()) { _ ->
+            val events = container.database.eventDao().observeAll().first()
+            buildJsonObject {
+                put("events", buildJsonArray {
+                    events.take(100).forEach {
+                        add(buildJsonObject {
+                            put("id", it.id); put("title", it.title); put("date", it.date.toString()); put("category", it.category); put("repeat", it.repeat.name)
+                            it.startTime?.let { t -> put("time", t.toString()) }
+                        })
+                    }
+                })
+            }
         },
         write("bulk_set_attendance", "Marks one subject on every lecture day between two dates (both included, today or earlier). Holidays and days without a lecture of that subject are skipped.", mapOf("subject" to text("Subject name"), "from" to text("First day YYYY-MM-DD"), "to" to text("Last day YYYY-MM-DD"), "status" to text("PRESENT, ABSENT, CANCELLED or EXCUSED")), required = listOf("subject", "from", "to", "status")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
@@ -1052,7 +1131,7 @@ ${NotePrompts.EDITOR}
         "add_timetable_slot" to "Added a lecture", "update_timetable_slot" to "Edited a lecture", "delete_timetable_slot" to "Moved a lecture to the Trash",
         "add_exam" to "Added an exam", "update_exam" to "Edited an exam", "delete_exam" to "Moved an exam to the Trash",
         "add_holiday" to "Added a holiday", "delete_holiday" to "Moved a holiday to the Trash",
-        "set_attendance" to "Marked attendance", "add_syllabus" to "Added syllabus topics", "edit_syllabus_topic" to "Edited a syllabus topic", "restore_from_trash" to "Restored from the Trash", "set_exam_marks" to "Saved exam marks", "set_subject_goals" to "Set subject goals", "restore_note_version" to "Restored an earlier note text", "move_note" to "Moved a note", "bulk_move_notes" to "Moved notes", "bulk_delete_notes" to "Moved notes to the Trash", "duplicate_note" to "Duplicated a note", "bulk_set_attendance" to "Marked attendance", "move_syllabus_topic" to "Moved a syllabus topic", "delete_syllabus_topic" to "Deleted a syllabus topic", "set_syllabus_status" to "Changed a syllabus topic",
+        "set_attendance" to "Marked attendance", "add_syllabus" to "Added syllabus topics", "edit_syllabus_topic" to "Edited a syllabus topic", "restore_from_trash" to "Restored from the Trash", "set_exam_marks" to "Saved exam marks", "set_subject_goals" to "Set subject goals", "restore_note_version" to "Restored an earlier note text", "move_note" to "Moved a note", "bulk_move_notes" to "Moved notes", "bulk_delete_notes" to "Moved notes to the Trash", "duplicate_note" to "Duplicated a note", "bulk_set_attendance" to "Marked attendance", "add_flashcards" to "Added flashcards", "add_study_goal" to "Added a study goal", "add_event" to "Added an event", "complete_study_goal" to "Updated a study goal", "move_syllabus_topic" to "Moved a syllabus topic", "delete_syllabus_topic" to "Deleted a syllabus topic", "set_syllabus_status" to "Changed a syllabus topic",
     )
 
     /** The one syllabus topic of a subject matching [title] (exact first, then partly), or null when none or several do. */

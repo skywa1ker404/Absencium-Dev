@@ -30,6 +30,12 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setDisplayName(value: String) = launch { repository.setDisplayName(value) }
     fun setProfileDetails(course: String, year: String, college: String) = launch { repository.setProfileDetails(course, year, college) }
 
+    fun setRemindLectureMinutes(minutes: Int) = launch { repository.setRemindLectureMinutes(minutes) }
+
+    fun setRemindExamDays(days: Int) = launch { repository.setRemindExamDays(days) }
+
+    fun setRemindLowAttendance(value: Boolean) = launch { repository.setRemindLowAttendance(value) }
+
     fun setThemeMode(mode: ThemeMode) = launch { repository.setThemeMode(mode) }
 
     fun setMarksScale(scale: skywa1ker404.absencium.data.settings.MarksScale) = launch { repository.setMarksScale(scale) }

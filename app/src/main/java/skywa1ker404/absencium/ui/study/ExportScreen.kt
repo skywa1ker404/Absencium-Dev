@@ -30,7 +30,7 @@ import skywa1ker404.absencium.ui.components.SettingDivider
 import skywa1ker404.absencium.ui.settings.rememberSettingsViewModel
 
 private fun describe(kind: StudyExportKind) = when (kind) {
-    StudyExportKind.CALENDAR_ICS -> "Weekly timetable, exams and holidays for any calendar app"
+    StudyExportKind.CALENDAR_ICS -> "Weekly timetable, exams, holidays and your own events for any calendar app"
     StudyExportKind.ATTENDANCE_CSV -> "Every logged lecture, one row each"
     StudyExportKind.MARKS_CSV -> "Exams with marks, percent and weightage"
     StudyExportKind.REPORT_PDF -> "Attendance, marks and upcoming exams on printable pages"
@@ -43,6 +43,7 @@ fun ExportScreen(navigator: DestinationsNavigator) {
     val container = LocalContext.current.applicationContext.appContainer
     val settings by rememberSettingsViewModel().settings.collectAsStateWithLifecycle()
     val data by container.calendarRepository.data.collectAsStateWithLifecycle(initialValue = null)
+    val events by container.database.eventDao().observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf<StudyExportKind?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -63,7 +64,7 @@ fun ExportScreen(navigator: DestinationsNavigator) {
                                 busy = kind
                                 message = null
                                 scope.launch {
-                                    container.studyExport.prepare(kind, snapshot, settings.attendanceThresholdPercent)
+                                    container.studyExport.prepare(kind, snapshot, settings.attendanceThresholdPercent, events)
                                         .onSuccess { message = container.shareService.share(it) }
                                         .onFailure { message = it.message ?: "The export failed." }
                                     busy = null

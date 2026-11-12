@@ -95,6 +95,12 @@ class SettingsRepository(context: Context) {
         percent.coerceIn(AppSettings.MIN_ATTENDANCE_THRESHOLD, AppSettings.MAX_ATTENDANCE_THRESHOLD),
     )
 
+    suspend fun setRemindLectureMinutes(minutes: Int) = write(Keys.REMIND_LECTURE_MINUTES, minutes.coerceIn(0, 120))
+
+    suspend fun setRemindExamDays(days: Int) = write(Keys.REMIND_EXAM_DAYS, days.coerceIn(0, 14))
+
+    suspend fun setRemindLowAttendance(value: Boolean) = write(Keys.REMIND_LOW_ATTENDANCE, value)
+
     suspend fun setFocusGraceMinutes(minutes: Int) = write(Keys.FOCUS_GRACE_MINUTES, minutes.coerceIn(1, 60))
 
     suspend fun setExamModeAutoSilence(value: Boolean) = write(Keys.EXAM_MODE_AUTO_SILENCE, value)
@@ -204,6 +210,9 @@ class SettingsRepository(context: Context) {
         val VISUAL_QUALITY = stringPreferencesKey("visual_quality")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
         val FOCUS_GRACE_MINUTES = intPreferencesKey("focus_grace_minutes")
+        val REMIND_LECTURE_MINUTES = intPreferencesKey("remind_lecture_minutes")
+        val REMIND_EXAM_DAYS = intPreferencesKey("remind_exam_days")
+        val REMIND_LOW_ATTENDANCE = booleanPreferencesKey("remind_low_attendance")
         val EXAM_MODE_AUTO_SILENCE = booleanPreferencesKey("exam_mode_auto_silence")
         val ASK_AI_ENABLED = booleanPreferencesKey("ask_ai_enabled")
         val SEARCH_IMAGES_ENABLED = booleanPreferencesKey("search_images_enabled")
@@ -227,9 +236,9 @@ class SettingsRepository(context: Context) {
         val BOOLEANS = setOf(
             ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
             SEARCH_IMAGES_ENABLED, GENERATE_IMAGES_ENABLED,
-            MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY,
+            MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY, REMIND_LOW_ATTENDANCE,
         ).map { it.name }.toSet()
-        val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES).map { it.name }.toSet()
+        val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES, REMIND_LECTURE_MINUTES, REMIND_EXAM_DAYS).map { it.name }.toSet()
         val STRINGS = setOf(
             DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, MARKS_SCALE, COLOR_ENGINE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
         ).map { it.name }.toSet()
@@ -261,6 +270,9 @@ class SettingsRepository(context: Context) {
             visualQuality = visualQualityFrom(this[Keys.VISUAL_QUALITY]),
             attendanceThresholdPercent = this[Keys.ATTENDANCE_THRESHOLD] ?: defaults.attendanceThresholdPercent,
             focusGraceMinutes = this[Keys.FOCUS_GRACE_MINUTES] ?: defaults.focusGraceMinutes,
+            remindLectureMinutes = this[Keys.REMIND_LECTURE_MINUTES] ?: defaults.remindLectureMinutes,
+            remindExamDays = this[Keys.REMIND_EXAM_DAYS] ?: defaults.remindExamDays,
+            remindLowAttendance = this[Keys.REMIND_LOW_ATTENDANCE] ?: defaults.remindLowAttendance,
             examModeAutoSilence = this[Keys.EXAM_MODE_AUTO_SILENCE] ?: defaults.examModeAutoSilence,
             askAiEnabled = this[Keys.ASK_AI_ENABLED] ?: defaults.askAiEnabled,
             searchImagesEnabled = this[Keys.SEARCH_IMAGES_ENABLED] ?: defaults.searchImagesEnabled,

@@ -55,6 +55,17 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /** The earlier texts of a note, newest first (the newest 20 are kept). */
+    suspend fun noteVersions(noteId: Long): List<skywa1ker404.absencium.data.db.NoteVersionEntity> =
+        try {
+            container.database.noteVersionDao().forNote(noteId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            DebugLogger.e("Vault", "Could not read the history of note $noteId", e)
+            emptyList()
+        }
+
     fun clearMessage() {
         _message.value = null
     }

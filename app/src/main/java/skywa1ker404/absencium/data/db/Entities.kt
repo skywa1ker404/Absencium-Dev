@@ -431,3 +431,62 @@ data class NoteVersionEntity(
         const val VERSIONS_KEPT = 20
     }
 }
+
+/** One flashcard with its review state (a simple spaced-repetition schedule: the better it is known, the later it returns). */
+@Entity(
+    tableName = "Flashcards_Table",
+    indices = [Index("subject_id"), Index("due_date")],
+)
+data class FlashcardEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** The subject it belongs to, or null for a loose card. Not a foreign key, so deleting a subject never blocks. */
+    @ColumnInfo(name = "subject_id") val subjectId: Long? = null,
+    val front: String,
+    val back: String,
+    @ColumnInfo(name = "due_date") val dueDate: LocalDate = LocalDate.now(),
+    @ColumnInfo(name = "interval_days", defaultValue = "0") val intervalDays: Int = 0,
+    @ColumnInfo(defaultValue = "2.5") val ease: Double = 2.5,
+    @ColumnInfo(defaultValue = "0") val reps: Int = 0,
+    @ColumnInfo(defaultValue = "0") val lapses: Int = 0,
+    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
+)
+
+/** One thing the student plans to do, optionally for a subject and by a day. */
+@Entity(
+    tableName = "Study_Goals_Table",
+    indices = [Index("subject_id"), Index("target_date")],
+)
+data class StudyGoalEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "subject_id") val subjectId: Long? = null,
+    val title: String,
+    @ColumnInfo(name = "target_date") val targetDate: LocalDate? = null,
+    @ColumnInfo(defaultValue = "0") val done: Boolean = false,
+    @ColumnInfo(defaultValue = "'NORMAL'") val priority: Priority = Priority.NORMAL,
+    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
+)
+
+/** What repeats an event has. */
+enum class EventRepeat { NONE, DAILY, WEEKLY, MONTHLY }
+
+/** An event the student sets themselves: an assignment due, a test, a meeting, a birthday, a trip, or any label they type. */
+@Entity(
+    tableName = "Events_Table",
+    indices = [Index("date"), Index("subject_id")],
+)
+data class EventEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    /** The day, or the first day of a repeating event. */
+    val date: LocalDate,
+    @ColumnInfo(name = "start_time") val startTime: LocalTime? = null,
+    @ColumnInfo(name = "end_time") val endTime: LocalTime? = null,
+    /** A label such as Assignment, Test, Meeting or whatever the student typed. */
+    @ColumnInfo(defaultValue = "'Event'") val category: String = "Event",
+    val notes: String? = null,
+    @ColumnInfo(name = "subject_id") val subjectId: Long? = null,
+    @ColumnInfo(defaultValue = "'NONE'") val repeat: EventRepeat = EventRepeat.NONE,
+    /** Minutes before the start (or before 8:00 for an all-day event) to remind; null for no reminder. */
+    @ColumnInfo(name = "remind_minutes") val remindMinutes: Int? = null,
+    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
+)

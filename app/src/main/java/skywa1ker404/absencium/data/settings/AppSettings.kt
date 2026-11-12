@@ -55,6 +55,12 @@ data class AppSettings(
     val visualQuality: VisualQuality = VisualQuality.QUALITY,
     val attendanceThresholdPercent: Int = 75,
     val focusGraceMinutes: Int = 5,
+    /** Minutes before a lecture to remind; 0 is off. All reminders are off until the student chooses. */
+    val remindLectureMinutes: Int = 0,
+    /** Days before an exam to remind at 8:00; 0 is off. */
+    val remindExamDays: Int = 0,
+    /** A 6 pm alert when a subject is under its attendance goal. */
+    val remindLowAttendance: Boolean = false,
     val examModeAutoSilence: Boolean = false,
     val askAiEnabled: Boolean = false,
     /** EXPERIMENTAL: lets Generate Notes look for pictures online. Off by default. */

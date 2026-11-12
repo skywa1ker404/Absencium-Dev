@@ -268,6 +268,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onOpenExam = { openExam = it },
                             onEditHoliday = { editHoliday = it },
                             onOpenTimetable = { showTimetable = true },
+                            onOpenPlanner = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.PlannerScreenDestination) },
                             threshold = settings.attendanceThresholdPercent,
                             onAddNotes = { subjectId, date -> addEntry = AddEntryRequest(subjectId, date) },
                             onPickMonth = { monthPicker = it },

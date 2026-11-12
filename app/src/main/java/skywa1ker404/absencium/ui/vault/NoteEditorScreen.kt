@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -192,6 +193,8 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
     var lastPanel by remember { mutableStateOf(EditorPanel.TEXT) }
     var menuOpen by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
+    var showHistory by remember { mutableStateOf(false) }
+    var versions by remember { mutableStateOf<List<skywa1ker404.absencium.data.db.NoteVersionEntity>>(emptyList()) }
     var showLinkPicker by remember { mutableStateOf(false) }
     var showShare by remember { mutableStateOf(false) }
     var linkProblem by remember { mutableStateOf<String?>(null) }
@@ -572,6 +575,14 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                         })
                         AppMenuItem(AppIcons.Folder, "File under a topic", { menuOpen = false; showTopicPicker = true })
                         AppMenuItem(AppIcons.Info, "Notes info", { menuOpen = false; showInfo = true })
+                        AppMenuItem(AppIcons.History, "History", {
+                            menuOpen = false
+                            scope.launch {
+                                if (isDirty()) saveNow()
+                                versions = viewModel.noteVersions(note.id)
+                                showHistory = true
+                            }
+                        })
                         AppMenuDivider()
                         AppMenuItem(AppIcons.Share, "Share or export", { menuOpen = false; showShare = true })
                         AppMenuItem(AppIcons.Check, if (status == NoteStatus.FINISHED) "Reopen" else "Mark as finished", {
@@ -1150,6 +1161,41 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                     apply(MarkdownEdit.insert(text, selStart, selEnd, "[[$picked]]"))
                 },
                 onDismiss = { showLinkPicker = false },
+            )
+        }
+
+        if (showHistory) {
+            val stamp = DateTimeFormatter.ofPattern("d MMM, HH:mm")
+            AlertDialog(
+                onDismissRequest = { showHistory = false },
+                shape = RoundedCornerShape(28.dp),
+                title = { Text("History") },
+                text = {
+                    if (versions.isEmpty()) {
+                        Text("No earlier text yet. Each time you save a change, the text before it is kept here (the last 20).")
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                            versions.forEach { v ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(stamp.format(Instant.ofEpochMilli(v.savedAt).atZone(ZoneId.systemDefault())), style = MaterialTheme.typography.titleSmall)
+                                        Text(v.bodyText.trim().replace("\n", " ").take(80).ifBlank { "(empty)" }, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                                    }
+                                    TextButton(onClick = {
+                                        showHistory = false
+                                        skipFlush = true
+                                        // The current text is kept as a version by the save itself; the note then closes with the old text back.
+                                        scope.launch {
+                                            viewModel.saveNote(note.id, note.subjectId, v.title, v.bodyText, status, note.tags)
+                                            navigator.navigateUp()
+                                        }
+                                    }) { Text("Restore") }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { showHistory = false }) { Text("Close") } },
             )
         }
 
