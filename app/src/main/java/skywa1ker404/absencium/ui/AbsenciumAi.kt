@@ -51,6 +51,13 @@ object AbsenciumAi {
         context.startActivity(intent)
     }
 
+    /** Opens the chat with a link to the note in the message box, so the student can ask about it. */
+    fun askAboutNote(context: Context, noteId: Long, title: String) {
+        skywa1ker404.absencium.data.ai.AiContext.noteViewed(noteId)
+        me.rerere.rikkahub.AiHost.pendingDraft.value = "[Vault note: ${title.ifBlank { "Untitled" }} (id $noteId)] "
+        open(context)
+    }
+
     /** Opens the chat, or with [settings] straight on its settings (providers, models, assistants). */
     fun open(context: Context, settings: Boolean = false, destination: String? = null) {
         val page = destination ?: if (settings) "settings" else null

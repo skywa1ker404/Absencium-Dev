@@ -375,7 +375,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                             AppMenu(expanded = menuOpen, onDismiss = { menuOpen = false }) {
                                 AppMenuItem(AppIcons.Share, "Share or export", { menuOpen = false; showShare = true })
                                 val aiContext = androidx.compose.ui.platform.LocalContext.current
-                                AppMenuItem(AppIcons.Sparkle, "Ask Absencium AI", { menuOpen = false; skywa1ker404.absencium.data.ai.AiContext.noteViewed(note.id); skywa1ker404.absencium.ui.AbsenciumAi.open(aiContext) })
+                                AppMenuItem(AppIcons.Sparkle, "Ask Absencium AI", { menuOpen = false; skywa1ker404.absencium.ui.AbsenciumAi.askAboutNote(aiContext, note.id, note.title) })
                                 AppMenuItem(AppIcons.Fullscreen, "Focus mode", { menuOpen = false; focus = true })
                                 AppMenuDivider()
                                 AppMenuItem(AppIcons.Bookmark, "Bookmark this page", { menuOpen = false; container.saveBookmark(note.id, scroll.value) })

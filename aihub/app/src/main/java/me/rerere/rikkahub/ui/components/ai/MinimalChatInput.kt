@@ -122,6 +122,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -2342,6 +2343,14 @@ private fun MinimalPickerContent(
         )
     }
     
+    val draft by me.rerere.rikkahub.AiHost.pendingDraft.collectAsState()
+    LaunchedEffect(draft) {
+        val text = draft ?: return@LaunchedEffect
+        me.rerere.rikkahub.AiHost.pendingDraft.value = null
+        val current = state.textContent.text.toString()
+        state.setMessageText(if (current.isBlank()) text else current.trimEnd() + "\n" + text)
+    }
+
     if (showVaultPicker) {
         VaultLinkSheet(
             onPick = { link ->

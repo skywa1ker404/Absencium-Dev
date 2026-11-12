@@ -569,8 +569,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                             menuOpen = false
                             scope.launch {
                                 if (isDirty()) saveNow()
-                                skywa1ker404.absencium.data.ai.AiContext.noteViewed(note.id)
-                                skywa1ker404.absencium.ui.AbsenciumAi.open(appContext)
+                                skywa1ker404.absencium.ui.AbsenciumAi.askAboutNote(appContext, note.id, cleanTitle(title))
                             }
                         })
                         AppMenuItem(AppIcons.Folder, "File under a topic", { menuOpen = false; showTopicPicker = true })

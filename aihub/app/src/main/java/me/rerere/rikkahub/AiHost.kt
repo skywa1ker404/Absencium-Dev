@@ -68,6 +68,9 @@ object AiHost {
     /** What the Vault option of the attach menu offers. When null, the menu has no Vault option. */
     var vaultLinks: (suspend () -> List<VaultLink>)? = null
 
+    /** Text the app wants in the chat box next time the chat shows (a note the student asked about); the box takes it once. */
+    val pendingDraft = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+
     /**
      * The ids of the hidden action chats that made or changed something the host can show (the Open button). When null the chat has no
      * AI actions folder; the folder itself lists the chats of [ACTIONS_ASSISTANT_ID].
