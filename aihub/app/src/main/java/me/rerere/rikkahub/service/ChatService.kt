@@ -934,6 +934,17 @@ class ChatService(
         }
     }
 
+    /** True when an answer ends the way a cut-off one does: an open code fence or formula, an unfinished table row, or a dangling mark. */
+    private fun looksCutOff(text: String): Boolean {
+        val t = text.trimEnd()
+        if (t.length < 400) return false
+        if (Regex("^\\s*```", RegexOption.MULTILINE).findAll(t).count() % 2 == 1) return true
+        if (Regex("\\$\\$").findAll(t).count() % 2 == 1) return true
+        val last = t.lines().last().trimEnd()
+        if (last.startsWith("|") && !last.endsWith("|")) return true
+        return last.last() in ",;:(-/&\\\\" || (last.endsWith("**") && Regex("\\*\\*").findAll(last).count() % 2 == 1)
+    }
+
     /**
      * Runs one host action as a hidden, read-only chat (see [me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID]): sends [parts] as the
      * first message, waits until the assistant has finished, and returns what it ended with.
@@ -950,8 +961,26 @@ class ChatService(
         saveConversation(conversation.id, conversation)
         sendMessage(conversation.id, parts, answer = true, suppressCompletionNotification = true)
         getConversationJobs().first { it[conversation.id] == null }
-        val done = getConversationFlow(conversation.id).value
-        val reply = done.messageNodes.lastOrNull { it.role == MessageRole.ASSISTANT }?.currentMessage?.toText().orEmpty()
+        var done = getConversationFlow(conversation.id).value
+        fun lastReply(c: Conversation) = c.messageNodes.lastOrNull { it.role == MessageRole.ASSISTANT }?.currentMessage?.toText().orEmpty()
+        // A long answer (notes) can be cut off by the model's output limit. Ask it to carry on, up to three times, then join the parts.
+        val pieces = mutableListOf(lastReply(done))
+        var rounds = 0
+        while (rounds < 3 && !done.hasPendingToolApprovals() && looksCutOff(pieces.last())) {
+            rounds++
+            sendMessage(
+                conversation.id,
+                listOf(UIMessagePart.Text("Your last answer was cut off. Continue exactly where it stopped, without repeating anything and without any introduction.")),
+                answer = true,
+                suppressCompletionNotification = true,
+            )
+            getConversationJobs().first { it[conversation.id] == null }
+            done = getConversationFlow(conversation.id).value
+            val next = lastReply(done)
+            if (next.isBlank()) break
+            pieces += next
+        }
+        val reply = pieces.joinToString("")
         val error = if (done.hasPendingToolApprovals()) "The AI asked for approval, which an action cannot give." else if (reply.isBlank()) "The AI did not answer." else null
         return me.rerere.rikkahub.AiHost.TaskResult(conversation.id.toString(), reply, error)
     }

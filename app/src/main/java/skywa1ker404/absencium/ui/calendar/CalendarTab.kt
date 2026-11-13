@@ -585,7 +585,7 @@ private fun DayCell(
     }
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun DayPanel(
     date: LocalDate,
@@ -681,8 +681,7 @@ private fun DayPanel(
                     )
                 }
             }
-            // Present / Absent / Cancelled as one connected Material 3 Expressive button group. Once Absent is chosen it becomes a split
-            // button: its arrow opens a menu with Absent and Excused (a medical or approved absence, left out of the percentage).
+            // Present / Absent / Cancelled as one connected Material 3 Expressive button group.
             val shown = listOf(AttendanceStatus.PRESENT, AttendanceStatus.ABSENT, AttendanceStatus.CANCELLED)
             Row(
                 modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
@@ -694,61 +693,41 @@ private fun DayPanel(
                         shown.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
                         else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                     }
-                    val absentChosen = status == AttendanceStatus.ABSENT && (logged == AttendanceStatus.ABSENT || logged == AttendanceStatus.EXCUSED)
-                    if (absentChosen) {
-                        var menuOpen by remember(lecture.subject.id) { mutableStateOf(false) }
-                        Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
-                            ToggleButton(
-                                checked = true,
-                                onCheckedChange = { onSetStatus(lecture.subject.id, logged!!) },
-                                enabled = !isFuture,
-                                modifier = Modifier.weight(1f),
-                                shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
-                            ) {
-                                Text(logged!!.chipLabel(), maxLines = 1)
-                            }
-                            Box {
-                                ToggleButton(
-                                    checked = menuOpen,
-                                    onCheckedChange = { menuOpen = it },
-                                    enabled = !isFuture,
-                                    shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
-                                ) {
-                                    Icon(AppIcons.ExpandMore, contentDescription = "More absence types")
-                                }
-                                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                                    listOf(AttendanceStatus.ABSENT, AttendanceStatus.EXCUSED).forEach { choice ->
-                                        DropdownMenuItem(
-                                            text = { Text(choice.chipLabel()) },
-                                            onClick = {
-                                                menuOpen = false
-                                                if (logged != choice) onSetStatus(lecture.subject.id, choice)
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        ToggleButton(
-                            checked = logged == status,
-                            onCheckedChange = { onSetStatus(lecture.subject.id, status) },
-                            enabled = !isFuture,
-                            modifier = Modifier.weight(1f),
-                            shapes = shapes,
-                        ) {
-                            Text(status.chipLabel(), maxLines = 1)
-                        }
+                    // Absent stays one button; Excused is a chip beside "Notes collected" once Absent is chosen.
+                    val absentLike = status == AttendanceStatus.ABSENT && (logged == AttendanceStatus.ABSENT || logged == AttendanceStatus.EXCUSED)
+                    ToggleButton(
+                        checked = logged == status || absentLike,
+                        onCheckedChange = { onSetStatus(lecture.subject.id, if (absentLike) logged!! else status) },
+                        enabled = !isFuture,
+                        modifier = Modifier.weight(1f),
+                        shapes = shapes,
+                    ) {
+                        Text(status.chipLabel(), maxLines = 1)
                     }
                 }
             }
             if (record != null && (record.status == AttendanceStatus.ABSENT || record.status == AttendanceStatus.EXCUSED)) {
-                ExpressiveChip(
-                    selected = record.notesCollected,
-                    onClick = { onSetNotes(lecture.subject.id, !record.notesCollected) },
-                    label = { Text("Notes collected") },
+                androidx.compose.foundation.layout.FlowRow(
                     modifier = Modifier.padding(top = 8.dp),
-                )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ExpressiveChip(
+                        selected = record.notesCollected,
+                        onClick = { onSetNotes(lecture.subject.id, !record.notesCollected) },
+                        label = { Text("Notes collected") },
+                    )
+                    // A medical or approved absence, left out of the percentage.
+                    ExpressiveChip(
+                        selected = record.status == AttendanceStatus.EXCUSED,
+                        onClick = {
+                            onSetStatus(
+                                lecture.subject.id,
+                                if (record.status == AttendanceStatus.EXCUSED) AttendanceStatus.ABSENT else AttendanceStatus.EXCUSED,
+                            )
+                        },
+                        label = { Text("Excused") },
+                    )
+                }
             }
             if (isFuture) {
                 HintText("Attendance can be logged once the day has come.", modifier = Modifier.padding(top = 8.dp))

@@ -821,7 +821,9 @@ fun ChatAppRoutes(
             }
             Box(modifier = Modifier.fillMaxSize()) {
             TTSController()
-            val shouldShowSetup = !settings.init &&
+            // Inside Absencium the host app has its own AI settings page, so the chat's first-run provider setup never shows.
+            val shouldShowSetup = AiHost.openAppSettings == null &&
+                !settings.init &&
                 !settings.setupCompleted &&
                 hasSuccessfulReplyBeforeSetup == false
             LaunchedEffect(shouldShowSetup) {
