@@ -475,6 +475,8 @@ fun ShellFabMenu(
     actions: List<FabAction>,
     modifier: Modifier = Modifier,
     backdrop: LayerBackdrop? = null,
+    /** A smaller button shown between the shortcuts and the "+" (the search button), so the "+" stays level with the pill. */
+    secondary: (@Composable () -> Unit)? = null,
 ) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
@@ -527,6 +529,7 @@ fun ShellFabMenu(
                 }
             }
         }
+        secondary?.invoke()
         Box(
             modifier = Modifier
                 .size(56.dp)
