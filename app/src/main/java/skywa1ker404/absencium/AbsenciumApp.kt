@@ -4,6 +4,7 @@ import skywa1ker404.absencium.data.ai.ChatAppTools
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxSize
 import android.app.Activity
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.unit.dp
@@ -127,6 +128,15 @@ class AbsenciumApp : Application() {
         }
         // The chat's gear opens the app's own AI settings page; Imagine shows in the chat drawer only when "Generate images" is on.
         me.rerere.rikkahub.AiHost.onExit = { skywa1ker404.absencium.ui.AbsenciumAi.close() }
+        me.rerere.rikkahub.AiHost.openVaultRef = { context, kind, label, id ->
+            when (kind) {
+                "NOTE" -> if (id != null) skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, skywa1ker404.absencium.data.ai.AiTargetType.NOTE, id)
+                "SYLLABUS" -> kotlinx.coroutines.MainScope().launch {
+                    val subject = container.subjectRepository.subjects.first().firstOrNull { it.name == label }
+                    if (subject != null) skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, skywa1ker404.absencium.data.ai.AiTargetType.SYLLABUS, subject.id)
+                }
+            }
+        }
         me.rerere.rikkahub.AiHost.openAppSettings = { context ->
           // Inside the app's own window the chat just closes and the settings page opens; only the stand-alone chat starts the app.
           if (!skywa1ker404.absencium.ui.AbsenciumAi.showAppSettings()) {

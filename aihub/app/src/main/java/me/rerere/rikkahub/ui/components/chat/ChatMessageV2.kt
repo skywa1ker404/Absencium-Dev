@@ -1231,7 +1231,12 @@ private fun UserMessageTurn(
         if (vaultRefs.isNotEmpty()) {
             AiMessageAttachmentRow(alignEnd = true) {
                 items(items = vaultRefs, key = { it.token }) { ref ->
-                    AiDocumentAttachmentTile(fileName = ref.label, badge = ref.kind, modifier = Modifier.size(72.dp))
+                    AiDocumentAttachmentTile(
+                        fileName = ref.label,
+                        badge = ref.kind,
+                        modifier = Modifier.size(72.dp),
+                        onClick = me.rerere.rikkahub.AiHost.openVaultRef?.let { open -> { open(context, ref.kind, ref.label, ref.id) } },
+                    )
                 }
             }
         }

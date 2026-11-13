@@ -57,6 +57,9 @@ object AiHost {
     /** Opens the host's own AI settings page. When set, the chat has no settings hub of its own: its gear goes here. */
     var openAppSettings: ((android.content.Context) -> Unit)? = null
 
+    /** Opens a Vault link in the host (kind NOTE, SYLLABUS or MATERIAL, the shown name and the id when the link has one); the chat closes first. */
+    var openVaultRef: ((android.content.Context, String, String, Long?) -> Unit)? = null
+
     /** Three invisible characters the host puts between its fixed instructions and the request itself; the chat draws only what follows. */
     const val TASK_MARK = "\u2063\u2063\u2063"
 
