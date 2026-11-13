@@ -52,7 +52,7 @@ fun PresetsPage(
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) { skywa1ker404.absencium.ui.components.SolidSurfaces {
+    ) { skywa1ker404.absencium.ui.components.SolidSurfaces { skywa1ker404.absencium.ui.components.DialogMotion {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -108,5 +108,6 @@ fun PresetsPage(
                 }
             }
         }
+    }
     }}
 }

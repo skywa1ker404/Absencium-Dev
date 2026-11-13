@@ -230,7 +230,7 @@ private fun ChoiceCard(icon: ImageVector, title: String, body: String, enabled: 
 @Composable
 fun ExtractRunningDialog(step: String, onCancel: () -> Unit) {
     val colors = skywa1ker404.absencium.ui.components.solidColors()
-    Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) { skywa1ker404.absencium.ui.components.SolidSurfaces {
+    Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) { skywa1ker404.absencium.ui.components.SolidSurfaces { skywa1ker404.absencium.ui.components.DialogMotion {
         Surface(shape = RoundedCornerShape(28.dp), color = colors.surfaceContainerHigh, tonalElevation = 6.dp) {
             Row(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
@@ -244,6 +244,7 @@ fun ExtractRunningDialog(step: String, onCancel: () -> Unit) {
                 ) { Icon(AppIcons.Stop, contentDescription = null) }
             }
         }
+    }
     }}
 }
 
@@ -259,7 +260,7 @@ fun ExtractResultDialog(
 ) {
     val colors = skywa1ker404.absencium.ui.components.solidColors()
     var edited by remember(text) { mutableStateOf(text) }
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = true)) { skywa1ker404.absencium.ui.components.SolidSurfaces {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = true)) { skywa1ker404.absencium.ui.components.SolidSurfaces { skywa1ker404.absencium.ui.components.DialogMotion {
         Surface(shape = RoundedCornerShape(30.dp), color = colors.surfaceContainerHigh, tonalElevation = 6.dp) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
@@ -290,6 +291,7 @@ fun ExtractResultDialog(
                 }
             }
         }
+    }
     }}
 }
 
@@ -297,7 +299,7 @@ fun ExtractResultDialog(
 @Composable
 fun ExtractProblemDialog(message: String, setupMissing: Boolean, onOpenSettings: () -> Unit, onDismiss: () -> Unit) {
     val colors = skywa1ker404.absencium.ui.components.solidColors()
-    Dialog(onDismissRequest = onDismiss) { skywa1ker404.absencium.ui.components.SolidSurfaces {
+    Dialog(onDismissRequest = onDismiss) { skywa1ker404.absencium.ui.components.SolidSurfaces { skywa1ker404.absencium.ui.components.DialogMotion {
         Surface(shape = RoundedCornerShape(28.dp), color = colors.surfaceContainerHigh, tonalElevation = 6.dp) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(if (setupMissing) "AI is off or not set up" else "Could not get the text", style = MaterialTheme.typography.titleMedium)
@@ -323,6 +325,7 @@ fun ExtractProblemDialog(message: String, setupMissing: Boolean, onOpenSettings:
                 }
             }
         }
+    }
     }}
 }
 
@@ -358,7 +361,7 @@ fun PdfViewerDialog(path: String, name: String, onClose: () -> Unit, onExtract: 
         val open = renderer
         onDispose { if (open != null) runCatching { open.close() } }
     }
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) { skywa1ker404.absencium.ui.components.SolidSurfaces {
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) { skywa1ker404.absencium.ui.components.SolidSurfaces { skywa1ker404.absencium.ui.components.DialogMotion {
         Column(modifier = Modifier.fillMaxSize().background(colors.surface).statusBarsPadding().navigationBarsPadding()) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -437,5 +440,6 @@ fun PdfViewerDialog(path: String, name: String, onClose: () -> Unit, onExtract: 
                 }
             }
         }
+    }
     }}
 }

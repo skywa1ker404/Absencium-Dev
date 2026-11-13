@@ -253,7 +253,7 @@ fun DoodleDialog(existingPath: String?, onCancel: () -> Unit, onDone: (Bitmap) -
     Dialog(
         onDismissRequest = onCancel,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) { skywa1ker404.absencium.ui.components.SolidSurfaces {
+    ) { skywa1ker404.absencium.ui.components.SolidSurfaces { skywa1ker404.absencium.ui.components.DialogMotion {
         if (page == null) {
             if (existingPath == null) {
                 DoodleSetup(onStart = { chosen = it }, onCancel = onCancel)
@@ -265,6 +265,7 @@ fun DoodleDialog(existingPath: String?, onCancel: () -> Unit, onDone: (Bitmap) -
         } else {
             DoodlePage(base = base, page = page, onCancel = onCancel, onDone = onDone)
         }
+    }
     }}
 }
 

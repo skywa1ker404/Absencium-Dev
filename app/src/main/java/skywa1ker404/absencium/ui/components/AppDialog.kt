@@ -134,3 +134,14 @@ fun AlertDialog(
       }
     }
 }
+
+/** The app's open motion for a dialog's content (a spring grow with a fade); wrap the body of a raw `Dialog` with it. */
+@Composable
+fun DialogMotion(content: @Composable () -> Unit) {
+    val open = remember { MutableTransitionState(false).also { it.targetState = true } }
+    AnimatedVisibility(
+        visibleState = open,
+        enter = fadeIn(tween(140)) + scaleIn(spring(dampingRatio = 0.82f, stiffness = Spring.StiffnessMediumLow), initialScale = 0.92f),
+        exit = androidx.compose.animation.ExitTransition.None,
+    ) { content() }
+}
