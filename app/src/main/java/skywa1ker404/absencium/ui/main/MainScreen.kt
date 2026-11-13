@@ -2,6 +2,7 @@ package skywa1ker404.absencium.ui.main
 
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -93,6 +94,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
@@ -240,9 +242,16 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     delay(1_500)
                     visited = visited + TAB_VAULT
                 }
+                val firstTab = remember { tab }
                 listOf(TAB_HOME, TAB_ATTENDS, TAB_VAULT).forEach { current ->
                     if (current in visited) key(current) {
-                        TabSlot(visible = current == tab, fade = q.decorativeMotion) {
+                        TabSlot(
+                            visible = current == tab,
+                            slotIndex = current,
+                            activeIndex = tab,
+                            fade = q.decorativeMotion,
+                            animateFirst = current != firstTab,
+                        ) {
                     val loaded = data
                     when {
                         loaded == null -> TabColumn(contentPadding) {}
@@ -545,28 +554,40 @@ fun MainScreen(navigator: DestinationsNavigator) {
  * not touched and takes no space, so the visible tab is the only one doing work each frame.
  */
 @Composable
-private fun TabSlot(visible: Boolean, fade: Boolean, content: @Composable () -> Unit) {
-    // Fade through: the page that leaves is gone before the page that arrives appears, so the two are never seen on top
-    // of each other (cross-fading two full pages showed one page's title over the other's cards).
-    val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = when {
-            !fade -> snap()
-            visible -> tween(durationMillis = 200, delayMillis = 110, easing = androidx.compose.animation.core.LinearOutSlowInEasing)
-            else -> tween(durationMillis = 110, easing = androidx.compose.animation.core.FastOutLinearInEasing)
-        },
-        label = "tabAlpha",
-    )
+private fun TabSlot(
+    visible: Boolean,
+    slotIndex: Int,
+    activeIndex: Int,
+    fade: Boolean,
+    animateFirst: Boolean,
+    content: @Composable () -> Unit,
+) {
+    // The same forward / back motion as Absencium AI's screens and every other screen: a page to the right of the active one waits
+    // half a width away and slides in from there; a page to its left drifts a quarter width away. Distances, durations and curve match
+    // ScreenTransitions, so moving between tabs feels like moving between screens.
+    val hiddenX = if (slotIndex > activeIndex) 0.5f else -0.25f
+    val x = remember { Animatable(if (visible && !animateFirst) 0f else if (visible) 0.5f else hiddenX) }
+    val alpha = remember { Animatable(if (visible && !animateFirst) 1f else 0f) }
+    LaunchedEffect(visible, activeIndex) {
+        val targetX = if (visible) 0f else hiddenX
+        val targetA = if (visible) 1f else 0f
+        if (!fade) {
+            x.snapTo(targetX)
+            alpha.snapTo(targetA)
+        } else {
+            launch { x.animateTo(targetX, tween(200, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+            alpha.animateTo(targetA, tween(if (visible) 150 else 100))
+        }
+    }
     Box(
         modifier = Modifier
             .graphicsLayer {
-                this.alpha = alpha
-                // The arriving page rises a few dp into place while it fades in.
-                translationY = if (fade) (1f - alpha) * 10.dp.toPx() else 0f
+                this.alpha = alpha.value
+                translationX = x.value * size.width
             }
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)
-                if (!visible && alpha == 0f) {
+                if (!visible && alpha.value == 0f) {
                     layout(0, 0) {}
                 } else {
                     layout(placeable.width, placeable.height) { placeable.place(0, 0) }
