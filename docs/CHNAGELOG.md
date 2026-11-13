@@ -138,5 +138,10 @@ working on it
 - Fixed (branch Absencium-ai, CI green `43203890335`): "Ask Absencium AI" in a note's menu opens the AI hub with the note linked in the message box.
 - Fixed (branch Absencium-ai, CI pending): the top Back button of the AI hub and its settings leaves the chat for the app when nothing is left to go back to.
 - Fixed (branch Absencium-ai, CI green `43284989972`): the top Back button of the AI hub and its settings now leaves the chat for the app.
-- Changed (branch Absencium-ai, CI `43351210596`): Absent is one button again; Excused is a chip beside Notes collected once Absent is chosen. The chat's first-run provider setup no longer shows inside the app. An AI action's long answer that was cut off is continued automatically.
-- Changed (branch Absencium-ai, CI `43351276080`): AI action chats show only the request, not the fixed instructions.
+- Changed (branch Absencium-ai, CI green `43351210596`): Absent is one button again; Excused is a chip beside Notes collected once Absent is chosen. The chat's first-run provider setup no longer shows inside the app. An AI action's long answer that was cut off is continued automatically.
+- Changed (branch Absencium-ai, CI green `43351276080`): AI action chats show only the request, not the fixed instructions.
+- Changed (branch Absencium-ai, CI green `43351644567`): a Vault link attached in Absencium AI is shown as an attachment tile (note, syllabus or material) in the message box and in the sent message.
+- Changed (branch Absencium-ai, CI green `43351770960`): Home, Attendance and Vault slide forward and back like the AI hub's pages.
+- Changed (branch Absencium-ai, CI green `43352041917`): every dialog opens with one spring grow and fade and resizes smoothly; the syllabus topic pickers (File under a topic, Add Entry) are one collapsed tree with arrows at the left. An earlier run, `43351839821`, failed on a missing `getValue` import in `SyllabusPicker.kt` and was fixed in the next commit.
+- Added (branch Absencium-ai, CI green `43352206487`): Edit profile page with a cropped profile picture; course and year are saved together as one line.
+- Changed (branch Absencium-ai, CI running `43386351738`): on Home, Attendance and Vault the round buttons sit beside the navigation pill at the same height with search above, and the pair stays centred. The run `43352325474` failed on a missing `Row` import in `MainScreen.kt` (`MainScreen.kt:375 Unresolved reference 'Row'`), fixed in `f886c0c`.
