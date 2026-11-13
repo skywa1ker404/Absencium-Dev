@@ -194,7 +194,7 @@ private fun PickerField(label: String, value: String, options: List<String>, onP
 
 /** The profile picture, or the initials (a person icon when there is no name) on the primary container. */
 @Composable
-fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modifier = Modifier) {
+fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape = CircleShape) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     val bitmap by produceState<ImageBitmap?>(null, fileName) {
@@ -203,7 +203,7 @@ fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modif
         }
     }
     Box(
-        modifier = modifier.size(size.dp).clip(CircleShape).background(colors.primaryContainer),
+        modifier = modifier.size(size.dp).clip(shape).background(colors.primaryContainer),
         contentAlignment = Alignment.Center,
     ) {
         val image = bitmap
