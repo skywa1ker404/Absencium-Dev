@@ -1257,6 +1257,7 @@ private fun UserMessageTurn(
                     val userNickname = settings.displaySetting.userNickname
                     val displayContent = remember(part.text, assistant, userNickname) {
                         part.text
+                            .substringAfter(me.rerere.rikkahub.AiHost.TASK_MARK)
                             .replacePersonaPlaceholders(
                                 assistant = assistant,
                                 userNickname = userNickname,

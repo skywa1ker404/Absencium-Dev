@@ -57,6 +57,9 @@ object AiHost {
     /** Opens the host's own AI settings page. When set, the chat has no settings hub of its own: its gear goes here. */
     var openAppSettings: ((android.content.Context) -> Unit)? = null
 
+    /** Three invisible characters the host puts between its fixed instructions and the request itself; the chat draws only what follows. */
+    const val TASK_MARK = "\u2063\u2063\u2063"
+
     /** Leaves the chat for the host when Back is pressed on the first page of the chat's own stack (nothing is left to pop). */
     var onExit: (() -> Unit)? = null
 

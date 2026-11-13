@@ -16,7 +16,7 @@ class AiTasks(private val application: Application) {
      * is told the structure of the app and that nobody can answer questions or approve, so it decides and uses the tools itself.
      */
     suspend fun run(title: String, instruction: String, images: List<String> = emptyList()): AiHost.TaskResult {
-        val text = ChatAppTools.APP_PROMPT + "\n\n" + TASK_RULES + "\n\n" + instruction.trim()
+        val text = ChatAppTools.APP_PROMPT + "\n\n" + TASK_RULES + AiHost.TASK_MARK + instruction.trim()
         return send(title, text, images)
     }
 
@@ -25,7 +25,7 @@ class AiTasks(private val application: Application) {
      * the AI actions folder, but the assistant uses no tools and answers with exactly what the request asks for. The answer is the reply.
      */
     suspend fun ask(title: String, request: String, images: List<String> = emptyList()): AiHost.TaskResult =
-        send(title, TEXT_RULES + "\n\n" + request.trim(), images)
+        send(title, TEXT_RULES + AiHost.TASK_MARK + request.trim(), images)
 
     /**
      * [ask] with in-memory pictures or PDFs (they are written to the cache first, since the hub reads files), returning the answer
