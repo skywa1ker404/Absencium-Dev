@@ -792,15 +792,15 @@ ${NotePrompts.EDITOR}
     suspend fun vaultLinks(): List<me.rerere.rikkahub.AiHost.VaultLink> {
         val names = container.database.subjectDao().observeAll().first().associate { it.id to it.name }
         val notes = container.database.noteDao().observeAll().first().sortedByDescending { it.updatedAt }.map {
-            me.rerere.rikkahub.AiHost.VaultLink("Notes", it.title.ifBlank { "Untitled note" }, names[it.subjectId].orEmpty(), "[Vault note: ${it.title.ifBlank { "Untitled" }} (id ${it.id})]")
+            me.rerere.rikkahub.AiHost.VaultLink("Notes", it.title.ifBlank { "Untitled note" }, names[it.subjectId].orEmpty(), "[Vault note: ${it.title.ifBlank { "Untitled" }} (id ${it.id})]", names[it.subjectId].orEmpty())
         }
         val syllabus = container.database.syllabusDao().observeAll().first().groupBy { it.subjectId }.mapNotNull { (subjectId, nodes) ->
             val name = names[subjectId] ?: return@mapNotNull null
-            me.rerere.rikkahub.AiHost.VaultLink("Syllabus", name, "${nodes.size} topics", "[Vault syllabus: $name]")
+            me.rerere.rikkahub.AiHost.VaultLink("Syllabus", name, "${nodes.size} topics", "[Vault syllabus: $name]", name)
         }.sortedBy { it.title.lowercase() }
         val materials = container.database.guideDao().observeAll().first().map {
             val subject = names[it.subjectId].orEmpty()
-            me.rerere.rikkahub.AiHost.VaultLink("Materials", it.fileName, listOf(it.guideType.name.lowercase().replace('_', ' '), subject).filter { p -> p.isNotBlank() }.joinToString(" · "), "[Vault material: ${it.fileName}${if (subject.isNotBlank()) ", $subject" else ""} (id ${it.id})]")
+            me.rerere.rikkahub.AiHost.VaultLink("Materials", it.fileName, listOf(it.guideType.name.lowercase().replace('_', ' '), subject).filter { p -> p.isNotBlank() }.joinToString(" · "), "[Vault material: ${it.fileName}${if (subject.isNotBlank()) ", $subject" else ""} (id ${it.id})]", subject)
         }
         return notes + syllabus + materials
     }

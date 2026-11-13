@@ -77,6 +77,7 @@ import androidx.compose.foundation.content.ReceiveContentListener
 import androidx.compose.foundation.content.consume
 import androidx.compose.foundation.content.hasMediaType
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowUpward
@@ -3181,50 +3182,118 @@ private fun findDialogWindow(view: View): Window? {
 }
 
 
-/** The Vault option of the attach menu: pick a note, a subject's syllabus or a material to link to the message (nothing is uploaded). */
+/**
+ * The Vault option of the attach menu, navigated like the app's Vault: subject folders, then the categories inside a subject
+ * (Notes, Syllabus, Materials), then the items. A breadcrumb and a back arrow go up one level; searching looks through everything.
+ * Only a reference is added to the message (nothing is uploaded).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun VaultLinkSheet(onPick: (me.rerere.rikkahub.AiHost.VaultLink) -> Unit, onDismiss: () -> Unit) {
     val load = me.rerere.rikkahub.AiHost.vaultLinks ?: return
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var items by remember { mutableStateOf<List<me.rerere.rikkahub.AiHost.VaultLink>?>(null) }
-    var kind by remember { mutableStateOf("Notes") }
+    var subject by remember { mutableStateOf<String?>(null) }
+    var kind by remember { mutableStateOf<String?>(null) }
     var query by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { items = runCatching { load() }.getOrDefault(emptyList()) }
+    val all = items.orEmpty()
+    val unfiled = "Not in a subject"
+    fun subjectOf(l: me.rerere.rikkahub.AiHost.VaultLink) = l.subject.ifBlank { unfiled }
+    androidx.activity.compose.BackHandler(enabled = kind != null || subject != null) {
+        if (kind != null) kind = null else subject = null
+    }
     ModalBottomSheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
         Column(modifier = Modifier.fillMaxHeight(0.8f).imePadding().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Link from the Vault", style = MaterialTheme.typography.titleLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            Text("Only a reference is added to your message. Nothing is uploaded.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Notes", "Syllabus", "Materials").forEach { label ->
-                    androidx.compose.material3.FilterChip(selected = kind == label, onClick = { kind = label }, label = { Text(label) })
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (subject != null) {
+                    androidx.compose.material3.IconButton(onClick = { if (kind != null) kind = null else subject = null }) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = kind ?: subject ?: "Link from the Vault",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                    // The breadcrumb: Vault, subject, category.
+                    Text(
+                        text = listOfNotNull("Vault", subject, kind).joinToString("  ›  "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
                 }
             }
             androidx.compose.material3.OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
                 singleLine = true,
-                placeholder = { Text("Search") },
+                placeholder = { Text("Search the Vault") },
                 shape = me.rerere.rikkahub.ui.theme.AppShapes.InputField,
                 modifier = Modifier.fillMaxWidth(),
             )
-            val shown = items.orEmpty().filter { it.kind == kind && (query.isBlank() || it.title.contains(query, true) || it.subtitle.contains(query, true)) }
-            when {
-                items == null -> Text("Loading", style = MaterialTheme.typography.bodyMedium)
-                shown.isEmpty() -> Text("Nothing here", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                else -> androidx.compose.foundation.lazy.LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    items(shown.size) { index ->
-                        val link = shown[index]
-                        MinimalPickerItem(
-                            icon = { Icon(imageVector = Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                            title = link.title,
-                            subtitle = link.subtitle,
-                            onClick = { onPick(link) },
-                        )
+            val searching = query.isNotBlank()
+            androidx.compose.foundation.lazy.LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                when {
+                    items == null -> item { Text("Loading", style = MaterialTheme.typography.bodyMedium) }
+                    searching -> {
+                        val hits = all.filter { it.title.contains(query, true) || it.subtitle.contains(query, true) || it.subject.contains(query, true) }
+                        if (hits.isEmpty()) item { Text("Nothing found", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        items(hits.size) { i ->
+                            val link = hits[i]
+                            MinimalPickerItem(
+                                icon = { Icon(imageVector = Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                                title = link.title,
+                                subtitle = listOf(link.kind, link.subject).filter { it.isNotBlank() }.joinToString(" · "),
+                                onClick = { onPick(link) },
+                            )
+                        }
+                    }
+                    subject == null -> {
+                        val folders = all.groupBy { subjectOf(it) }.toSortedMap(compareBy { it.lowercase() })
+                        if (folders.isEmpty()) item { Text("Nothing here", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        val names = folders.keys.toList()
+                        items(names.size) { i ->
+                            val name = names[i]
+                            MinimalPickerItem(
+                                icon = { Icon(imageVector = Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                                title = name,
+                                subtitle = "${folders.getValue(name).size} items",
+                                onClick = { subject = name },
+                            )
+                        }
+                    }
+                    kind == null -> {
+                        val inSubject = all.filter { subjectOf(it) == subject }
+                        val kinds = listOf("Notes", "Syllabus", "Materials").filter { k -> inSubject.any { it.kind == k } }
+                        items(kinds.size) { i ->
+                            val k = kinds[i]
+                            MinimalPickerItem(
+                                icon = { Icon(imageVector = Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                                title = k,
+                                subtitle = "${inSubject.count { it.kind == k }} items",
+                                onClick = { kind = k },
+                            )
+                        }
+                    }
+                    else -> {
+                        val shown = all.filter { subjectOf(it) == subject && it.kind == kind }
+                        items(shown.size) { i ->
+                            val link = shown[i]
+                            MinimalPickerItem(
+                                icon = { Icon(imageVector = Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                                title = link.title,
+                                subtitle = link.subtitle.takeIf { link.kind != "Notes" || it != link.subject }.orEmpty(),
+                                onClick = { onPick(link) },
+                            )
+                        }
                     }
                 }
             }

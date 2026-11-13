@@ -69,7 +69,7 @@ object AiHost {
     var describe: (toolName: String, arguments: String) -> Pair<String, String>? = { _, _ -> null }
 
     /** Something in the host's Vault that can be linked to a message. [reference] is the line put into the message; nothing is uploaded. */
-    data class VaultLink(val kind: String, val title: String, val subtitle: String, val reference: String)
+    data class VaultLink(val kind: String, val title: String, val subtitle: String, val reference: String, val subject: String = "")
 
     /** What the Vault option of the attach menu offers. When null, the menu has no Vault option. */
     var vaultLinks: (suspend () -> List<VaultLink>)? = null
