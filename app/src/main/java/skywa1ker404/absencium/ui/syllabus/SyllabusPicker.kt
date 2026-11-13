@@ -3,6 +3,9 @@ package skywa1ker404.absencium.ui.syllabus
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -41,6 +44,19 @@ fun SyllabusPickerDialog(
     title: String = "File under a topic",
 ) {
     val choices = remember(nodes) { SyllabusPath.choices(nodes) }
+    // Everything starts collapsed; an arrow at the left of a unit, chapter or topic opens what is under it, and any level can be picked.
+    val parentOf = remember(nodes) { nodes.associate { it.id to it.parentId } }
+    val hasChildren = remember(nodes) { nodes.mapNotNull { it.parentId }.toSet() }
+    val expanded = remember { androidx.compose.runtime.mutableStateListOf<Long>() }
+    val visible = choices.filter { choice ->
+        var parent = parentOf[choice.id]
+        var open = true
+        while (parent != null) {
+            if (parent !in expanded) { open = false; break }
+            parent = parentOf[parent]
+        }
+        open
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -49,10 +65,18 @@ fun SyllabusPickerDialog(
                 Text("This subject has no syllabus yet. Build it first, then file notes and study material under its units, chapters and topics.", style = MaterialTheme.typography.bodyMedium)
             } else {
                 LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
-                    item(key = "none") { PickerRow(noneLabel, 0, current == null) { onPick(null) } }
-                    items(choices, key = { it.id }) { choice ->
+                    item(key = "none") { PickerRow(noneLabel, 0, current == null, false, false, {}) { onPick(null) } }
+                    items(visible, key = { it.id }) { choice ->
                         // The label holds the whole path; only its last part is shown, indented by its depth.
-                        PickerRow(choice.label.substringAfterLast(" › "), choice.depth, current == choice.id) { onPick(choice.id) }
+                        PickerRow(
+                            label = choice.label.substringAfterLast(" › "),
+                            depth = choice.depth,
+                            selected = current == choice.id,
+                            expandable = choice.id in hasChildren,
+                            expanded = choice.id in expanded,
+                            onToggle = { if (choice.id in expanded) expanded.remove(choice.id) else expanded.add(choice.id) },
+                            onClick = { onPick(choice.id) },
+                        )
                     }
                 }
             }
@@ -66,12 +90,32 @@ fun SyllabusPickerDialog(
 }
 
 @Composable
-private fun PickerRow(label: String, depth: Int, selected: Boolean, onClick: () -> Unit) {
+private fun PickerRow(
+    label: String,
+    depth: Int,
+    selected: Boolean,
+    expandable: Boolean,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onClick: () -> Unit,
+) {
+    val turn by androidx.compose.animation.core.animateFloatAsState(if (expanded) 90f else 0f, androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 500f), label = "arrow")
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = (depth * 16).dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(0.dp),
     ) {
+        if (expandable) {
+            androidx.compose.material3.IconButton(onClick = onToggle, modifier = Modifier.size(40.dp)) {
+                androidx.compose.material3.Icon(
+                    skywa1ker404.absencium.ui.icons.AppIcons.ChevronRight,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    modifier = Modifier.graphicsLayer { rotationZ = turn },
+                )
+            }
+        } else {
+            Spacer(Modifier.size(40.dp))
+        }
         RadioButton(selected = selected, onClick = onClick)
         Text(label, style = MaterialTheme.typography.bodyMedium)
     }

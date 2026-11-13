@@ -3,6 +3,14 @@ package skywa1ker404.absencium.ui.components
 import android.content.Context
 import android.os.Build
 import android.view.WindowManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -87,12 +95,19 @@ fun AlertDialog(
     BasicAlertDialog(onDismissRequest = onDismissRequest, modifier = modifier, properties = properties) {
       SolidSurfaces {
         if (blur) BlurBehindDialog(radiusDp = 24)
+        // One open motion for every dialog (a spring grow with a fade), and the card resizes with a spring when its content changes.
+        val open = remember { MutableTransitionState(false).also { it.targetState = true } }
+        AnimatedVisibility(
+            visibleState = open,
+            enter = fadeIn(tween(140)) + scaleIn(spring(dampingRatio = 0.82f, stiffness = Spring.StiffnessMediumLow), initialScale = 0.9f),
+            exit = androidx.compose.animation.ExitTransition.None,
+        ) {
         Surface(
             shape = shape,
             color = container,
             tonalElevation = 0.dp,
             border = BorderStroke(0.6.dp, Color.White.copy(alpha = if (frosted) 0.18f else 0.08f)),
-            modifier = Modifier.widthIn(min = 280.dp, max = 560.dp),
+            modifier = Modifier.widthIn(min = 280.dp, max = 560.dp).animateContentSize(spring(dampingRatio = 0.92f, stiffness = Spring.StiffnessMediumLow)),
         ) {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 if (icon != null) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { icon() }
@@ -114,6 +129,7 @@ fun AlertDialog(
                     confirmButton()
                 }
             }
+        }
         }
       }
     }
