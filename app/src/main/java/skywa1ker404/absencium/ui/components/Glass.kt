@@ -345,6 +345,14 @@ fun Modifier.pageHeaderGlass(background: Color, top: Float = 1f, mid: Float = 1f
             shape = { androidx.compose.ui.graphics.RectangleShape },
             effects = { blur(blurDp.toPx()) },
             shadow = null,
-            onDrawSurface = { drawRect(background.copy(alpha = 0.62f)) },
+            // Clear glass: the blur of what passes behind plus a faint white sheen at the top, no black or white veil of its own.
+            onDrawSurface = {
+                drawRect(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.10f),
+                        1f to Color.White.copy(alpha = 0.02f),
+                    ),
+                )
+            },
         )
 }

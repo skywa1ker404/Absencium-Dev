@@ -158,13 +158,8 @@ fun AbsenciumTheme(
             ColorEngine.MONET_WALLPAPER -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             ColorEngine.DEFAULT_PALETTE -> (if (isDark) DefaultPalette.dark else DefaultPalette.light).toColorScheme(isDark)
             ColorEngine.PRESET -> {
-                if (settings.themePreset == ThemePreset.NO_COLOUR && !glassActive) {
-                    // "No colour" exists only for Liquid Glass; with glass off the default theme is used instead.
-                    (if (isDark) DefaultPalette.dark else DefaultPalette.light).toColorScheme(isDark)
-                } else {
-                    val (variantIsDark, variant) = settings.themePreset.palette().variantFor(isDark)
-                    variant.toColorScheme(variantIsDark)
-                }
+                val (variantIsDark, variant) = settings.themePreset.palette().variantFor(isDark)
+                variant.toColorScheme(variantIsDark)
             }
         }
         if (settings.themeMode == ThemeMode.DARK_OLED && isDark) generated.oledBlack() else generated

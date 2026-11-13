@@ -75,7 +75,7 @@ fun PresetsPage(
                 TextButton(onClick = onDismiss) { Text("Done") }
             }
             val glassOn = LocalGlassEnabled.current
-            val presets = (if (glassOn) listOf(ThemePreset.NO_COLOUR) else emptyList()) +
+            val presets = listOf(ThemePreset.NO_COLOUR) +
                 ThemePreset.entries.filter { it != ThemePreset.NO_COLOUR }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -84,7 +84,7 @@ fun PresetsPage(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                // "No colour" is offered only while Liquid Glass is on, and is listed first.
+                // Monochrome is always offered and listed first.
                 items(presets, key = { it.name }) { preset ->
                     val palette = preset.palette()
                     val (_, variant) = palette.variantFor(isDark)

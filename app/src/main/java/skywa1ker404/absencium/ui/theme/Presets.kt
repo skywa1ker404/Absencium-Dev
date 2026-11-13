@@ -368,10 +368,10 @@ private val SynthWave84 = ThemePalette(
     light = null,
 )
 
-/** Neutral greys only (every channel equal), so Liquid Glass over it has no colour of its own. Not taken from any scheme. */
+/** Monochrome: neutral greys only (every channel equal), so Liquid Glass over it has no colour of its own. Always available. Not taken from any scheme. */
 private val NoColour = ThemePalette(
-    name = "No colour",
-    variants = "Plain glass · Dark · Light",
+    name = "Monochrome",
+    variants = "Plain · Dark · Light",
     dark = PaletteVariant(
         background = c(0x141414), text = c(0xEDEDED), textMuted = c(0xA3A3A3), outline = c(0x707070),
         primary = c(0xDCDCDC), secondary = c(0xBEBEBE), tertiary = c(0x9E9E9E), error = c(0xF2B8B5),
