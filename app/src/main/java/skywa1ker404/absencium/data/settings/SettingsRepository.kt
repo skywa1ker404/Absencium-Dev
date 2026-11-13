@@ -63,6 +63,8 @@ class SettingsRepository(context: Context) {
         }
     }
 
+    suspend fun setProfileAvatar(fileName: String) = write(Keys.PROFILE_AVATAR, fileName)
+
     suspend fun setThemeMode(value: ThemeMode) = write(Keys.THEME_MODE, value.name)
 
     suspend fun setMarksScale(value: skywa1ker404.absencium.data.settings.MarksScale) = write(Keys.MARKS_SCALE, value.name)
@@ -199,6 +201,7 @@ class SettingsRepository(context: Context) {
         val PROFILE_COURSE = stringPreferencesKey("profile_course")
         val PROFILE_YEAR = stringPreferencesKey("profile_year")
         val PROFILE_COLLEGE = stringPreferencesKey("profile_college")
+        val PROFILE_AVATAR = stringPreferencesKey("profile_avatar")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val MARKS_SCALE = stringPreferencesKey("marks_scale")
         val COLOR_ENGINE = stringPreferencesKey("color_engine")
@@ -253,6 +256,7 @@ class SettingsRepository(context: Context) {
             profileCourse = this[Keys.PROFILE_COURSE] ?: defaults.profileCourse,
             profileYear = this[Keys.PROFILE_YEAR] ?: defaults.profileYear,
             profileCollege = this[Keys.PROFILE_COLLEGE] ?: defaults.profileCollege,
+            profileAvatar = this[Keys.PROFILE_AVATAR] ?: defaults.profileAvatar,
             themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode),
             marksScale = enumOrDefault(this[Keys.MARKS_SCALE], defaults.marksScale),
             // Before Liquid Glass became a toggle it was a theme of its own; that setting becomes the toggle on top of

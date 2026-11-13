@@ -30,6 +30,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setDisplayName(value: String) = launch { repository.setDisplayName(value) }
     fun setProfileDetails(course: String, year: String, college: String) = launch { repository.setProfileDetails(course, year, college) }
 
+    fun setProfileAvatar(fileName: String) = launch { repository.setProfileAvatar(fileName) }
+
     fun setRemindLectureMinutes(minutes: Int) = launch { repository.setRemindLectureMinutes(minutes) }
 
     fun setRemindExamDays(days: Int) = launch { repository.setRemindExamDays(days) }

@@ -76,14 +76,9 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
     val loaded = settings
     val threshold = loaded.attendanceThresholdPercent
 
-    var name by remember(loaded.displayName) { mutableStateOf(loaded.displayName) }
-    var course by remember(loaded.profileCourse) { mutableStateOf(loaded.profileCourse) }
-    var year by remember(loaded.profileYear) { mutableStateOf(loaded.profileYear) }
-    var college by remember(loaded.profileCollege) { mutableStateOf(loaded.profileCollege) }
     val rows = remember(data) { data?.subjectAttendance().orEmpty() }
     val overall = remember(rows) { rows.overall() }
 
-    var editing by remember { mutableStateOf(false) }
     val details = listOf(loaded.profileCourse, loaded.profileYear, loaded.profileCollege).filter { it.isNotBlank() }
 
     ScreenScaffold(title = "Profile", onBack = { navigator.navigateUp() }, largeTitle = true) {
@@ -93,7 +88,7 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            ProfileAvatar(name = loaded.displayName, percent = overall.percent, threshold = threshold)
+            ProfileAvatar(name = loaded.displayName, picture = loaded.profileAvatar, percent = overall.percent, threshold = threshold)
             Text(
                 text = loaded.displayName.ifBlank { "Add your name" },
                 style = MaterialTheme.typography.headlineSmall,
@@ -106,47 +101,13 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
                 color = colors.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
-            if (!editing) {
-                PillButton(text = "Edit profile", onClick = { editing = true }, tonal = true, compact = true, modifier = Modifier.padding(top = 10.dp))
-            }
-        }
-
-        androidx.compose.animation.AnimatedVisibility(
-            visible = editing,
-            enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.spring(0.8f, 380f)) + androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.spring(1f, 500f)) + androidx.compose.animation.fadeOut(),
-        ) {
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    AppTextField(
-                        value = name, onValueChange = { name = it }, label = { Text("Name") }, singleLine = true,
-                        shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
-                    )
-                    AppTextField(
-                        value = course, onValueChange = { course = it }, label = { Text("Course") }, singleLine = true,
-                        shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
-                    )
-                    AppTextField(
-                        value = year, onValueChange = { year = it }, label = { Text("Year or semester") }, singleLine = true,
-                        shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
-                    )
-                    AppTextField(
-                        value = college, onValueChange = { college = it }, label = { Text("College") }, singleLine = true,
-                        shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
-                        PillButton(text = "Save", onClick = {
-                            settingsViewModel.setDisplayName(name.trim())
-                            settingsViewModel.setProfileDetails(course, year, college)
-                            editing = false
-                        })
-                        PillButton(text = "Cancel", tonal = true, onClick = {
-                            name = loaded.displayName; course = loaded.profileCourse; year = loaded.profileYear; college = loaded.profileCollege
-                            editing = false
-                        })
-                    }
-                }
-            }
+            PillButton(
+                text = "Edit profile",
+                onClick = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.EditProfileScreenDestination) },
+                tonal = true,
+                compact = true,
+                modifier = Modifier.padding(top = 10.dp),
+            )
         }
 
         // Overview: the overall percentage large, what it means, and three counts underneath.
@@ -307,7 +268,7 @@ private fun ProgressRow(title: String, subtitle: String?, value: Float?, valueTe
 
 /** The avatar: initials (or a person) on the primary container, ringed by the overall attendance with its number on a small badge. */
 @Composable
-private fun ProfileAvatar(name: String, percent: Double?, threshold: Int) {
+private fun ProfileAvatar(name: String, picture: String, percent: Double?, threshold: Int) {
     val colors = MaterialTheme.colorScheme
     val ringTrack = colors.surfaceContainerHighest
     val ringColor = if (percent != null && percent < threshold) colors.error else colors.primary
@@ -329,12 +290,7 @@ private fun ProfileAvatar(name: String, percent: Double?, threshold: Int) {
                 .background(colors.primaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            val initials = initialsOf(name)
-            if (initials == null) {
-                Icon(AppIcons.Person, contentDescription = null, tint = colors.onPrimaryContainer, modifier = Modifier.size(36.dp))
-            } else {
-                Text(initials, style = MaterialTheme.typography.headlineMedium, color = colors.onPrimaryContainer)
-            }
+            AvatarPicture(fileName = picture, initials = name, size = 74)
         }
         if (percent != null) {
             Text(

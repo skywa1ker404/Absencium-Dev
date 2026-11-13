@@ -39,6 +39,8 @@ data class AppSettings(
     val profileCourse: String = "",
     val profileYear: String = "",
     val profileCollege: String = "",
+    /** File name (in the app's private files) of the cropped profile picture; empty when none is set. */
+    val profileAvatar: String = "",
     val themeMode: ThemeMode = ThemeMode.SYSTEM_AUTO,
     val marksScale: MarksScale = MarksScale.PERCENTAGE,
     val colorEngine: ColorEngine = ColorEngine.DEFAULT_PALETTE,
