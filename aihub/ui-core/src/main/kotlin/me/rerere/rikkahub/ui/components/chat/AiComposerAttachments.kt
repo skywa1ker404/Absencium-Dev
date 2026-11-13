@@ -252,8 +252,9 @@ fun AiDocumentAttachmentTile(
     onRemove: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    badge: String? = null,
 ) {
-    val extension = fileName.substringAfterLast('.', "").uppercase()
+    val extension = badge ?: fileName.substringAfterLast('.', "").uppercase()
         .takeIf { it.isNotBlank() } ?: "FILE"
     Box(
         modifier = modifier.then(

@@ -33,6 +33,9 @@ fun rememberChatInputState(
 
 class ChatInputState {
     val textContent = TextFieldState()
+
+    /** Vault links shown as attachment tiles; their tokens are added to the text when the message is sent. */
+    var vaultRefs by mutableStateOf(listOf<me.rerere.rikkahub.ui.components.chat.VaultRef>())
     var messageContent: List<UIMessagePart>
         get() = pendingAttachments.map { it.part }
         set(value) {
@@ -56,7 +59,13 @@ class ChatInputState {
     // FocusRequester for the text field - allows external focus requests
     val focusRequester = FocusRequester()
 
+    fun addVaultRef(token: String) {
+        val ref = me.rerere.rikkahub.ui.components.chat.splitVaultRefs(token).first.firstOrNull() ?: return
+        if (vaultRefs.none { it.token == ref.token }) vaultRefs = vaultRefs + ref
+    }
+
     fun clearInput() {
+        vaultRefs = emptyList()
         textContent.setTextAndPlaceCursorAtEnd("")
         setMessageContentWithIds(emptyList(), emptyList())
         editingMessage = null
@@ -97,11 +106,12 @@ class ChatInputState {
     }
 
     fun getContents(): List<UIMessagePart> {
-        return listOf(UIMessagePart.Text(textContent.text.toString())) + messageContent
+        val text = (listOf(textContent.text.toString().trimEnd()) + vaultRefs.map { it.token }).filter { it.isNotBlank() }.joinToString("\n")
+        return listOf(UIMessagePart.Text(text)) + messageContent
     }
 
     fun isEmpty(): Boolean {
-        return textContent.text.isEmpty() && messageContent.isEmpty()
+        return textContent.text.isEmpty() && messageContent.isEmpty() && vaultRefs.isEmpty()
     }
 
     fun addImages(uris: List<Uri>) {

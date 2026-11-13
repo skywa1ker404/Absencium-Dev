@@ -809,7 +809,7 @@ fun MinimalChatInput(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         androidx.compose.animation.AnimatedVisibility(
-                            visible = !isQuestionnaireActive && !isToolApprovalActive && state.messageContent.isNotEmpty(),
+                            visible = !isQuestionnaireActive && !isToolApprovalActive && (state.messageContent.isNotEmpty() || state.vaultRefs.isNotEmpty()),
                             enter = fadeIn(
                                 animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f)
                             ) + expandVertically(
@@ -2347,15 +2347,18 @@ private fun MinimalPickerContent(
     LaunchedEffect(draft) {
         val text = draft ?: return@LaunchedEffect
         me.rerere.rikkahub.AiHost.pendingDraft.value = null
-        val current = state.textContent.text.toString()
-        state.setMessageText(if (current.isBlank()) text else current.trimEnd() + "\n" + text)
+        if (text.startsWith("[Vault ")) {
+            state.addVaultRef(text.trim())
+        } else {
+            val current = state.textContent.text.toString()
+            state.setMessageText(if (current.isBlank()) text else current.trimEnd() + "\n" + text)
+        }
     }
 
     if (showVaultPicker) {
         VaultLinkSheet(
             onPick = { link ->
-                val current = state.textContent.text.toString()
-                state.setMessageText(if (current.isBlank()) link.reference + " " else current.trimEnd() + "\n" + link.reference + " ")
+                state.addVaultRef(link.reference)
                 showVaultPicker = false
                 onDismiss()
             },
@@ -2891,6 +2894,14 @@ private fun MediaFileInputRow(
     }
 
     AiComposerAttachmentRow {
+        items(items = state.vaultRefs, key = { ref -> "vault:${ref.token}" }) { ref ->
+            AiDocumentAttachmentTile(
+                fileName = ref.label,
+                badge = ref.kind,
+                modifier = Modifier.size(60.dp),
+                onRemove = { state.vaultRefs = state.vaultRefs.filter { it.token != ref.token } },
+            )
+        }
         items(
             items = images,
             key = { attachment -> "image:${attachment.id}" }

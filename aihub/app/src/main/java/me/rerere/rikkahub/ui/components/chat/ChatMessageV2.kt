@@ -1223,6 +1223,18 @@ private fun UserMessageTurn(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
+        val vaultRefs = remember(attachmentSignature, group.filteredNodes) {
+            group.filteredNodes.flatMap { n ->
+                n.currentMessage.parts.filterIsInstance<UIMessagePart.Text>().flatMap { splitVaultRefs(it.text).first }
+            }.distinctBy { it.token }
+        }
+        if (vaultRefs.isNotEmpty()) {
+            AiMessageAttachmentRow(alignEnd = true) {
+                items(items = vaultRefs, key = { it.token }) { ref ->
+                    AiDocumentAttachmentTile(fileName = ref.label, badge = ref.kind, modifier = Modifier.size(72.dp))
+                }
+            }
+        }
         AttachmentRow(
             attachments = attachments,
             alignEnd = true,
@@ -1231,6 +1243,7 @@ private fun UserMessageTurn(
         // Message bubbles
         group.filteredNodes.forEachIndexed { nodeIndex, node ->
             val textParts = node.currentMessage.parts.filterIsInstance<UIMessagePart.Text>()
+                .filter { splitVaultRefs(it.text.substringAfter(me.rerere.rikkahub.AiHost.TASK_MARK)).second.isNotBlank() || splitVaultRefs(it.text).first.isEmpty() }
             textParts.forEachIndexed { partIndex, part ->
                 // Calculate bubble position based on overall position in group
                 val isFirst = nodeIndex == 0 && partIndex == 0
@@ -1256,8 +1269,7 @@ private fun UserMessageTurn(
                 ) {
                     val userNickname = settings.displaySetting.userNickname
                     val displayContent = remember(part.text, assistant, userNickname) {
-                        part.text
-                            .substringAfter(me.rerere.rikkahub.AiHost.TASK_MARK)
+                        splitVaultRefs(part.text.substringAfter(me.rerere.rikkahub.AiHost.TASK_MARK)).second
                             .replacePersonaPlaceholders(
                                 assistant = assistant,
                                 userNickname = userNickname,
