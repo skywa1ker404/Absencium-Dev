@@ -137,3 +137,6 @@ working on it
 - Changed (branch Absencium-ai, CI green `43202471499`): Study Tools and the calendar page redesigned (hero summary card, pastel tiles, shape badges, week strip, timeline, to-do progress).
 - Fixed (branch Absencium-ai, CI green `43203890335`): "Ask Absencium AI" in a note's menu opens the AI hub with the note linked in the message box.
 - Fixed (branch Absencium-ai, CI pending): the top Back button of the AI hub and its settings leaves the chat for the app when nothing is left to go back to.
+- Fixed (branch Absencium-ai, CI green `43284989972`): the top Back button of the AI hub and its settings now leaves the chat for the app.
+- Changed (branch Absencium-ai, CI `43351210596`): Absent is one button again; Excused is a chip beside Notes collected once Absent is chosen. The chat's first-run provider setup no longer shows inside the app. An AI action's long answer that was cut off is continued automatically.
+- Changed (branch Absencium-ai, CI `43351276080`): AI action chats show only the request, not the fixed instructions.
