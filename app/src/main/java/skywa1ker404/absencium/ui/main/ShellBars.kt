@@ -380,84 +380,55 @@ private fun PillTab(
 }
 
 /**
- * The contextual action button above the bar (New entry, Add subject...). An extended button: icon and label together, and just the
- * icon while [expanded] is false, which the screens set while their list scrolls down. The label grows and shrinks with a spring.
+ * The one floating-button style of the app, the same as the "+" on the main tabs: a round 56 dp button (primary colour, or plain
+ * glass in Liquid Glass) that springs on press. A [secondary] button is the smaller 52 dp round one used for the second action.
+ * Screens place it level with the navigation pill and hide it with [SlideAway] while the pill is collapsed.
  */
 @Composable
-fun ShellFab(
+fun ShellRoundFab(
     icon: ImageVector,
-    label: String,
+    description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     backdrop: LayerBackdrop? = null,
-    expanded: Boolean = true,
+    secondary: Boolean = false,
 ) {
     val q = LocalQuality.current
+    val colors = MaterialTheme.colorScheme
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.93f else 1f,
-        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
-        label = "fabPress",
+    val press by animateFloatAsState(
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "roundFabPress",
     )
-    val labelIn = androidx.compose.animation.expandHorizontally(
-        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
-    ) + androidx.compose.animation.fadeIn()
-    val labelOut = androidx.compose.animation.shrinkHorizontally(
-        animationSpec = q.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
-    ) + androidx.compose.animation.fadeOut()
-    if (backdrop != null) {
-        // Glass mode: a plain glass pill with no colour of its own.
-        Row(
-            modifier = modifier
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                }
-                .floatingGlass(backdrop, CircleShape)
-                .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(imageVector = icon, contentDescription = if (expanded) null else label, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
-            androidx.compose.animation.AnimatedVisibility(visible = expanded, enter = labelIn, exit = labelOut) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    softWrap = false,
-                    modifier = Modifier.padding(start = 8.dp, end = 4.dp),
-                )
+    val glass = backdrop != null
+    Box(
+        modifier = modifier
+            .size(if (secondary) 52.dp else 56.dp)
+            .graphicsLayer {
+                scaleX = press
+                scaleY = press
             }
-        }
-        return
-    }
-    Button(
-        onClick = onClick,
-        modifier = modifier.graphicsLayer {
-            scaleX = scale
-            scaleY = scale
-        },
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-        ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp, focusedElevation = 0.dp, hoveredElevation = 0.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-        interactionSource = interaction,
-    ) {
-        Icon(imageVector = icon, contentDescription = if (expanded) null else label, modifier = Modifier.size(20.dp))
-        androidx.compose.animation.AnimatedVisibility(visible = expanded, enter = labelIn, exit = labelOut) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                softWrap = false,
-                modifier = Modifier.padding(start = 8.dp, end = 4.dp),
+            .then(
+                if (glass) {
+                    Modifier.floatingGlass(backdrop, CircleShape)
+                } else if (secondary) {
+                    Modifier.clip(CircleShape).background(colors.primaryContainer)
+                } else {
+                    Modifier.clip(CircleShape).background(colors.primary)
+                },
             )
-        }
+            .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (glass) colors.onSurface else if (secondary) colors.onPrimaryContainer else colors.onPrimary,
+            modifier = Modifier.size(if (secondary) 24.dp else 28.dp),
+        )
     }
 }
 

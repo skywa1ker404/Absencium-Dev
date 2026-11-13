@@ -3,7 +3,6 @@ package skywa1ker404.absencium.ui.syllabus
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.height
-import skywa1ker404.absencium.ui.main.ShellFab
 import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import skywa1ker404.absencium.ui.components.AppMenu
 import skywa1ker404.absencium.ui.components.AppMenuDivider
@@ -125,30 +124,31 @@ fun SyllabusScreen(subjectId: Long, navigator: DestinationsNavigator, rootId: Lo
         overlay = {
             // The two ways to add to the syllabus are buttons floating at the bottom right, like the main screen's.
             Box(Modifier.fillMaxSize()) {
-                Column(
+                // Round buttons like the main tabs': the main action at the bottom, the second one above it; they slide away while the list scrolls.
+                skywa1ker404.absencium.ui.main.SlideAway(
+                    hidden = { pillScroll.compact.value },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .navigationBarsPadding()
                         .padding(16.dp),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    if (rootId == null) {
-                        ShellFab(
-                            icon = AppIcons.AutoAwesome,
-                            label = "Import outline",
-                            onClick = { viewModel.dismissImport(); ui.showImport = true },
+                    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (rootId == null) {
+                            skywa1ker404.absencium.ui.main.ShellRoundFab(
+                                icon = AppIcons.AutoAwesome,
+                                description = "Import outline",
+                                onClick = { viewModel.dismissImport(); ui.showImport = true },
+                                backdrop = LocalBackdrop.current,
+                                secondary = true,
+                            )
+                        }
+                        skywa1ker404.absencium.ui.main.ShellRoundFab(
+                            icon = AppIcons.Add,
+                            description = if (rootId == null) "Add unit" else "Add chapter",
+                            onClick = { ui.editing = Editing.Add(rootId, SyllabusTree.levelName(if (rootId == null) 0 else 1)) },
                             backdrop = LocalBackdrop.current,
-                            expanded = !pillScroll.compact.value,
                         )
                     }
-                    ShellFab(
-                        icon = AppIcons.Add,
-                        label = if (rootId == null) "Add unit" else "Add chapter",
-                        onClick = { ui.editing = Editing.Add(rootId, SyllabusTree.levelName(if (rootId == null) 0 else 1)) },
-                        backdrop = LocalBackdrop.current,
-                        expanded = !pillScroll.compact.value,
-                    )
                 }
             }
         },
