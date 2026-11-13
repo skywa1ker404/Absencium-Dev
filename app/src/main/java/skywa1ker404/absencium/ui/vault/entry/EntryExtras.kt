@@ -243,13 +243,12 @@ internal fun AiTaskStage(
         val courseOptions by viewModel.courseOptions.collectAsStateWithLifecycle()
         OptionGroup(title = "Your course", icon = AppIcons.Edit, help = "Keeps the answer inside what you are taught") {
             if (choices.isNotEmpty()) {
-                InlineDropdown(
-                    options = listOf(DropdownOption(-1L, "Not linked")) + choices.map { DropdownOption(it.id, it.label) },
-                    selected = state.syllabusNodeId ?: -1L,
-                    onSelect = { viewModel.setSyllabusNode(it.takeIf { id -> id >= 0 }) },
+                skywa1ker404.absencium.ui.syllabus.SyllabusTreeField(
+                    choices = choices,
+                    selectedId = state.syllabusNodeId,
+                    onSelect = { viewModel.setSyllabusNode(it) },
                     label = "Syllabus topic",
                     enabled = idle,
-                    maxListHeight = 320.dp,
                 )
             }
             CourseField(
