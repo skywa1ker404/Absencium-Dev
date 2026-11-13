@@ -56,8 +56,8 @@ class SyllabusOverviewViewModel(container: AppContainer) : ViewModel() {
 }
 
 /**
- * The main syllabus page: every active subject, each opening into its own full syllabus right here (units, chapters, topics, status,
- * adding, renaming, moving, deleting, details and importing an outline), the same as the subject's own page.
+ * The main syllabus page: every active subject, each a folder that opens its own full syllabus page (units, chapters and topics as folders with status, adding,
+ * renaming, moving, deleting, details and importing an outline), the same as the subject's own page.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Destination<RootGraph>
@@ -74,26 +74,14 @@ fun SyllabusOverviewScreen(navigator: DestinationsNavigator) {
     }
 }
 
-/** One subject: its name and progress as a header, and its whole syllabus below when opened. */
+/** One subject as a folder: its name and progress, opening the subject's own syllabus page (units, chapters and topics as folders). */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SubjectSection(s: SyllabusSummary, index: Int, navigator: DestinationsNavigator) {
-    val container = androidx.compose.ui.platform.LocalContext.current.appContainer
-    val syllabus: SyllabusViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-        key = "syllabus-all-${s.subjectId}",
-        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = SyllabusViewModel(container, s.subjectId) as T
-        },
-    )
-    val ui = androidx.compose.runtime.remember { SyllabusUiState() }
-    var open by androidx.compose.runtime.saveable.rememberSaveable(s.subjectId) { androidx.compose.runtime.mutableStateOf(false) }
-    val turn by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (open) 180f else 0f,
-        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
-        label = "turn",
-    )
-    AppCard(modifier = Modifier.fillMaxWidth().bounceIn((index * 45).coerceAtMost(450)), onClick = { open = !open }) {
+    AppCard(
+        modifier = Modifier.fillMaxWidth().bounceIn((index * 45).coerceAtMost(450)),
+        onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = s.subjectId)) },
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(s.name, style = MaterialTheme.typography.titleMedium)
@@ -103,23 +91,8 @@ private fun SubjectSection(s: SyllabusSummary, index: Int, navigator: Destinatio
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            androidx.compose.material3.Icon(AppIcons.ExpandMore, contentDescription = if (open) "Close" else "Open", modifier = Modifier.graphicsLayer { rotationZ = turn })
+            androidx.compose.material3.Icon(AppIcons.ChevronRight, contentDescription = "Open")
         }
         if (s.items > 0) LinearWavyProgressIndicator(progress = { s.progress }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
     }
-    androidx.compose.animation.AnimatedVisibility(
-        visible = open,
-        enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.spring(0.85f, 380f)) + androidx.compose.animation.fadeIn(),
-        exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.spring(1f, 500f)) + androidx.compose.animation.fadeOut(),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PillButton("Add unit", onClick = { ui.editing = Editing.Add(null, SyllabusTree.levelName(0)) }, compact = true)
-                PillButton("Import outline", onClick = { syllabus.dismissImport(); ui.showImport = true }, tonal = true, compact = true)
-                PillButton("Open page", onClick = { navigator.navigate(SyllabusScreenDestination(subjectId = s.subjectId)) }, tonal = true, compact = true)
-            }
-            SyllabusContent(syllabus, ui, rootId = null, onUnitGone = {}, showHeader = false)
-        }
-    }
-    SyllabusDialogs(syllabus, ui)
 }
