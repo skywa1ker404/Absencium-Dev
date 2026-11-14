@@ -1944,7 +1944,7 @@ class ChatService(
                 )
             )
 
-            addAll(me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.ToolPolicy(assistant.hostToolsOff, assistant.hostToolsAuto, assistant.hostToolsAsk), conversation.id.toString()))
+            addAll(me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.ToolPolicy(off = assistant.hostToolsOff, autoAll = assistant.vaultApprovalAuto), conversation.id.toString()))
 
             mcpManager.getAvailableTools(assistant).forEach { (serverId, tool) ->
                 add(

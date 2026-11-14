@@ -30,7 +30,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -92,7 +92,7 @@ fun SettingRpOptimizationsPage(vm: SettingVM = koinViewModel()) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            AppFab(
                 onClick = { showAddDialog = true },
                 shape = AppShapes.CardLarge
             ) {

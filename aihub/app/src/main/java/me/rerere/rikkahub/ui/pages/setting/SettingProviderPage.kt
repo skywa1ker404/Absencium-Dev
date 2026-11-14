@@ -88,7 +88,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -313,7 +313,7 @@ fun SettingProviderPage(
                         )
 
                         ProvidersTab.Search,
-                        ProvidersTab.Tts -> FloatingActionButton(
+                        ProvidersTab.Tts -> AppFab(
                             onClick = {
                                 haptics.perform(HapticPattern.Pop)
                                 if (currentTab == ProvidersTab.Search) {
@@ -508,7 +508,7 @@ fun SettingProviderPage(
                 ) + fadeOut(animationSpec = tween(70))
             ) {
                 ProvidersSecondaryActionSlot(modifier = Modifier.fillMaxSize()) {
-                    FloatingActionButton(
+                    AppFab(
                         onClick = {
                             haptics.perform(HapticPattern.Pop)
                             if (currentTab == ProvidersTab.Search) {
@@ -926,7 +926,7 @@ private fun ImportProviderButton(
     }
 
     if (asFab) {
-        FloatingActionButton(
+        AppFab(
             onClick = openImportDialog,
             shape = AppShapes.CardLarge,
             containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -1344,7 +1344,7 @@ private fun AddButton(
     }
 
     if (asFab) {
-        FloatingActionButton(
+        AppFab(
             onClick = openProviderSheet,
             shape = AppShapes.CardLarge
         ) {

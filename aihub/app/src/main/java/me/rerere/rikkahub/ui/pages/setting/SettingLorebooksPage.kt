@@ -37,7 +37,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -221,7 +221,7 @@ fun SettingLorebooksPage(vm: SettingVM = koinViewModel()) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    FloatingActionButton(
+                    AppFab(
                         onClick = {
                             haptics.perform(HapticPattern.Tick)
                             importLauncher.launch(arrayOf("application/json", "*/*"))
@@ -236,7 +236,7 @@ fun SettingLorebooksPage(vm: SettingVM = koinViewModel()) {
                         )
                     }
 
-                    FloatingActionButton(
+                    AppFab(
                         onClick = {
                             showAddDialog = true
                             haptics.perform(HapticPattern.Pop)

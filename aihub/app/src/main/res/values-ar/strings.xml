@@ -58,16 +58,10 @@
   <string name="assistant_page_invalid_json">JSON غير صالح: %s</string>
   <string name="assistant_page_local_tools_javascript_engine_desc">استخدم محرك QuickJS لتنفيذ تعليمات JavaScript البرمجية لإجراء العمليات الحسابية والبرمجة النصية</string>
   <string name="assistant_page_local_tools_javascript_engine_title">محرك جافا سكريبت</string>
-  <string name="assistant_page_local_tools_python_engine_title">محرك بايثون</string>
-  <string name="assistant_page_local_tools_python_engine_desc">قم بتنفيذ كود Python باستخدام حزم النقاط وملف الإدخال/الإخراج. يدعم numpy والوسادة.</string>
   <string name="assistant_page_local_tools_tts_title">تحويل النص إلى كلام</string>
   <string name="assistant_page_local_tools_tts_desc">اسمح للمساعد بقراءة النص بصوت عالٍ باستخدام موفر تحويل النص إلى كلام (TTS) الذي حددته</string>
   <string name="assistant_page_local_tools_character_questions_title">أسئلة الشخصيات</string>
   <string name="assistant_page_local_tools_character_questions_desc">دع الشخصية تطرح أسئلة توضيحية.</string>
-  <string name="workspace_required_card_title">مطلوب بيئة العمل لـ %1$s</string>
-  <string name="workspace_required_card_description">تتطلب الأرشيفات والملفات الثنائية ربط بيئة عمل Linux لاستخراجها أو معالجتها.</string>
-  <string name="assistant_page_local_tools_python_internet_title">السماح بالوصول إلى الإنترنت</string>
-  <string name="assistant_page_local_tools_python_internet_desc">السماح لرمز بايثون بتقديم طلبات الشبكة</string>
   <string name="assistant_page_manage_memory">إدارة الذاكرة (%d)</string>
   <string name="assistant_page_manage_memory_title">إدارة الذاكرة</string>
   <string name="assistant_page_max_tokens">رموز ماكس</string>

@@ -41,7 +41,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -218,7 +218,7 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    FloatingActionButton(
+                    AppFab(
                         onClick = {
                             haptics.perform(HapticPattern.Pop)
                             showImportDialog = true
@@ -229,7 +229,7 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
                     ) {
                         Icon(Icons.AutoMirrored.Rounded.Input, "Import MCP configuration")
                     }
-                    FloatingActionButton(
+                    AppFab(
                         onClick = {
                             haptics.perform(HapticPattern.Pop)
                             showConnectionsSheet = true

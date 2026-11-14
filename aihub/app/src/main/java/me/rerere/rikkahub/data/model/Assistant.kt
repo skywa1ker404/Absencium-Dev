@@ -92,6 +92,8 @@ data class Assistant(
     val hostToolsOff: Set<String> = emptySet(),
     val hostToolsAuto: Set<String> = emptySet(),
     val hostToolsAsk: Set<String> = emptySet(),
+    /** Vault access approval: false is Manual (reading note text and every change wait for the student), true is Auto (enabled tools run by themselves). */
+    val vaultApprovalAuto: Boolean = false,
     val background: String? = null,
     val backgroundDim: Float = 0.6f,
     val useAssistantMaterialYouColors: Boolean = false,

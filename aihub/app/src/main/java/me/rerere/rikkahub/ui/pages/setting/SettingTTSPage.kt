@@ -24,7 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -164,7 +164,7 @@ fun SettingTTSPage(vm: SettingVM = koinViewModel()) {
         },
         bottomBar = {
             ProvidersBottomBar(selectedTab = ProvidersTab.Tts) {
-                FloatingActionButton(
+                AppFab(
                     onClick = {
                         haptics.perform(HapticPattern.Pop)
                         showFilterSettingsDialog = true
@@ -1208,7 +1208,7 @@ internal fun AddTTSProviderButton(
     }
 
     if (asFab) {
-        FloatingActionButton(
+        AppFab(
             onClick = openTtsProviderSheet,
             shape = AppShapes.CardLarge
         ) {

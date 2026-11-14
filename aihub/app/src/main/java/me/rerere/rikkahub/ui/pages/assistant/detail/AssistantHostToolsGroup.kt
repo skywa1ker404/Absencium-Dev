@@ -50,6 +50,26 @@ fun AssistantHostToolsGroup(assistant: Assistant, onUpdate: (Assistant) -> Unit)
     val shown = catalog.filter { query.isBlank() || it.title.contains(query, true) || it.description.contains(query, true) || it.category.contains(query, true) }
     val folders = shown.groupBy { it.category }
 
+    SettingsGroup(title = "Vault access approval") {
+        // One setting for every tool: Manual asks before the AI reads a note's text or changes anything, Auto lets enabled tools run by themselves.
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf(false to "Manual", true to "Auto").forEach { (auto, label) ->
+                androidx.compose.material3.FilterChip(
+                    selected = assistant.vaultApprovalAuto == auto,
+                    onClick = { onUpdate(assistant.copy(vaultApprovalAuto = auto)) },
+                    label = { Text(label) },
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                )
+            }
+        }
+        Text(
+            if (assistant.vaultApprovalAuto) "Auto: the AI reads and changes your Vault without asking. Deleted items still go to the Trash."
+            else "Manual: the AI waits for your approval before reading a note's text or changing anything.",
+            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
     SettingsGroup(title = "Absencium tools") {
         OutlinedTextField(
             value = query,
@@ -114,11 +134,6 @@ private fun ToolFolder(
             Column {
                 tools.forEach { tool ->
                     val enabled = tool.name !in assistant.hostToolsOff
-                    val asks = when {
-                        tool.name in assistant.hostToolsAuto -> false
-                        tool.name in assistant.hostToolsAsk -> true
-                        else -> tool.asksByDefault
-                    }
                     SettingGroupItem(
                         title = tool.title,
                         subtitle = tool.description,
@@ -131,25 +146,6 @@ private fun ToolFolder(
                             )
                         },
                     )
-                    if (enabled) {
-                        SettingGroupItem(
-                            title = "Ask first",
-                            subtitle = if (asks) "Waits for your approval in the chat" else "Runs by itself",
-                            trailing = {
-                                HapticSwitch(
-                                    checked = asks,
-                                    onCheckedChange = { ask ->
-                                        onUpdate(
-                                            assistant.copy(
-                                                hostToolsAsk = if (ask) assistant.hostToolsAsk + tool.name else assistant.hostToolsAsk - tool.name,
-                                                hostToolsAuto = if (ask) assistant.hostToolsAuto - tool.name else assistant.hostToolsAuto + tool.name,
-                                            ),
-                                        )
-                                    },
-                                )
-                            },
-                        )
-                    }
                 }
             }
         }

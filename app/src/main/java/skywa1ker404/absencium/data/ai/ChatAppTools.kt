@@ -147,6 +147,7 @@ ${NotePrompts.EDITOR}
     fun tools(policy: me.rerere.rikkahub.AiHost.ToolPolicy = me.rerere.rikkahub.AiHost.ToolPolicy()): List<Tool> {
         val base = baseTools().filter { it.name !in policy.off }
         fun effective(t: Tool) = when {
+            policy.autoAll -> ToolApprovalMode.Auto
             t.name in policy.auto -> ToolApprovalMode.Auto
             t.name in policy.ask -> ToolApprovalMode.RequiresApproval
             else -> t.approvalMode

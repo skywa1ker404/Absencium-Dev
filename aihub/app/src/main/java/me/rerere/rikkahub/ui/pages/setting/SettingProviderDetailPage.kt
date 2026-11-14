@@ -56,7 +56,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MultiChoiceSegmentedButtonRow
 import androidx.compose.material3.OutlinedCard
@@ -1166,7 +1166,7 @@ private fun LocalHuggingFaceInstallFab(
     var url by remember { mutableStateOf("") }
     val haptics = me.rerere.rikkahub.ui.hooks.rememberPremiumHaptics()
 
-    FloatingActionButton(
+    AppFab(
         onClick = {
             haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Pop)
             showSheet = true
@@ -1564,7 +1564,7 @@ private fun ModelPickerFab(
         }
     }
     
-    FloatingActionButton(
+    AppFab(
         onClick = { 
             showPicker = true
             haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Tick)
@@ -1788,7 +1788,7 @@ private fun AddNewModelFab(
     val haptics = me.rerere.rikkahub.ui.hooks.rememberPremiumHaptics()
     val modelMetadataResolver = koinInject<ModelMetadataResolver>()
     
-    FloatingActionButton(
+    AppFab(
         onClick = { 
             dialogState.open(Model())
             haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Pop)

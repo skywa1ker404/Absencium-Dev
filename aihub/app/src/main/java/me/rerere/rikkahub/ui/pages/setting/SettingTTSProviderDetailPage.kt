@@ -44,7 +44,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
 import androidx.compose.material3.HorizontalDivider
@@ -488,7 +488,7 @@ private fun TtsVoiceTab(
                     showSheet = showProviderVoicesSheet,
                     onDismiss = { showProviderVoicesSheet = false },
                 )
-                FloatingActionButton(
+                AppFab(
                     onClick = {
                         haptics.perform(HapticPattern.Pop)
                         showManualVoiceSheet = true
@@ -766,7 +766,7 @@ private fun ProviderVoicesFab(
         }
     }
 
-    FloatingActionButton(
+    AppFab(
         onClick = {
             haptics.perform(HapticPattern.Tick)
             onOpen()

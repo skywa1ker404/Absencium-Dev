@@ -42,7 +42,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -328,7 +328,7 @@ fun SettingLorebookDetailPage(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Toggle assistants FAB - same size as Add, gray like floating toolbar
-                FloatingActionButton(
+                AppFab(
                     onClick = { 
                         showAssistantToggleSheet = true
                         haptics.perform(HapticPattern.Tick)
@@ -344,7 +344,7 @@ fun SettingLorebookDetailPage(
                 }
                 
                 // Main FAB for add entry
-                FloatingActionButton(
+                AppFab(
                     onClick = { 
                         showAddEntrySheet = true
                         haptics.perform(HapticPattern.Pop)

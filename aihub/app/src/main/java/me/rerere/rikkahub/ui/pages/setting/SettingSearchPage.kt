@@ -41,7 +41,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -354,7 +354,7 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
         },
         bottomBar = {
             ProvidersBottomBar(selectedTab = ProvidersTab.Search) {
-                FloatingActionButton(
+                AppFab(
                     onClick = {
                         haptics.perform(HapticPattern.Pop)
                         showCommonOptions = true
@@ -1118,7 +1118,7 @@ internal fun AddSearchServiceButton(
     }
 
     if (asFab) {
-        FloatingActionButton(
+        AppFab(
             onClick = openSearchProviderSheet,
             shape = AppShapes.CardLarge
         ) {

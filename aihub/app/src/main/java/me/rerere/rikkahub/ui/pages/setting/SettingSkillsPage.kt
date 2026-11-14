@@ -44,7 +44,7 @@ import androidx.compose.material.icons.rounded.NoteAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -243,7 +243,7 @@ fun SettingSkillsPage(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    FloatingActionButton(
+                    AppFab(
                         onClick = {
                             haptics.perform(HapticPattern.Tick)
                             importLauncher.launch(arrayOf("application/json", "text/markdown", "application/zip", "*/*"))
@@ -258,7 +258,7 @@ fun SettingSkillsPage(
                         )
                     }
 
-                    FloatingActionButton(
+                    AppFab(
                         onClick = {
                             haptics.perform(HapticPattern.Pop)
                             showAddDialog = true

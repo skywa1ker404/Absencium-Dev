@@ -23,7 +23,7 @@ import androidx.compose.material.icons.automirrored.rounded.Input
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Book
 import androidx.compose.material.icons.rounded.Category
-import androidx.compose.material3.FloatingActionButton
+import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -220,7 +220,7 @@ fun SettingPromptInjectionsPage(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    FloatingActionButton(
+                    AppFab(
                         onClick = {
                             haptics.perform(HapticPattern.Tick)
                             if (pagerState.currentPage == 0) {
@@ -239,7 +239,7 @@ fun SettingPromptInjectionsPage(
                         )
                     }
 
-                    FloatingActionButton(
+                    AppFab(
                         onClick = {
                             haptics.perform(HapticPattern.Pop)
                             if (pagerState.currentPage == 0) {

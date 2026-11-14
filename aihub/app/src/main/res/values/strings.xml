@@ -65,20 +65,12 @@
     <string name="assistant_page_invalid_json">Invalid JSON: %s</string>
     <string name="assistant_page_local_tools_javascript_engine_desc">Use QuickJS engine to execute JavaScript code for calculations and scripting</string>
     <string name="assistant_page_local_tools_javascript_engine_title">JavaScript Engine</string>
-    <string name="assistant_page_local_tools_python_engine_title">Python Engine</string>
-    <string name="assistant_page_local_tools_python_engine_desc">Execute Python code with pip packages and file I/O. Supports numpy and Pillow.</string>
-    <string name="assistant_page_local_tools_linux_workspace_title">Linux Workspace</string>
-    <string name="assistant_page_local_tools_linux_workspace_desc">Bind a local Linux workspace with shell, files, Python, and pip tools.</string>
-    <string name="workspace_required_card_title">Workspace Required for %1$s</string>
-    <string name="workspace_required_card_description">Archive and binary files require a bound Linux Workspace to extract, read, or execute.</string>
     <string name="assistant_page_local_tools_tts_title">Text to Speech</string>
     <string name="assistant_page_local_tools_tts_desc">Let the assistant read text aloud using your selected TTS provider</string>
     <string name="assistant_page_local_tools_character_questions_title">Character Questions</string>
     <string name="assistant_page_local_tools_character_questions_desc">Let the character ask clarifying questions.</string>
     <string name="assistant_page_local_tools_image_generation_title" translatable="false">Image Generation</string>
     <string name="assistant_page_local_tools_image_generation_desc" translatable="false">Allow this character to generate images with the selected image model and save them to the gallery.</string>
-    <string name="assistant_page_local_tools_python_internet_title">Allow Internet Access</string>
-    <string name="assistant_page_local_tools_python_internet_desc">Allow Python code to make network requests</string>
     <string name="assistant_page_manage_memory">Manage Memory (%d)</string>
     <string name="assistant_page_manage_memory_title">Manage Memory</string>
     <string name="assistant_page_max_tokens">Max Tokens</string>
