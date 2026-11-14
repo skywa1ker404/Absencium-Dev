@@ -110,6 +110,7 @@ dependencies {
     implementation(project(":aihub:search"))
     // Absencium AI's chat app (AGPL-3.0), opened from AI & Integrations. See THIRD_PARTY_NOTICES.md.
     implementation(project(":aihub:app"))
+    implementation(project(":aihub:ui-core"))
     // The speech library cannot be a dependency of a library module, so the app carries the pinned sherpa-onnx AAR.
     implementation(files(rootProject.file("aihub/speech/build/sherpa/sherpa-onnx-1.13.4.aar")))
     implementation(libs.androidx.core.ktx)

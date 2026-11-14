@@ -112,7 +112,7 @@ class AbsenciumApp : Application() {
             when (kind) {
                 "NOTE" -> if (id != null) skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, skywa1ker404.absencium.data.ai.AiTargetType.NOTE, id)
                 "SYLLABUS" -> kotlinx.coroutines.MainScope().launch {
-                    val subject = container.subjectRepository.subjects.first().firstOrNull { it.name == label }
+                    val subject = container.subjectRepository.subjects.first().firstOrNull { it.name == label.substringBefore(" › ") }
                     if (subject != null) skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, skywa1ker404.absencium.data.ai.AiTargetType.SYLLABUS, subject.id)
                 }
             }
@@ -134,6 +134,7 @@ class AbsenciumApp : Application() {
         // The AI actions folder under Statistics lists the hidden hub chats; these say which of them made something that can be opened.
         me.rerere.rikkahub.AiHost.actionTargets = container.aiActionLog.chatsWithTargets
         me.rerere.rikkahub.AiHost.vaultLinks = { chatTools.vaultLinks() }
+        me.rerere.rikkahub.AiHost.syllabusTopics = { name -> chatTools.syllabusTopics(name) }
         me.rerere.rikkahub.AiHost.openActionTarget = { context, chatId ->
             container.aiActionLog.targetOf(chatId)?.let { e -> e.targetType?.let { skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, it, e.targetId) } }
         }

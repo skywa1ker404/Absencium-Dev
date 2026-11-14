@@ -31,6 +31,7 @@ import skywa1ker404.absencium.ui.components.GroupPosition
 import skywa1ker404.absencium.ui.components.CardStack
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -111,7 +112,7 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
         customTopBar = {
             // Back on the left; Absencium AI and Settings as small round icons on the right.
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {

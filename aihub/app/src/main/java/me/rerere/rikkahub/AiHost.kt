@@ -74,6 +74,9 @@ object AiHost {
     /** Something in the host's Vault that can be linked to a message. [reference] is the line put into the message; nothing is uploaded. */
     data class VaultLink(val kind: String, val title: String, val subtitle: String, val reference: String, val subject: String = "")
 
+    /** The syllabus of the named subject as tree rows (depth first), for the Vault link's Syllabus tab. */
+    var syllabusTopics: (suspend (String) -> List<me.rerere.rikkahub.ui.components.chat.TopicNode>)? = null
+
     /** What the Vault option of the attach menu offers. When null, the menu has no Vault option. */
     var vaultLinks: (suspend () -> List<VaultLink>)? = null
 

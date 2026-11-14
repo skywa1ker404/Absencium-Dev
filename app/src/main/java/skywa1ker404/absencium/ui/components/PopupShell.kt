@@ -8,6 +8,9 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
@@ -123,11 +126,11 @@ fun PopupShell(
             val maxCardHeight = maxHeight
             AnimatedVisibility(
                 visibleState = transition,
-                enter = fadeIn(tween(160)) + expandVertically(
-                    animationSpec = q.spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow),
-                    expandFrom = if (centered) Alignment.CenterVertically else Alignment.Bottom,
-                ),
-                exit = fadeOut(tween(140)) + shrinkVertically(tween(200), shrinkTowards = if (centered) Alignment.CenterVertically else Alignment.Bottom),
+                // The card opens at its full size and only moves, scales and fades in. An expanding size animation squeezed the content
+                // into a tiny height for a moment, so its rows drew on top of each other.
+                enter = fadeIn(tween(160)) + slideInVertically(q.spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow)) { if (centered) it / 12 else it / 5 } +
+                    scaleIn(q.spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow), initialScale = 0.94f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, if (centered) 0.5f else 1f)),
+                exit = fadeOut(tween(140)) + slideOutVertically(tween(200)) { if (centered) it / 12 else it / 6 },
             ) {
                 Box(
                     modifier = Modifier

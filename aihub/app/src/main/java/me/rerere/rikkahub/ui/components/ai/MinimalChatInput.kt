@@ -3183,9 +3183,9 @@ private fun findDialogWindow(view: View): Window? {
 
 
 /**
- * The Vault option of the attach menu, navigated like the app's Vault: subject folders, then the categories inside a subject
- * (Notes, Syllabus, Materials), then the items. A breadcrumb and a back arrow go up one level; searching looks through everything.
- * Only a reference is added to the message (nothing is uploaded).
+ * The Vault option of the attach menu: three tabs (Notes, Syllabus, Study material). Each lists the subjects that have something of
+ * that kind; a subject opens its notes, its syllabus (the same collapsed tree as the app's topic sheet) or its study material.
+ * Searching looks through everything. Only a reference is added to the message (nothing is uploaded).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -3193,16 +3193,22 @@ private fun VaultLinkSheet(onPick: (me.rerere.rikkahub.AiHost.VaultLink) -> Unit
     val load = me.rerere.rikkahub.AiHost.vaultLinks ?: return
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var items by remember { mutableStateOf<List<me.rerere.rikkahub.AiHost.VaultLink>?>(null) }
+    var tab by remember { mutableStateOf(0) }
     var subject by remember { mutableStateOf<String?>(null) }
-    var kind by remember { mutableStateOf<String?>(null) }
     var query by remember { mutableStateOf("") }
+    var topics by remember { mutableStateOf<List<me.rerere.rikkahub.ui.components.chat.TopicNode>?>(null) }
     LaunchedEffect(Unit) { items = runCatching { load() }.getOrDefault(emptyList()) }
     val all = items.orEmpty()
+    val tabs = listOf("Notes" to "Notes", "Syllabus" to "Syllabus", "Study material" to "Materials")
+    val kind = tabs[tab].second
     val unfiled = "Not in a subject"
     fun subjectOf(l: me.rerere.rikkahub.AiHost.VaultLink) = l.subject.ifBlank { unfiled }
-    androidx.activity.compose.BackHandler(enabled = kind != null || subject != null) {
-        if (kind != null) kind = null else subject = null
+    LaunchedEffect(subject, tab) {
+        topics = null
+        val s = subject
+        if (tab == 1 && s != null) topics = runCatching { me.rerere.rikkahub.AiHost.syllabusTopics?.invoke(s) }.getOrNull().orEmpty()
     }
+    androidx.activity.compose.BackHandler(enabled = subject != null) { subject = null }
     ModalBottomSheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         onDismissRequest = onDismiss,
@@ -3211,24 +3217,28 @@ private fun VaultLinkSheet(onPick: (me.rerere.rikkahub.AiHost.VaultLink) -> Unit
         Column(modifier = Modifier.fillMaxHeight(0.8f).imePadding().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (subject != null) {
-                    androidx.compose.material3.IconButton(onClick = { if (kind != null) kind = null else subject = null }) {
+                    androidx.compose.material3.IconButton(onClick = { subject = null }) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = kind ?: subject ?: "Link from the Vault",
+                        text = subject ?: "Link from the Vault",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                         maxLines = 1,
                     )
-                    // The breadcrumb: Vault, subject, category.
                     Text(
-                        text = listOfNotNull("Vault", subject, kind).joinToString("  ›  "),
+                        text = listOfNotNull("Vault", tabs[tab].first, subject).joinToString("  ›  "),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                     )
+                }
+            }
+            androidx.compose.material3.PrimaryTabRow(selectedTabIndex = tab, containerColor = androidx.compose.ui.graphics.Color.Transparent) {
+                tabs.forEachIndexed { index, (label, _) ->
+                    androidx.compose.material3.Tab(selected = tab == index, onClick = { tab = index; subject = null }, text = { Text(label, maxLines = 1) })
                 }
             }
             androidx.compose.material3.OutlinedTextField(
@@ -3257,29 +3267,44 @@ private fun VaultLinkSheet(onPick: (me.rerere.rikkahub.AiHost.VaultLink) -> Unit
                         }
                     }
                     subject == null -> {
-                        val folders = all.groupBy { subjectOf(it) }.toSortedMap(compareBy { it.lowercase() })
-                        if (folders.isEmpty()) item { Text("Nothing here", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        val folders = all.filter { it.kind == kind }.groupBy { subjectOf(it) }.toSortedMap(compareBy { it.lowercase() })
+                        if (folders.isEmpty()) item { Text("Nothing here yet", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         val names = folders.keys.toList()
                         items(names.size) { i ->
                             val name = names[i]
+                            val count = folders.getValue(name).size
                             MinimalPickerItem(
                                 icon = { Icon(imageVector = Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(24.dp)) },
                                 title = name,
-                                subtitle = "${folders.getValue(name).size} items",
+                                subtitle = when (kind) {
+                                    "Syllabus" -> folders.getValue(name).firstOrNull()?.subtitle.orEmpty()
+                                    "Notes" -> "$count ${if (count == 1) "note" else "notes"}"
+                                    else -> "$count ${if (count == 1) "file" else "files"}"
+                                },
                                 onClick = { subject = name },
                             )
                         }
                     }
-                    kind == null -> {
-                        val inSubject = all.filter { subjectOf(it) == subject }
-                        val kinds = listOf("Notes", "Syllabus", "Materials").filter { k -> inSubject.any { it.kind == k } }
-                        items(kinds.size) { i ->
-                            val k = kinds[i]
-                            MinimalPickerItem(
-                                icon = { Icon(imageVector = Icons.Rounded.Folder, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                                title = k,
-                                subtitle = "${inSubject.count { it.kind == k }} items",
-                                onClick = { kind = k },
+                    kind == "Syllabus" -> item {
+                        val list = topics
+                        val name = subject.orEmpty()
+                        if (list == null) {
+                            Text("Loading", style = MaterialTheme.typography.bodyMedium)
+                        } else {
+                            // The same collapsed tree as the app's topic sheet; the first row links the whole syllabus.
+                            me.rerere.rikkahub.ui.components.chat.TopicTree(
+                                nodes = list,
+                                selectedId = null,
+                                noneLabel = "Whole syllabus",
+                                onPick = { id ->
+                                    val title = list.firstOrNull { it.id == id }?.title
+                                    onPick(
+                                        me.rerere.rikkahub.AiHost.VaultLink(
+                                            "Syllabus", title ?: name, name,
+                                            if (title == null) "[Vault syllabus: $name]" else "[Vault syllabus: $name › $title]", name,
+                                        ),
+                                    )
+                                },
                             )
                         }
                     }

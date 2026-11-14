@@ -50,111 +50,18 @@ fun SyllabusPickerDialog(
     noneLabel: String = "Uncategorized",
     title: String = "File under a topic",
 ) {
-    val choices = remember(nodes) { SyllabusPath.choices(nodes) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            if (choices.isEmpty()) {
-                Text("This subject has no syllabus yet. Build it first, then file notes and study material under its units, chapters and topics.", style = MaterialTheme.typography.bodyMedium)
-            } else {
-                Box(modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
-                    SyllabusTreeRows(choices, current, noneLabel, onPick)
-                }
-            }
-        },
-        confirmButton = {
-            if (choices.isEmpty() && onOpenSyllabus != null) TextButton(onClick = onOpenSyllabus) { Text("Open syllabus") }
-            else TextButton(onClick = onDismiss) { Text("Close") }
-        },
-        dismissButton = if (choices.isEmpty() && onOpenSyllabus != null) ({ TextButton(onClick = onDismiss) { Text("Close") } }) else null,
+    TopicSheet(
+        choices = remember(nodes) { SyllabusPath.choices(nodes) },
+        selectedId = current,
+        noneLabel = noneLabel,
+        title = title,
+        onPick = onPick,
+        onDismiss = onDismiss,
+        onOpenSyllabus = onOpenSyllabus,
     )
 }
 
-@Composable
-private fun PickerRow(
-    label: String,
-    depth: Int,
-    selected: Boolean,
-    expandable: Boolean,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    onClick: () -> Unit,
-) {
-    val turn by androidx.compose.animation.core.animateFloatAsState(if (expanded) 90f else 0f, androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 500f), label = "arrow")
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = (depth * 16).dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(0.dp),
-    ) {
-        if (expandable) {
-            androidx.compose.material3.IconButton(onClick = onToggle, modifier = Modifier.size(40.dp)) {
-                androidx.compose.material3.Icon(
-                    skywa1ker404.absencium.ui.icons.AppIcons.ChevronRight,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
-                    modifier = Modifier.graphicsLayer { rotationZ = turn },
-                )
-            }
-        } else {
-            Spacer(Modifier.size(40.dp))
-        }
-        RadioButton(selected = selected, onClick = onClick)
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-/**
- * The rows of a syllabus as a tree, collapsed by default. [choices] come depth first (see [SyllabusPath.choices]); an arrow at the left
- * of a unit, chapter or topic opens what is under it, and any level can be picked. [selectedId] null means the "no topic" row.
- */
-@Composable
-fun SyllabusTreeRows(
-    choices: List<SyllabusPath.Choice>,
-    selectedId: Long?,
-    noneLabel: String,
-    onPick: (Long?) -> Unit,
-) {
-    // Each row's parent is the nearest earlier row one level up, because the list is depth first.
-    val parents = remember(choices) {
-        val out = HashMap<Long, Long?>()
-        val stack = ArrayList<SyllabusPath.Choice>()
-        choices.forEach { c ->
-            while (stack.size > c.depth) stack.removeAt(stack.lastIndex)
-            out[c.id] = stack.lastOrNull()?.id
-            stack.add(c)
-        }
-        out
-    }
-    val withChildren = remember(parents) { parents.values.filterNotNull().toSet() }
-    val expanded = remember { androidx.compose.runtime.mutableStateListOf<Long>() }
-    val visible = choices.filter { c ->
-        var parent = parents[c.id]
-        var open = true
-        while (parent != null) {
-            if (parent !in expanded) { open = false; break }
-            parent = parents[parent]
-        }
-        open
-    }
-    androidx.compose.foundation.layout.Column {
-        PickerRow(noneLabel, 0, selectedId == null, false, false, {}) { onPick(null) }
-        visible.forEach { c ->
-            androidx.compose.runtime.key(c.id) {
-                PickerRow(
-                    label = c.label.substringAfterLast(" › "),
-                    depth = c.depth,
-                    selected = selectedId == c.id,
-                    expandable = c.id in withChildren,
-                    expanded = c.id in expanded,
-                    onToggle = { if (c.id in expanded) expanded.remove(c.id) else expanded.add(c.id) },
-                    onClick = { onPick(c.id) },
-                )
-            }
-        }
-    }
-}
-
-/** A field that shows the chosen topic and opens the collapsed syllabus tree under it (used where a dropdown list was). */
+/** A field that shows the chosen topic and opens the one unified [TopicSheet] (used where a dropdown list was). */
 @Composable
 fun SyllabusTreeField(
     choices: List<SyllabusPath.Choice>,
@@ -166,28 +73,23 @@ fun SyllabusTreeField(
 ) {
     var open by remember { mutableStateOf(false) }
     val chosen = choices.firstOrNull { it.id == selectedId }?.label?.substringAfterLast(" › ") ?: noneLabel
-    androidx.compose.foundation.layout.Column(modifier = Modifier.animateContentSize()) {
-        androidx.compose.material3.OutlinedCard(
-            onClick = { open = !open },
-            enabled = enabled,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
-                    Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(chosen, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
-                }
-                androidx.compose.material3.Icon(
-                    skywa1ker404.absencium.ui.icons.AppIcons.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier.graphicsLayer { rotationZ = if (open) 180f else 0f },
-                )
+    androidx.compose.material3.OutlinedCard(
+        onClick = { open = true },
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(chosen, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
             }
+            androidx.compose.material3.Icon(skywa1ker404.absencium.ui.icons.AppIcons.ExpandMore, contentDescription = null)
         }
-        if (open) {
-            Box(modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
-                SyllabusTreeRows(choices, selectedId, noneLabel) { onSelect(it); open = false }
-            }
-        }
+    }
+    if (open) {
+        TopicSheet(
+            choices = choices, selectedId = selectedId, noneLabel = noneLabel, title = label,
+            onPick = { onSelect(it); open = false }, onDismiss = { open = false },
+        )
     }
 }

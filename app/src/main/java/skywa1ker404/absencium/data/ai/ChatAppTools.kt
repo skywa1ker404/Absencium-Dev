@@ -127,7 +127,7 @@ class ChatAppTools(private val container: AppContainer, private val chatId: Stri
         val APP_PROMPT: String by lazy { """You are Absencium AI, the assistant built into Absencium, the student's offline college companion app (attendance, timetable, exams, holidays, notes, syllabus, Vault). The Vault is the student's notes and drafts, their attachments (photos, documents, recordings) and their study guides: use list_vault, search_notes, list_attachments and read_note for it.
 You can look things up and change them with the app tools. Look the answer up with a tool instead of guessing, and never say something was added, changed or deleted unless the tool answered ok.
 Rules for changes: (1) Today's date and weekday come from app_overview; work out every date from it and never guess one. Pass weekday along with a date when you know it. (2) Before adding anything, look it up first (list_subjects, get_timetable, list_exams, list_holidays, list_vault, get_syllabus) and do not add what already exists. (3) For two or more changes, or anything in bulk, use apply_plan once with a plain-words summary instead of many separate calls, so the student approves once. Do each change once; if a tool answered ok, do not repeat it, and if it refused, read why instead of trying again. (4) A syllabus goes into add_syllabus, a lecture into the timetable, an exam into exams, a holiday into holidays. Never put a syllabus, timetable, exam list or study material into a note. Notes are only for text the student asked to keep as a note. (5) Study material and files can only be added by the student in the app. (6) When the request is unclear (which subject, which date, which time), ask the student instead of guessing.
-A message may hold links the student attached from the Vault: [Vault note: title (id N)], [Vault syllabus: subject] and [Vault material: name, subject (id N)]. A link is only a reference, not the content: read a note with read_note, a syllabus with get_syllabus, and look a material up with list_vault only when the question needs it. Read a material's text with read_material (long ones in parts with offset) only when the question needs it.
+A message may hold links the student attached from the Vault: [Vault note: title (id N)], [Vault syllabus: subject] or [Vault syllabus: subject › unit, chapter or topic] (only that part of the syllabus) and [Vault material: name, subject (id N)]. A link is only a reference, not the content: read a note with read_note, a syllabus with get_syllabus, and look a material up with list_vault only when the question needs it. Read a material's text with read_material (long ones in parts with offset) only when the question needs it.
 Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain.""" + "\n" + NOTE_RULES }
 
         private val NOTE_RULES: String = """
@@ -803,6 +803,15 @@ ${NotePrompts.EDITOR}
             me.rerere.rikkahub.AiHost.VaultLink("Materials", it.fileName, listOf(it.guideType.name.lowercase().replace('_', ' '), subject).filter { p -> p.isNotBlank() }.joinToString(" · "), "[Vault material: ${it.fileName}${if (subject.isNotBlank()) ", $subject" else ""} (id ${it.id})]", subject)
         }
         return notes + syllabus + materials
+    }
+
+    /** The syllabus of the subject called [name] as the shared tree rows, for the chat's Vault link. */
+    suspend fun syllabusTopics(name: String): List<me.rerere.rikkahub.ui.components.chat.TopicNode> {
+        val subject = container.database.subjectDao().observeAll().first().firstOrNull { it.name == name } ?: return emptyList()
+        val nodes = container.database.syllabusDao().observeAll().first().filter { it.subjectId == subject.id }
+        return skywa1ker404.absencium.data.ai.SyllabusPath.choices(nodes).map {
+            me.rerere.rikkahub.ui.components.chat.TopicNode(it.id, it.label.substringAfterLast(" › "), it.depth)
+        }
     }
 
     private suspend fun readNote(id: Long?): JsonElement {
