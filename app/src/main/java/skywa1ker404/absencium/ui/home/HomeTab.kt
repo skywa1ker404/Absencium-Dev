@@ -8,7 +8,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import skywa1ker404.absencium.ui.components.Reveal
 import skywa1ker404.absencium.ui.components.ExpandChevron
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.Icon
+import me.rerere.rikkahub.ui.components.dots.Icon
 import skywa1ker404.absencium.ui.components.Hue
 import skywa1ker404.absencium.ui.components.hueFor
 import skywa1ker404.absencium.ui.components.bounceIn

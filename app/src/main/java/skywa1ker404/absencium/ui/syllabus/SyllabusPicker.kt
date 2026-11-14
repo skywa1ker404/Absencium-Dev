@@ -83,7 +83,7 @@ fun SyllabusTreeField(
                 Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(chosen, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
             }
-            androidx.compose.material3.Icon(skywa1ker404.absencium.ui.icons.AppIcons.ExpandMore, contentDescription = null)
+            me.rerere.rikkahub.ui.components.dots.Icon(skywa1ker404.absencium.ui.icons.AppIcons.ExpandMore, contentDescription = null)
         }
     }
     if (open) {

@@ -4,7 +4,7 @@
     <string name="assistant_import_success">Character imported</string>
     <string name="chat_model_required">Please select a model first</string>
     <string name="chat_input_selected_image_failed">Couldn\'t add the selected image. Please try again.</string>
-    <string name="chat_input_unsupported_file_type">Unsupported file type: %1$s (Enable Python tool to use this file)</string>
+    <string name="chat_input_unsupported_file_type">Unsupported file type: %1$s. Attach a picture, PDF, Word document or a text file.</string>
     <string name="chat_input_add_file_failed">Couldn\'t add file: %1$s</string>
     <string name="activity_pill_replying">Replying</string>
     <string name="context_sources_title">Context Sources</string>

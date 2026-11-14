@@ -35,9 +35,10 @@ internal suspend fun Context.prepareImportedPickerFiles(
         val isNativelySupported =
             mimeType.startsWith("image/") ||
                 mimeType.startsWith("text/") ||
-                mimeType == PDF_MIME_TYPE
+                mimeType == PDF_MIME_TYPE ||
+                me.rerere.rikkahub.data.ai.transformers.isReadableAttachment(fileName, mimeType)
 
-        if (!isWorkspaceEnabled && !isNativelySupported) {
+        if (!isNativelySupported) {
             unsupportedFileNames.add(fileName)
             return@forEach
         }

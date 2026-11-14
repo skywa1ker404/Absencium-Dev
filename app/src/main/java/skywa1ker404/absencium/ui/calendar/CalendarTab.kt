@@ -47,7 +47,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import skywa1ker404.absencium.ui.components.AlertDialog
 import skywa1ker404.absencium.ui.components.ExpressiveChip
-import androidx.compose.material3.Icon
+import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton

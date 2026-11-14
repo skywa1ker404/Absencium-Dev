@@ -39,7 +39,7 @@ import androidx.compose.foundation.layout.Box
 import skywa1ker404.absencium.ui.components.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalFloatingToolbar
-import androidx.compose.material3.Icon
+import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton
 import skywa1ker404.absencium.ui.icons.AppIcons
 import androidx.compose.material3.MaterialTheme

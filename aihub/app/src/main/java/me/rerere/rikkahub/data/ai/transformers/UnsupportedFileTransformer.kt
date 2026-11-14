@@ -4,6 +4,25 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.provider.Modality
 
+private const val DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+private val TEXT_LIKE_EXTENSIONS = setOf(
+    "txt", "md", "markdown", "csv", "tsv", "json", "jsonl", "xml", "html", "htm", "yaml", "yml", "toml", "ini", "log", "srt", "vtt", "tex",
+    "kt", "kts", "java", "py", "js", "mjs", "ts", "tsx", "jsx", "c", "h", "cpp", "hpp", "cs", "go", "rs", "rb", "php", "swift", "sh", "bat",
+    "sql", "css", "scss", "gradle", "properties", "conf", "cfg", "dart", "lua", "r", "ipynb",
+)
+
+/**
+ * Files the chat can read for the model: pictures, text, PDF and Word documents, plus text-like files that phones often label with a
+ * generic type (Markdown, JSON, CSV, source code and so on), recognised by their extension or type.
+ */
+internal fun isReadableAttachment(fileName: String, mime: String): Boolean {
+    val type = mime.lowercase()
+    if (type.startsWith("image/") || type.startsWith("text/") || type == "application/pdf" || type == DOCX_MIME) return true
+    if (type.startsWith("application/") && listOf("json", "xml", "javascript", "yaml", "sql", "csv", "markdown", "x-sh", "x-tex").any { type.contains(it) }) return true
+    return fileName.substringAfterLast('.', "").lowercase() in TEXT_LIKE_EXTENSIONS
+}
+
 /**
  * Transforms residual unsupported attachments into text references after the
  * dedicated document and OCR transformers have already had a chance to consume them.
@@ -33,7 +52,8 @@ object UnsupportedFileTransformer : InputMessageTransformer {
                             part.mime.startsWith("text/") ||
                             part.mime.startsWith("video/") ||
                             part.mime.startsWith("audio/") ||
-                            part.mime == "application/pdf"
+                            part.mime == "application/pdf" ||
+                            isReadableAttachment(part.fileName, part.mime)
 
                         if (!isNative) {
                             UIMessagePart.Text("\n[Attachment: ${part.fileName} (${part.mime}) - This file format cannot be read by the model. Tell the user plainly that this kind of file is not supported; do not mention tools, python or a workspace.]\n")

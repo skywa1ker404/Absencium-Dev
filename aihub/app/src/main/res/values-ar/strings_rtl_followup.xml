@@ -4,7 +4,7 @@
     <string name="assistant_import_success">تم استيراد الشخصية</string>
     <string name="chat_model_required">يُرجى اختيار نموذج أولاً</string>
     <string name="chat_input_selected_image_failed">تعذرت إضافة الصورة المحددة. حاول مرة أخرى.</string>
-    <string name="chat_input_unsupported_file_type">نوع ملف غير مدعوم: %1$s (فعّل أداة Python لاستخدام هذا الملف)</string>
+    <string name="chat_input_unsupported_file_type">نوع ملف غير مدعوم: %1$s. أرفق صورة أو PDF أو مستند Word أو ملفًا نصيًا.</string>
     <string name="chat_input_add_file_failed">تعذرت إضافة الملف: %1$s</string>
     <string name="activity_pill_replying">جارٍ الرد</string>
     <string name="context_sources_title">مصادر السياق</string>

@@ -91,7 +91,7 @@ private fun SubjectSection(s: SyllabusSummary, index: Int, navigator: Destinatio
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            androidx.compose.material3.Icon(AppIcons.ChevronRight, contentDescription = "Open")
+            me.rerere.rikkahub.ui.components.dots.Icon(AppIcons.ChevronRight, contentDescription = "Open")
         }
         if (s.items > 0) LinearWavyProgressIndicator(progress = { s.progress }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
     }

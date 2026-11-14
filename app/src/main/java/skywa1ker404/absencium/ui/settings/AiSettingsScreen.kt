@@ -147,7 +147,7 @@ private fun AiHero(enabled: Boolean, onOpen: () -> Unit) {
                 modifier = Modifier.size(64.dp).clip(RoundedCornerShape(22.dp)).background(colors.primary),
                 contentAlignment = Alignment.Center,
             ) {
-                androidx.compose.material3.Icon(AppIcons.AutoAwesome, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(32.dp))
+                me.rerere.rikkahub.ui.components.dots.Icon(AppIcons.AutoAwesome, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(32.dp))
             }
             androidx.compose.material3.Text(
                 "Absencium AI",
@@ -178,7 +178,7 @@ private fun AdvancedHeader(expanded: Boolean, onClick: () -> Unit) {
                 style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
-            androidx.compose.material3.Icon(
+            me.rerere.rikkahub.ui.components.dots.Icon(
                 AppIcons.ExpandMore, contentDescription = null, tint = colors.onSurfaceVariant,
                 modifier = Modifier.rotate(turn),
             )

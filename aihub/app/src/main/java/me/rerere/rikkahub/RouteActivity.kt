@@ -452,8 +452,10 @@ class RouteActivity : ComponentActivity() {
     }
 
     private fun defaultStartScreen(): Screen.Chat {
+        val forceNew = AiHost.startNewChat
+        AiHost.startNewChat = false
         return Screen.Chat(
-            id = if (readBooleanPreference("create_new_conversation_on_start", true)) {
+            id = if (forceNew || readBooleanPreference("create_new_conversation_on_start", true)) {
                 Uuid.random().toString()
             } else {
                 readStringPreference(

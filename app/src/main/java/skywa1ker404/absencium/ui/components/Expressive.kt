@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
+import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,9 +53,10 @@ fun ExpressiveChip(
     label: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = CircleShape,
+    shape: Shape? = null,
 ) {
     val q = LocalQuality.current
+    val chipShape: Shape = shape ?: if (skywa1ker404.absencium.ui.theme.LocalAppStyle.current == skywa1ker404.absencium.data.settings.AppStyle.PIXELATED) skywa1ker404.absencium.ui.theme.PixelCornerShape(2f) else CircleShape
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -74,7 +75,7 @@ fun ExpressiveChip(
             }
             .animateContentSize(q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)),
         enabled = enabled,
-        shape = shape,
+        shape = chipShape,
         leadingIcon = if (selected) {
             { Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
         } else {

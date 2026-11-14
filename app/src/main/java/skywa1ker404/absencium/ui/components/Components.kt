@@ -37,7 +37,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
+import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -49,6 +49,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import skywa1ker404.absencium.data.settings.AppStyle
+import skywa1ker404.absencium.ui.theme.LocalAppStyle
+import skywa1ker404.absencium.ui.theme.PixelCornerShape
+import skywa1ker404.absencium.ui.theme.pixelBevel
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -126,6 +130,7 @@ fun AppCard(
         Modifier
     }
     val cardBackdrop = LocalCardBackdrop.current
+    val pixelStyle = LocalAppStyle.current == AppStyle.PIXELATED
     Surface(
         modifier = modifier
             .graphicsLayer {
@@ -133,6 +138,7 @@ fun AppCard(
                 scaleY = scale
             }
             .animateContentSize(animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy))
+            .then(if (pixelStyle) Modifier.pixelBevel(colors.outline) else Modifier)
             // Liquid Glass: the card is a pane of glass over the wallpaper, tinted with its own tonal colour.
             .then(
                 when {
@@ -513,12 +519,15 @@ fun PillButton(
     val glass = LocalCardBackdrop.current != null || LocalFrostedPopup.current
     val tint = if (tonal) colors.secondaryContainer else colors.primary
     val glassModifier = if (glass) Modifier.glassControl(CircleShape, tint, if (active) 0.78f else 0.3f) else Modifier
+    val pixelStyle = LocalAppStyle.current == AppStyle.PIXELATED
+    val buttonShape: androidx.compose.ui.graphics.Shape = if (pixelStyle) PixelCornerShape(2f) else CircleShape
     val pillModifier = modifier
         .graphicsLayer {
             scaleX = scale
             scaleY = scale
         }
         .then(glassModifier)
+        .then(if (pixelStyle) Modifier.pixelBevel(colors.outline) else Modifier)
     val padding = if (compact) PaddingValues(horizontal = if (maxLines > 1) 12.dp else 16.dp, vertical = 10.dp) else PaddingValues(horizontal = 28.dp, vertical = 14.dp)
     val label: @Composable RowScope.() -> Unit = {
         if (loading) {
@@ -532,7 +541,7 @@ fun PillButton(
             onClick = tap,
             modifier = pillModifier,
             enabled = active,
-            shape = CircleShape,
+            shape = buttonShape,
             contentPadding = padding,
             interactionSource = interaction,
             colors = if (glass) {
@@ -550,7 +559,7 @@ fun PillButton(
             onClick = tap,
             modifier = pillModifier,
             enabled = active,
-            shape = CircleShape,
+            shape = buttonShape,
             contentPadding = padding,
             interactionSource = interaction,
             colors = if (glass) {

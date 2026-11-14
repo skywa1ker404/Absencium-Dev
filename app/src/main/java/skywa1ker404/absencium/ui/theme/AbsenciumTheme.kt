@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import skywa1ker404.absencium.R
+import me.rerere.rikkahub.ui.components.dots.LocalDotIcons
 import skywa1ker404.absencium.data.settings.AppSettings
 import skywa1ker404.absencium.data.settings.ColorEngine
 import skywa1ker404.absencium.data.settings.ThemeMode
@@ -104,27 +105,43 @@ private fun shapesFor(radiusDp: Int): Shapes {
     )
 }
 
-/** Pixelated style: corners cut square like stepped pixels, small on every size. */
+/** Pixelated style: corners cut in two stair steps, small on every size. */
 private val PixelShapes = Shapes(
-    small = androidx.compose.foundation.shape.CutCornerShape(4.dp),
-    medium = androidx.compose.foundation.shape.CutCornerShape(6.dp),
-    large = androidx.compose.foundation.shape.CutCornerShape(8.dp),
-    extraLarge = androidx.compose.foundation.shape.CutCornerShape(10.dp),
+    small = PixelCornerShape(1.5f),
+    medium = PixelCornerShape(2f),
+    large = PixelCornerShape(2.5f),
+    extraLarge = PixelCornerShape(3f),
 )
 
 /** Dot matrix style: Doto (SIL OFL 1.1), a dot-matrix font, for every text style. */
 val DotFamily = FontFamily(Font(R.font.doto, FontWeight.Normal), Font(R.font.doto, FontWeight.Bold))
 
-private val DotTypography: Typography = Typography().let { base ->
-    fun TextStyle.dot(bold: Boolean = false) = copy(fontFamily = DotFamily, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal, letterSpacing = 0.sp)
+/**
+ * Pixelated style text: a square-pixel font made from Doto by turning each dot into a full square (SIL OFL 1.1, renamed "Absencium Pixel").
+ * Both pixel fonts are wider than Inter, so their sizes are scaled down a little and lines stay inside their boxes.
+ */
+val PixelFamily = FontFamily(Font(R.font.pixel_font, FontWeight.Normal), Font(R.font.pixel_font_bold, FontWeight.Bold))
+
+/** Every text style in [family]: titles and headings bold, the rest regular, all [scale] times the usual size. */
+private fun fontTypography(family: FontFamily, scale: Float): Typography = Typography().let { base ->
+    fun TextStyle.f(bold: Boolean = false) = copy(
+        fontFamily = family,
+        fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+        letterSpacing = 0.sp,
+        fontSize = fontSize * scale,
+        lineHeight = lineHeight * scale,
+    )
     base.copy(
-        displayLarge = base.displayLarge.dot(true), displayMedium = base.displayMedium.dot(true), displaySmall = base.displaySmall.dot(true),
-        headlineLarge = base.headlineLarge.dot(true), headlineMedium = base.headlineMedium.dot(true), headlineSmall = base.headlineSmall.dot(true),
-        titleLarge = base.titleLarge.dot(true), titleMedium = base.titleMedium.dot(), titleSmall = base.titleSmall.dot(),
-        bodyLarge = base.bodyLarge.dot(), bodyMedium = base.bodyMedium.dot(), bodySmall = base.bodySmall.dot(),
-        labelLarge = base.labelLarge.dot(), labelMedium = base.labelMedium.dot(), labelSmall = base.labelSmall.dot(),
+        displayLarge = base.displayLarge.f(true), displayMedium = base.displayMedium.f(true), displaySmall = base.displaySmall.f(true),
+        headlineLarge = base.headlineLarge.f(true), headlineMedium = base.headlineMedium.f(true), headlineSmall = base.headlineSmall.f(true),
+        titleLarge = base.titleLarge.f(true), titleMedium = base.titleMedium.f(), titleSmall = base.titleSmall.f(),
+        bodyLarge = base.bodyLarge.f(), bodyMedium = base.bodyMedium.f(), bodySmall = base.bodySmall.f(),
+        labelLarge = base.labelLarge.f(), labelMedium = base.labelMedium.f(), labelSmall = base.labelSmall.f(),
     )
 }
+
+private val DotTypography: Typography = fontTypography(DotFamily, 0.9f)
+private val PixelTypography: Typography = fontTypography(PixelFamily, 0.9f)
 
 /** The one accent of the dot matrix style, used only for alerts and errors. */
 private val DotRed = Color(0xFFD71921)
@@ -227,10 +244,16 @@ fun AbsenciumTheme(
         colorScheme = colorScheme,
         motionScheme = androidx.compose.material3.MotionScheme.expressive(),
         shapes = if (settings.appStyle == AppStyle.PIXELATED) PixelShapes else shapesFor(settings.cornerRadiusDp),
-        typography = if (settings.appStyle == AppStyle.DOT_MATRIX) DotTypography else AbsenciumTypography,
+        typography = when (settings.appStyle) {
+            AppStyle.DOT_MATRIX -> DotTypography
+            AppStyle.PIXELATED -> PixelTypography
+            else -> AbsenciumTypography
+        },
     ) {
         CompositionLocalProvider(
             LocalQuality provides quality,
+            LocalAppStyle provides settings.appStyle,
+            LocalDotIcons provides (settings.appStyle == AppStyle.DOT_MATRIX),
             LocalAvatarStyle provides AvatarStyle(settings.avatarShape, settings.avatarFrame),
             androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
                 density = androidx.compose.ui.platform.LocalDensity.current.density * settings.displaySize.scale,

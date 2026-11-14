@@ -4,7 +4,7 @@
     <string name="assistant_import_success">角色已导入</string>
     <string name="chat_model_required">请先选择一个模型</string>
     <string name="chat_input_selected_image_failed">无法添加所选图片，请重试。</string>
-    <string name="chat_input_unsupported_file_type">不支持的文件类型：%1$s（启用 Python 工具后才能使用此文件）</string>
+    <string name="chat_input_unsupported_file_type">不支持的文件类型：%1$s。请附加图片、PDF、Word 文档或文本文件。</string>
     <string name="chat_input_add_file_failed">无法添加文件：%1$s</string>
     <string name="activity_pill_replying">正在回复</string>
     <string name="context_sources_title">上下文来源</string>

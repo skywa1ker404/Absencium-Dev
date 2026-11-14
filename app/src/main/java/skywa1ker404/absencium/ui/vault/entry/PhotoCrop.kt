@@ -445,7 +445,7 @@ private fun CropIcon(label: String, icon: androidx.compose.ui.graphics.vector.Im
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        androidx.compose.material3.Icon(
+        me.rerere.rikkahub.ui.components.dots.Icon(
             icon,
             contentDescription = null,
             tint = Color.White,

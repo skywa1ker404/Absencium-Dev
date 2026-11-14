@@ -26,7 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import skywa1ker404.absencium.ui.components.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import skywa1ker404.absencium.ui.components.ExpressiveChip
-import androidx.compose.material3.Icon
+import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton

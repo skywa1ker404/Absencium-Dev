@@ -39,7 +39,7 @@ import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material3.Icon
+import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch

@@ -80,6 +80,10 @@ object AiHost {
     /** What the Vault option of the attach menu offers. When null, the menu has no Vault option. */
     var vaultLinks: (suspend () -> List<VaultLink>)? = null
 
+    /** Set by the app before it opens the chat so the chat starts a brand new conversation once, whatever the "new chat on start" setting is. */
+    @Volatile
+    var startNewChat: Boolean = false
+
     /** Text the app wants in the chat box next time the chat shows (a note the student asked about); the box takes it once. */
     val pendingDraft = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 

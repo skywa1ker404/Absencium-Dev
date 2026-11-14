@@ -59,6 +59,14 @@ import skywa1ker404.absencium.ui.components.SliderCard
 import skywa1ker404.absencium.ui.description
 import skywa1ker404.absencium.ui.label
 import skywa1ker404.absencium.ui.theme.isDarkTheme
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import skywa1ker404.absencium.ui.theme.DotFamily
+import skywa1ker404.absencium.ui.theme.PixelCornerShape
+import skywa1ker404.absencium.ui.theme.PixelFamily
+import skywa1ker404.absencium.ui.theme.pixelBevel
 import skywa1ker404.absencium.ui.components.GreyedOut
 import skywa1ker404.absencium.ui.theme.isMonetAndBlurSupported
 import skywa1ker404.absencium.ui.theme.palette
@@ -101,13 +109,16 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
                 HintText(REQUIRES_ANDROID_12)
             } else {
                 GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
-                    SwitchCard(
-                        title = "Frosted popups",
-                        subtitle = "Profile, search, Add Entry and dialogs",
-                        checked = settings.frostedOverlays,
-                        onCheckedChange = viewModel::setFrostedOverlays,
-                    )
-                    GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
+                    // GreyedOut is a Box, so the two cards need their own column or they draw on top of each other.
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SwitchCard(
+                            title = "Frosted popups",
+                            subtitle = "Profile, search, Add Entry and dialogs",
+                            checked = settings.frostedOverlays,
+                            onCheckedChange = viewModel::setFrostedOverlays,
+                        )
+                        GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
+                    }
                 }
             }
         }
@@ -233,21 +244,33 @@ private fun ChoiceTile(selected: Boolean, onClick: () -> Unit, label: String, mo
     }
 }
 
-/** The app's look, one at a time: Default, Liquid Glass, Pixelated or Dot matrix (black and white, Nothing-inspired). */
+/** The app's look, one at a time, as four picture tiles: Default, Liquid Glass, Pixelated or Dot matrix (black and white, Nothing-inspired). */
 @Composable
 fun StyleChoices(selected: AppStyle, onSelect: (AppStyle) -> Unit) {
     SectionTitle("Styles")
     AppCard(modifier = Modifier.fillMaxWidth()) {
-        Text("Themes style", style = MaterialTheme.typography.titleMedium)
+        Text("Themes style", style = MaterialTheme.typography.titleMedium, maxLines = 1)
         Text(
             "currently selected: ${styleName(selected)}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 10.dp),
+            maxLines = 1,
+            modifier = Modifier.padding(bottom = 12.dp),
         )
-        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AppStyle.entries.forEach { style ->
-                ExpressiveChip(selected = selected == style, onClick = { onSelect(style) }, label = { Text(styleName(style)) })
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AppStyle.entries.chunked(2).forEach { pair ->
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    pair.forEach { style ->
+                        PreviewTile(
+                            title = styleName(style),
+                            selected = selected == style,
+                            onClick = { onSelect(style) },
+                            modifier = Modifier.weight(1f),
+                            aspect = 1.25f,
+                        ) { StyleMini(style) }
+                    }
+                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+                }
             }
         }
     }
@@ -423,4 +446,40 @@ fun GlassBlurSlider(value: Int, onChange: (Int) -> Unit) {
         valueLabel = { "$it px" },
         onValueChangeFinished = onChange,
     )
+}
+
+/** A small picture of one style: what a card, a button and the text look like in it. */
+@Composable
+private fun StyleMini(style: AppStyle) {
+    val c = MaterialTheme.colorScheme
+    when (style) {
+        AppStyle.DEFAULT -> MiniScreen(PreviewColors(c.background, c.surfaceContainerHigh, c.onBackground, c.primary, c.secondary))
+        AppStyle.LIQUID_GLASS -> GlassPreview()
+        AppStyle.PIXELATED -> {
+            val face = TextStyle(fontFamily = PixelFamily, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+            Column(
+                modifier = Modifier.fillMaxSize().background(c.background).padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Box(Modifier.fillMaxWidth(0.4f).height(8.dp).clip(PixelCornerShape(1f)).background(c.onBackground.copy(alpha = 0.85f)))
+                Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(
+                        Modifier.weight(1f).fillMaxSize().clip(PixelCornerShape(2f)).background(c.primary).pixelBevel(c.outline, 1.5f),
+                        contentAlignment = Alignment.Center,
+                    ) { Text("PLAY", style = face, color = c.onPrimary, maxLines = 1) }
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(Modifier.weight(1f).fillMaxWidth().clip(PixelCornerShape(1.5f)).background(c.surfaceContainerHigh).pixelBevel(c.outline, 1f))
+                        Box(
+                            Modifier.weight(1f).fillMaxWidth().clip(PixelCornerShape(1.5f)).background(c.secondaryContainer).pixelBevel(c.outline, 1f),
+                            contentAlignment = Alignment.Center,
+                        ) { Text("OK", style = face.copy(fontSize = 8.sp), color = c.onSecondaryContainer, maxLines = 1) }
+                    }
+                }
+            }
+        }
+        AppStyle.DOT_MATRIX -> Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0B)), contentAlignment = Alignment.Center) {
+            Text("Aa", style = TextStyle(fontFamily = DotFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp), color = Color.White, maxLines = 1)
+            Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(8.dp).clip(CircleShape).background(Color(0xFFD71921)))
+        }
+    }
 }

@@ -110,7 +110,7 @@ import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
+import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -3075,7 +3075,7 @@ private fun ExpandButtonOverlay(
             onClick = onExpand,
             modifier = Modifier.size(36.dp)
         ) {
-            androidx.compose.material3.Icon(
+            me.rerere.rikkahub.ui.components.dots.Icon(
                 imageVector = androidx.compose.material.icons.Icons.Rounded.Fullscreen,
                 contentDescription = "Expand",
                 modifier = Modifier.size(20.dp),

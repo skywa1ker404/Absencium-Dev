@@ -55,8 +55,10 @@ fun EmbeddedAi(dark: Boolean, glass: Boolean, settingsPage: String?) {
             var hasReply by remember { mutableStateOf<Boolean?>(null) }
             LaunchedEffect(Unit) { hasReply = withContext(Dispatchers.IO) { repo.hasSuccessfulAssistantReply() } }
             val start = remember {
+                val forceNew = AiHost.startNewChat
+                AiHost.startNewChat = false
                 Screen.Chat(
-                    id = if (context.readBooleanPreference("create_new_conversation_on_start", true)) {
+                    id = if (forceNew || context.readBooleanPreference("create_new_conversation_on_start", true)) {
                         java.util.UUID.randomUUID().toString()
                     } else {
                         context.readStringPreference("lastConversationId", java.util.UUID.randomUUID().toString())
