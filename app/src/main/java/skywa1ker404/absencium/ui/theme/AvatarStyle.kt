@@ -6,7 +6,6 @@ import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import skywa1ker404.absencium.data.settings.AvatarShape
@@ -19,7 +18,7 @@ val LocalAvatarStyle = compositionLocalOf { AvatarStyle() }
 /** The Compose shape of an [AvatarShape]. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun AvatarShape.toComposeShape(): Shape = remember(this) {
+fun AvatarShape.toComposeShape(): Shape =
     when (this) {
         AvatarShape.LEAF8 -> MaterialShapes.Clover8Leaf.toShape()
         AvatarShape.CIRCLE -> CircleShape
@@ -27,4 +26,3 @@ fun AvatarShape.toComposeShape(): Shape = remember(this) {
         AvatarShape.GHOST -> MaterialShapes.Ghostish.toShape()
         AvatarShape.NONE -> RectangleShape
     }
-}
