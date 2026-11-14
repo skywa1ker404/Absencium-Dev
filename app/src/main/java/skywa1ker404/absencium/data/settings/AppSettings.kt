@@ -14,6 +14,9 @@ enum class ThemeMode {
     SYSTEM_AUTO,
 }
 
+/** The look of the whole app; only one is on at a time. Liquid Glass and Pixelated take the chosen colour theme, Dot matrix is black and white. */
+enum class AppStyle { DEFAULT, LIQUID_GLASS, PIXELATED, DOT_MATRIX }
+
 /** How marks and grade points are shown on the Grades page. */
 enum class MarksScale { PERCENTAGE, CGPA_10, GPA_4 }
 
@@ -48,6 +51,8 @@ data class AppSettings(
     val themePreset: ThemePreset = ThemePreset.CATPPUCCIN,
     /** Liquid Glass on top of whichever theme is active (blur and refraction need Android 12). */
     val liquidGlass: Boolean = false,
+    /** The chosen look; [liquidGlass] is true exactly while this is [AppStyle.LIQUID_GLASS]. */
+    val appStyle: AppStyle = AppStyle.DEFAULT,
     /** With Liquid Glass on: also frost the profile, search, Add Entry, import and other overlays. Off keeps them solid. */
     val frostedOverlays: Boolean = true,
     /** Optional extra shine on glass surfaces. Only offered while Liquid Glass is on; off by default. */

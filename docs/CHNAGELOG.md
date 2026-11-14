@@ -143,7 +143,8 @@ working on it
 - Changed (branch Absencium-ai, CI green `43351644567`): a Vault link attached in Absencium AI is shown as an attachment tile (note, syllabus or material) in the message box and in the sent message.
 - Changed (branch Absencium-ai, CI green `43351770960`): Home, Attendance and Vault slide forward and back like the AI hub's pages.
 - Changed (branch Absencium-ai, CI green `43352041917`): every dialog opens with one spring grow and fade and resizes smoothly; the syllabus topic pickers (File under a topic, Add Entry) are one collapsed tree with arrows at the left. An earlier run, `43351839821`, failed on a missing `getValue` import in `SyllabusPicker.kt` and was fixed in the next commit.
-- Changed (branch Absencium-ai, CI pending): a Vault note or syllabus tile in an AI message opens that note or syllabus.
+- Added (branch Absencium-ai, CI pending): one Style setting (Default, Liquid Glass, Pixelated, Dot matrix) with a first Dot matrix theme using the bundled Doto font.
+- Changed (branch Absencium-ai, CI green `43485589374`): a Vault note or syllabus tile in an AI message opens that note or syllabus.
 - Changed (branch Absencium-ai, CI green `43431495994`): the Profile page is remade (banner, cookie-shaped picture, Overview / Statistics / Subjects tabs, heat-map, subject tiles, small AI and Settings icons).
 - Changed (branch Absencium-ai, CI green `43431858151`): the main Syllabus page lists each subject as a folder that opens its syllabus page; full-screen popups open with the same spring motion.
 - Added (branch Absencium-ai, CI green `43352206487`): Edit profile page with a cropped profile picture; course and year are saved together as one line.

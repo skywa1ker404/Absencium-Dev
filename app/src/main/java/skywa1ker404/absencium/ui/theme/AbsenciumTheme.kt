@@ -11,6 +11,9 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import skywa1ker404.absencium.data.settings.AppStyle
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -97,6 +100,56 @@ private val AbsenciumShapes = Shapes(
     extraLarge = RoundedCornerShape(36.dp),
 )
 
+/** Pixelated style: corners cut square like stepped pixels, small on every size. */
+private val PixelShapes = Shapes(
+    small = androidx.compose.foundation.shape.CutCornerShape(4.dp),
+    medium = androidx.compose.foundation.shape.CutCornerShape(6.dp),
+    large = androidx.compose.foundation.shape.CutCornerShape(8.dp),
+    extraLarge = androidx.compose.foundation.shape.CutCornerShape(10.dp),
+)
+
+/** Dot matrix style: Doto (SIL OFL 1.1), a dot-matrix font, for every text style. */
+val DotFamily = FontFamily(Font(R.font.doto, FontWeight.Normal), Font(R.font.doto, FontWeight.Bold))
+
+private val DotTypography: Typography = Typography().let { base ->
+    fun TextStyle.dot(bold: Boolean = false) = copy(fontFamily = DotFamily, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal, letterSpacing = 0.sp)
+    base.copy(
+        displayLarge = base.displayLarge.dot(true), displayMedium = base.displayMedium.dot(true), displaySmall = base.displaySmall.dot(true),
+        headlineLarge = base.headlineLarge.dot(true), headlineMedium = base.headlineMedium.dot(true), headlineSmall = base.headlineSmall.dot(true),
+        titleLarge = base.titleLarge.dot(true), titleMedium = base.titleMedium.dot(), titleSmall = base.titleSmall.dot(),
+        bodyLarge = base.bodyLarge.dot(), bodyMedium = base.bodyMedium.dot(), bodySmall = base.bodySmall.dot(),
+        labelLarge = base.labelLarge.dot(), labelMedium = base.labelMedium.dot(), labelSmall = base.labelSmall.dot(),
+    )
+}
+
+/** The one accent of the dot matrix style, used only for alerts and errors. */
+private val DotRed = Color(0xFFD71921)
+
+/** Black and white with one red accent. Surfaces step through greys; no colour presets and no Monet. */
+private fun dotMatrixScheme(dark: Boolean): ColorScheme = if (dark) {
+    darkColorScheme(
+        primary = Color.White, onPrimary = Color.Black, primaryContainer = Color(0xFF262626), onPrimaryContainer = Color.White,
+        secondary = Color(0xFFD0D0D0), onSecondary = Color.Black, secondaryContainer = Color(0xFF1C1C1C), onSecondaryContainer = Color.White,
+        tertiary = Color(0xFFB0B0B0), onTertiary = Color.Black, tertiaryContainer = Color(0xFF303030), onTertiaryContainer = Color.White,
+        background = Color.Black, onBackground = Color.White, surface = Color.Black, onSurface = Color.White,
+        surfaceVariant = Color(0xFF1C1C1C), onSurfaceVariant = Color(0xFFB8B8B8), outline = Color(0xFF6E6E6E), outlineVariant = Color(0xFF333333),
+        surfaceContainerLowest = Color.Black, surfaceContainerLow = Color(0xFF0C0C0C), surfaceContainer = Color(0xFF121212),
+        surfaceContainerHigh = Color(0xFF1A1A1A), surfaceContainerHighest = Color(0xFF242424),
+        error = DotRed, onError = Color.White, errorContainer = Color(0xFF3A0D10), onErrorContainer = Color(0xFFFFB4B6),
+    )
+} else {
+    lightColorScheme(
+        primary = Color.Black, onPrimary = Color.White, primaryContainer = Color(0xFFE6E6E6), onPrimaryContainer = Color.Black,
+        secondary = Color(0xFF2E2E2E), onSecondary = Color.White, secondaryContainer = Color(0xFFEDEDED), onSecondaryContainer = Color.Black,
+        tertiary = Color(0xFF4A4A4A), onTertiary = Color.White, tertiaryContainer = Color(0xFFD9D9D9), onTertiaryContainer = Color.Black,
+        background = Color.White, onBackground = Color.Black, surface = Color.White, onSurface = Color.Black,
+        surfaceVariant = Color(0xFFEDEDED), onSurfaceVariant = Color(0xFF4A4A4A), outline = Color(0xFF8A8A8A), outlineVariant = Color(0xFFCFCFCF),
+        surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFF6F6F6), surfaceContainer = Color(0xFFF0F0F0),
+        surfaceContainerHigh = Color(0xFFE9E9E9), surfaceContainerHighest = Color(0xFFE0E0E0),
+        error = DotRed, onError = Color.White, errorContainer = Color(0xFFFFDAD9), onErrorContainer = Color(0xFF410004),
+    )
+}
+
 /** Inter, bundled with the app so the type looks the same offline on every phone. */
 val InterFamily = FontFamily(
     Font(R.font.inter_regular, FontWeight.Normal),
@@ -152,8 +205,8 @@ fun AbsenciumTheme(
     // Liquid Glass is a layer on top of the active theme; it needs Android 12 for the blur and Quality mode for the cost.
     val glassActive = settings.liquidGlass && quality.blurEnabled && isMonetAndBlurSupported
 
-    val colorScheme: ColorScheme = remember(engine, isDark, settings.themePreset, settings.themeMode, glassActive, context, LocalConfiguration.current) {
-        val generated = when (engine) {
+    val colorScheme: ColorScheme = remember(engine, isDark, settings.themePreset, settings.themeMode, settings.appStyle, glassActive, context, LocalConfiguration.current) {
+        val generated = if (settings.appStyle == AppStyle.DOT_MATRIX) dotMatrixScheme(isDark) else when (engine) {
             // The system's own scheme: the wallpaper colour picked in Wallpaper & style, light or dark.
             ColorEngine.MONET_WALLPAPER -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             ColorEngine.DEFAULT_PALETTE -> (if (isDark) DefaultPalette.dark else DefaultPalette.light).toColorScheme(isDark)
@@ -169,8 +222,8 @@ fun AbsenciumTheme(
     androidx.compose.material3.MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = androidx.compose.material3.MotionScheme.expressive(),
-        shapes = AbsenciumShapes,
-        typography = AbsenciumTypography,
+        shapes = if (settings.appStyle == AppStyle.PIXELATED) PixelShapes else AbsenciumShapes,
+        typography = if (settings.appStyle == AppStyle.DOT_MATRIX) DotTypography else AbsenciumTypography,
     ) {
         CompositionLocalProvider(
             LocalQuality provides quality,

@@ -81,7 +81,15 @@ class SettingsRepository(context: Context) {
 
     suspend fun setIntroSeen(value: Boolean) = write(Keys.INTRO_SEEN, value)
 
-    suspend fun setLiquidGlass(value: Boolean) = write(Keys.LIQUID_GLASS, value)
+    suspend fun setLiquidGlass(value: Boolean) = setAppStyle(if (value) AppStyle.LIQUID_GLASS else AppStyle.DEFAULT)
+
+    /** One look at a time; the old Liquid Glass switch is kept in step so older backups and code read the same thing. */
+    suspend fun setAppStyle(value: AppStyle) {
+        dataStore.edit {
+            it[Keys.APP_STYLE] = value.name
+            it[Keys.LIQUID_GLASS] = value == AppStyle.LIQUID_GLASS
+        }
+    }
 
     suspend fun setFrostedOverlays(value: Boolean) = write(Keys.FROSTED_OVERLAYS, value)
 
@@ -208,6 +216,7 @@ class SettingsRepository(context: Context) {
         val THEME_PRESET = stringPreferencesKey("theme_preset")
         val INTRO_SEEN = booleanPreferencesKey("intro_seen")
         val LIQUID_GLASS = booleanPreferencesKey("liquid_glass")
+        val APP_STYLE = stringPreferencesKey("app_style")
         val GLASS_BLUR = intPreferencesKey("glass_blur_dp")
         val FROSTED_OVERLAYS = booleanPreferencesKey("frosted_overlays")
         val VISUAL_QUALITY = stringPreferencesKey("visual_quality")
@@ -243,8 +252,15 @@ class SettingsRepository(context: Context) {
         ).map { it.name }.toSet()
         val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES, REMIND_LECTURE_MINUTES, REMIND_EXAM_DAYS).map { it.name }.toSet()
         val STRINGS = setOf(
-            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, MARKS_SCALE, COLOR_ENGINE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
+            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, MARKS_SCALE, COLOR_ENGINE, APP_STYLE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
         ).map { it.name }.toSet()
+    }
+
+    /** The stored style; a phone that only has the older Liquid Glass switch (or the even older engine) maps to Liquid Glass. */
+    private fun styleFrom(prefs: Preferences): AppStyle {
+        val stored = prefs[Keys.APP_STYLE]
+        if (stored != null) return AppStyle.entries.firstOrNull { it.name == stored } ?: AppStyle.DEFAULT
+        return if (prefs[Keys.LIQUID_GLASS] ?: (prefs[Keys.COLOR_ENGINE] == "LIQUID_GLASS")) AppStyle.LIQUID_GLASS else AppStyle.DEFAULT
     }
 
     private fun Preferences.toAppSettings(): AppSettings {
@@ -267,7 +283,8 @@ class SettingsRepository(context: Context) {
             } else {
                 enumOrDefault(this[Keys.COLOR_ENGINE], defaults.colorEngine)
             },
-            liquidGlass = this[Keys.LIQUID_GLASS] ?: (this[Keys.COLOR_ENGINE] == "LIQUID_GLASS"),
+            appStyle = styleFrom(this),
+            liquidGlass = styleFrom(this) == AppStyle.LIQUID_GLASS,
             themePreset = enumOrDefault(this[Keys.THEME_PRESET], defaults.themePreset),
             frostedOverlays = this[Keys.FROSTED_OVERLAYS] ?: defaults.frostedOverlays,
             glassBlurDp = this[Keys.GLASS_BLUR] ?: defaults.glassBlurDp,

@@ -1,5 +1,9 @@
 package skywa1ker404.absencium.ui.settings
 
+import skywa1ker404.absencium.ui.components.ExpressiveChip
+import skywa1ker404.absencium.data.settings.AppStyle
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -59,14 +63,18 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
             selected = settings.visualQuality,
             onSelect = viewModel::setVisualQuality,
         )
+        StyleChoices(selected = settings.appStyle, onSelect = viewModel::setAppStyle)
         ThemeModeChoices(selected = settings.themeMode, onSelect = viewModel::setThemeMode)
-        ColorEngineChoices(
-            settings = settings,
-            onSelect = viewModel::setColorEngine,
-            onPresetSelected = viewModel::setThemePreset,
-            onGlassToggle = viewModel::setLiquidGlass,
-            onFrostedToggle = viewModel::setFrostedOverlays,
-        )
+        // Dot matrix is black and white with one red accent, so it has no colour choices; the other styles use the chosen colours.
+        if (settings.appStyle != AppStyle.DOT_MATRIX) {
+            ColorEngineChoices(
+                settings = settings,
+                onSelect = viewModel::setColorEngine,
+                onPresetSelected = viewModel::setThemePreset,
+                onGlassToggle = viewModel::setLiquidGlass,
+                onFrostedToggle = viewModel::setFrostedOverlays,
+            )
+        }
 
         if (settings.liquidGlass && isMonetAndBlurSupported) {
             SectionTitle("Frosted glass intensity")
@@ -75,6 +83,38 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
             }
         }
     }
+}
+
+/** The app's look, one at a time: Default, Liquid Glass, Pixelated or Dot matrix (black and white, Nothing-inspired). */
+@Composable
+fun StyleChoices(selected: AppStyle, onSelect: (AppStyle) -> Unit) {
+    SectionTitle("Style")
+    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        AppStyle.entries.forEach { style ->
+            ExpressiveChip(
+                selected = selected == style,
+                onClick = { onSelect(style) },
+                label = {
+                    Text(
+                        when (style) {
+                            AppStyle.DEFAULT -> "Default"
+                            AppStyle.LIQUID_GLASS -> "Liquid Glass"
+                            AppStyle.PIXELATED -> "Pixelated"
+                            AppStyle.DOT_MATRIX -> "Dot matrix"
+                        },
+                    )
+                },
+            )
+        }
+    }
+    HintText(
+        when (selected) {
+            AppStyle.DEFAULT -> "The standard Absencium look."
+            AppStyle.LIQUID_GLASS -> "Translucent frosted glass on your colour theme."
+            AppStyle.PIXELATED -> "Stepped, square corners on your colour theme."
+            AppStyle.DOT_MATRIX -> "Black and white with one red accent and a dot-matrix font. No colour themes."
+        },
+    )
 }
 
 /** Visual quality choices, shared by Settings and the onboarding wizard. Applies the moment one is tapped. */

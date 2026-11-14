@@ -11,6 +11,7 @@ import skywa1ker404.absencium.appContainer
 import skywa1ker404.absencium.data.ai.AiProvider
 import skywa1ker404.absencium.data.ai.ApiStyle
 import skywa1ker404.absencium.data.settings.AppSettings
+import skywa1ker404.absencium.data.settings.AppStyle
 import skywa1ker404.absencium.data.settings.ColorEngine
 import skywa1ker404.absencium.data.settings.SettingsRepository
 import skywa1ker404.absencium.data.settings.ThemeMode
@@ -52,6 +53,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setIntroSeen() = launch { repository.setIntroSeen(true) }
 
     fun setLiquidGlass(value: Boolean) = launch { repository.setLiquidGlass(value) }
+
+    fun setAppStyle(value: AppStyle) = launch { repository.setAppStyle(value) }
 
     fun setFrostedOverlays(value: Boolean) = launch { repository.setFrostedOverlays(value) }
 
