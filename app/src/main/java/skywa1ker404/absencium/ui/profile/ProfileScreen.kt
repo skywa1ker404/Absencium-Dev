@@ -61,6 +61,7 @@ import com.ramcosta.composedestinations.generated.destinations.PlannerScreenDest
 import com.ramcosta.composedestinations.generated.destinations.AttendanceInsightsScreenDestination
 import androidx.compose.material3.toShape
 import com.ramcosta.composedestinations.generated.destinations.SettingsHubScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.EditProfileScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import skywa1ker404.absencium.appContainer
 import skywa1ker404.absencium.data.db.NoteStatus
@@ -124,40 +125,73 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
         },
     ) {
         // Banner with the picture overlapping its lower edge and the edit button under it on the right.
+        val drift = if (skywa1ker404.absencium.ui.theme.LocalQuality.current.decorativeMotion) {
+            androidx.compose.animation.core.rememberInfiniteTransition(label = "bannerDrift").animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                    androidx.compose.animation.core.tween(18000, easing = androidx.compose.animation.core.LinearEasing),
+                ),
+                label = "drift",
+            )
+        } else null
         Box(modifier = Modifier.fillMaxWidth().padding(bottom = 52.dp)) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(140.dp)
                     .clip(RoundedCornerShape(32.dp))
-                    .background(Brush.linearGradient(listOf(colors.primaryContainer, colors.tertiaryContainer)))
+                    .clickable { navigator.navigate(EditProfileScreenDestination) }
                     .drawBehind {
-                        // Two soft circles give the band some life without a picture.
-                        drawCircle(colors.onPrimaryContainer.copy(alpha = 0.07f), radius = size.height * 0.9f, center = Offset(size.width * 0.85f, size.height * 0.1f))
-                        drawCircle(colors.onTertiaryContainer.copy(alpha = 0.06f), radius = size.height * 0.6f, center = Offset(size.width * 0.2f, size.height * 1.05f))
+                        // A slow drift of the gradient and three soft circles; one cheap draw, nothing is recomposed. Off in Performance mode.
+                        val t = (drift?.value ?: 0f) * 2f * Math.PI.toFloat()
+                        val sway = kotlin.math.sin(t)
+                        drawRect(
+                            Brush.linearGradient(
+                                listOf(colors.primaryContainer, colors.tertiaryContainer),
+                                start = Offset(size.width * (0.05f + 0.15f * sway), 0f),
+                                end = Offset(size.width * (0.95f - 0.15f * sway), size.height),
+                            ),
+                        )
+                        drawCircle(
+                            colors.onPrimaryContainer.copy(alpha = 0.07f), radius = size.height * 0.9f,
+                            center = Offset(size.width * (0.85f + 0.05f * kotlin.math.cos(t)), size.height * (0.1f + 0.12f * sway)),
+                        )
+                        drawCircle(
+                            colors.onTertiaryContainer.copy(alpha = 0.06f), radius = size.height * 0.6f,
+                            center = Offset(size.width * (0.2f + 0.06f * sway), size.height * (1.05f - 0.1f * kotlin.math.cos(t))),
+                        )
+                        drawCircle(
+                            colors.primary.copy(alpha = 0.05f), radius = size.height * 0.4f,
+                            center = Offset(size.width * (0.55f + 0.1f * kotlin.math.cos(t + 2f)), size.height * (0.45f + 0.15f * kotlin.math.sin(t + 2f))),
+                        )
                     },
             )
             AvatarPicture(
                 fileName = loaded.profileAvatar,
                 initials = loaded.displayName,
                 size = 104,
-                modifier = Modifier.align(Alignment.TopStart).offset(x = 20.dp, y = 140.dp - 52.dp),
+                modifier = Modifier.align(Alignment.TopStart).offset(x = 20.dp, y = 140.dp - 52.dp).clickable { navigator.navigate(EditProfileScreenDestination) },
             )
             RoundIcon(
                 AppIcons.Edit, "Edit profile",
                 modifier = Modifier.align(Alignment.TopEnd).offset(y = 140.dp + 6.dp),
-            ) { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.EditProfileScreenDestination) }
+            ) { navigator.navigate(EditProfileScreenDestination) }
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
             Text(
                 text = loaded.displayName.ifBlank { "Add your name" },
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { navigator.navigate(EditProfileScreenDestination) },
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                if (details.isNotBlank()) InfoPill(details)
-                if (loaded.profileCollege.isNotBlank()) InfoPill(loaded.profileCollege)
-                if (details.isBlank() && loaded.profileCollege.isBlank()) InfoPill("Add your course and college")
+                val edit = { navigator.navigate(EditProfileScreenDestination) }
+                if (details.isNotBlank()) InfoPill(details, edit)
+                if (loaded.profileCollege.isNotBlank()) InfoPill(loaded.profileCollege, edit)
+                if (loaded.profileDepartment.isNotBlank()) InfoPill(loaded.profileDepartment, edit)
+                InfoPill("Target $threshold%", edit)
+                if (details.isBlank() && loaded.profileCollege.isBlank()) InfoPill("Add your course and college", edit)
             }
         }
 
@@ -207,13 +241,17 @@ private fun RoundIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, des
 
 /** A rounded line of detail under the name. */
 @Composable
-private fun InfoPill(text: String) {
+private fun InfoPill(text: String, onClick: (() -> Unit)? = null) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSecondaryContainer,
         maxLines = 1,
-        modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer).padding(horizontal = 14.dp, vertical = 6.dp),
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+            .padding(horizontal = 14.dp, vertical = 6.dp),
     )
 }
 

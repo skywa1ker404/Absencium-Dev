@@ -21,6 +21,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.generated.destinations.AttendanceInsightsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.GradesScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.StudyToolsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SubjectsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SyllabusScreenDestination
+import skywa1ker404.absencium.ui.AbsenciumAi
 import com.ramcosta.composedestinations.generated.destinations.EditProfileScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ExportScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.PlannerScreenDestination
@@ -73,6 +78,30 @@ internal class ProfileTabData(
     val today: LocalDate,
 )
 
+/** Goes back to the main screen on [tab] (1 is Attendance, 2 is Vault). */
+private fun DestinationsNavigator.openMainTab(tab: Int) {
+    AbsenciumAi.pendingTab.value = tab
+    popBackStack()
+}
+
+/** Goes back to the main screen and opens its Timetable popup. */
+private fun DestinationsNavigator.openTimetable() {
+    AbsenciumAi.pendingTimetable.value = true
+    popBackStack()
+}
+
+/** Goes back to the main screen and opens the details popup of one exam. */
+private fun DestinationsNavigator.openExam(examId: Long) {
+    AbsenciumAi.pendingExamId.value = examId
+    popBackStack()
+}
+
+/** A block of the Profile that opens the page it belongs to. */
+@Composable
+private fun LinkTile(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Box(modifier = modifier.clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(4.dp)) { content() }
+}
+
 private fun minutesToText(minutes: Int): String = if (minutes < 60) "$minutes min" else "${minutes / 60} h ${minutes % 60} min"
 
 /** The Overview tab: attendance, the numbers that matter, what is due next, the notes opened last and the syllabus. */
@@ -116,19 +145,19 @@ internal fun OverviewTab(nav: DestinationsNavigator, d: ProfileTabData) {
     val goalsDone = d.goals.count { it.done }
     AppCard(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            BigNumber(syllabusAverage?.let { "${(it * 100).roundToInt()}%" } ?: "–", "SYLLABUS", "${withSyllabus.size} subjects planned")
-            BigNumber("$goalsDone/${d.goals.size}", "TASKS", "goals completed")
-            BigNumber(if (weekMinutes == 0) "–" else minutesToText(weekMinutes), "STUDY", "this week")
+            LinkTile({ nav.navigate(SyllabusOverviewScreenDestination) }) { BigNumber(syllabusAverage?.let { "${(it * 100).roundToInt()}%" } ?: "–", "SYLLABUS", "${withSyllabus.size} subjects planned") }
+            LinkTile({ nav.navigate(PlannerScreenDestination) }) { BigNumber("$goalsDone/${d.goals.size}", "TASKS", "goals completed") }
+            LinkTile({ nav.navigate(StudyToolsScreenDestination) }) { BigNumber(if (weekMinutes == 0) "–" else minutesToText(weekMinutes), "STUDY", "this week") }
         }
     }
 
     // Upcoming deadlines: exams, events and goals with a date, soonest first.
-    class Deadline(val title: String, val line: String, val date: LocalDate)
+    class Deadline(val title: String, val line: String, val date: LocalDate, val open: () -> Unit)
     val subjectName = { id: Long? -> d.calendar?.subjects?.firstOrNull { it.id == id }?.name }
     val deadlines = buildList {
-        d.calendar?.exams.orEmpty().filter { !it.date.isBefore(d.today) }.forEach { add(Deadline(it.title, listOfNotNull("Exam", subjectName(it.subjectId)).joinToString(" · "), it.date)) }
-        d.events.filter { !it.date.isBefore(d.today) }.forEach { add(Deadline(it.title, listOfNotNull(it.category, subjectName(it.subjectId)).joinToString(" · "), it.date)) }
-        d.goals.filter { !it.done && it.targetDate != null && !it.targetDate.isBefore(d.today) }.forEach { add(Deadline(it.title, listOfNotNull("Goal", subjectName(it.subjectId)).joinToString(" · "), it.targetDate!!)) }
+        d.calendar?.exams.orEmpty().filter { !it.date.isBefore(d.today) }.forEach { add(Deadline(it.title, listOfNotNull("Exam", subjectName(it.subjectId)).joinToString(" · "), it.date) { nav.openExam(it.id) }) }
+        d.events.filter { !it.date.isBefore(d.today) }.forEach { add(Deadline(it.title, listOfNotNull(it.category, subjectName(it.subjectId)).joinToString(" · "), it.date) { nav.navigate(PlannerScreenDestination) }) }
+        d.goals.filter { !it.done && it.targetDate != null && !it.targetDate.isBefore(d.today) }.forEach { add(Deadline(it.title, listOfNotNull("Goal", subjectName(it.subjectId)).joinToString(" · "), it.targetDate!!) { nav.navigate(PlannerScreenDestination) }) }
     }.sortedBy { it.date }.take(5)
     SectionLink("Upcoming deadlines") { nav.navigate(PlannerScreenDestination) }
     if (deadlines.isEmpty()) {
@@ -141,6 +170,7 @@ internal fun OverviewTab(nav: DestinationsNavigator, d: ProfileTabData) {
                 SettingRow(
                     title = item.title,
                     subtitle = "${item.line} · ${item.date}",
+                    onClick = item.open,
                     trailing = {
                         Text(
                             text = when (days) { 0L -> "Today"; 1L -> "Tomorrow"; else -> "In $days days" },
@@ -159,7 +189,7 @@ internal fun OverviewTab(nav: DestinationsNavigator, d: ProfileTabData) {
         .sortedByDescending { maxOf(it.updatedAt, it.createdDate) }
         .take(4)
     if (notes.isNotEmpty()) {
-        SectionLink("Recent notes")
+        SectionLink("Recent notes") { nav.openMainTab(2) }
         SettingGroup {
             notes.forEachIndexed { index, note ->
                 if (index > 0) SettingDivider()
@@ -178,7 +208,9 @@ internal fun OverviewTab(nav: DestinationsNavigator, d: ProfileTabData) {
             withSyllabus.forEachIndexed { index, subject ->
                 if (index > 0) SettingDivider()
                 val progress = SyllabusTree.progress(d.syllabus.filter { it.subjectId == subject.id }, null)
-                ProgressRow(subject.name, null, progress, "${(progress * 100).roundToInt()}%", subjectColor(subject.id))
+                LinkTile({ nav.navigate(SyllabusScreenDestination(subjectId = subject.id)) }, Modifier.fillMaxWidth()) {
+                    ProgressRow(subject.name, null, progress, "${(progress * 100).roundToInt()}%", subjectColor(subject.id))
+                }
             }
         }
     }
@@ -196,10 +228,14 @@ internal fun AcademicTab(nav: DestinationsNavigator, container: AppContainer, d:
         SettingDivider()
         SettingRow("Institution", subtitle = s.profileCollege.ifBlank { "Not set" }, onClick = { nav.navigate(EditProfileScreenDestination) })
         SettingDivider()
+        SettingRow("Department", subtitle = s.profileDepartment.ifBlank { "Not set" }, onClick = { nav.navigate(EditProfileScreenDestination) })
+        SettingDivider()
+        SettingRow("Attendance target", subtitle = "${s.attendanceThresholdPercent}% in every subject", onClick = { nav.navigate(EditProfileScreenDestination) })
+        SettingDivider()
         SettingRow("Academic year", subtitle = s.profileYear.ifBlank { "Not set" }, onClick = { nav.navigate(EditProfileScreenDestination) })
     }
 
-    SectionLink("Subjects") { nav.navigate(AttendanceInsightsScreenDestination) }
+    SectionLink("Subjects") { nav.navigate(SubjectsScreenDestination) }
     if (d.rows.isEmpty()) {
         AppCard(modifier = Modifier.fillMaxWidth()) { Text("Add subjects to see them here", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant) }
     } else {
@@ -225,13 +261,13 @@ internal fun AcademicTab(nav: DestinationsNavigator, container: AppContainer, d:
 
     // Timetable overview: lectures per weekday as small bars.
     val timetable = d.calendar?.timetable.orEmpty().filter { it.deletedAt == null }
-    SectionLink("Timetable")
+    SectionLink("Timetable") { nav.openTimetable() }
     if (timetable.isEmpty()) {
         AppCard(modifier = Modifier.fillMaxWidth()) { Text("No timetable yet", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant) }
     } else {
         val days = DayOfWeek.values().toList()
         val counts = days.map { day -> timetable.count { it.dayOfWeek == day } }
-        AppCard(modifier = Modifier.fillMaxWidth()) {
+        AppCard(modifier = Modifier.fillMaxWidth(), onClick = { nav.openTimetable() }) {
             Bars(counts.map { it.toFloat() }, days.map { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(3) }, counts.map { it.toString() }, colors.primary)
             HintText("${timetable.size} lectures a week")
         }
@@ -263,7 +299,7 @@ internal fun AcademicTab(nav: DestinationsNavigator, container: AppContainer, d:
 
     // Exam schedule: every exam still ahead, then the latest results.
     val exams = d.calendar?.exams.orEmpty().filter { !it.date.isBefore(d.today) }.sortedBy { it.date }
-    SectionLink("Exam schedule") { nav.navigate(PlannerScreenDestination) }
+    SectionLink("Exam schedule") { nav.openMainTab(1) }
     if (exams.isEmpty()) {
         AppCard(modifier = Modifier.fillMaxWidth()) { Text("No exams ahead", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant) }
     } else {
@@ -274,6 +310,7 @@ internal fun AcademicTab(nav: DestinationsNavigator, container: AppContainer, d:
                 SettingRow(
                     title = exam.title,
                     subtitle = listOfNotNull(d.calendar?.subjects?.firstOrNull { it.id == exam.subjectId }?.name, exam.date.toString()).joinToString(" · "),
+                    onClick = { nav.openExam(exam.id) },
                     trailing = {
                         Text(
                             when (days) { 0L -> "Today"; 1L -> "Tomorrow"; else -> "In $days days" },
@@ -362,7 +399,7 @@ internal fun InsightsTab(nav: DestinationsNavigator, d: ProfileTabData) {
     // Study time, last seven days.
     val days = (6 downTo 0).map { d.today.minusDays(it.toLong()) }
     val minutes = days.map { day -> d.stats.filter { it.date == day }.sumOf { it.studyDurationMinutes } }
-    SectionLink("Study time")
+    SectionLink("Study time") { nav.navigate(StudyToolsScreenDestination) }
     AppCard(modifier = Modifier.fillMaxWidth()) {
         if (minutes.all { it == 0 }) Text("No study time logged in the last week", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         else {
@@ -385,7 +422,7 @@ internal fun InsightsTab(nav: DestinationsNavigator, d: ProfileTabData) {
             if (run > best) best = run
         }
     }
-    SectionLink("Study streaks")
+    SectionLink("Study streaks") { nav.navigate(StudyToolsScreenDestination) }
     AppCard(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             BigNumber("$current", "CURRENT", if (current == 1) "day in a row" else "days in a row")
@@ -407,7 +444,7 @@ internal fun InsightsTab(nav: DestinationsNavigator, d: ProfileTabData) {
 
     // Subject-wise performance: average exam result per subject next to its pass mark.
     val graded = d.calendar?.exams.orEmpty().filter { it.marksObtained != null && (it.maxMarks ?: 0.0) > 0.0 }
-    SectionLink("Subject performance") { nav.navigate(PlannerScreenDestination) }
+    SectionLink("Subject performance") { nav.navigate(GradesScreenDestination) }
     AppCard(modifier = Modifier.fillMaxWidth()) {
         if (graded.isEmpty()) {
             Text("Add marks to your exams to see results per subject", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)

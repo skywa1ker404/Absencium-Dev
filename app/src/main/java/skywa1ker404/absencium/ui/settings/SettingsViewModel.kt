@@ -31,6 +31,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings())
 
     fun setDisplayName(value: String) = launch { repository.setDisplayName(value) }
+    fun setProfileDepartment(value: String) = launch { repository.setProfileDepartment(value) }
     fun setProfileDetails(course: String, year: String, college: String) = launch { repository.setProfileDetails(course, year, college) }
 
     fun setProfileAvatar(fileName: String) = launch { repository.setProfileAvatar(fileName) }

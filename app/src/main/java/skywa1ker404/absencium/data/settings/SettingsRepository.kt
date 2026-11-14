@@ -63,6 +63,8 @@ class SettingsRepository(context: Context) {
         }
     }
 
+    suspend fun setProfileDepartment(value: String) = write(Keys.PROFILE_DEPARTMENT, value.trim().take(60))
+
     suspend fun setProfileAvatar(fileName: String) = write(Keys.PROFILE_AVATAR, fileName)
 
     suspend fun setThemeMode(value: ThemeMode) = write(Keys.THEME_MODE, value.name)
@@ -219,6 +221,7 @@ class SettingsRepository(context: Context) {
         val PROFILE_COURSE = stringPreferencesKey("profile_course")
         val PROFILE_YEAR = stringPreferencesKey("profile_year")
         val PROFILE_COLLEGE = stringPreferencesKey("profile_college")
+        val PROFILE_DEPARTMENT = stringPreferencesKey("profile_department")
         val PROFILE_AVATAR = stringPreferencesKey("profile_avatar")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val MARKS_SCALE = stringPreferencesKey("marks_scale")
@@ -267,7 +270,7 @@ class SettingsRepository(context: Context) {
         ).map { it.name }.toSet()
         val INTS = setOf(GLASS_BLUR, CORNER_RADIUS, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES, REMIND_LECTURE_MINUTES, REMIND_EXAM_DAYS).map { it.name }.toSet()
         val STRINGS = setOf(
-            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, MARKS_SCALE, COLOR_ENGINE, APP_STYLE, DISPLAY_SIZE, AVATAR_SHAPE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
+            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, PROFILE_DEPARTMENT, THEME_MODE, MARKS_SCALE, COLOR_ENGINE, APP_STYLE, DISPLAY_SIZE, AVATAR_SHAPE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
         ).map { it.name }.toSet()
     }
 
@@ -287,6 +290,7 @@ class SettingsRepository(context: Context) {
             profileCourse = this[Keys.PROFILE_COURSE] ?: defaults.profileCourse,
             profileYear = this[Keys.PROFILE_YEAR] ?: defaults.profileYear,
             profileCollege = this[Keys.PROFILE_COLLEGE] ?: defaults.profileCollege,
+            profileDepartment = this[Keys.PROFILE_DEPARTMENT] ?: defaults.profileDepartment,
             profileAvatar = this[Keys.PROFILE_AVATAR] ?: defaults.profileAvatar,
             // The old OLED mode is now Dark plus the Pure black switch.
             themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode).let { if (it == ThemeMode.DARK_OLED) ThemeMode.DARK else it },

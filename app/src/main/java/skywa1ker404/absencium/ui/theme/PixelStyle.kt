@@ -8,8 +8,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.clipPath
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
@@ -19,19 +20,36 @@ import skywa1ker404.absencium.data.settings.AppStyle
 /** The style the app is drawn in right now, so shared components can switch to their pixel look. */
 val LocalAppStyle = staticCompositionLocalOf { AppStyle.DEFAULT }
 
-/** A rectangle whose four corners are cut in two stair steps of [stepDp] each, like the buttons of an old game. */
-class PixelCornerShape(private val stepDp: Float = 2f) : Shape {
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+/**
+ * A rectangle whose corners are cut in two stair steps of [stepDp] each, like the buttons of an old game. It is a corner-based shape
+ * (each corner is twice a step), so Material's Shapes accept it and a sheet can still square off some of its corners.
+ */
+class PixelCornerShape private constructor(
+    private val stepDp: Float,
+    topStart: CornerSize,
+    topEnd: CornerSize,
+    bottomEnd: CornerSize,
+    bottomStart: CornerSize,
+) : CornerBasedShape(topStart, topEnd, bottomEnd, bottomStart) {
+    constructor(stepDp: Float = 2f) : this(stepDp, CornerSize((stepDp * 2).dp), CornerSize((stepDp * 2).dp), CornerSize((stepDp * 2).dp), CornerSize((stepDp * 2).dp))
+
+    override fun copy(topStart: CornerSize, topEnd: CornerSize, bottomEnd: CornerSize, bottomStart: CornerSize): CornerBasedShape =
+        PixelCornerShape(stepDp, topStart, topEnd, bottomEnd, bottomStart)
+
+    override fun createOutline(size: Size, topStart: Float, topEnd: Float, bottomEnd: Float, bottomStart: Float, layoutDirection: LayoutDirection): Outline {
         val w = size.width
         val h = size.height
-        // Never more than a quarter of the shortest side, so a tiny box is still a box.
-        val u = minOf(with(density) { stepDp.dp.toPx() }, minOf(w, h) / 6f).coerceAtLeast(0f)
+        // One step is half a corner.
+        val a = topStart / 2f
+        val b = topEnd / 2f
+        val c = bottomEnd / 2f
+        val d = bottomStart / 2f
         val path = Path().apply {
-            moveTo(2 * u, 0f)
-            lineTo(w - 2 * u, 0f); lineTo(w - 2 * u, u); lineTo(w - u, u); lineTo(w - u, 2 * u); lineTo(w, 2 * u)
-            lineTo(w, h - 2 * u); lineTo(w - u, h - 2 * u); lineTo(w - u, h - u); lineTo(w - 2 * u, h - u); lineTo(w - 2 * u, h)
-            lineTo(2 * u, h); lineTo(2 * u, h - u); lineTo(u, h - u); lineTo(u, h - 2 * u); lineTo(0f, h - 2 * u)
-            lineTo(0f, 2 * u); lineTo(u, 2 * u); lineTo(u, u); lineTo(2 * u, u)
+            moveTo(2 * a, 0f)
+            lineTo(w - 2 * b, 0f); lineTo(w - 2 * b, b); lineTo(w - b, b); lineTo(w - b, 2 * b); lineTo(w, 2 * b)
+            lineTo(w, h - 2 * c); lineTo(w - c, h - 2 * c); lineTo(w - c, h - c); lineTo(w - 2 * c, h - c); lineTo(w - 2 * c, h)
+            lineTo(2 * d, h); lineTo(2 * d, h - d); lineTo(d, h - d); lineTo(d, h - 2 * d); lineTo(0f, h - 2 * d)
+            lineTo(0f, 2 * a); lineTo(a, 2 * a); lineTo(a, a); lineTo(2 * a, a)
             close()
         }
         return Outline.Generic(path)

@@ -39,6 +39,10 @@ object AbsenciumAi {
     /** The main screen's tab to show next (1 attendance, 2 vault); the main screen takes it once. */
     val pendingTab = MutableStateFlow<Int?>(null)
 
+    /** Other pages (the Profile) ask the main screen to open its Timetable popup, or an exam's details popup, once it is on top again. */
+    val pendingTimetable = MutableStateFlow(false)
+    val pendingExamId = MutableStateFlow<Long?>(null)
+
     /** From the AI actions folder: close the chat and show the entry or page an action made or changed. */
     fun openTarget(context: Context, type: AiTargetType, id: Long) {
         pendingOpen.value = AiOpen(type, id)

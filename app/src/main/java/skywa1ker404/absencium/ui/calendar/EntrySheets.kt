@@ -10,6 +10,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -366,28 +368,92 @@ fun ExamDetailSheet(
                 .padding(top = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(exam.title, style = MaterialTheme.typography.headlineSmall)
-            DetailLine("Subject", subjectName)
-            DetailLine("Date", "${exam.date.pretty()} ${exam.date.year} (${daysLabel(today, exam.date)})")
-            DetailLine("Priority", exam.priority.label())
-            DetailLine("Weightage", exam.weightage?.let { trimNumber(it) } ?: "Not set")
-            DetailLine("Room", exam.room ?: "Not set")
-            Text("Syllabus notes", style = MaterialTheme.typography.labelLarge, color = colors.primary)
-            Text(
-                text = exam.syllabusNotes ?: "No notes added.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            PillButton(
-                text = "Edit exam",
-                onClick = onEdit,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            PillButton(
-                text = "Delete exam",
-                tonal = true,
-                onClick = { confirmDelete = true },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            val days = java.time.temporal.ChronoUnit.DAYS.between(today, exam.date)
+            val urgency = when {
+                days < 0 -> colors.onSurfaceVariant
+                days <= 3 -> colors.error
+                days <= 7 -> colors.tertiary
+                else -> colors.primary
+            }
+            // Title with the subject as a small chip under it.
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(exam.title, style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    text = subjectName,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = colors.onSecondaryContainer,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.clip(CircleShape).background(colors.secondaryContainer).padding(horizontal = 12.dp, vertical = 5.dp),
+                )
+            }
+            // The countdown is the one thing worth reading at a glance.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(urgency.copy(alpha = 0.14f)).padding(horizontal = 18.dp, vertical = 14.dp),
+            ) {
+                Column {
+                    Text(
+                        text = if (days == 0L) "Today" else if (days > 0) "$days" else "${-days}",
+                        style = MaterialTheme.typography.displaySmall,
+                        color = urgency,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = if (days == 0L) "exam day" else if (days > 0) (if (days == 1L) "day to go" else "days to go") else (if (days == -1L) "day ago" else "days ago"),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = urgency,
+                        maxLines = 1,
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("${exam.date.pretty()} ${exam.date.year}", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    Text(daysLabel(today, exam.date), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                }
+            }
+            // Priority, weightage and room as three even tiles.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                ExamStat(
+                    "Priority", exam.priority.label(), Modifier.weight(1f),
+                    when (exam.priority) { Priority.HIGH -> colors.error; Priority.NORMAL -> colors.tertiary; Priority.LOW -> colors.primary },
+                )
+                ExamStat("Weightage", exam.weightage?.let { trimNumber(it) } ?: "Not set", Modifier.weight(1f), null)
+                ExamStat("Room", exam.room?.takeIf { it.isNotBlank() } ?: "Not set", Modifier.weight(1f), null)
+            }
+            // The result, once the marks are in.
+            val got = exam.marksObtained
+            val max = exam.maxMarks
+            if (got != null && max != null && max > 0.0) {
+                val fraction = (got / max).toFloat().coerceIn(0f, 1f)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh.copy(alpha = 0.7f)).padding(14.dp),
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Result", style = MaterialTheme.typography.labelLarge, color = colors.primary)
+                        Text("${trimNumber(got)} / ${trimNumber(max)}  ·  ${(fraction * 100).toInt()}%", style = MaterialTheme.typography.titleSmall)
+                    }
+                    androidx.compose.material3.LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+                }
+            }
+            // Syllabus notes only take room when there are some.
+            val notes = exam.syllabusNotes?.takeIf { it.isNotBlank() }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh.copy(alpha = 0.7f)).padding(14.dp),
+            ) {
+                Text("Syllabus notes", style = MaterialTheme.typography.labelLarge, color = colors.primary)
+                Text(
+                    text = notes ?: "No notes yet. Edit the exam to add the topics it covers.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (notes == null) colors.onSurfaceVariant else colors.onSurface,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                PillButton(text = "Edit exam", onClick = onEdit, modifier = Modifier.weight(1f))
+                PillButton(text = "Delete", tonal = true, onClick = { confirmDelete = true }, modifier = Modifier.weight(1f))
+            }
         }
         }
     }
@@ -399,6 +465,21 @@ fun ExamDetailSheet(
             text = { Text("${exam.title} will be removed from the calendar.") },
             confirmButton = { TextButton(onClick = onDelete) { Text("Delete") } },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep") } },
+        )
+    }
+}
+
+@Composable
+private fun ExamStat(label: String, value: String, modifier: Modifier, accent: androidx.compose.ui.graphics.Color?) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier.clip(RoundedCornerShape(18.dp)).background(colors.surfaceContainerHigh.copy(alpha = 0.7f)).padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1)
+        Text(
+            value, style = MaterialTheme.typography.titleSmall, color = accent ?: colors.onSurface, maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
     }
 }

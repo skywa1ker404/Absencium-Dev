@@ -171,6 +171,22 @@ fun MainScreen(navigator: DestinationsNavigator) {
             }
         }
     }
+    LaunchedEffect(Unit) {
+        skywa1ker404.absencium.ui.AbsenciumAi.pendingTimetable.collect { wanted ->
+            if (wanted) {
+                showTimetable = true
+                skywa1ker404.absencium.ui.AbsenciumAi.pendingTimetable.value = false
+            }
+        }
+    }
+    LaunchedEffect(Unit) {
+        skywa1ker404.absencium.ui.AbsenciumAi.pendingExamId.collect { wanted ->
+            if (wanted != null) {
+                data?.exams?.firstOrNull { it.id == wanted }?.let { openExam = it }
+                skywa1ker404.absencium.ui.AbsenciumAi.pendingExamId.value = null
+            }
+        }
+    }
     BackHandler(enabled = fabOpen) { fabOpen = false }
     BackHandler(enabled = tab != TAB_HOME && !fabOpen) { tab = TAB_HOME }
     LaunchedEffect(tab) {

@@ -97,6 +97,8 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
     var course by remember(initial) { mutableStateOf(initial.first) }
     var year by remember(initial) { mutableStateOf(initial.second) }
     var college by remember(loaded.profileCollege) { mutableStateOf(loaded.profileCollege) }
+    var department by remember(loaded.profileDepartment) { mutableStateOf(loaded.profileDepartment) }
+    var target by remember(loaded.attendanceThresholdPercent) { mutableStateOf(loaded.attendanceThresholdPercent.toFloat()) }
     var cropPath by remember { mutableStateOf<String?>(null) }
     var showAvatarCard by remember { mutableStateOf(false) }
     var showEmojiSheet by remember { mutableStateOf(false) }
@@ -142,15 +144,28 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
                 }
                 PickerField(label = "Year or semester", value = year, options = YEARS, onPick = { year = it })
                 AppTextField(
-                    value = college, onValueChange = { college = it }, label = { Text("College") }, singleLine = true,
+                    value = college, onValueChange = { college = it }, label = { Text("College or institution") }, singleLine = true,
                     shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
                 )
-                HintText("Course and year are saved together as one line, and stay on this phone.")
+                AppTextField(
+                    value = department, onValueChange = { department = it }, label = { Text("Department or branch") }, singleLine = true,
+                    shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
+                )
+                Text("Attendance target: ${target.toInt()}%", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+                androidx.compose.material3.Slider(
+                    value = target,
+                    onValueChange = { target = it },
+                    valueRange = skywa1ker404.absencium.data.settings.AppSettings.MIN_ATTENDANCE_THRESHOLD.toFloat()..skywa1ker404.absencium.data.settings.AppSettings.MAX_ATTENDANCE_THRESHOLD.toFloat(),
+                    steps = skywa1ker404.absencium.data.settings.AppSettings.MAX_ATTENDANCE_THRESHOLD - skywa1ker404.absencium.data.settings.AppSettings.MIN_ATTENDANCE_THRESHOLD - 1,
+                )
+                HintText("Course and year are saved together as one line. The target is the attendance you aim for in every subject. Everything stays on this phone.")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
                     PillButton(text = "Save", onClick = {
                         settingsViewModel.setDisplayName(name.trim())
                         val joined = listOf(course.trim(), year.trim()).filter { it.isNotBlank() }.joinToString(", ")
                         settingsViewModel.setProfileDetails(joined, "", college)
+                        settingsViewModel.setProfileDepartment(department)
+                        settingsViewModel.setAttendanceThreshold(target.toInt())
                         navigator.navigateUp()
                     })
                     PillButton(text = "Cancel", tonal = true, onClick = { navigator.navigateUp() })
