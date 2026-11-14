@@ -55,6 +55,7 @@ import skywa1ker404.absencium.ui.components.PillButton
 import skywa1ker404.absencium.ui.components.ScreenScaffold
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.settings.rememberSettingsViewModel
+import skywa1ker404.absencium.ui.theme.toComposeShape
 import skywa1ker404.absencium.ui.vault.entry.ImageTools
 import skywa1ker404.absencium.ui.vault.entry.PhotoCropDialog
 import java.io.File
@@ -115,7 +116,6 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
             AvatarPicture(
                 fileName = loaded.profileAvatar, initials = name, size = 112,
                 modifier = Modifier.clickable { showAvatarCard = true },
-                shape = androidx.compose.material3.MaterialShapes.Cookie9Sided.toShape(),
             )
             PillButton(text = "Change avatar", onClick = { showAvatarCard = true }, tonal = true, compact = true)
         }
@@ -236,7 +236,9 @@ private fun PickerField(label: String, value: String, options: List<String>, onP
 
 /** The profile picture, or the initials (a person icon when there is no name) on the primary container. */
 @Composable
-fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape = CircleShape) {
+fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape? = null) {
+    val style = skywa1ker404.absencium.ui.theme.LocalAvatarStyle.current
+    val resolved = shape ?: style.shape.toComposeShape()
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     val isEmoji = fileName.startsWith(EMOJI_PREFIX)
@@ -246,7 +248,9 @@ fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modif
         }
     }
     Box(
-        modifier = modifier.size(size.dp).clip(shape).background(colors.primaryContainer),
+        modifier = modifier.size(size.dp).clip(resolved).then(
+            if (style.frame) Modifier.background(colors.primaryContainer) else Modifier,
+        ),
         contentAlignment = Alignment.Center,
     ) {
         val image = bitmap

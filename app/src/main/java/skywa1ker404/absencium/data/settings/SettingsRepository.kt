@@ -100,6 +100,16 @@ class SettingsRepository(context: Context) {
 
     suspend fun setVisualQuality(value: VisualQuality) = write(Keys.VISUAL_QUALITY, value.name)
 
+    suspend fun setPureBlack(value: Boolean) = write(Keys.PURE_BLACK, value)
+
+    suspend fun setDisplaySize(value: DisplaySize) = write(Keys.DISPLAY_SIZE, value.name)
+
+    suspend fun setCornerRadius(dp: Int) = write(Keys.CORNER_RADIUS, dp.coerceIn(AppSettings.MIN_CORNER_RADIUS, AppSettings.MAX_CORNER_RADIUS))
+
+    suspend fun setAvatarShape(value: AvatarShape) = write(Keys.AVATAR_SHAPE, value.name)
+
+    suspend fun setAvatarFrame(value: Boolean) = write(Keys.AVATAR_FRAME, value)
+
     suspend fun setAttendanceThreshold(percent: Int) = write(
         Keys.ATTENDANCE_THRESHOLD,
         percent.coerceIn(AppSettings.MIN_ATTENDANCE_THRESHOLD, AppSettings.MAX_ATTENDANCE_THRESHOLD),
@@ -220,6 +230,11 @@ class SettingsRepository(context: Context) {
         val GLASS_BLUR = intPreferencesKey("glass_blur_dp")
         val FROSTED_OVERLAYS = booleanPreferencesKey("frosted_overlays")
         val VISUAL_QUALITY = stringPreferencesKey("visual_quality")
+        val PURE_BLACK = booleanPreferencesKey("pure_black")
+        val DISPLAY_SIZE = stringPreferencesKey("display_size")
+        val CORNER_RADIUS = intPreferencesKey("corner_radius_dp")
+        val AVATAR_SHAPE = stringPreferencesKey("avatar_shape")
+        val AVATAR_FRAME = booleanPreferencesKey("avatar_frame")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
         val FOCUS_GRACE_MINUTES = intPreferencesKey("focus_grace_minutes")
         val REMIND_LECTURE_MINUTES = intPreferencesKey("remind_lecture_minutes")
@@ -246,13 +261,13 @@ class SettingsRepository(context: Context) {
 
         // The keys a restore may set, by type. A key not listed here is never imported.
         val BOOLEANS = setOf(
-            ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
+            ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, PURE_BLACK, AVATAR_FRAME, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
             SEARCH_IMAGES_ENABLED, GENERATE_IMAGES_ENABLED,
             MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY, REMIND_LOW_ATTENDANCE,
         ).map { it.name }.toSet()
-        val INTS = setOf(GLASS_BLUR, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES, REMIND_LECTURE_MINUTES, REMIND_EXAM_DAYS).map { it.name }.toSet()
+        val INTS = setOf(GLASS_BLUR, CORNER_RADIUS, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES, REMIND_LECTURE_MINUTES, REMIND_EXAM_DAYS).map { it.name }.toSet()
         val STRINGS = setOf(
-            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, MARKS_SCALE, COLOR_ENGINE, APP_STYLE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
+            DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, THEME_MODE, MARKS_SCALE, COLOR_ENGINE, APP_STYLE, DISPLAY_SIZE, AVATAR_SHAPE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
         ).map { it.name }.toSet()
     }
 
@@ -273,7 +288,13 @@ class SettingsRepository(context: Context) {
             profileYear = this[Keys.PROFILE_YEAR] ?: defaults.profileYear,
             profileCollege = this[Keys.PROFILE_COLLEGE] ?: defaults.profileCollege,
             profileAvatar = this[Keys.PROFILE_AVATAR] ?: defaults.profileAvatar,
-            themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode),
+            // The old OLED mode is now Dark plus the Pure black switch.
+            themeMode = enumOrDefault(this[Keys.THEME_MODE], defaults.themeMode).let { if (it == ThemeMode.DARK_OLED) ThemeMode.DARK else it },
+            pureBlack = this[Keys.PURE_BLACK] ?: (this[Keys.THEME_MODE] == ThemeMode.DARK_OLED.name),
+            displaySize = enumOrDefault(this[Keys.DISPLAY_SIZE], defaults.displaySize),
+            cornerRadiusDp = (this[Keys.CORNER_RADIUS] ?: defaults.cornerRadiusDp).coerceIn(AppSettings.MIN_CORNER_RADIUS, AppSettings.MAX_CORNER_RADIUS),
+            avatarShape = enumOrDefault(this[Keys.AVATAR_SHAPE], defaults.avatarShape),
+            avatarFrame = this[Keys.AVATAR_FRAME] ?: defaults.avatarFrame,
             marksScale = enumOrDefault(this[Keys.MARKS_SCALE], defaults.marksScale),
             // Before Liquid Glass became a toggle it was a theme of its own; that setting becomes the toggle on top of
             // the default theme, and Solid Accent (also gone) falls back to the default as well.

@@ -12,6 +12,8 @@ import skywa1ker404.absencium.data.ai.AiProvider
 import skywa1ker404.absencium.data.ai.ApiStyle
 import skywa1ker404.absencium.data.settings.AppSettings
 import skywa1ker404.absencium.data.settings.AppStyle
+import skywa1ker404.absencium.data.settings.AvatarShape
+import skywa1ker404.absencium.data.settings.DisplaySize
 import skywa1ker404.absencium.data.settings.ColorEngine
 import skywa1ker404.absencium.data.settings.SettingsRepository
 import skywa1ker404.absencium.data.settings.ThemeMode
@@ -64,6 +66,16 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         repository.setVisualQuality(value)
         DebugLogger.i("Quality", "Visual quality set to ${value.name}")
     }
+
+    fun setPureBlack(value: Boolean) = launch { repository.setPureBlack(value) }
+
+    fun setDisplaySize(value: DisplaySize) = launch { repository.setDisplaySize(value) }
+
+    fun setCornerRadius(dp: Int) = launch { repository.setCornerRadius(dp) }
+
+    fun setAvatarShape(value: AvatarShape) = launch { repository.setAvatarShape(value) }
+
+    fun setAvatarFrame(value: Boolean) = launch { repository.setAvatarFrame(value) }
 
     fun setAttendanceThreshold(percent: Int) = launch { repository.setAttendanceThreshold(percent) }
 

@@ -141,7 +141,6 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
                 fileName = loaded.profileAvatar,
                 initials = loaded.displayName,
                 size = 104,
-                shape = androidx.compose.material3.MaterialShapes.Cookie9Sided.toShape(),
                 modifier = Modifier.align(Alignment.TopStart).offset(x = 20.dp, y = 140.dp - 52.dp),
             )
             RoundIcon(

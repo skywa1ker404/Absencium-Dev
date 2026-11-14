@@ -82,19 +82,9 @@ fun TopicSidebar(
     if (!visible && progress < 0.002f) return
     BackHandler(enabled = visible, onBack = onDismiss)
 
-    // Units fold open and shut; the path to the chosen topic starts open.
+    // Units fold open and shut; everything starts closed.
     val parents = remember(nodes) { nodes.mapNotNull { it.parentId }.toSet() }
-    var open by remember(nodes.size) {
-        mutableStateOf(
-            buildSet {
-                var up = nodes.firstOrNull { it.id == selectedId }?.parentId
-                while (up != null) {
-                    add(up)
-                    up = nodes.firstOrNull { it.id == up }?.parentId
-                }
-            },
-        )
-    }
+    var open by remember(nodes.size) { mutableStateOf(emptySet<Long>()) }
     val rows = remember(nodes, open, parents) { SyllabusTree.rows(nodes, parents - open) }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {

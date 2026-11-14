@@ -90,7 +90,8 @@ import skywa1ker404.absencium.ui.theme.LocalQuality
 /** What is open on a subject's syllabus: collapsed rows, the text dialog, a delete question and the import dialog. Held apart so a page can show several subjects. */
 @androidx.compose.runtime.Stable
 internal class SyllabusUiState {
-    var collapsed by mutableStateOf(emptySet<Long>())
+    /** The rows that are opened; every unit, chapter and topic starts closed. */
+    var open by mutableStateOf(emptySet<Long>())
     var editing by mutableStateOf<Editing?>(null)
     var deleting by mutableStateOf<SyllabusNodeEntity?>(null)
     var showImport by mutableStateOf(false)
@@ -169,7 +170,7 @@ internal fun SyllabusContent(viewModel: SyllabusViewModel, ui: SyllabusUiState, 
     val nodes by viewModel.nodes.collectAsStateWithLifecycle()
     val counts by viewModel.linkCounts.collectAsStateWithLifecycle()
     val subjectName by viewModel.subjectName.collectAsStateWithLifecycle()
-    val collapsed = ui.collapsed
+    val open = ui.open
 
     // Opened from a unit card, the screen shows that unit's own tree and nothing else; the unit becomes the top of the tree.
     val scoped = remember(nodes, rootId) {
@@ -184,6 +185,7 @@ internal fun SyllabusContent(viewModel: SyllabusViewModel, ui: SyllabusUiState, 
         // The unit was deleted from here: go back to the list.
         if (rootId != null && nodes.isNotEmpty() && scoped.isEmpty()) onUnitGone()
     }
+    val collapsed = remember(scoped, open) { scoped.mapNotNull { it.parentId }.toSet() - open }
     val rows = remember(scoped, collapsed) { SyllabusTree.rows(scoped, collapsed) }
     val overall = remember(scoped) { SyllabusTree.progress(scoped, null) }
     val animatedOverall by animateFloatAsState(
@@ -251,7 +253,7 @@ internal fun SyllabusContent(viewModel: SyllabusViewModel, ui: SyllabusUiState, 
                             progress = SyllabusTree.progress(scoped, row.node.id),
                             linked = counts[row.node.id] ?: 0,
                             expanded = row.node.id !in collapsed,
-                            onToggle = { ui.collapsed = if (row.node.id in collapsed) collapsed - row.node.id else collapsed + row.node.id },
+                            onToggle = { ui.open = if (row.node.id in open) open - row.node.id else open + row.node.id },
                             onCycle = { viewModel.cycleStatus(row.node.id) },
                             onAddInside = { ui.editing = Editing.Add(row.node.id, SyllabusTree.levelName(row.depth + 1)) },
                             onRename = { ui.editing = Editing.Rename(row.node) },
@@ -296,7 +298,7 @@ internal fun SyllabusDialogs(viewModel: SyllabusViewModel, ui: SyllabusUiState) 
                     is Editing.Rename -> viewModel.rename(current.node.id, text)
                     is Editing.Details -> viewModel.setDetails(current.node.id, text)
                 }
-                if (current is Editing.Add) current.parentId?.let { ui.collapsed = ui.collapsed - it }
+                if (current is Editing.Add) current.parentId?.let { ui.open = ui.open + it }
                 ui.editing = null
             },
         )

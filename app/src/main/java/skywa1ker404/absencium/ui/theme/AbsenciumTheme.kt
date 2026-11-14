@@ -93,12 +93,16 @@ fun ColorScheme.glassSurfaces(alpha: Float = 0.5f): ColorScheme = copy(
     surfaceVariant = surfaceVariant.copy(alpha = alpha),
 )
 
-private val AbsenciumShapes = Shapes(
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(36.dp),
-)
+/** The corner sizes follow one slider: the large corner is the chosen radius and the others keep the 12 / 20 / 28 / 36 proportions. */
+private fun shapesFor(radiusDp: Int): Shapes {
+    val r = radiusDp.toFloat()
+    return Shapes(
+        small = RoundedCornerShape((r * 12f / 28f).dp),
+        medium = RoundedCornerShape((r * 20f / 28f).dp),
+        large = RoundedCornerShape(r.dp),
+        extraLarge = RoundedCornerShape((r * 36f / 28f).dp),
+    )
+}
 
 /** Pixelated style: corners cut square like stepped pixels, small on every size. */
 private val PixelShapes = Shapes(
@@ -205,7 +209,7 @@ fun AbsenciumTheme(
     // Liquid Glass is a layer on top of the active theme; it needs Android 12 for the blur and Quality mode for the cost.
     val glassActive = settings.liquidGlass && quality.blurEnabled && isMonetAndBlurSupported
 
-    val colorScheme: ColorScheme = remember(engine, isDark, settings.themePreset, settings.themeMode, settings.appStyle, glassActive, context, LocalConfiguration.current) {
+    val colorScheme: ColorScheme = remember(engine, isDark, settings.themePreset, settings.themeMode, settings.pureBlack, settings.appStyle, glassActive, context, LocalConfiguration.current) {
         val generated = if (settings.appStyle == AppStyle.DOT_MATRIX) dotMatrixScheme(isDark) else when (engine) {
             // The system's own scheme: the wallpaper colour picked in Wallpaper & style, light or dark.
             ColorEngine.MONET_WALLPAPER -> if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -215,18 +219,23 @@ fun AbsenciumTheme(
                 variant.toColorScheme(variantIsDark)
             }
         }
-        if (settings.themeMode == ThemeMode.DARK_OLED && isDark) generated.oledBlack() else generated
+        if (settings.pureBlack && isDark) generated.oledBlack() else generated
     }
 
     // Material 3 Expressive: the springy, bouncy motion scheme drives every Material component (switches, sliders, toggle buttons).
     androidx.compose.material3.MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = androidx.compose.material3.MotionScheme.expressive(),
-        shapes = if (settings.appStyle == AppStyle.PIXELATED) PixelShapes else AbsenciumShapes,
+        shapes = if (settings.appStyle == AppStyle.PIXELATED) PixelShapes else shapesFor(settings.cornerRadiusDp),
         typography = if (settings.appStyle == AppStyle.DOT_MATRIX) DotTypography else AbsenciumTypography,
     ) {
         CompositionLocalProvider(
             LocalQuality provides quality,
+            LocalAvatarStyle provides AvatarStyle(settings.avatarShape, settings.avatarFrame),
+            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
+                density = androidx.compose.ui.platform.LocalDensity.current.density * settings.displaySize.scale,
+                fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale,
+            ),
             LocalGlassEnabled provides glassActive,
             LocalSolidColorScheme provides colorScheme,
             LocalFrostedOverlays provides (glassActive && settings.frostedOverlays),

@@ -1,5 +1,16 @@
 package skywa1ker404.absencium.ui.settings
 
+import skywa1ker404.absencium.ui.theme.toComposeShape
+import skywa1ker404.absencium.ui.components.SettingSwitchRow
+import skywa1ker404.absencium.data.settings.DisplaySize
+import skywa1ker404.absencium.data.settings.AvatarShape
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import skywa1ker404.absencium.ui.components.ExpressiveChip
 import skywa1ker404.absencium.data.settings.AppStyle
 import androidx.compose.foundation.rememberScrollState
@@ -59,12 +70,18 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
 
     ScreenScaffold(title = "Appearance", onBack = { navigator.navigateUp() }, largeTitle = true) {
-        VisualQualityChoices(
-            selected = settings.visualQuality,
-            onSelect = viewModel::setVisualQuality,
-        )
-        StyleChoices(selected = settings.appStyle, onSelect = viewModel::setAppStyle)
+        // Same order as the reference (picture 33): preview, appearance, display size, colour, styles, shape settings, quality.
+        AppearancePreview(settings)
         ThemeModeChoices(selected = settings.themeMode, onSelect = viewModel::setThemeMode)
+        AppCard(modifier = Modifier.fillMaxWidth()) {
+            SettingSwitchRow(
+                title = "Pure black in dark mode",
+                subtitle = "Black backgrounds when dark is on. Saves power on OLED screens.",
+                checked = settings.pureBlack,
+                onCheckedChange = viewModel::setPureBlack,
+            )
+        }
+        DisplaySizeChoices(selected = settings.displaySize, onSelect = viewModel::setDisplaySize)
         // Dot matrix is black and white with one red accent, so it has no colour choices; the other styles use the chosen colours.
         if (settings.appStyle != AppStyle.DOT_MATRIX) {
             ColorEngineChoices(
@@ -73,38 +90,165 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
                 onPresetSelected = viewModel::setThemePreset,
                 onGlassToggle = viewModel::setLiquidGlass,
                 onFrostedToggle = viewModel::setFrostedOverlays,
+                showGlass = false,
             )
         }
 
-        if (settings.liquidGlass && isMonetAndBlurSupported) {
-            SectionTitle("Frosted glass intensity")
-            GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
-                GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
+        StyleChoices(selected = settings.appStyle, onSelect = viewModel::setAppStyle)
+        // Only the chosen style's own settings are shown.
+        if (settings.appStyle == AppStyle.LIQUID_GLASS) {
+            if (!isMonetAndBlurSupported) {
+                HintText(REQUIRES_ANDROID_12)
+            } else {
+                GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
+                    SwitchCard(
+                        title = "Frosted popups",
+                        subtitle = "Profile, search, Add Entry and dialogs",
+                        checked = settings.frostedOverlays,
+                        onCheckedChange = viewModel::setFrostedOverlays,
+                    )
+                    GlassBlurSlider(settings.glassBlurDp) { viewModel.setGlassBlur(it) }
+                }
             }
         }
+
+        if (settings.appStyle != AppStyle.PIXELATED) {
+            SliderCard(
+                title = "Corner radius",
+                subtitle = "How round cards, sheets and buttons are",
+                value = settings.cornerRadiusDp,
+                range = AppSettings.MIN_CORNER_RADIUS..AppSettings.MAX_CORNER_RADIUS,
+                valueLabel = { "${it}dp" },
+                onValueChangeFinished = viewModel::setCornerRadius,
+            )
+        }
+
+        AvatarChoices(shape = settings.avatarShape, frame = settings.avatarFrame, onShape = viewModel::setAvatarShape, onFrame = viewModel::setAvatarFrame)
+
+        VisualQualityChoices(
+            selected = settings.visualQuality,
+            onSelect = viewModel::setVisualQuality,
+        )
+    }
+}
+
+/** A live miniature of the app in the current theme, style, corners and avatar: it changes the moment a choice below changes. */
+@Composable
+private fun AppearancePreview(settings: AppSettings) {
+    val colors = MaterialTheme.colorScheme
+    SectionTitle("Preview")
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp)
+            .clip(MaterialTheme.shapes.large)
+            .background(colors.background)
+            .padding(16.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Absencium", style = MaterialTheme.typography.titleLarge, color = colors.onBackground, modifier = Modifier.weight(1f))
+                skywa1ker404.absencium.ui.profile.AvatarPicture(fileName = settings.profileAvatar, initials = settings.displayName.ifBlank { "A" }, size = 36)
+            }
+            Box(
+                modifier = Modifier.fillMaxWidth().height(64.dp).clip(MaterialTheme.shapes.medium).background(colors.primaryContainer).padding(14.dp),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.width(120.dp).height(8.dp).clip(CircleShape).background(colors.onPrimaryContainer.copy(alpha = 0.7f)))
+                    Box(Modifier.width(76.dp).height(8.dp).clip(CircleShape).background(colors.onPrimaryContainer.copy(alpha = 0.4f)))
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.weight(1f).height(44.dp).clip(MaterialTheme.shapes.medium).background(colors.secondaryContainer))
+                Box(Modifier.weight(1f).height(44.dp).clip(MaterialTheme.shapes.medium).background(colors.tertiaryContainer))
+            }
+        }
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).clip(CircleShape).background(colors.surfaceContainerHigh).padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.width(34.dp).height(18.dp).clip(CircleShape).background(colors.primary))
+            repeat(3) { Box(Modifier.size(10.dp).clip(CircleShape).background(colors.onSurfaceVariant.copy(alpha = 0.6f))) }
+        }
+    }
+}
+
+/** Whole-app size as four "Aa" tiles. */
+@Composable
+private fun DisplaySizeChoices(selected: DisplaySize, onSelect: (DisplaySize) -> Unit) {
+    SectionTitle("Display size")
+    AppCard(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DisplaySize.entries.forEach { size ->
+                ChoiceTile(selected = selected == size, onClick = { onSelect(size) }, label = size.label, modifier = Modifier.weight(1f)) {
+                    Text("Aa", fontSize = (18 * (0.85f + size.ordinal * 0.15f)).sp, color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        }
+    }
+    HintText("Scales text, icons and spacing everywhere in Absencium. Your phone's own display size and font size still apply.")
+}
+
+/** Avatar shapes as tiles, then the frame switch. */
+@Composable
+private fun AvatarChoices(shape: AvatarShape, frame: Boolean, onShape: (AvatarShape) -> Unit, onFrame: (Boolean) -> Unit) {
+    SectionTitle("Avatars")
+    AppCard(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            AvatarShape.entries.forEach { option ->
+                ChoiceTile(selected = shape == option, onClick = { onShape(option) }, label = option.label, modifier = Modifier.weight(1f)) {
+                    Box(Modifier.size(40.dp).clip(option.toComposeShape()).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)))
+                }
+            }
+        }
+    }
+    AppCard(modifier = Modifier.fillMaxWidth()) {
+        SettingSwitchRow(
+            title = "Show frame",
+            subtitle = "Draws a ring and background behind avatars",
+            checked = frame,
+            onCheckedChange = onFrame,
+        )
+    }
+}
+
+/** A rounded tile with something in the middle and a label under it; the chosen one gets a ring in the primary colour. */
+@Composable
+private fun ChoiceTile(selected: Boolean, onClick: () -> Unit, label: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val rim by androidx.compose.animation.animateColorAsState(if (selected) colors.primary else Color.Transparent, label = "tileRim")
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (selected) colors.secondaryContainer else colors.surfaceContainerHighest.copy(alpha = 0.6f))
+            .border(2.dp, rim, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(Modifier.height(44.dp), contentAlignment = Alignment.Center) { content() }
+        Text(label, style = MaterialTheme.typography.labelMedium, color = colors.onSurface, maxLines = 1)
     }
 }
 
 /** The app's look, one at a time: Default, Liquid Glass, Pixelated or Dot matrix (black and white, Nothing-inspired). */
 @Composable
 fun StyleChoices(selected: AppStyle, onSelect: (AppStyle) -> Unit) {
-    SectionTitle("Style")
-    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        AppStyle.entries.forEach { style ->
-            ExpressiveChip(
-                selected = selected == style,
-                onClick = { onSelect(style) },
-                label = {
-                    Text(
-                        when (style) {
-                            AppStyle.DEFAULT -> "Default"
-                            AppStyle.LIQUID_GLASS -> "Liquid Glass"
-                            AppStyle.PIXELATED -> "Pixelated"
-                            AppStyle.DOT_MATRIX -> "Dot matrix"
-                        },
-                    )
-                },
-            )
+    SectionTitle("Styles")
+    AppCard(modifier = Modifier.fillMaxWidth()) {
+        Text("Themes style", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "currently selected: ${styleName(selected)}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 10.dp),
+        )
+        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppStyle.entries.forEach { style ->
+                ExpressiveChip(selected = selected == style, onClick = { onSelect(style) }, label = { Text(styleName(style)) })
+            }
         }
     }
     HintText(
@@ -115,6 +259,13 @@ fun StyleChoices(selected: AppStyle, onSelect: (AppStyle) -> Unit) {
             AppStyle.DOT_MATRIX -> "Black and white with one red accent and a dot-matrix font. No colour themes."
         },
     )
+}
+
+private fun styleName(style: AppStyle) = when (style) {
+    AppStyle.DEFAULT -> "Default"
+    AppStyle.LIQUID_GLASS -> "Liquid Glass"
+    AppStyle.PIXELATED -> "Pixelated"
+    AppStyle.DOT_MATRIX -> "Dot matrix"
 }
 
 /** Visual quality choices, shared by Settings and the onboarding wizard. Applies the moment one is tapped. */
@@ -141,15 +292,15 @@ fun ThemeModeChoices(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     val light = PreviewColors(Color(0xFFF4F4EF), Color(0xFFFFFFFF), Color(0xFF1B1C18), c.primary, c.secondary)
     val dark = PreviewColors(Color(0xFF1E201C), Color(0xFF2E302B), Color(0xFFE4E3DB), c.primary, c.secondary)
     val oled = PreviewColors(Color(0xFF0D0D0D), Color(0xFF1C1C1C), Color(0xFFE4E3DB), c.primary, c.secondary)
-    SectionTitle("Theme mode")
+    SectionTitle("Appearance")
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        ThemeMode.entries.forEach { mode ->
+        ThemeMode.entries.filter { it != ThemeMode.DARK_OLED }.forEach { mode ->
             PreviewTile(
                 title = when (mode) {
                     ThemeMode.LIGHT -> "Light"
                     ThemeMode.DARK -> "Dark"
                     ThemeMode.DARK_OLED -> "OLED"
-                    ThemeMode.SYSTEM_AUTO -> "Auto"
+                    ThemeMode.SYSTEM_AUTO -> "System"
                 },
                 selected = selected == mode,
                 onClick = { onSelect(mode) },
@@ -178,11 +329,12 @@ fun ColorEngineChoices(
     onPresetSelected: (ThemePreset) -> Unit,
     onGlassToggle: (Boolean) -> Unit,
     onFrostedToggle: (Boolean) -> Unit,
+    showGlass: Boolean = true,
 ) {
     var showPresets by remember { mutableStateOf(false) }
     val isDark = isDarkTheme(settings)
     val monet = monetPreview(isDark)
-    SectionTitle("Theme")
+    SectionTitle("Color")
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         PreviewTile(
             title = "Default",
@@ -212,40 +364,42 @@ fun ColorEngineChoices(
             ColorEngine.PRESET -> "${settings.themePreset.palette().name}. Tap Presets to change."
         },
     )
-    val glassHelper = when {
-        !isMonetAndBlurSupported -> "Needs Android 12 or newer"
-        settings.visualQuality == VisualQuality.PERFORMANCE -> "Off in Performance mode"
-        else -> "Frosted, see-through surfaces over your theme"
-    }
-    val glassEnabled = isMonetAndBlurSupported && settings.visualQuality != VisualQuality.PERFORMANCE
-    AppCard(
-        modifier = Modifier.fillMaxWidth().alpha(if (glassEnabled) 1f else 0.5f),
-        onClick = if (glassEnabled) { { onGlassToggle(!settings.liquidGlass) } } else null,
-        highlighted = settings.liquidGlass,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Box(Modifier.size(60.dp).clip(RoundedCornerShape(18.dp))) { GlassPreview() }
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Liquid Glass", style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                Text(
-                    glassHelper,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+    if (showGlass) {
+        val glassHelper = when {
+            !isMonetAndBlurSupported -> "Needs Android 12 or newer"
+            settings.visualQuality == VisualQuality.PERFORMANCE -> "Off in Performance mode"
+            else -> "Frosted, see-through surfaces over your theme"
+        }
+        val glassEnabled = isMonetAndBlurSupported && settings.visualQuality != VisualQuality.PERFORMANCE
+        AppCard(
+            modifier = Modifier.fillMaxWidth().alpha(if (glassEnabled) 1f else 0.5f),
+            onClick = if (glassEnabled) { { onGlassToggle(!settings.liquidGlass) } } else null,
+            highlighted = settings.liquidGlass,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(Modifier.size(60.dp).clip(RoundedCornerShape(18.dp))) { GlassPreview() }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Liquid Glass", style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                    Text(
+                        glassHelper,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                }
+                Switch(checked = settings.liquidGlass, onCheckedChange = null, enabled = glassEnabled)
+            }
+        }
+        // Appears with the same springy expansion as the notes list on the Attendance tab, and folds away with Liquid Glass.
+        Reveal(visible = settings.liquidGlass && isMonetAndBlurSupported) {
+            GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
+                SwitchCard(
+                    title = "Frosted popups",
+                    subtitle = "Profile, search, Add Entry and dialogs",
+                    checked = settings.frostedOverlays,
+                    onCheckedChange = onFrostedToggle,
                 )
             }
-            Switch(checked = settings.liquidGlass, onCheckedChange = null, enabled = glassEnabled)
-        }
-    }
-    // Appears with the same springy expansion as the notes list on the Attendance tab, and folds away with Liquid Glass.
-    Reveal(visible = settings.liquidGlass && isMonetAndBlurSupported) {
-        GreyedOut(disabled = settings.visualQuality == VisualQuality.PERFORMANCE) {
-            SwitchCard(
-                title = "Frosted popups",
-                subtitle = "Profile, search, Add Entry and dialogs",
-                checked = settings.frostedOverlays,
-                onCheckedChange = onFrostedToggle,
-            )
         }
     }
     if (showPresets) {

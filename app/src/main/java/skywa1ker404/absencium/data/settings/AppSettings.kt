@@ -14,6 +14,12 @@ enum class ThemeMode {
     SYSTEM_AUTO,
 }
 
+/** Whole-app size: scales text, icons and spacing together (the phone's own display size and font size still apply). */
+enum class DisplaySize(val scale: Float, val label: String) { SMALL(0.9f, "Small"), DEFAULT(1f, "Default"), LARGE(1.1f, "Large"), LARGER(1.2f, "Larger") }
+
+/** The shape of profile pictures everywhere (Material shapes: 8-leaf clover, circle, 4-leaf clover, ghost, rounded square). */
+enum class AvatarShape(val label: String) { LEAF8("8-leaf"), CIRCLE("Circle"), LEAF4("4-leaf"), GHOST("Ghost"), NONE("None") }
+
 /** The look of the whole app; only one is on at a time. Liquid Glass and Pixelated take the chosen colour theme, Dot matrix is black and white. */
 enum class AppStyle { DEFAULT, LIQUID_GLASS, PIXELATED, DOT_MATRIX }
 
@@ -53,6 +59,14 @@ data class AppSettings(
     val liquidGlass: Boolean = false,
     /** The chosen look; [liquidGlass] is true exactly while this is [AppStyle.LIQUID_GLASS]. */
     val appStyle: AppStyle = AppStyle.DEFAULT,
+    /** Pure black backgrounds while dark (saves power on OLED screens). Replaces the old OLED theme mode. */
+    val pureBlack: Boolean = false,
+    val displaySize: DisplaySize = DisplaySize.DEFAULT,
+    /** The largest corner radius in dp (cards, sheets); the smaller ones scale with it. */
+    val cornerRadiusDp: Int = 28,
+    val avatarShape: AvatarShape = AvatarShape.LEAF8,
+    /** A ring and a soft background behind avatars. */
+    val avatarFrame: Boolean = true,
     /** With Liquid Glass on: also frost the profile, search, Add Entry, import and other overlays. Off keeps them solid. */
     val frostedOverlays: Boolean = true,
     /** Optional extra shine on glass surfaces. Only offered while Liquid Glass is on; off by default. */
@@ -102,6 +116,8 @@ data class AppSettings(
 
     companion object {
         const val DEFAULT_GLASS_BLUR = 4
+        const val MIN_CORNER_RADIUS = 8
+        const val MAX_CORNER_RADIUS = 40
         const val MIN_GLASS_BLUR = 0
         const val MAX_GLASS_BLUR = 30
         const val MIN_ATTENDANCE_THRESHOLD = 60
