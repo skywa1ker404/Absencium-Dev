@@ -3,6 +3,7 @@ package skywa1ker404.absencium.ui.settings
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.height
+import skywa1ker404.absencium.ui.main.ShellFab
 import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -79,7 +80,7 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
                         .navigationBarsPadding()
                         .padding(16.dp),
                 ) {
-                    skywa1ker404.absencium.ui.main.ShellRoundFab(icon = AppIcons.Add, description = "Add subject", onClick = { adding = true }, backdrop = LocalBackdrop.current)
+                    ShellFab(icon = AppIcons.Add, label = "Add subject", onClick = { adding = true }, backdrop = LocalBackdrop.current)
                 }
             }
             if (adding) {

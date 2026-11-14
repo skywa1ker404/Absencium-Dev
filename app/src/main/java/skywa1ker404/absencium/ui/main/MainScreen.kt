@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -334,25 +333,6 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 }
             }
 
-            val fabActions = if (tab == TAB_ATTENDS) {
-                listOf(
-                    FabAction("Add entry", AppIcons.Add) { fabOpen = false; showAddEntry = true },
-                    FabAction("Timetable", AppIcons.Schedule) { fabOpen = false; showTimetable = true },
-                    FabAction("Import holidays", AppIcons.AutoAwesome) { fabOpen = false; importKind = ImportKind.HOLIDAYS },
-                    FabAction("Import exam timetable", AppIcons.AutoAwesome) { fabOpen = false; importKind = ImportKind.EXAMS },
-                )
-            } else {
-                listOf(
-                    FabAction("New entry", AppIcons.Add) {
-                        fabOpen = false
-                        addEntry = AddEntryRequest()
-                    },
-                    FabAction("Drafts", AppIcons.Draft) { fabOpen = false; showDrafts = true },
-                    FabAction("Syllabus", AppIcons.School) { fabOpen = false; navigator.navigate(SyllabusOverviewScreenDestination) },
-                    FabAction("Edit subjects", AppIcons.Edit) { fabOpen = false; navigator.navigate(SubjectsScreenDestination) },
-                )
-            }
-
             if (tab == TAB_ATTENDS || tab == TAB_VAULT) {
                 // Tapping anywhere outside the menu closes it.
                 if (fabOpen) {
@@ -366,53 +346,58 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             ) { fabOpen = false },
                     )
                 }
+                val actions = if (tab == TAB_ATTENDS) {
+                    listOf(
+                        FabAction("Add entry", AppIcons.Add) { fabOpen = false; showAddEntry = true },
+                        FabAction("Timetable", AppIcons.Schedule) { fabOpen = false; showTimetable = true },
+                        FabAction("Import holidays", AppIcons.AutoAwesome) { fabOpen = false; importKind = ImportKind.HOLIDAYS },
+                        FabAction("Import exam timetable", AppIcons.AutoAwesome) { fabOpen = false; importKind = ImportKind.EXAMS },
+                    )
+                } else {
+                    listOf(
+                        FabAction("New entry", AppIcons.Add) {
+                            fabOpen = false
+                            addEntry = AddEntryRequest()
+                        },
+                        FabAction("Drafts", AppIcons.Draft) { fabOpen = false; showDrafts = true },
+                        FabAction("Syllabus", AppIcons.School) { fabOpen = false; navigator.navigate(SyllabusOverviewScreenDestination) },
+                        FabAction("Edit subjects", AppIcons.Edit) { fabOpen = false; navigator.navigate(SubjectsScreenDestination) },
+                    )
+                }
+                SlideAway(
+                    hidden = { compactState.value && !fabOpen },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp + 52.dp + 12.dp),
+                ) {
+                    ShellFabMenu(
+                        expanded = fabOpen,
+                        onToggle = { fabOpen = !fabOpen },
+                        actions = actions,
+                        backdrop = backdrop,
+                    )
+                }
             }
 
-            // One bottom row: the navigation pill and, while the pill is open, the round button column beside it at the same height
-            // (the primary "+" level with the pill, the search button above it). The pair stays centred, so the gap on the left and
-            // on the right of the screen is the same, and the pill slides left as the buttons come out. With the pill collapsed
-            // (scrolling down) the buttons slide away and the pill is centred alone.
-            val buttonsShown = !compactState.value || fabOpen
-            Row(
+            SlideAway(
+                hidden = { compactState.value },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp),
+            ) {
+                ShellSearchButton(backdrop = backdrop, onClick = { showSearch = true })
+            }
+
+            BottomPill(
+                tabs = Tabs,
+                selectedIndex = tab,
+                compact = { compactState.value },
+                backdrop = backdrop,
+                onSelect = { tab = it },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = bottomInset + 16.dp),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                BottomPill(
-                    tabs = Tabs,
-                    selectedIndex = tab,
-                    compact = { compactState.value },
-                    backdrop = backdrop,
-                    onSelect = { tab = it },
-                )
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = buttonsShown,
-                    enter = androidx.compose.animation.expandHorizontally(
-                        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.86f, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
-                        expandFrom = Alignment.Start,
-                    ),
-                    exit = androidx.compose.animation.shrinkHorizontally(
-                        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 1f, stiffness = androidx.compose.animation.core.Spring.StiffnessMedium),
-                        shrinkTowards = Alignment.Start,
-                    ),
-                ) {
-                    Box(modifier = Modifier.padding(start = 8.dp)) {
-                        val search: @Composable () -> Unit = { ShellSearchButton(backdrop = backdrop, onClick = { showSearch = true }) }
-                        if (tab == TAB_ATTENDS || tab == TAB_VAULT) {
-                            ShellFabMenu(
-                                expanded = fabOpen,
-                                onToggle = { fabOpen = !fabOpen },
-                                actions = fabActions,
-                                backdrop = backdrop,
-                                secondary = search,
-                            )
-                        } else {
-                            Box(modifier = Modifier.padding(bottom = 6.dp)) { search() }
-                        }
-                    }
-                }
-            }
+            )
 
             // Popups live in this layer, above the page, so frosted ones can blur the page behind them like the pill does.
             val loaded = data

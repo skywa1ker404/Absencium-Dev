@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import skywa1ker404.absencium.ui.components.AppMenu
 import skywa1ker404.absencium.ui.components.AppMenuItem
 import skywa1ker404.absencium.ui.components.AppMenuDivider
+import skywa1ker404.absencium.ui.main.ShellFab
 import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -153,52 +154,41 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             }
         },
         overlay = {
-            // Like the main screen: the pill (it shrinks to icons while the list scrolls down) with the round button beside it at the
-            // same height; the pair stays centred, so the gaps left and right are equal, and the button slides away with the pill.
+            // Like the main screen: the same pill (it shrinks to icons while the list scrolls down) and the button above it on the right.
             Box(Modifier.fillMaxSize().navigationBarsPadding()) {
-                val buttonShown = !pillScroll.compact.value && !(selectedIds.isNotEmpty() || selectedGuideIds.isNotEmpty()) && subject != null
-                Row(
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
-                    verticalAlignment = Alignment.Bottom,
-                ) {
-                    BottomPill(
-                        tabs = FolderTabs,
-                        selectedIndex = tab,
-                        compact = { pillScroll.compact.value },
-                        backdrop = LocalBackdrop.current,
-                        onSelect = { tab = it; selectedIds = emptySet(); selectedGuideIds = emptySet() },
-                    )
+                Box(modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp + 64.dp + 12.dp)) {
                     androidx.compose.animation.AnimatedVisibility(
-                        visible = buttonShown,
-                        enter = androidx.compose.animation.expandHorizontally(
-                            animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.86f, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
-                            expandFrom = Alignment.Start,
-                        ),
-                        exit = androidx.compose.animation.shrinkHorizontally(
-                            animationSpec = androidx.compose.animation.core.spring(dampingRatio = 1f, stiffness = androidx.compose.animation.core.Spring.StiffnessMedium),
-                            shrinkTowards = Alignment.Start,
-                        ),
+                        visible = !(selectedIds.isNotEmpty() || selectedGuideIds.isNotEmpty()) && subject != null,
+                        enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
                     ) {
-                        Box(modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)) {
-                            skywa1ker404.absencium.ui.main.ShellRoundFab(
-                                icon = if (tab == 2) AppIcons.Edit else AppIcons.Add,
-                                description = when (tab) {
-                                    0 -> "New entry"
-                                    1 -> "Add material"
-                                    else -> if (nodes.isEmpty()) "Build syllabus" else "Edit syllabus"
-                                },
-                                onClick = {
-                                    when (tab) {
-                                        0 -> addEntry = true
-                                        1 -> navigator.navigate(NewEntryScreenDestination(subjectId = subjectId))
-                                        else -> navigator.navigate(SyllabusScreenDestination(subjectId = subjectId))
-                                    }
-                                },
-                                backdrop = LocalBackdrop.current,
-                            )
-                        }
+                        ShellFab(
+                            icon = if (tab == 2) AppIcons.Edit else AppIcons.Add,
+                            label = when (tab) {
+                                0 -> "New entry"
+                                1 -> "Add material"
+                                else -> if (nodes.isEmpty()) "Build syllabus" else "Edit syllabus"
+                            },
+                            onClick = {
+                                when (tab) {
+                                    0 -> addEntry = true
+                                    1 -> navigator.navigate(NewEntryScreenDestination(subjectId = subjectId))
+                                    else -> navigator.navigate(SyllabusScreenDestination(subjectId = subjectId))
+                                }
+                            },
+                            backdrop = LocalBackdrop.current,
+                            expanded = !pillScroll.compact.value,
+                        )
                     }
                 }
+                BottomPill(
+                    tabs = FolderTabs,
+                    selectedIndex = tab,
+                    compact = { pillScroll.compact.value },
+                    backdrop = LocalBackdrop.current,
+                    onSelect = { tab = it; selectedIds = emptySet(); selectedGuideIds = emptySet() },
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+                )
             }
             // The topics as a side panel over everything, the pill included.
             if (subject != null) {

@@ -39,6 +39,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -540,14 +541,10 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                 }
                 if (!focus) {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                        skywa1ker404.absencium.ui.main.ShellRoundFab(
-                            icon = AppIcons.Edit,
-                            description = "Edit this note",
-                            onClick = {
-                                container.saveReadingPosition(note.id, scroll.value)
-                                navigator.navigate(com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination(noteId = note.id))
-                            },
-                        )
+                        FloatingActionButton(elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp, pressedElevation = 0.dp, focusedElevation = 0.dp, hoveredElevation = 0.dp), onClick = {
+                            container.saveReadingPosition(note.id, scroll.value)
+                            navigator.navigate(com.ramcosta.composedestinations.generated.destinations.NoteEditorScreenDestination(noteId = note.id))
+                        }) { Icon(AppIcons.Edit, contentDescription = "Edit this note") }
                     }
                 }
             }
