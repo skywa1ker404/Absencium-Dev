@@ -4,7 +4,7 @@ Owner request, Batch 43 row 43.10. Only the look is inspired; no Nothing logo, w
 
 ## Findings
 - Nothing's own typefaces (Ndot 55/57, Nothing Font) are proprietary to Nothing, so they are NOT bundled.
-- **Doto** (Oliver Lalan, https://github.com/oliverlalan/Doto): a variable dot-matrix font, SIL Open Font License 1.1, weights 100 to 900 and a roundness axis. OFL fonts may be bundled in a GPL-3.0 app when the font stays a separate, unmodified file and its licence text ships with it (done: `docs/licenses/Doto-OFL-1.1.txt`, listed in `THIRD_PARTY_LICENSES.md`). Bundled as the static `Doto.ttf` (about 170 KB).
+- **Doto** (Oliver Lalan, https://github.com/oliverlalan/Doto): a variable dot-matrix font, SIL Open Font License 1.1, weights 100 to 900 and a roundness axis. OFL fonts may be bundled in a GPL-3.0 app when the font stays a separate file (Doto is bundled unmodified; the Pixelated style uses a renamed modified copy, "Absencium Pixel", which the OFL allows) and its licence text ships with it (done: `docs/licenses/Doto-OFL-1.1.txt`, listed in `THIRD_PARTY_LICENSES.md`). Bundled as the static `Doto.ttf` (about 170 KB).
 - Pixelated style candidate: **Pixelify Sans** (OFL 1.1), to be checked and bundled when that style is built.
 
 ## Look rules (owner choices)

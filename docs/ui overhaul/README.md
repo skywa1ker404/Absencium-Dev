@@ -258,3 +258,7 @@ Banner = the profile picture / chosen colour band; flower avatar = the Appearanc
 ## Picture 33 (2026-11-14): the exact Appearance page
 
 `33-appearance-exact.jpg`: order is Preview, Appearance (Light / Dark / System tiles), Pure black in dark mode switch, Display size (Aa Small / Default / Large / Larger and a caption), Color (Default / Monet / Presets mini screens), Styles (card "Themes style, currently selected"), Bottom bar (Anchored / Floating tiles), Show labels switch, Corner radius slider (28dp), Avatars (8-leaf, Circle, 4-leaf, Ghost, None tiles) with Show frame switch, Visual Quality tiles. The app name in the picture is not ours; the layout is. Built in Batch 44 (row 44.11) except Bottom bar and Show labels.
+
+## Picture 34 (2026-11-14): the Pixelated look
+
+`34-pixelated-reference.png`: square-pixel buttons with a dark outline, stepped corners, a light line on the top and left and a darker band under and right of each key, and a chunky pixel font. Built in Batch 45 (rows 45.2 and 45.3): `PixelCornerShape` and `pixelBevel` (`ui/theme/PixelStyle.kt`), the "Absencium Pixel" font made from Doto, bevelled cards, pills and chips, and the picture tile in Appearance. Other controls (bottom bar, switches, fields, sliders, progress) still to follow.

@@ -9,7 +9,13 @@ development repository.
 ### Doto (app/src/main/res/font/doto.ttf)
 
 Copyright The Doto Project Authors (https://github.com/oliverlalan/Doto), designed by Oliver Lalan. Licensed under the SIL
-Open Font License, Version 1.1. Used only for the dot-matrix (Nothing-inspired) style. Unmodified, so no renaming is needed.
+Open Font License, Version 1.1. Used for the dot-matrix (Nothing-inspired) style. This file is unmodified.
+
+### Absencium Pixel (app/src/main/res/font/pixel_font.ttf and pixel_font_bold.ttf)
+
+A modified version of Doto made for the Pixelated style: every round dot of the font is replaced by a full square, the bold file is a half pixel wider,
+and the font is renamed "Absencium Pixel". Copyright The Doto Project Authors (https://github.com/oliverlalan/Doto). Licensed under the SIL Open Font
+License, Version 1.1 (the same text as Doto below), which allows modified versions under another name.
 
 ## Licence texts kept in this repository
 
