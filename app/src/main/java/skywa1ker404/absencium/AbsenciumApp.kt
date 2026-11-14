@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
 import android.app.Application
 import android.os.Bundle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import skywa1ker404.absencium.display.RefreshRatePreference
@@ -102,29 +103,8 @@ class AbsenciumApp : Application() {
             .map { it?.displayName.orEmpty() }
             .distinctUntilChanged()
         me.rerere.rikkahub.AiHost.userAvatar = { name, modifier ->
-            val colors = androidx.compose.material3.MaterialTheme.colorScheme
-            val initials = skywa1ker404.absencium.ui.main.initialsOf(name)
-            androidx.compose.foundation.layout.Box(
-                modifier = modifier
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(colors.primaryContainer),
-                contentAlignment = androidx.compose.ui.Alignment.Center,
-            ) {
-                if (initials == null) {
-                    androidx.compose.material3.Icon(
-                        skywa1ker404.absencium.ui.icons.AppIcons.Person,
-                        contentDescription = null,
-                        tint = colors.onPrimaryContainer,
-                        modifier = Modifier.size(26.dp),
-                    )
-                } else {
-                    androidx.compose.material3.Text(
-                        text = initials,
-                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-                        color = colors.onPrimaryContainer,
-                    )
-                }
-            }
+            val loaded by container.settingsState.collectAsState()
+            skywa1ker404.absencium.ui.profile.AvatarPicture(fileName = loaded?.profileAvatar.orEmpty(), initials = name, size = 50, modifier = modifier)
         }
         // The chat's gear opens the app's own AI settings page; Imagine shows in the chat drawer only when "Generate images" is on.
         me.rerere.rikkahub.AiHost.onExit = { skywa1ker404.absencium.ui.AbsenciumAi.close() }

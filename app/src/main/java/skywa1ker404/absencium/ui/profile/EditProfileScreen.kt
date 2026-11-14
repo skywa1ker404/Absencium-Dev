@@ -17,6 +17,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import skywa1ker404.absencium.ui.components.AlertDialog
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.toShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
@@ -57,6 +64,9 @@ private val COURSES = listOf(
     "B.Com", "M.Com", "BA", "MA", "BBA", "MBA", "LLB", "Diploma",
 )
 private const val OTHER = "Other"
+
+/** A profile picture stored as "emoji:" plus the emoji instead of a file name. */
+const val EMOJI_PREFIX = "emoji:"
 private val YEARS = (1..6).map { "Year $it" } + (1..12).map { "Semester $it" }
 
 /** Course and year are kept as one entry ("B.Pharm, Year 2") so the AI never sees them as two unrelated facts. */
@@ -68,6 +78,7 @@ private fun splitCourseYear(joined: String): Pair<String, String> {
 }
 
 /** The profile as its own page: picture (with the app's crop tool), name, course and year as two pickers saved as one entry, and college. */
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Destination<RootGraph>
 @Composable
 fun EditProfileScreen(navigator: DestinationsNavigator) {
@@ -86,6 +97,8 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
     var year by remember(initial) { mutableStateOf(initial.second) }
     var college by remember(loaded.profileCollege) { mutableStateOf(loaded.profileCollege) }
     var cropPath by remember { mutableStateOf<String?>(null) }
+    var showAvatarCard by remember { mutableStateOf(false) }
+    var showEmojiSheet by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
@@ -99,21 +112,12 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
 
     ScreenScaffold(title = "Edit profile", onBack = { navigator.navigateUp() }, largeTitle = true) {
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            AvatarPicture(fileName = loaded.profileAvatar, initials = name, size = 112)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PillButton(
-                    text = if (loaded.profileAvatar.isBlank()) "Add picture" else "Change picture",
-                    onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                    tonal = true,
-                    compact = true,
-                )
-                if (loaded.profileAvatar.isNotBlank()) {
-                    PillButton(text = "Remove", onClick = {
-                        File(context.filesDir, loaded.profileAvatar).delete()
-                        settingsViewModel.setProfileAvatar("")
-                    }, tonal = true, compact = true)
-                }
-            }
+            AvatarPicture(
+                fileName = loaded.profileAvatar, initials = name, size = 112,
+                modifier = Modifier.clickable { showAvatarCard = true },
+                shape = androidx.compose.material3.MaterialShapes.Cookie9Sided.toShape(),
+            )
+            PillButton(text = "Change avatar", onClick = { showAvatarCard = true }, tonal = true, compact = true)
         }
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -121,7 +125,7 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
                     value = name, onValueChange = { name = it }, label = { Text("Name") }, singleLine = true,
                     shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
                 )
-                var custom by remember(course) { mutableStateOf(course.isNotBlank() && course !in COURSES) }
+                var custom by remember(initial) { mutableStateOf(initial.first.isNotBlank() && initial.first !in COURSES) }
                 PickerField(
                     label = "Course",
                     value = if (custom) OTHER else course,
@@ -155,13 +159,51 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
         }
     }
 
+    if (showAvatarCard) {
+        // The same card the AI uses for its avatar: pick an image, pick an emoji, or reset. (No web address option: the app works offline.)
+        AlertDialog(
+            onDismissRequest = { showAvatarCard = false },
+            title = { Text("Change avatar") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PillButton(text = "Pick image", modifier = Modifier.fillMaxWidth(), onClick = {
+                        showAvatarCard = false
+                        picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    })
+                    PillButton(text = "Pick emoji", modifier = Modifier.fillMaxWidth(), onClick = {
+                        showAvatarCard = false
+                        showEmojiSheet = true
+                    })
+                    PillButton(text = "Reset", tonal = true, modifier = Modifier.fillMaxWidth(), onClick = {
+                        showAvatarCard = false
+                        if (loaded.profileAvatar.isNotBlank() && !loaded.profileAvatar.startsWith(EMOJI_PREFIX)) File(context.filesDir, loaded.profileAvatar).delete()
+                        settingsViewModel.setProfileAvatar("")
+                    })
+                }
+            },
+            confirmButton = { TextButton(onClick = { showAvatarCard = false }) { Text("Cancel") } },
+        )
+    }
+    if (showEmojiSheet) {
+        ModalBottomSheet(onDismissRequest = { showEmojiSheet = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            me.rerere.rikkahub.ui.components.ui.EmojiPicker(
+                onEmojiSelected = { emoji ->
+                    if (loaded.profileAvatar.isNotBlank() && !loaded.profileAvatar.startsWith(EMOJI_PREFIX)) File(context.filesDir, loaded.profileAvatar).delete()
+                    settingsViewModel.setProfileAvatar(EMOJI_PREFIX + emoji.emoji)
+                    showEmojiSheet = false
+                },
+                modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 16.dp),
+            )
+        }
+    }
+
     cropPath?.let { path ->
         PhotoCropDialog(
             path = path,
             newFile = { File(context.filesDir, "profile-${System.currentTimeMillis()}.jpg") },
             onCancel = { cropPath = null },
             onDone = { file ->
-                if (loaded.profileAvatar.isNotBlank()) File(context.filesDir, loaded.profileAvatar).delete()
+                if (loaded.profileAvatar.isNotBlank() && !loaded.profileAvatar.startsWith(EMOJI_PREFIX)) File(context.filesDir, loaded.profileAvatar).delete()
                 settingsViewModel.setProfileAvatar(file.name)
                 File(path).delete()
                 cropPath = null
@@ -197,8 +239,9 @@ private fun PickerField(label: String, value: String, options: List<String>, onP
 fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape = CircleShape) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
+    val isEmoji = fileName.startsWith(EMOJI_PREFIX)
     val bitmap by produceState<ImageBitmap?>(null, fileName) {
-        value = if (fileName.isBlank()) null else withContext(Dispatchers.IO) {
+        value = if (fileName.isBlank() || isEmoji) null else withContext(Dispatchers.IO) {
             ImageTools.decode(File(context.filesDir, fileName).absolutePath, size * 3)?.asImageBitmap()
         }
     }
@@ -207,7 +250,9 @@ fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modif
         contentAlignment = Alignment.Center,
     ) {
         val image = bitmap
-        if (image != null) {
+        if (isEmoji) {
+            Text(fileName.removePrefix(EMOJI_PREFIX), fontSize = (size / 2).sp)
+        } else if (image != null) {
             Image(image, contentDescription = "Profile picture", contentScale = ContentScale.Crop, modifier = Modifier.size(size.dp))
         } else {
             val letters = initials.trim().split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }

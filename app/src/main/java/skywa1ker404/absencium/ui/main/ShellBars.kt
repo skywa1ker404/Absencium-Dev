@@ -599,7 +599,7 @@ fun ShellSearchButton(
 
 /** The top bar: the app name on the left and the profile avatar (initials) on the right. */
 @Composable
-fun ShellTopBar(displayName: String, onProfile: () -> Unit, onStudyTools: () -> Unit, modifier: Modifier = Modifier) {
+fun ShellTopBar(displayName: String, avatar: String, onProfile: () -> Unit, onStudyTools: () -> Unit, modifier: Modifier = Modifier) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     Row(
@@ -654,16 +654,7 @@ fun ShellTopBar(displayName: String, onProfile: () -> Unit, onStudyTools: () -> 
                 .semantics { contentDescription = "Profile" },
             contentAlignment = Alignment.Center,
         ) {
-            val initials = initialsOf(displayName)
-            if (initials == null) {
-                Icon(AppIcons.Person, contentDescription = null, tint = colors.onPrimaryContainer)
-            } else {
-                Text(
-                    text = initials,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onPrimaryContainer,
-                )
-            }
+            skywa1ker404.absencium.ui.profile.AvatarPicture(fileName = avatar, initials = displayName, size = 44)
         }
         }
     }
