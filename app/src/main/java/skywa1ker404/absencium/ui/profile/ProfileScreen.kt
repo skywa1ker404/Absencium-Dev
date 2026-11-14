@@ -104,7 +104,7 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
     val overall = remember(rows) { rows.overall() }
     val details = listOfNotNull(loaded.profileCourse.takeIf { it.isNotBlank() }, loaded.profileYear.takeIf { it.isNotBlank() }).joinToString(", ")
     var tab by rememberSaveable { mutableStateOf(0) }
-    val tabs = listOf("Overview", "Statistics", "Subjects")
+    val tabs = listOf("Overview", "Academic", "Insights")
 
     ScreenScaffold(
         title = "Profile",
@@ -168,9 +168,11 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        val percent = overall.percent
-        val notesCount = vault?.notes?.count { it.status != NoteStatus.DRAFT } ?: 0
         val today = LocalDate.now()
+        val stats by container.database.userStatsDao().observeBetween(today.minusDays(120), today).collectAsStateWithLifecycle(initialValue = emptyList())
+        val goals by container.database.studyGoalDao().observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+        val events by container.database.eventDao().observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+        val tabData = ProfileTabData(loaded, rows, overall, data, vault, syllabus, stats, goals, events, today)
         AnimatedContent(
             targetState = tab,
             transitionSpec = { fadeIn(androidx.compose.animation.core.tween(160)) togetherWith fadeOut(androidx.compose.animation.core.tween(100)) },
@@ -178,120 +180,9 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
         ) { page ->
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 when (page) {
-                    0 -> {
-                        AppCard(modifier = Modifier.fillMaxWidth(), onClick = { navigator.navigate(AttendanceInsightsScreenDestination) }) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                Text(
-                                    text = percent?.let { "${it.roundToInt()}%" } ?: "–",
-                                    style = MaterialTheme.typography.displaySmall,
-                                    color = if (percent != null && percent < threshold) colors.error else colors.primary,
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    if (percent == null) {
-                                        Text("No attendance yet", style = MaterialTheme.typography.titleMedium)
-                                        Text("Log lectures to see it here", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                                    } else {
-                                        val margin = attendanceMargin(overall.present, overall.held, threshold)
-                                        Text(if (margin.mustAttend > 0) "Below target" else "On track", style = MaterialTheme.typography.titleMedium)
-                                        Text(
-                                            text = if (margin.mustAttend > 0) "Attend the next ${margin.mustAttend} lectures to reach $threshold%"
-                                            else "You can skip ${margin.canSkip} lectures and stay above $threshold%",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (margin.mustAttend > 0) colors.error else colors.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                                Icon(AppIcons.ChevronRight, contentDescription = null, tint = colors.onSurfaceVariant)
-                            }
-                        }
-                        val upcoming = data?.exams.orEmpty().filter { !it.date.isBefore(today) }.sortedBy { it.date }.take(3)
-                        if (upcoming.isNotEmpty()) {
-                            SectionLink("Upcoming exams") { navigator.navigate(PlannerScreenDestination) }
-                            SettingGroup {
-                                upcoming.forEachIndexed { index, exam ->
-                                    if (index > 0) SettingDivider()
-                                    val days = ChronoUnit.DAYS.between(today, exam.date)
-                                    val subject = data?.subjects?.firstOrNull { it.id == exam.subjectId }?.name
-                                    SettingRow(
-                                        title = exam.title,
-                                        subtitle = listOfNotNull(subject, exam.date.toString()).joinToString(" · "),
-                                        trailing = {
-                                            Text(
-                                                text = when (days) { 0L -> "Today"; 1L -> "Tomorrow"; else -> "In $days days" },
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color = if (days <= 7) colors.error else colors.primary,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                        val withSyllabus = rows.map { it.subject }.filter { subject -> syllabus.any { it.subjectId == subject.id } }
-                        if (withSyllabus.isNotEmpty()) {
-                            SectionLink("Syllabus") { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.SyllabusOverviewScreenDestination) }
-                            AppCard(modifier = Modifier.fillMaxWidth()) {
-                                withSyllabus.forEachIndexed { index, subject ->
-                                    if (index > 0) SettingDivider()
-                                    val progress = SyllabusTree.progress(syllabus.filter { it.subjectId == subject.id }, null)
-                                    ProgressRow(subject.name, null, progress, "${(progress * 100).roundToInt()}%", subjectColor(subject.id))
-                                }
-                            }
-                        }
-                    }
-                    1 -> {
-                        // Three big numbers with small capital labels, a divider, then a capsule bar and a legend.
-                        SectionLink("Statistics") { navigator.navigate(AttendanceInsightsScreenDestination) }
-                        AppCard(modifier = Modifier.fillMaxWidth()) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                BigNumber(percent?.let { "${it.roundToInt()}%" } ?: "–", "ATTENDANCE", "of ${overall.held} held")
-                                BigNumber("$notesCount", "NOTES", "${vault?.guides?.size ?: 0} materials")
-                                BigNumber("${rows.size}", "SUBJECTS", "${data?.exams.orEmpty().count { !it.date.isBefore(today) }} exams ahead")
-                            }
-                            SettingDivider()
-                            val present = overall.present
-                            val absent = (overall.held - overall.present).coerceAtLeast(0)
-                            val cancelled = rows.sumOf { it.cancelled }
-                            CapsuleBar(
-                                listOf(
-                                    Triple("Present", present, colors.primary),
-                                    Triple("Absent", absent, colors.error),
-                                    Triple("Cancelled", cancelled, colors.outline),
-                                ),
-                            )
-                        }
-                        SectionLink("Last 12 weeks") { navigator.navigate(AttendanceInsightsScreenDestination) }
-                        AppCard(modifier = Modifier.fillMaxWidth()) { HeatMap(data?.attendance.orEmpty(), today) }
-                    }
-                    else -> {
-                        SectionLink("Top subjects") { navigator.navigate(AttendanceInsightsScreenDestination) }
-                        if (rows.isEmpty()) {
-                            AppCard(modifier = Modifier.fillMaxWidth()) {
-                                Text("Add subjects and log lectures to see them here", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                            }
-                        }
-                        rows.sortedByDescending { it.percent ?: -1.0 }.take(6).chunked(2).forEach { pair ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                                pair.forEach { item ->
-                                    val hue = hueFor(item.subject.id)
-                                    val p = item.percent
-                                    Column(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(28.dp))
-                                            .background(hue.container)
-                                            .clickable { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.SubjectFolderScreenDestination(subjectId = item.subject.id)) }
-                                            .padding(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                                    ) {
-                                        Text(p?.let { "${it.roundToInt()}%" } ?: "–", style = MaterialTheme.typography.displaySmall, color = hue.onContainer)
-                                        Text(item.subject.name, style = MaterialTheme.typography.titleSmall, color = hue.onContainer, maxLines = 1)
-                                        Text("${item.present} of ${item.held} lectures", style = MaterialTheme.typography.bodySmall, color = hue.onContainer.copy(alpha = 0.75f))
-                                    }
-                                }
-                                if (pair.size == 1) Spacer(Modifier.weight(1f))
-                            }
-                        }
-                    }
+                    0 -> OverviewTab(navigator, tabData)
+                    1 -> AcademicTab(navigator, container, tabData)
+                    else -> InsightsTab(navigator, tabData)
                 }
             }
         }
@@ -328,20 +219,20 @@ private fun InfoPill(text: String) {
 
 /** A section title with an arrow that opens the page it belongs to. */
 @Composable
-private fun SectionLink(title: String, onClick: () -> Unit) {
+internal fun SectionLink(title: String, onClick: (() -> Unit)? = null) {
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(horizontal = 4.dp, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).let { if (onClick != null) it.clickable(onClick = onClick) else it }.padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.width(4.dp).height(20.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, modifier = Modifier.padding(start = 10.dp).weight(1f))
-        Icon(AppIcons.ChevronRight, contentDescription = "Open", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (onClick != null) Icon(AppIcons.ChevronRight, contentDescription = "Open", tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 /** A large number, its spaced capital label and a caption. */
 @Composable
-private fun BigNumber(value: String, label: String, caption: String) {
+internal fun BigNumber(value: String, label: String, caption: String) {
     Column(horizontalAlignment = Alignment.Start) {
         Text(value, style = MaterialTheme.typography.headlineLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
         Text(label, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -351,7 +242,7 @@ private fun BigNumber(value: String, label: String, caption: String) {
 
 /** One capsule split into the given parts (label, count, colour), with a dot legend under it. */
 @Composable
-private fun CapsuleBar(parts: List<Triple<String, Int, Color>>) {
+internal fun CapsuleBar(parts: List<Triple<String, Int, Color>>) {
     val total = parts.sumOf { it.second }.coerceAtLeast(1)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
         Row(modifier = Modifier.fillMaxWidth().height(14.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHighest), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -372,7 +263,7 @@ private fun CapsuleBar(parts: List<Triple<String, Int, Color>>) {
 
 /** Twelve weeks of days as small squares: present is the primary colour, absent the error colour, nothing logged is faint. */
 @Composable
-private fun HeatMap(records: List<skywa1ker404.absencium.data.db.AttendanceEntity>, today: LocalDate) {
+internal fun HeatMap(records: List<skywa1ker404.absencium.data.db.AttendanceEntity>, today: LocalDate) {
     val colors = MaterialTheme.colorScheme
     val byDate = remember(records) {
         records.groupBy { it.date }.mapValues { (_, list) ->
@@ -414,7 +305,7 @@ private fun HeatMap(records: List<skywa1ker404.absencium.data.db.AttendanceEntit
 
 /** A title and a line under it, a number at the end, and a thin bar showing how far along it is. */
 @Composable
-private fun ProgressRow(title: String, subtitle: String?, value: Float?, valueText: String, color: androidx.compose.ui.graphics.Color) {
+internal fun ProgressRow(title: String, subtitle: String?, value: Float?, valueText: String, color: androidx.compose.ui.graphics.Color) {
     val colors = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
