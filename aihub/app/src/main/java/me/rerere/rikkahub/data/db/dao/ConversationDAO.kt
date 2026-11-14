@@ -91,6 +91,9 @@ interface ConversationDAO {
     @Query("SELECT DISTINCT assistant_id FROM conversationentity")
     suspend fun getDistinctAssistantIds(): List<String>
 
+    @Query("UPDATE conversationentity SET assistant_id = :to WHERE assistant_id = :from")
+    suspend fun reassignAssistant(from: String, to: String)
+
     @Query(
         """
         SELECT EXISTS(

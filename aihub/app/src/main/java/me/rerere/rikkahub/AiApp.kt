@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.withRecoveredAssistantsFromConversations
+import me.rerere.rikkahub.data.datastore.DEFAULT_ASSISTANT_ID
 import me.rerere.rikkahub.data.ai.models.ModelMetadataResolver
 import me.rerere.rikkahub.data.ai.models.ModelCatalogService
 import me.rerere.rikkahub.data.ai.models.mergeCatalogIntoSettings
@@ -174,12 +174,22 @@ object AiApp {
                 val settingsStore = get<SettingsStore>()
                 val conversationRepo = get<me.rerere.rikkahub.data.repository.ConversationRepository>()
                 val settings = settingsStore.settingsFlow.first { !it.init }
-                val recovered = settings.withRecoveredAssistantsFromConversations(
-                    conversationRepo.getDistinctAssistantIds(),
-                )
-                if (recovered != settings) {
-                    Log.i(TAG, "Restored ${recovered.assistants.size - settings.assistants.size} assistants from existing chats")
-                    settingsStore.update(recovered)
+                // Chats whose assistant is gone, and the blank "Recovered" stubs older builds made for them, belong to the default Absencium AI.
+                val stubs = settings.assistants.filter { it.name == "Recovered" && it.systemPrompt.isBlank() }
+                val keep = settings.assistants.filter { it !in stubs }
+                val fallback = keep.firstOrNull { it.id == DEFAULT_ASSISTANT_ID } ?: keep.firstOrNull() ?: return@runCatching
+                val knownIds = keep.map { it.id.toString() }.toSet()
+                conversationRepo.getDistinctAssistantIds().filter { it !in knownIds }.forEach {
+                    conversationRepo.reassignAssistant(it, fallback.id.toString())
+                }
+                if (stubs.isNotEmpty()) {
+                    Log.i(TAG, "Folded ${stubs.size} stub assistants into ${fallback.name}")
+                    settingsStore.update(
+                        settings.copy(
+                            assistants = keep,
+                            assistantId = if (keep.any { it.id == settings.assistantId }) settings.assistantId else fallback.id,
+                        ),
+                    )
                 }
             }.onFailure {
                 Log.w(TAG, "Conversation assistant recovery failed", it)

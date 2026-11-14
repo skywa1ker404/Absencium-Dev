@@ -361,6 +361,11 @@ class ConversationRepository(
         conversationDAO.getDistinctAssistantIds()
     }
 
+    /** Moves every chat of one assistant to another (used to fold old stub assistants into the default one). */
+    suspend fun reassignAssistant(from: String, to: String) = withContext(Dispatchers.IO) {
+        conversationDAO.reassignAssistant(from, to)
+    }
+
     // ===== Daily Activity Tracking (for the activity heatmap) =====
     
     /**
