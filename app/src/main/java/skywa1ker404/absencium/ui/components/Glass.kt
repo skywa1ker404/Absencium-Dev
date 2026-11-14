@@ -347,6 +347,13 @@ fun Modifier.pageHeaderGlass(background: Color, top: Float = 1f, mid: Float = 1f
             shadow = null,
             // Clear glass: the blur of what passes behind plus a faint white sheen at the top, no black or white veil of its own.
             onDrawSurface = {
+                // A light veil of the page colour keeps the title readable when text scrolls up under it (the blur alone can leave it crisp).
+                drawRect(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        0f to background.copy(alpha = 0.6f),
+                        1f to background.copy(alpha = 0.15f),
+                    ),
+                )
                 drawRect(
                     androidx.compose.ui.graphics.Brush.verticalGradient(
                         0f to Color.White.copy(alpha = 0.10f),
