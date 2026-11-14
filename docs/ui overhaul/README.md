@@ -254,3 +254,7 @@ Owner rule (2026-10-28): redesign these three (notes list, syllabus tree, study 
 
 ### How these map to Absencium (TODOList 43.7)
 Banner = the profile picture / chosen colour band; flower avatar = the Appearance avatar shape; stats card = attendance %, notes, exams and marks with the capsule bar; Top Genres = subjects (big attendance number, marks, name); heat-map = attendance days; "Absencium AI" and Settings become small icons at the top right; the arrow of each section opens its page (Attendance, Vault, Exams, Grades, Syllabus).
+
+## Picture 33 (2026-11-14): the exact Appearance page
+
+`33-appearance-exact.jpg`: order is Preview, Appearance (Light / Dark / System tiles), Pure black in dark mode switch, Display size (Aa Small / Default / Large / Larger and a caption), Color (Default / Monet / Presets mini screens), Styles (card "Themes style, currently selected"), Bottom bar (Anchored / Floating tiles), Show labels switch, Corner radius slider (28dp), Avatars (8-leaf, Circle, 4-leaf, Ghost, None tiles) with Show frame switch, Visual Quality tiles. The app name in the picture is not ours; the layout is. Built in Batch 44 (row 44.11) except Bottom bar and Show labels.
