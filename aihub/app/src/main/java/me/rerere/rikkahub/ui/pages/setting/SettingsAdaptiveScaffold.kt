@@ -309,16 +309,10 @@ private fun settingsPaneGroups(): List<SettingsPaneGroup> {
     val displayChildren = listOf(
         SettingsPaneEntry(SettingsDestination.Fonts, R.string.setting_fonts_title, null, Icons.Rounded.Tune, Screen.SettingFonts),
         SettingsPaneEntry(SettingsDestination.UiCustomization, R.string.setting_ui_customization_title, null, Icons.Rounded.Brush, Screen.SettingUICustomization),
-        SettingsPaneEntry(SettingsDestination.RpOptimizations, R.string.setting_rp_optimizations_title, null, Icons.Rounded.AutoAwesome, Screen.SettingRpOptimizations),
     )
     val providerChildren = listOf(
         SettingsPaneEntry(SettingsDestination.ProviderModels, R.string.setting_provider_page_title, null, Icons.Rounded.Cloud, Screen.SettingProvider),
         SettingsPaneEntry(SettingsDestination.Search, R.string.setting_page_search_service, null, Icons.Rounded.Public, Screen.SettingSearch),
-        SettingsPaneEntry(SettingsDestination.Tts, R.string.setting_page_tts_service, null, Icons.AutoMirrored.Rounded.VolumeUp, Screen.SettingTTS),
-    )
-    val promptChildren = listOf(
-        SettingsPaneEntry(SettingsDestination.Skills, R.string.prompt_injections_page_skills, null, Icons.Rounded.Code, Screen.SettingSkills()),
-        SettingsPaneEntry(SettingsDestination.Lorebooks, R.string.prompt_injections_page_lorebooks, null, Icons.Rounded.Folder, Screen.SettingLorebooks),
     )
     val backupChildren = listOf(
         SettingsPaneEntry(SettingsDestination.BackupLocal, R.string.backup_page_import_export, null, Icons.Rounded.FileUpload, Screen.BackupLocal),
@@ -330,7 +324,6 @@ private fun settingsPaneGroups(): List<SettingsPaneGroup> {
             entries = listOf(
                 SettingsPaneEntry(SettingsDestination.Display, R.string.setting_page_display_setting, null, Icons.Rounded.Tune, Screen.SettingDisplay, displayChildren),
                 SettingsPaneEntry(SettingsDestination.Assistants, R.string.setting_page_assistant, null, Icons.Rounded.Group, Screen.Assistant),
-                SettingsPaneEntry(SettingsDestination.PromptInjections, R.string.setting_page_prompt_injections, null, Icons.Rounded.Extension, Screen.SettingPromptInjections, promptChildren),
             )
         ),
         SettingsPaneGroup(
@@ -338,8 +331,6 @@ private fun settingsPaneGroups(): List<SettingsPaneGroup> {
             entries = listOf(
                 SettingsPaneEntry(SettingsDestination.Models, R.string.setting_page_default_model, null, Icons.Rounded.AccountTree, Screen.SettingModels),
                 SettingsPaneEntry(SettingsDestination.Providers, R.string.setting_page_providers, null, Icons.Rounded.Cloud, Screen.SettingProvider, providerChildren),
-                SettingsPaneEntry(SettingsDestination.Mcp, R.string.setting_page_mcp, null, Icons.Rounded.Extension, Screen.SettingMcp),
-                SettingsPaneEntry(SettingsDestination.AndroidIntegration, R.string.setting_android_integration, null, Icons.Rounded.PhoneAndroid, Screen.SettingAndroidIntegration),
             )
         ),
         SettingsPaneGroup(
@@ -347,12 +338,6 @@ private fun settingsPaneGroups(): List<SettingsPaneGroup> {
             entries = listOf(
                 SettingsPaneEntry(SettingsDestination.Backup, R.string.setting_page_data_backup, null, Icons.Rounded.CloudUpload, Screen.BackupWebDav, backupChildren),
                 SettingsPaneEntry(SettingsDestination.ChatStorage, R.string.setting_page_chat_storage, null, Icons.Rounded.Storage, Screen.SettingChatStorage),
-            )
-        ),
-        SettingsPaneGroup(
-            titleRes = R.string.setting_page_about,
-            entries = listOf(
-                SettingsPaneEntry(SettingsDestination.About, R.string.setting_page_about, null, Icons.Rounded.Info, Screen.SettingAbout),
             )
         ),
     )

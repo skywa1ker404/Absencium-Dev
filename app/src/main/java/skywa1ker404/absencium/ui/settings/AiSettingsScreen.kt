@@ -83,24 +83,8 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
             androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CardStack {
                     NavCard(
-                        icon = AppIcons.Code, title = "Plugins", subtitle = "Connect tool servers",
-                        onClick = { AbsenciumAi.open(context, destination = "mcp") }, position = GroupPosition.First,
-                    )
-                    NavCard(
-                        icon = AppIcons.Book, title = "Skills", subtitle = null,
-                        onClick = { AbsenciumAi.open(context, destination = "skills") }, position = GroupPosition.Middle,
-                    )
-                    NavCard(
-                        icon = AppIcons.Mic, title = "Voice", subtitle = "Read aloud and dictation",
-                        onClick = { AbsenciumAi.open(context, destination = "tts") }, position = GroupPosition.Middle,
-                    )
-                    NavCard(
-                        icon = AppIcons.OpenInNew, title = "Android integration", subtitle = null,
-                        onClick = { AbsenciumAi.open(context, destination = "android") }, position = GroupPosition.Middle,
-                    )
-                    NavCard(
                         icon = AppIcons.Folder, title = "Chat storage and backup", subtitle = null,
-                        onClick = { AbsenciumAi.open(context, destination = "storage") }, position = GroupPosition.Last,
+                        onClick = { AbsenciumAi.open(context, destination = "storage") }, position = GroupPosition.Only,
                     )
                 }
 

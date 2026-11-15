@@ -286,60 +286,6 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                     }
                 }
             }
-
-//            item {
-//                ListItem(
-//                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-//                    headlineContent = {
-//                        Text(stringResource(R.string.setting_display_page_developer_mode))
-//                    },
-//                    supportingContent = {
-//                        Text(stringResource(R.string.setting_display_page_developer_mode_desc))
-//                    },
-//                    trailingContent = {
-//                        HapticSwitch(
-//                            checked = settings.developerMode,
-//                            onCheckedChange = {
-//                                vm.updateSettings(settings.copy(developerMode = it))
-//                            }
-//                        )
-//                    },
-//                )
-//            }
-
-            // Advanced Settings (RP Optimizations)
-            item {
-                val navController = me.rerere.rikkahub.ui.context.LocalNavController.current
-                SettingsGroup(
-                    title = stringResource(R.string.setting_display_advanced)
-                ) {
-                    SettingGroupItem(
-                        title = "TTS Autoplay",
-                        subtitle = "Read assistant replies automatically",
-                        trailing = {
-                            HapticSwitch(
-                                checked = settings.ttsAutoplayMode != TtsAutoplayMode.OFF,
-                                onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            ttsAutoplayMode = if (enabled) {
-                                                TtsAutoplayMode.WHILE_GENERATING
-                                            } else {
-                                                TtsAutoplayMode.OFF
-                                            }
-                                        )
-                                    )
-                                }
-                            )
-                        }
-                    )
-                    SettingGroupItem(
-                        title = stringResource(R.string.setting_rp_optimizations_title),
-                        subtitle = stringResource(R.string.setting_display_rp_optimizations_desc),
-                        onClick = { navController.navigate(me.rerere.rikkahub.Screen.SettingRpOptimizations) }
-                    )
-                }
-            }
         }
     }
 }

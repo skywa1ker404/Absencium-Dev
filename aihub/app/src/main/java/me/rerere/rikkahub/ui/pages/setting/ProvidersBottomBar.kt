@@ -58,7 +58,7 @@ fun ProvidersBottomBar(
     val haptics = rememberPremiumHaptics()
     val useWideLayout = LocalSettingsWideLayout.current
     AiProvidersBottomBar(
-        tabs = ProvidersTab.entries.map { AiProviderTab(it.name, it.icon) },
+        tabs = ProvidersTab.entries.filter { it != ProvidersTab.Tts }.map { AiProviderTab(it.name, it.icon) },
         selectedId = selectedTab.name,
         useWideLayout = useWideLayout,
         modifier = modifier,

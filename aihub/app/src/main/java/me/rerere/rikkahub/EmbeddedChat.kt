@@ -30,12 +30,7 @@ internal fun settingsScreenFor(name: String?): Screen? = when (name) {
     "providers" -> Screen.SettingProvider
     "assistants" -> Screen.Assistant
     "search" -> Screen.SettingSearch
-    "mcp" -> Screen.SettingMcp
-    "skills" -> Screen.SettingSkills()
-    "android" -> Screen.SettingAndroidIntegration
-    "tts" -> Screen.SettingTTS
     "storage" -> Screen.SettingChatStorage
-    "about" -> Screen.SettingAbout
     else -> null
 }
 

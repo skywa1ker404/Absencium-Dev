@@ -85,17 +85,6 @@ fun SettingPage(
                 navigationIcon = {
                     BackButton()
                 },
-                actions = {
-                    if(settings.developerMode) {
-                        IconButton(
-                            onClick = {
-                                navController.navigate(Screen.Developer)
-                            }
-                        ) {
-                            Icon(Icons.Rounded.Build, stringResource(R.string.developer))
-                        }
-                    }
-                }
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -131,12 +120,6 @@ fun SettingPage(
                         onClick = { navController.navigate(Screen.Assistant) }
                     )
 
-                    SettingGroupItem(
-                        title = stringResource(R.string.setting_page_prompt_injections),
-                        icon = { Icon(Icons.Rounded.Category, null, modifier = Modifier.size(20.dp)) },
-                        contentPadding = mainSettingItemPadding,
-                        onClick = { navController.navigate(Screen.SettingPromptInjections) }
-                    )
                 }
             }
 
@@ -157,21 +140,6 @@ fun SettingPage(
                         icon = { Icon(Icons.Rounded.Cloud, null, modifier = Modifier.size(20.dp)) },
                         contentPadding = mainSettingItemPadding,
                         onClick = { navController.navigate(Screen.SettingProvider) }
-                    )
-
-                    SettingGroupItem(
-                        title = stringResource(R.string.setting_page_mcp),
-                        icon = { Icon(Icons.Rounded.Extension, null, modifier = Modifier.size(20.dp)) },
-                        contentPadding = mainSettingItemPadding,
-                        onClick = { navController.navigate(Screen.SettingMcp) }
-                    )
-
-
-                    SettingGroupItem(
-                        title = stringResource(R.string.setting_android_integration),
-                        icon = { Icon(Icons.Rounded.PhoneAndroid, null, modifier = Modifier.size(20.dp)) },
-                        contentPadding = mainSettingItemPadding,
-                        onClick = { navController.navigate(Screen.SettingAndroidIntegration) }
                     )
 
                 }
@@ -197,37 +165,6 @@ fun SettingPage(
                 }
             }
 
-            // About Section
-            item {
-                SettingsGroup(
-                    title = stringResource(R.string.setting_page_about)
-                ) {
-                    SettingGroupItem(
-                        title = stringResource(R.string.setting_page_about),
-                        icon = { Icon(Icons.Rounded.Info, null, modifier = Modifier.size(20.dp)) },
-                        contentPadding = mainSettingItemPadding,
-                        onClick = { navController.navigate(Screen.SettingAbout) }
-                    )
-                    
-                    val context = LocalContext.current
-                    SettingGroupItem(
-                        title = stringResource(R.string.buy_me_a_coffee),
-                        icon = { Icon(Icons.Rounded.Favorite, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error) },
-                        contentPadding = mainSettingItemPadding,
-                        trailing = {
-                            Icon(
-                                Icons.Rounded.OpenInNew,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        onClick = { 
-                            context.openUrl("https://buymeacoffee.com/cocolalilal")
-                        }
-                    )
-                }
-            }
         }
     }
 }
