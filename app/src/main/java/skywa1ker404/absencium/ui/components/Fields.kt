@@ -126,7 +126,7 @@ fun AppTextField(
     singleLine: Boolean = false,
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     minLines: Int = 1,
-    shape: Shape = FieldShape,
+    shape: Shape = skywa1ker404.absencium.ui.theme.pixelOr(FieldShape),
 ) {
     val colors = MaterialTheme.colorScheme
     val fieldFill = if (skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current) colors.surfaceContainerLow.copy(alpha = 0.45f) else colors.surfaceContainerLow
@@ -170,7 +170,7 @@ fun AppTextField(
     placeholder: @Composable (() -> Unit)? = null,
     singleLine: Boolean = false,
     minLines: Int = 1,
-    shape: Shape = FieldShape,
+    shape: Shape = skywa1ker404.absencium.ui.theme.pixelOr(FieldShape),
 ) {
     val colors = MaterialTheme.colorScheme
     val fieldFill = if (skywa1ker404.absencium.ui.theme.LocalGlassEnabled.current) colors.surfaceContainerLow.copy(alpha = 0.45f) else colors.surfaceContainerLow

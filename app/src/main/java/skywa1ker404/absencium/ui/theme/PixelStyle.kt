@@ -80,3 +80,7 @@ fun Modifier.pixelBevel(outline: Color, stepDp: Float = 2f): Modifier = drawWith
 /** The shape of pills, bars and round buttons: a circle, or the stair-step rectangle in the Pixelated style. */
 @Composable
 fun pillShape(): Shape = if (LocalAppStyle.current == AppStyle.PIXELATED) PixelCornerShape(2f) else CircleShape
+
+/** [default] normally, or the stair-step rectangle in the Pixelated style (one step is [stepDp]). */
+@Composable
+fun pixelOr(default: Shape, stepDp: Float = 2f): Shape = if (LocalAppStyle.current == AppStyle.PIXELATED) PixelCornerShape(stepDp) else default

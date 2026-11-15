@@ -77,7 +77,7 @@ fun AlertDialog(
     title: (@Composable () -> Unit)? = null,
     text: (@Composable () -> Unit)? = null,
     /** Callers may set their own corner size; the default is the app's large dialog shape. */
-    shape: Shape = RoundedCornerShape(32.dp),
+    shape: Shape = skywa1ker404.absencium.ui.theme.pixelOr(RoundedCornerShape(32.dp), 3f),
     containerColor: Color = Color.Unspecified,
     titleContentColor: Color = Color.Unspecified,
     textContentColor: Color = Color.Unspecified,

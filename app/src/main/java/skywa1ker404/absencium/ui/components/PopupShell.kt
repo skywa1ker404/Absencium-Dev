@@ -104,7 +104,7 @@ fun PopupShell(
     val transition = supplied ?: own
     val backdrop = LocalBackdrop.current
     val frosted = LocalFrostedOverlays.current && backdrop != null
-    val shape = RoundedCornerShape(34.dp)
+    val shape = skywa1ker404.absencium.ui.theme.pixelOr(RoundedCornerShape(34.dp), 3f)
 
     BackHandler(enabled = transition.targetState) { onDismissRequest() }
 
