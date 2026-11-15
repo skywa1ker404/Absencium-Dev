@@ -157,3 +157,4 @@ working on it
 - Added (branch Absencium-ai, CI pending: `43746751146`, Batch 45): Settings > AI keeps AI action history for 7, 30, 90 days or for ever and has "Clear all now"; one Haptics switch in Settings > General silences vibration in the app and the AI hub.
 - Fixed (branch Absencium-ai, CI pending: `43747088034`, Batch 45): the profile emoji picker no longer crashes; the avatar card has a web address option (downloaded once, cropped, kept on the phone).
 - Changed (branch Absencium-ai, CI pending: `43747088034`, Batch 45): smaller app: placeholder images as WebP, fonts cut to Latin and common symbols, library translations limited to the six app languages.
+- Changed (branch Absencium-ai, CI pending, Batch 45): AI action prompts are shorter and built only from what the request needs; the chat of an AI action shows a short title instead of the whole brief; Planner and Flashcards AI buttons keep their tools; action chats use a short thinking budget.
