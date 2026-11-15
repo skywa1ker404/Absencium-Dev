@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.horizontalScroll
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -119,6 +121,8 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
                     )
                 }
 
+                AiActionsHistory(settings.aiActionsKeepDays, settingsViewModel::setAiActionsKeepDays)
+
                 SectionTitle("Study")
                 SettingGroup {
                     SettingSwitchRow(
@@ -186,3 +190,51 @@ private fun AdvancedHeader(expanded: Boolean, onClick: () -> Unit) {
     }
 }
 
+
+
+/** How long finished AI actions are kept in the AI actions folder, and a button that clears them all now. */
+@Composable
+private fun AiActionsHistory(keepDays: Int, onKeepDays: (Int) -> Unit) {
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var message by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    SectionTitle("AI actions history")
+    AppCard(modifier = Modifier.fillMaxWidth()) {
+        androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            androidx.compose.material3.Text("Keep finished actions for", style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
+            androidx.compose.foundation.layout.Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+            ) {
+                listOf(0 to "Forever", 7 to "7 days", 30 to "30 days", 90 to "90 days").forEach { (days, label) ->
+                    skywa1ker404.absencium.ui.components.ExpressiveChip(
+                        selected = keepDays == days,
+                        onClick = { onKeepDays(days) },
+                        label = { androidx.compose.material3.Text(label) },
+                    )
+                }
+            }
+            HintText("Notes, homework and changes made by Absencium AI are listed in its AI actions folder. Older ones are removed when the app starts.")
+            PillButton(text = "Clear all now", onClick = { confirm = true })
+            message?.let { HintText(it) }
+        }
+    }
+    if (confirm) {
+        skywa1ker404.absencium.ui.components.AlertDialog(
+            onDismissRequest = { confirm = false },
+            title = { androidx.compose.material3.Text("Clear the AI actions history?") },
+            text = { androidx.compose.material3.Text("Every chat in the AI actions folder is deleted. The notes and changes they made stay where they are.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    confirm = false
+                    scope.launch {
+                        val removed = me.rerere.rikkahub.AiApp.purgeActionChats(context.applicationContext as android.app.Application, null)
+                        message = if (removed == 0) "There was nothing to clear." else "Cleared $removed " + (if (removed == 1) "chat." else "chats.")
+                    }
+                }) { androidx.compose.material3.Text("Clear") }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = false }) { androidx.compose.material3.Text("Cancel") } },
+        )
+    }
+}

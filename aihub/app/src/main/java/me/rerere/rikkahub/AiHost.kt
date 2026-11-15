@@ -99,6 +99,12 @@ object AiHost {
     /** Forgets what the host kept about an action chat (called when the chat is deleted). */
     var forgetAction: (String) -> Unit = {}
 
+    /** The host app's one haptics switch; the hub's own vibration switches only count while this is on. */
+    var hapticsEnabled: () -> Boolean = { true }
+
+    /** How many days the host keeps finished actions (0 for ever), read at start-up to remove the old ones. */
+    var actionKeepDays: () -> Int = { 0 }
+
     /** The steps of a plan-like tool call, one line each, so the approval card can show a tick box per step. Null when the call has none. */
     var planSteps: (toolName: String, arguments: String) -> List<String>? = { _, _ -> null }
 

@@ -139,6 +139,8 @@ class AbsenciumApp : Application() {
             container.aiActionLog.targetOf(chatId)?.let { e -> e.targetType?.let { skywa1ker404.absencium.ui.AbsenciumAi.openTarget(context, it, e.targetId) } }
         }
         me.rerere.rikkahub.AiHost.forgetAction = { chatId -> container.aiActionLog.removeChat(chatId) }
+        me.rerere.rikkahub.AiHost.hapticsEnabled = { container.settingsState.value?.hapticsEnabled ?: true }
+        me.rerere.rikkahub.AiHost.actionKeepDays = { container.settingsState.value?.aiActionsKeepDays ?: 0 }
         me.rerere.rikkahub.AiHost.describe = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.describe(name, args) }
         me.rerere.rikkahub.AiHost.planSteps = { name, args -> skywa1ker404.absencium.data.ai.ChatAppTools.planSteps(name, args) }
         me.rerere.rikkahub.AiHost.skipPlanSteps = { name, args, skipped -> skywa1ker404.absencium.data.ai.ChatAppTools.skipPlanSteps(name, args, skipped) }

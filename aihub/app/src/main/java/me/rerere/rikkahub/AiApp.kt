@@ -83,6 +83,22 @@ object AiApp {
         return get<me.rerere.rikkahub.service.ChatService>().runHostTask(title, parts, allowedTools)
     }
 
+    /**
+     * Deletes the AI actions chats created before [olderThanMillis] (all of them when null) and their lines in the host's folder;
+     * returns how many were removed.
+     */
+    suspend fun purgeActionChats(application: Application, olderThanMillis: Long?): Int {
+        start(application)
+        val repo = get<me.rerere.rikkahub.data.repository.ConversationRepository>()
+        val chats = repo.getConversationsOfAssistant(AiHost.ACTIONS_ASSISTANT_ID).first()
+            .filter { olderThanMillis == null || it.createAt.toEpochMilli() < olderThanMillis }
+        chats.forEach {
+            repo.deleteConversation(it)
+            AiHost.forgetAction(it.id.toString())
+        }
+        return chats.size
+    }
+
     @Synchronized
     fun start(application: Application) {
         if (started) return
@@ -186,6 +202,14 @@ object AiApp {
                 }
                 // Earlier builds moved every action chat into the default assistant at start-up; bring them back.
                 conversationRepo.adoptActionChats(actionsId, AiHost.TASK_MARK)
+                // Remove finished actions older than the host's keep-for setting.
+                val keepDays = AiHost.actionKeepDays()
+                if (keepDays > 0) {
+                    val cutoff = System.currentTimeMillis() - keepDays * 86_400_000L
+                    conversationRepo.getConversationsOfAssistant(AiHost.ACTIONS_ASSISTANT_ID).first()
+                        .filter { it.createAt.toEpochMilli() < cutoff }
+                        .forEach { conversationRepo.deleteConversation(it); AiHost.forgetAction(it.id.toString()) }
+                }
                 if (stubs.isNotEmpty()) {
                     Log.i(TAG, "Folded ${stubs.size} stub assistants into ${fallback.name}")
                     settingsStore.update(

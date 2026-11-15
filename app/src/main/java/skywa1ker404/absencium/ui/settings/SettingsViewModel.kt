@@ -77,6 +77,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setAvatarShape(value: AvatarShape) = launch { repository.setAvatarShape(value) }
 
     fun setAvatarFrame(value: Boolean) = launch { repository.setAvatarFrame(value) }
+    fun setAiActionsKeepDays(days: Int) = launch { repository.setAiActionsKeepDays(days) }
+    fun setHapticsEnabled(value: Boolean) = launch { repository.setHapticsEnabled(value) }
     fun setBottomBarAnchored(value: Boolean) = launch { repository.setBottomBarAnchored(value) }
     fun setBottomBarLabels(value: Boolean) = launch { repository.setBottomBarLabels(value) }
 

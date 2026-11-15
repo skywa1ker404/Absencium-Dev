@@ -62,7 +62,7 @@ class PremiumHaptics(
     private val enabled: Boolean
 ) {
     private fun safeVibrate(effect: () -> Unit, fallback: HapticFeedbackType) {
-        if (!enabled) return
+        if (!enabled || !me.rerere.rikkahub.AiHost.hapticsEnabled()) return
         try {
             if (vibrator?.hasVibrator() == true) {
                 effect()
@@ -80,7 +80,7 @@ class PremiumHaptics(
     }
     
     fun perform(pattern: HapticPattern) {
-        if (!enabled) return
+        if (!enabled || !me.rerere.rikkahub.AiHost.hapticsEnabled()) return
         
         when (pattern) {
             HapticPattern.Tick -> {

@@ -112,6 +112,9 @@ class SettingsRepository(context: Context) {
 
     suspend fun setAvatarFrame(value: Boolean) = write(Keys.AVATAR_FRAME, value)
 
+    suspend fun setAiActionsKeepDays(days: Int) = write(Keys.AI_ACTIONS_KEEP_DAYS, days.coerceAtLeast(0))
+
+    suspend fun setHapticsEnabled(value: Boolean) = write(Keys.HAPTICS_ENABLED, value)
     suspend fun setBottomBarAnchored(value: Boolean) = write(Keys.BOTTOM_BAR_ANCHORED, value)
 
     suspend fun setBottomBarLabels(value: Boolean) = write(Keys.BOTTOM_BAR_LABELS, value)
@@ -235,6 +238,7 @@ class SettingsRepository(context: Context) {
         val LIQUID_GLASS = booleanPreferencesKey("liquid_glass")
         val APP_STYLE = stringPreferencesKey("app_style")
         val GLASS_BLUR = intPreferencesKey("glass_blur_dp")
+        val AI_ACTIONS_KEEP_DAYS = intPreferencesKey("ai_actions_keep_days")
         val FROSTED_OVERLAYS = booleanPreferencesKey("frosted_overlays")
         val VISUAL_QUALITY = stringPreferencesKey("visual_quality")
         val PURE_BLACK = booleanPreferencesKey("pure_black")
@@ -242,6 +246,7 @@ class SettingsRepository(context: Context) {
         val CORNER_RADIUS = intPreferencesKey("corner_radius_dp")
         val AVATAR_SHAPE = stringPreferencesKey("avatar_shape")
         val AVATAR_FRAME = booleanPreferencesKey("avatar_frame")
+        val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
         val BOTTOM_BAR_ANCHORED = booleanPreferencesKey("bottom_bar_anchored")
         val BOTTOM_BAR_LABELS = booleanPreferencesKey("bottom_bar_labels")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
@@ -270,11 +275,11 @@ class SettingsRepository(context: Context) {
 
         // The keys a restore may set, by type. A key not listed here is never imported.
         val BOOLEANS = setOf(
-            ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, PURE_BLACK, AVATAR_FRAME, BOTTOM_BAR_ANCHORED, BOTTOM_BAR_LABELS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
+            ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, PURE_BLACK, AVATAR_FRAME, HAPTICS_ENABLED, BOTTOM_BAR_ANCHORED, BOTTOM_BAR_LABELS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
             SEARCH_IMAGES_ENABLED, GENERATE_IMAGES_ENABLED,
             MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY, REMIND_LOW_ATTENDANCE,
         ).map { it.name }.toSet()
-        val INTS = setOf(GLASS_BLUR, CORNER_RADIUS, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES, REMIND_LECTURE_MINUTES, REMIND_EXAM_DAYS).map { it.name }.toSet()
+        val INTS = setOf(AI_ACTIONS_KEEP_DAYS, GLASS_BLUR, CORNER_RADIUS, ATTENDANCE_THRESHOLD, FOCUS_GRACE_MINUTES, REMIND_LECTURE_MINUTES, REMIND_EXAM_DAYS).map { it.name }.toSet()
         val STRINGS = setOf(
             DISPLAY_NAME, PROFILE_COURSE, PROFILE_YEAR, PROFILE_COLLEGE, PROFILE_DEPARTMENT, THEME_MODE, MARKS_SCALE, COLOR_ENGINE, APP_STYLE, DISPLAY_SIZE, AVATAR_SHAPE, THEME_PRESET, VISUAL_QUALITY, AI_PROVIDER, AI_BASE_URL, AI_MODEL, AI_API_STYLE,
         ).map { it.name }.toSet()
@@ -305,7 +310,9 @@ class SettingsRepository(context: Context) {
             cornerRadiusDp = (this[Keys.CORNER_RADIUS] ?: defaults.cornerRadiusDp).coerceIn(AppSettings.MIN_CORNER_RADIUS, AppSettings.MAX_CORNER_RADIUS),
             avatarShape = enumOrDefault(this[Keys.AVATAR_SHAPE], defaults.avatarShape),
             avatarFrame = this[Keys.AVATAR_FRAME] ?: defaults.avatarFrame,
+            hapticsEnabled = this[Keys.HAPTICS_ENABLED] ?: defaults.hapticsEnabled,
             bottomBarAnchored = this[Keys.BOTTOM_BAR_ANCHORED] ?: defaults.bottomBarAnchored,
+            aiActionsKeepDays = this[Keys.AI_ACTIONS_KEEP_DAYS] ?: defaults.aiActionsKeepDays,
             bottomBarLabels = this[Keys.BOTTOM_BAR_LABELS] ?: defaults.bottomBarLabels,
             marksScale = enumOrDefault(this[Keys.MARKS_SCALE], defaults.marksScale),
             // Before Liquid Glass became a toggle it was a theme of its own; that setting becomes the toggle on top of

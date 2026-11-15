@@ -255,6 +255,7 @@ fun AbsenciumTheme(
         CompositionLocalProvider(
             LocalQuality provides quality,
             LocalAppStyle provides settings.appStyle,
+            androidx.compose.ui.platform.LocalHapticFeedback provides (if (settings.hapticsEnabled) androidx.compose.ui.platform.LocalHapticFeedback.current else NoHaptics),
             LocalBottomBar provides BottomBarStyle(settings.bottomBarAnchored, settings.bottomBarLabels),
             me.rerere.rikkahub.ui.components.dots.LocalPixelIcons provides (settings.appStyle == AppStyle.PIXELATED),
             LocalDotIcons provides (settings.appStyle == AppStyle.DOT_MATRIX),
@@ -280,3 +281,8 @@ fun AbsenciumTheme(
 /** Whether the theme in [settings] is dark, resolving System Auto against the phone's setting. */
 @Composable
 fun isDarkTheme(settings: AppSettings): Boolean = resolveDark(settings, isSystemInDarkTheme())
+
+/** Stands in for the system haptics while the owner has turned vibration off. */
+private object NoHaptics : androidx.compose.ui.hapticfeedback.HapticFeedback {
+    override fun performHapticFeedback(hapticFeedbackType: androidx.compose.ui.hapticfeedback.HapticFeedbackType) = Unit
+}

@@ -62,6 +62,14 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
             onCheckedChange = { viewModel.setExamModeAutoSilence(it) },
         )
 
+        SectionTitle("Feedback")
+        SwitchCard(
+            title = "Haptics",
+            subtitle = "Vibration for taps, tabs and AI messages",
+            checked = settings.hapticsEnabled,
+            onCheckedChange = { viewModel.setHapticsEnabled(it) },
+        )
+
         SectionTitle("Subjects")
         NavCard(
             icon = AppIcons.Book,

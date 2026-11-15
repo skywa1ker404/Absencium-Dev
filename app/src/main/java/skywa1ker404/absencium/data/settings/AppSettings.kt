@@ -72,6 +72,10 @@ data class AppSettings(
     val bottomBarAnchored: Boolean = false,
     /** Only for the anchored bar: a label under every icon. The floating pill always shows the selected tab's label. */
     val bottomBarLabels: Boolean = true,
+    /** One switch for every vibration in the app and in the AI hub. Off silences them all. */
+    val hapticsEnabled: Boolean = true,
+    /** How long finished AI actions stay in the AI actions folder: 0 keeps them for ever, otherwise the number of days. */
+    val aiActionsKeepDays: Int = 0,
     /** With Liquid Glass on: also frost the profile, search, Add Entry, import and other overlays. Off keeps them solid. */
     val frostedOverlays: Boolean = true,
     /** Optional extra shine on glass surfaces. Only offered while Liquid Glass is on; off by default. */
