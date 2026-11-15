@@ -17,7 +17,7 @@ import skywa1ker404.absencium.ui.main.ShellFab
 import skywa1ker404.absencium.ui.theme.LocalBackdrop
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.shape.CircleShape
+import skywa1ker404.absencium.ui.theme.CircleShape
 import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip

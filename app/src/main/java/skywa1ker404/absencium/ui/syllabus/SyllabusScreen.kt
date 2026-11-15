@@ -43,7 +43,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import skywa1ker404.absencium.ui.theme.CircleShape
 import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import skywa1ker404.absencium.ui.components.AlertDialog
 import androidx.compose.material3.DropdownMenu

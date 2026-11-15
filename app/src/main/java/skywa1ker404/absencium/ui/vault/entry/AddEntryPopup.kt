@@ -44,7 +44,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import skywa1ker404.absencium.ui.theme.CircleShape
 import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import me.rerere.rikkahub.ui.components.dots.Icon

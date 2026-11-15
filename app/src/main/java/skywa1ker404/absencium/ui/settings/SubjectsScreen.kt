@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
+import skywa1ker404.absencium.ui.theme.CircleShape
 import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import skywa1ker404.absencium.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme

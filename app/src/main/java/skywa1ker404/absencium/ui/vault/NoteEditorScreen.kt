@@ -739,7 +739,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         Box {
             Row(
                 modifier = Modifier
-                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .clip(skywa1ker404.absencium.ui.theme.CircleShape)
                     .background(colors.secondaryContainer.copy(alpha = 0.7f))
                     .clickable { topicMenuOpen = true }
                     .padding(start = 10.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),

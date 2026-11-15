@@ -45,7 +45,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import skywa1ker404.absencium.ui.theme.CircleShape
 import skywa1ker404.absencium.ui.components.AlertDialog
 import skywa1ker404.absencium.ui.components.ExpressiveChip
 import me.rerere.rikkahub.ui.components.dots.Icon

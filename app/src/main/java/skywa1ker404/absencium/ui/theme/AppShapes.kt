@@ -39,3 +39,10 @@ fun RoundedCornerShape(topStart: Dp = 0.dp, topEnd: Dp = 0.dp, bottomEnd: Dp = 0
     } else {
         androidx.compose.foundation.shape.RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart)
     }
+
+/**
+ * The app's circle. Use this instead of Compose's CircleShape: it is a true circle in the Default, Liquid Glass and Dot matrix styles
+ * and the stair-step block in Pixelated, so round buttons, dots, day cells and pills follow the style.
+ */
+val CircleShape: Shape
+    get() = if (StyleFlags.pixelated) PixelCornerShape(2f) else androidx.compose.foundation.shape.CircleShape

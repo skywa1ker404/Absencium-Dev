@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import skywa1ker404.absencium.ui.theme.CircleShape
 import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import skywa1ker404.absencium.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme
@@ -223,7 +223,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                         selected = lectureType == option,
                         onClick = { lectureType = option },
                         label = { Text(option.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                        shape = androidx.compose.foundation.shape.CircleShape,
+                        shape = skywa1ker404.absencium.ui.theme.CircleShape,
                     )
                 }
             }

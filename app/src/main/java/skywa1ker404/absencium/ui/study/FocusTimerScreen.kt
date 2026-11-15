@@ -105,13 +105,14 @@ fun FocusTimerScreen(navigator: DestinationsNavigator, mode: String = FocusMode.
     ScreenScaffold(title = when (mode) { FocusMode.STOPWATCH -> "Stopwatch"; FocusMode.BREAK_10 -> "10-minute break"; FocusMode.BREAK_15 -> "15-minute break"; else -> "Pomodoro" }, onBack = { navigator.navigateUp() }, largeTitle = true) {
         AppCard(modifier = Modifier.fillMaxWidth(), container = hue.container, shape = MaterialTheme.shapes.extraLarge) {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                val ringStyle = skywa1ker404.absencium.ui.theme.LocalAppStyle.current
                 Box(modifier = Modifier.size(220.dp), contentAlignment = Alignment.Center) {
                     Canvas(modifier = Modifier.size(220.dp)) {
                         val stroke = 16.dp.toPx()
                         val inset = stroke / 2
                         val box = Size(size.width - stroke, size.height - stroke)
-                        drawArc(track, 0f, 360f, false, Offset(inset, inset), box, style = Stroke(stroke, cap = StrokeCap.Round))
-                        drawArc(arc, -90f, 360f * progress, false, Offset(inset, inset), box, style = Stroke(stroke, cap = StrokeCap.Round))
+                        drawArc(track, 0f, 360f, false, Offset(inset, inset), box, style = skywa1ker404.absencium.ui.components.gaugeStroke(stroke, ringStyle))
+                        drawArc(arc, -90f, 360f * progress, false, Offset(inset, inset), box, style = skywa1ker404.absencium.ui.components.gaugeStroke(stroke, ringStyle))
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(if (left >= 3600) "%d:%02d:%02d".format(left / 3600, left % 3600 / 60, left % 60) else "%02d:%02d".format(left / 60, left % 60), style = MaterialTheme.typography.displayMedium, color = hue.onContainer)

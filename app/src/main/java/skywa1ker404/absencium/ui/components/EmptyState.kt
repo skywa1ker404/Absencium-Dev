@@ -107,7 +107,7 @@ fun ExpressiveEmptyState(
     }
     val morph = remember(from, index) { Morph(shapes[from], shapes[index]) }
     // Pixelated and Dot matrix: a still stepped square or a round dot-style badge instead of the morphing Material shape.
-    val badgeShape: Shape = if (stepped) skywa1ker404.absencium.ui.theme.pixelOr(androidx.compose.foundation.shape.CircleShape, 3f) else MorphShape(morph, morphProgress.value)
+    val badgeShape: Shape = if (stepped) skywa1ker404.absencium.ui.theme.pixelOr(skywa1ker404.absencium.ui.theme.CircleShape, 3f) else MorphShape(morph, morphProgress.value)
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

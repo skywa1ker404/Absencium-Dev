@@ -37,7 +37,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import skywa1ker404.absencium.ui.theme.CircleShape
 import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.material3.Button
 import me.rerere.rikkahub.ui.components.dots.Icon
@@ -734,9 +734,14 @@ fun ShellSearchButton(
 fun ShellTopBar(displayName: String, avatar: String, onProfile: () -> Unit, onStudyTools: () -> Unit, modifier: Modifier = Modifier) {
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
+    // Content scrolls under this bar: a fade of the page colour keeps the wordmark readable (not on glass, which shows what is behind).
+    val scrim = if (skywa1ker404.absencium.ui.theme.LocalAppStyle.current == skywa1ker404.absencium.data.settings.AppStyle.LIQUID_GLASS) Modifier else Modifier.background(
+        androidx.compose.ui.graphics.Brush.verticalGradient(0f to colors.background, 0.8f to colors.background, 1f to androidx.compose.ui.graphics.Color.Transparent),
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .then(scrim)
             .statusBarsPadding()
             .padding(horizontal = 20.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,

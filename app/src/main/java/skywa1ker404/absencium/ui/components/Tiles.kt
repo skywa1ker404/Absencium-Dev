@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import skywa1ker404.absencium.ui.theme.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -80,6 +80,7 @@ fun SemiGauge(
         animationSpec = q.spring(),
         label = "semiGaugeColor",
     )
+    val gaugeStyle = skywa1ker404.absencium.ui.theme.LocalAppStyle.current
     Box(modifier = modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.BottomCenter) {
         Canvas(modifier = Modifier.fillMaxWidth().height(150.dp)) {
             val stroke = 18.dp.toPx()
@@ -94,7 +95,7 @@ fun SemiGauge(
                 useCenter = false,
                 topLeft = topLeft,
                 size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Round),
+                style = gaugeStroke(stroke, gaugeStyle),
             )
             if (progress > 0f) {
                 drawArc(
@@ -104,7 +105,7 @@ fun SemiGauge(
                     useCenter = false,
                     topLeft = topLeft,
                     size = arcSize,
-                    style = Stroke(width = stroke, cap = StrokeCap.Round),
+                    style = gaugeStroke(stroke, gaugeStyle),
                 )
             }
             val angle = Math.toRadians(180.0 + 180.0 * threshold / 100.0)
@@ -180,6 +181,7 @@ fun RingGauge(
         animationSpec = q.spring(),
         label = "ringGaugeColor",
     )
+    val gaugeStyle = skywa1ker404.absencium.ui.theme.LocalAppStyle.current
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(size)) {
             val stroke = 11.dp.toPx()
@@ -187,12 +189,12 @@ fun RingGauge(
             val topLeft = Offset(stroke / 2f, stroke / 2f)
             drawArc(
                 color = trackColor, startAngle = 135f, sweepAngle = 270f, useCenter = false,
-                topLeft = topLeft, size = arcSize, style = Stroke(width = stroke, cap = StrokeCap.Round),
+                topLeft = topLeft, size = arcSize, style = gaugeStroke(stroke, gaugeStyle),
             )
             if (progress > 0f) {
                 drawArc(
                     color = color, startAngle = 135f, sweepAngle = 270f * progress, useCenter = false,
-                    topLeft = topLeft, size = arcSize, style = Stroke(width = stroke, cap = StrokeCap.Round),
+                    topLeft = topLeft, size = arcSize, style = gaugeStroke(stroke, gaugeStyle),
                 )
             }
             val angle = Math.toRadians(135.0 + 270.0 * threshold / 100.0)
@@ -213,4 +215,16 @@ fun RingGauge(
             color = numberColor,
         )
     }
+}
+
+/**
+ * How a gauge arc is drawn: a smooth round-capped band normally, blocky segments in Pixelated and a row of dots in Dot matrix. The
+ * track and the filled part use the same pattern from the same start, so the blocks line up.
+ */
+internal fun gaugeStroke(width: Float, style: skywa1ker404.absencium.data.settings.AppStyle): Stroke = when (style) {
+    skywa1ker404.absencium.data.settings.AppStyle.PIXELATED ->
+        Stroke(width = width, cap = StrokeCap.Butt, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(width * 0.8f, width * 0.3f)))
+    skywa1ker404.absencium.data.settings.AppStyle.DOT_MATRIX ->
+        Stroke(width = width * 0.5f, cap = StrokeCap.Round, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(0.01f, width * 0.75f)))
+    else -> Stroke(width = width, cap = StrokeCap.Round)
 }
