@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.material3.Button
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.ButtonDefaults
@@ -183,7 +184,7 @@ fun BottomPill(
 
     // Not clipped, so the swollen highlight can reach past the edge of the pill.
     Box(modifier = modifier.width(with(density) { totalWidthPx.toDp() }).height(PillHeight)) {
-        Box(modifier = Modifier.matchParentSize().floatingGlass(backdrop, CircleShape))
+        Box(modifier = Modifier.matchParentSize().floatingGlass(backdrop, pillShape()))
         Box(
             modifier = Modifier
                 .offset { IntOffset(indicatorLeft(position).roundToInt(), ((PillHeight - ItemHeight) / 2).roundToPx()) }
@@ -197,9 +198,9 @@ fun BottomPill(
                 // Every other theme: a tonal puck with no outline.
                 .then(
                     if (glass) {
-                        Modifier.glassPuck(backdrop, CircleShape, isDarkSurface)
+                        Modifier.glassPuck(backdrop, pillShape(), isDarkSurface)
                     } else {
-                        Modifier.clip(CircleShape).background(colors.secondaryContainer)
+                        Modifier.clip(pillShape()).background(colors.secondaryContainer)
                     },
                 ),
         )
@@ -347,7 +348,7 @@ private fun PillTab(
                 scaleX = scale
                 scaleY = scale
             }
-            .clip(CircleShape)
+            .clip(pillShape())
             .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
             .semantics { contentDescription = tab.label },
         horizontalArrangement = Arrangement.Center,
@@ -414,7 +415,7 @@ fun ShellFab(
                     scaleX = scale
                     scaleY = scale
                 }
-                .floatingGlass(backdrop, CircleShape)
+                .floatingGlass(backdrop, pillShape())
                 .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -439,7 +440,7 @@ fun ShellFab(
             scaleX = scale
             scaleY = scale
         },
-        shape = CircleShape,
+        shape = pillShape(),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -507,9 +508,9 @@ fun ShellFabMenu(
                         }
                         .then(
                             if (backdrop != null) {
-                                Modifier.floatingGlass(backdrop, CircleShape)
+                                Modifier.floatingGlass(backdrop, pillShape())
                             } else {
-                                Modifier.clip(CircleShape).background(colors.primaryContainer)
+                                Modifier.clip(pillShape()).background(colors.primaryContainer)
                             },
                         )
                         .clickable(enabled = expanded) { action.onClick() }
@@ -536,9 +537,9 @@ fun ShellFabMenu(
                 }
                 .then(
                     if (backdrop != null) {
-                        Modifier.floatingGlass(backdrop, CircleShape)
+                        Modifier.floatingGlass(backdrop, pillShape())
                     } else {
-                        Modifier.clip(CircleShape).background(colors.primary)
+                        Modifier.clip(pillShape()).background(colors.primary)
                     },
                 )
                 .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onToggle)

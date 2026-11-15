@@ -1,6 +1,8 @@
 package skywa1ker404.absencium.ui.theme
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -8,6 +10,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.ui.graphics.drawscope.clipPath
@@ -73,3 +76,7 @@ fun Modifier.pixelBevel(outline: Color, stepDp: Float = 2f): Modifier = drawWith
         drawPath(path, outline, style = Stroke(width = 2 * u))
     }
 }
+
+/** The shape of pills, bars and round buttons: a circle, or the stair-step rectangle in the Pixelated style. */
+@Composable
+fun pillShape(): Shape = if (LocalAppStyle.current == AppStyle.PIXELATED) PixelCornerShape(2f) else CircleShape
