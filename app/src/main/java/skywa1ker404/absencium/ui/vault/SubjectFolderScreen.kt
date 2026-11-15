@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.components.AppLinearProgress
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.graphicsLayer
 import skywa1ker404.absencium.ui.main.BottomPill
@@ -500,12 +501,11 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                                     modifier = Modifier.padding(bottom = 6.dp),
                                 )
                             }
-                            androidx.compose.material3.LinearProgressIndicator(
+                            AppLinearProgress(
                                 progress = { overall },
-                                modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
+                                modifier = Modifier.fillMaxWidth().height(10.dp).clip(skywa1ker404.absencium.ui.theme.pillShape()),
                                 color = hue.accent,
                                 trackColor = hue.accent.copy(alpha = 0.18f),
-                                drawStopIndicator = {},
                             )
                             Text(
                                 "${nodes.size} items, $done done. Tap to open the full tree.",
@@ -545,12 +545,11 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                                     modifier = Modifier.clip(CircleShape).background(colors.surface.copy(alpha = 0.9f)).padding(horizontal = 12.dp, vertical = 7.dp),
                                 )
                             }
-                            androidx.compose.material3.LinearProgressIndicator(
+                            AppLinearProgress(
                                 progress = { progress },
-                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(skywa1ker404.absencium.ui.theme.pillShape()),
                                 color = hue.accent,
                                 trackColor = hue.accent.copy(alpha = 0.18f),
-                                drawStopIndicator = {},
                             )
                         }
                     }

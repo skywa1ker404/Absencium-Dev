@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault.entry
 
+import skywa1ker404.absencium.ui.components.AppSlider
 import android.graphics.Bitmap
 import android.graphics.Canvas as AndroidCanvas
 import android.graphics.Matrix
@@ -380,7 +381,7 @@ fun PhotoCropDialog(
                         color = Color.White,
                         modifier = Modifier.padding(end = 12.dp),
                     )
-                    Slider(
+                    AppSlider(
                         value = transform.fineDegrees,
                         onValueChange = { transform = transform.copy(fineDegrees = (it * 2f).roundToInt() / 2f) },
                         onValueChangeFinished = { crop = Rect.Zero },

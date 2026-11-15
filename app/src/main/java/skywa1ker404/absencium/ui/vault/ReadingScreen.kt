@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.components.AppLoading
 import skywa1ker404.absencium.ui.components.AppMenu
 import skywa1ker404.absencium.ui.components.AppMenuDivider
 import skywa1ker404.absencium.ui.components.AppMenuItem
@@ -455,7 +456,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                     ) {
                         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (card.loading) LoadingIndicator(modifier = Modifier.size(32.dp))
+                                if (card.loading) AppLoading(modifier = Modifier.size(32.dp))
                                 Text(
                                     card.title,
                                     style = MaterialTheme.typography.titleSmall,

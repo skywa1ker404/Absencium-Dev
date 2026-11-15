@@ -92,6 +92,6 @@ fun SettingSwitchRow(
         modifier = modifier,
         enabled = enabled,
         onClick = { onCheckedChange(!checked) },
-        trailing = { Switch(checked = checked, onCheckedChange = null, enabled = enabled) },
+        trailing = { AppSwitch(checked = checked, onCheckedChange = null, enabled = enabled) },
     )
 }

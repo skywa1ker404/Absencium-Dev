@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.components.AppLinearProgress
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -113,12 +114,11 @@ fun ReadingMiniPlayer(mini: MiniReading?, onOpen: (Long) -> Unit, onDismiss: () 
                 IconButton(onClick = { open(mini.noteId) }) { Icon(AppIcons.Book, contentDescription = "Continue reading") }
                 IconButton(onClick = { dismiss() }) { Icon(AppIcons.Close, contentDescription = "Close the player") }
             }
-            LinearProgressIndicator(
+            AppLinearProgress(
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth().height(3.dp),
                 color = colors.primary,
                 trackColor = colors.onSurface.copy(alpha = 0.10f),
-                drawStopIndicator = {},
             )
         }
     }

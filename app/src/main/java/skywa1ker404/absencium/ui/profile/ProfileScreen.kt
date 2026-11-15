@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.profile
 
+import skywa1ker404.absencium.ui.components.AppLinearProgress
 import androidx.compose.foundation.background
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.contentDescription
@@ -354,13 +355,11 @@ internal fun ProgressRow(title: String, subtitle: String?, value: Float?, valueT
             }
             Text(valueText, style = MaterialTheme.typography.titleMedium, color = color)
         }
-        LinearProgressIndicator(
+        AppLinearProgress(
             progress = { (value ?: 0f).coerceIn(0f, 1f) },
-            modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(skywa1ker404.absencium.ui.theme.pillShape()),
             color = color,
             trackColor = colors.surfaceContainerHighest.copy(alpha = 0.6f),
-            gapSize = 0.dp,
-            drawStopIndicator = {},
         )
     }
 }

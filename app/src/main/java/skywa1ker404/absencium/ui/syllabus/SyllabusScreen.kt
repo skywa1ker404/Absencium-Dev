@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.syllabus
 
+import skywa1ker404.absencium.ui.components.AppLinearWavy
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.height
@@ -214,7 +215,7 @@ internal fun SyllabusContent(viewModel: SyllabusViewModel, ui: SyllabusUiState, 
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
-            LinearWavyProgressIndicator(
+            AppLinearWavy(
                 progress = { animatedOverall },
                 modifier = Modifier.fillMaxWidth(),
                 color = headHue.accent,
@@ -608,10 +609,10 @@ private fun ImportDialog(
                         Text(state.step, style = MaterialTheme.typography.bodyMedium)
                         // The upload is a wavy line that fills up; when nothing can be measured it waves on its own.
                         if (state.progress != null) {
-                            LinearWavyProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth())
+                            AppLinearWavy(progress = { state.progress }, modifier = Modifier.fillMaxWidth())
                             Text("${(state.progress * 100).toInt()}%", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
-                            LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            AppLinearWavy(modifier = Modifier.fillMaxWidth())
                         }
                         Text(
                             "A large file can take a minute or two. If your phone cannot reach the AI service this ends with a message; Cancel stops it now.",

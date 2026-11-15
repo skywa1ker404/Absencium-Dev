@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.syllabus
 
+import skywa1ker404.absencium.ui.components.AppLinearWavy
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.components.ExpressiveEmptyState
 import androidx.compose.foundation.layout.Column
@@ -93,6 +94,6 @@ private fun SubjectSection(s: SyllabusSummary, index: Int, navigator: Destinatio
             }
             me.rerere.rikkahub.ui.components.dots.Icon(AppIcons.ChevronRight, contentDescription = "Open")
         }
-        if (s.items > 0) LinearWavyProgressIndicator(progress = { s.progress }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
+        if (s.items > 0) AppLinearWavy(progress = { s.progress }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp))
     }
 }

@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.settings
 
+import skywa1ker404.absencium.ui.components.AppSwitch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -91,7 +92,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             ) {
                 Text("Include photos, documents and recordings", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                androidx.compose.material3.Switch(checked = includeFiles, onCheckedChange = { includeFiles = it })
+                AppSwitch(checked = includeFiles, onCheckedChange = { includeFiles = it })
             }
             AppTextField(
                 value = password,

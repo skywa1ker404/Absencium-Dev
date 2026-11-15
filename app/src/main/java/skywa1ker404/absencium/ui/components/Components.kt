@@ -53,6 +53,7 @@ import skywa1ker404.absencium.data.settings.AppStyle
 import skywa1ker404.absencium.ui.theme.LocalAppStyle
 import skywa1ker404.absencium.ui.theme.PixelCornerShape
 import skywa1ker404.absencium.ui.theme.pixelBevel
+import skywa1ker404.absencium.ui.theme.pixelOr
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -131,6 +132,8 @@ fun AppCard(
     }
     val cardBackdrop = LocalCardBackdrop.current
     val pixelStyle = LocalAppStyle.current == AppStyle.PIXELATED
+    // Pixelated: every card is the stair-step rectangle, whatever outline the screen asked for.
+    val cardShape = pixelOr(shape, 2f)
     Surface(
         modifier = modifier
             .graphicsLayer {
@@ -142,13 +145,13 @@ fun AppCard(
             // Liquid Glass: the card is a pane of glass over the wallpaper, tinted with its own tonal colour.
             .then(
                 when {
-                    cardBackdrop != null -> Modifier.glassSurface(cardBackdrop, shape, container)
+                    cardBackdrop != null -> Modifier.glassSurface(cardBackdrop, cardShape, container)
                     // In a frosted popup the card is a see-through tinted pane, so the popup's glass shows through it.
-                    LocalFrostedPopup.current -> Modifier.flatPane(shape, container, 0.4f)
+                    LocalFrostedPopup.current -> Modifier.flatPane(cardShape, container, 0.4f)
                     else -> Modifier
                 },
             ),
-        shape = shape,
+        shape = cardShape,
         color = if (cardBackdrop != null || LocalFrostedPopup.current) Color.Transparent else container,
     ) {
         HostAnimatesSize {
@@ -376,7 +379,7 @@ fun SwitchCard(
                     )
                 }
             }
-            Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+            AppSwitch(checked = checked, onCheckedChange = null, enabled = enabled)
         }
     }
 }
@@ -481,7 +484,7 @@ fun SliderCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Slider(
+        AppSlider(
             value = draft,
             onValueChange = { draft = it },
             onValueChangeFinished = { onValueChangeFinished(draft.roundToInt()) },
@@ -531,7 +534,7 @@ fun PillButton(
     val padding = if (compact) PaddingValues(horizontal = if (maxLines > 1) 12.dp else 16.dp, vertical = 10.dp) else PaddingValues(horizontal = 28.dp, vertical = 14.dp)
     val label: @Composable RowScope.() -> Unit = {
         if (loading) {
-            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            AppCircularProgress(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
             Spacer(modifier = Modifier.width(8.dp))
         }
         Text(text = text, style = MaterialTheme.typography.labelLarge, maxLines = maxLines, textAlign = androidx.compose.ui.text.style.TextAlign.Center)

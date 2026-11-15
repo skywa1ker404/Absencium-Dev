@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.components.AppSlider
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -395,11 +396,11 @@ private fun DoodlePage(base: Bitmap?, page: PageSetup, onCancel: () -> Unit, onD
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(AppIcons.Brush, contentDescription = null, modifier = Modifier.size(20.dp), tint = colors.onSurfaceVariant)
-                    Slider(value = width, onValueChange = { width = it }, valueRange = 0.003f..0.05f, modifier = Modifier.weight(1f).semantics { contentDescription = "Line thickness" })
+                    AppSlider(value = width, onValueChange = { width = it }, valueRange = 0.003f..0.05f, modifier = Modifier.weight(1f).semantics { contentDescription = "Line thickness" })
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(AppIcons.Opacity, contentDescription = null, modifier = Modifier.size(20.dp), tint = colors.onSurfaceVariant)
-                    Slider(value = opacity, onValueChange = { opacity = it }, valueRange = 0.1f..1f, modifier = Modifier.weight(1f).semantics { contentDescription = "Opacity" })
+                    AppSlider(value = opacity, onValueChange = { opacity = it }, valueRange = 0.1f..1f, modifier = Modifier.weight(1f).semantics { contentDescription = "Opacity" })
                 }
             }
             PageTab.COLOUR -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

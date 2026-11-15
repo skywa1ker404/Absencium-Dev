@@ -700,16 +700,26 @@ val ScrimColor = Color(0x99000000)
 @Composable
 fun AbsenciumWordmark(color: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
     val q = LocalQuality.current
+    val appStyle = skywa1ker404.absencium.ui.theme.LocalAppStyle.current
+    val dotted = me.rerere.rikkahub.ui.components.dots.LocalDotIcons.current
+    val pixel = appStyle == skywa1ker404.absencium.data.settings.AppStyle.PIXELATED
+    // The special A and the rest of the name both follow the style: dots in Dot matrix, square pixels in Pixelated.
     val style = MaterialTheme.typography.headlineSmall.copy(
-        fontFamily = skywa1ker404.absencium.ui.theme.OutfitFamily,
+        fontFamily = when {
+            dotted -> skywa1ker404.absencium.ui.theme.DotFamily
+            pixel -> skywa1ker404.absencium.ui.theme.PixelFamily
+            else -> skywa1ker404.absencium.ui.theme.OutfitFamily
+        },
         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-        letterSpacing = 0.4.sp,
+        letterSpacing = if (dotted || pixel) 0.sp else 0.4.sp,
     )
+    val logo = androidx.compose.ui.res.painterResource(skywa1ker404.absencium.R.drawable.ic_logo_a)
+    val mark = if (dotted || pixel) me.rerere.rikkahub.ui.components.dots.rememberMosaicPainter("absencium_logo_a", logo, square = pixel) else logo
     val pop = remember { Animatable(0.6f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)) }
     Row(modifier = modifier.semantics { contentDescription = "Absencium" }, verticalAlignment = Alignment.CenterVertically) {
         androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(skywa1ker404.absencium.R.drawable.ic_logo_a),
+            painter = mark,
             contentDescription = null,
             colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(color),
             modifier = Modifier
@@ -719,7 +729,7 @@ fun AbsenciumWordmark(color: androidx.compose.ui.graphics.Color, modifier: Modif
                     scaleY = pop.value
                 },
         )
-        Text(text = "bsencium", style = style, color = color)
+        Text(text = "bsencium", style = style, color = color, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
 }
 

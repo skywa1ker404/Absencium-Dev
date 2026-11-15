@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.profile
 
+import skywa1ker404.absencium.ui.components.AppSlider
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -152,7 +153,7 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
                     shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
                 )
                 Text("Attendance target: ${target.toInt()}%", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
-                androidx.compose.material3.Slider(
+                AppSlider(
                     value = target,
                     onValueChange = { target = it },
                     valueRange = skywa1ker404.absencium.data.settings.AppSettings.MIN_ATTENDANCE_THRESHOLD.toFloat()..skywa1ker404.absencium.data.settings.AppSettings.MAX_ATTENDANCE_THRESHOLD.toFloat(),

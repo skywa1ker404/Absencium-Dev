@@ -1,5 +1,7 @@
 package skywa1ker404.absencium.ui.vault.entry
 
+import skywa1ker404.absencium.ui.components.AppLinearWavy
+import skywa1ker404.absencium.ui.components.AppLoading
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -761,7 +763,7 @@ internal fun LoadingDots(label: String, modifier: Modifier = Modifier, color: Co
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
     ) {
         // Material 3 Expressive loading indicator: a shape that morphs from one to the next while it works.
-        androidx.compose.material3.LoadingIndicator(modifier = Modifier.size(32.dp))
+        AppLoading(modifier = Modifier.size(32.dp))
         Text(text = "$label $dots", style = MaterialTheme.typography.bodyMedium, color = color)
     }
 }
@@ -952,9 +954,9 @@ private fun BusyDialog(step: String, progress: Float?, onCancel: () -> Unit) {
                 Text(step, style = MaterialTheme.typography.bodyMedium)
                 // A wavy line fills as the file uploads; with nothing to measure it waves on its own.
                 if (progress != null) {
-                    androidx.compose.material3.LinearWavyProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                    AppLinearWavy(progress = { progress }, modifier = Modifier.fillMaxWidth())
                 } else {
-                    androidx.compose.material3.LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    AppLinearWavy(modifier = Modifier.fillMaxWidth())
                 }
             }
         },

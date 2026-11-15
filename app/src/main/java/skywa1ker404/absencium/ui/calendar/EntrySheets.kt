@@ -1,5 +1,7 @@
 package skywa1ker404.absencium.ui.calendar
 
+import skywa1ker404.absencium.ui.components.AppLinearProgress
+import skywa1ker404.absencium.ui.components.AppSwitch
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
 import skywa1ker404.absencium.ui.components.Reveal
@@ -205,7 +207,7 @@ fun AddEntrySheet(
                             color = colors.onSurfaceVariant,
                         )
                     }
-                    Switch(
+                    AppSwitch(
                         checked = multiDay,
                         onCheckedChange = {
                             multiDay = it
@@ -251,7 +253,7 @@ fun AddEntrySheet(
                             color = colors.onSurfaceVariant,
                         )
                     }
-                    Switch(checked = autoSkip, onCheckedChange = { autoSkip = it })
+                    AppSwitch(checked = autoSkip, onCheckedChange = { autoSkip = it })
                 }
             } else {
                 AppTextField(
@@ -434,7 +436,7 @@ fun ExamDetailSheet(
                         Text("Result", style = MaterialTheme.typography.labelLarge, color = colors.primary)
                         Text("${trimNumber(got)} / ${trimNumber(max)}  ·  ${(fraction * 100).toInt()}%", style = MaterialTheme.typography.titleSmall)
                     }
-                    androidx.compose.material3.LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+                    AppLinearProgress(progress = { fraction }, modifier = Modifier.fillMaxWidth())
                 }
             }
             // Syllabus notes only take room when there are some.

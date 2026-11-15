@@ -147,40 +147,51 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
 @Composable
 private fun AppearancePreview(settings: AppSettings) {
     val colors = MaterialTheme.colorScheme
+    val pill = skywa1ker404.absencium.ui.theme.pillShape()
     SectionTitle("Preview")
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
             .clip(MaterialTheme.shapes.large)
             .background(colors.background)
             .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Absencium", style = MaterialTheme.typography.titleLarge, color = colors.onBackground, modifier = Modifier.weight(1f))
-                skywa1ker404.absencium.ui.profile.AvatarPicture(fileName = settings.profileAvatar, initials = settings.displayName.ifBlank { "A" }, size = 36)
-            }
-            Box(
-                modifier = Modifier.fillMaxWidth().height(64.dp).clip(MaterialTheme.shapes.medium).background(colors.primaryContainer).padding(14.dp),
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(Modifier.width(120.dp).height(8.dp).clip(CircleShape).background(colors.onPrimaryContainer.copy(alpha = 0.7f)))
-                    Box(Modifier.width(76.dp).height(8.dp).clip(CircleShape).background(colors.onPrimaryContainer.copy(alpha = 0.4f)))
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.weight(1f).height(44.dp).clip(MaterialTheme.shapes.medium).background(colors.secondaryContainer))
-                Box(Modifier.weight(1f).height(44.dp).clip(MaterialTheme.shapes.medium).background(colors.tertiaryContainer))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Absencium", style = MaterialTheme.typography.titleLarge, color = colors.onBackground, maxLines = 1, modifier = Modifier.weight(1f))
+            skywa1ker404.absencium.ui.profile.AvatarPicture(fileName = settings.profileAvatar, initials = settings.displayName.ifBlank { "A" }, size = 36)
+        }
+        Box(
+            modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(colors.primaryContainer).padding(14.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.width(120.dp).height(8.dp).clip(pill).background(colors.onPrimaryContainer.copy(alpha = 0.7f)))
+                Box(Modifier.width(76.dp).height(8.dp).clip(pill).background(colors.onPrimaryContainer.copy(alpha = 0.4f)))
+                skywa1ker404.absencium.ui.components.AppLinearProgress(
+                    progress = { 0.65f },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(pill),
+                    color = colors.primary,
+                    trackColor = colors.onPrimaryContainer.copy(alpha = 0.18f),
+                )
             }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f).height(44.dp).clip(MaterialTheme.shapes.medium).background(colors.secondaryContainer))
+            Box(Modifier.weight(1f).height(44.dp).clip(MaterialTheme.shapes.medium).background(colors.tertiaryContainer))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            skywa1ker404.absencium.ui.components.AppSwitch(checked = true, onCheckedChange = null)
+            skywa1ker404.absencium.ui.components.AppSwitch(checked = false, onCheckedChange = null)
+            skywa1ker404.absencium.ui.components.AppSlider(value = 0.4f, onValueChange = {}, enabled = false, modifier = Modifier.weight(1f))
+            skywa1ker404.absencium.ui.components.AppLoading(modifier = Modifier.size(32.dp))
+        }
         Row(
-            modifier = Modifier.align(Alignment.BottomCenter).clip(CircleShape).background(colors.surfaceContainerHigh).padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.align(Alignment.CenterHorizontally).clip(pill).background(colors.surfaceContainerHigh).padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.width(34.dp).height(18.dp).clip(CircleShape).background(colors.primary))
-            repeat(3) { Box(Modifier.size(10.dp).clip(CircleShape).background(colors.onSurfaceVariant.copy(alpha = 0.6f))) }
+            Box(Modifier.width(34.dp).height(18.dp).clip(pill).background(colors.primary))
+            repeat(3) { Box(Modifier.size(10.dp).clip(pill).background(colors.onSurfaceVariant.copy(alpha = 0.6f))) }
         }
     }
 }
@@ -410,7 +421,7 @@ fun ColorEngineChoices(
                         maxLines = 2,
                     )
                 }
-                Switch(checked = settings.liquidGlass, onCheckedChange = null, enabled = glassEnabled)
+                skywa1ker404.absencium.ui.components.AppSwitch(checked = settings.liquidGlass, onCheckedChange = null, enabled = glassEnabled)
             }
         }
         // Appears with the same springy expansion as the notes list on the Attendance tab, and folds away with Liquid Glass.
@@ -468,18 +479,29 @@ private fun StyleMini(style: AppStyle) {
                         contentAlignment = Alignment.Center,
                     ) { Text("PLAY", style = face, color = c.onPrimary, maxLines = 1) }
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Box(Modifier.weight(1f).fillMaxWidth().clip(PixelCornerShape(1.5f)).background(c.surfaceContainerHigh).pixelBevel(c.outline, 1f))
                         Box(
                             Modifier.weight(1f).fillMaxWidth().clip(PixelCornerShape(1.5f)).background(c.secondaryContainer).pixelBevel(c.outline, 1f),
                             contentAlignment = Alignment.Center,
                         ) { Text("OK", style = face.copy(fontSize = 8.sp), color = c.onSecondaryContainer, maxLines = 1) }
+                        // A block switch (on) and a block bar.
+                        Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(width = 24.dp, height = 13.dp).clip(PixelCornerShape(1f)).background(c.primary).pixelBevel(c.outline, 1f)) {
+                                Box(Modifier.align(Alignment.CenterEnd).padding(2.dp).size(9.dp).clip(PixelCornerShape(1f)).background(c.onPrimary))
+                            }
+                            skywa1ker404.absencium.ui.components.StepBar(0.6f, Modifier.weight(1f).height(6.dp), c.primary, c.surfaceContainerHighest, dotted = false)
+                        }
                     }
                 }
             }
         }
-        AppStyle.DOT_MATRIX -> Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0B)), contentAlignment = Alignment.Center) {
-            Text("Aa", style = TextStyle(fontFamily = DotFamily, fontWeight = FontWeight.Bold, fontSize = 30.sp), color = Color.White, maxLines = 1)
-            Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(8.dp).clip(CircleShape).background(Color(0xFFD71921)))
+        AppStyle.DOT_MATRIX -> Box(Modifier.fillMaxSize().background(Color(0xFF0B0B0B)).padding(10.dp)) {
+            Text("Aa", style = TextStyle(fontFamily = DotFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp), color = Color.White, maxLines = 1, modifier = Modifier.align(Alignment.TopStart))
+            Box(Modifier.align(Alignment.TopEnd).size(8.dp).clip(CircleShape).background(Color(0xFFD71921)))
+            // A dotted progress bar and the dotted loader.
+            Row(modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                skywa1ker404.absencium.ui.components.StepBar(0.6f, Modifier.weight(1f).height(5.dp), Color.White, Color.White.copy(alpha = 0.2f), dotted = true)
+                skywa1ker404.absencium.ui.components.StepSpinner(Modifier.size(18.dp), Color(0xFFD71921), dotted = true)
+            }
         }
     }
 }

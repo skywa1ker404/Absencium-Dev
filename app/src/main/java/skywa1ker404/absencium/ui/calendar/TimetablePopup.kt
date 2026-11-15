@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.calendar
 
+import skywa1ker404.absencium.ui.components.AppSwitch
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -175,7 +176,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                         color = colors.onSurfaceVariant,
                     )
                 }
-                Switch(checked = sameEveryDay, onCheckedChange = { sameEveryDay = it })
+                AppSwitch(checked = sameEveryDay, onCheckedChange = { sameEveryDay = it })
             }
             val startTime = parseTimeInput(start)
             val endTime = parseTimeInput(end)
