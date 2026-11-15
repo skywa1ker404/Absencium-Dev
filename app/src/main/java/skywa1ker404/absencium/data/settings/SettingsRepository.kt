@@ -112,6 +112,10 @@ class SettingsRepository(context: Context) {
 
     suspend fun setAvatarFrame(value: Boolean) = write(Keys.AVATAR_FRAME, value)
 
+    suspend fun setBottomBarAnchored(value: Boolean) = write(Keys.BOTTOM_BAR_ANCHORED, value)
+
+    suspend fun setBottomBarLabels(value: Boolean) = write(Keys.BOTTOM_BAR_LABELS, value)
+
     suspend fun setAttendanceThreshold(percent: Int) = write(
         Keys.ATTENDANCE_THRESHOLD,
         percent.coerceIn(AppSettings.MIN_ATTENDANCE_THRESHOLD, AppSettings.MAX_ATTENDANCE_THRESHOLD),
@@ -238,6 +242,8 @@ class SettingsRepository(context: Context) {
         val CORNER_RADIUS = intPreferencesKey("corner_radius_dp")
         val AVATAR_SHAPE = stringPreferencesKey("avatar_shape")
         val AVATAR_FRAME = booleanPreferencesKey("avatar_frame")
+        val BOTTOM_BAR_ANCHORED = booleanPreferencesKey("bottom_bar_anchored")
+        val BOTTOM_BAR_LABELS = booleanPreferencesKey("bottom_bar_labels")
         val ATTENDANCE_THRESHOLD = intPreferencesKey("attendance_threshold_percent")
         val FOCUS_GRACE_MINUTES = intPreferencesKey("focus_grace_minutes")
         val REMIND_LECTURE_MINUTES = intPreferencesKey("remind_lecture_minutes")
@@ -264,7 +270,7 @@ class SettingsRepository(context: Context) {
 
         // The keys a restore may set, by type. A key not listed here is never imported.
         val BOOLEANS = setOf(
-            ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, PURE_BLACK, AVATAR_FRAME, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
+            ONBOARDING_COMPLETE, INTRO_SEEN, LIQUID_GLASS, FROSTED_OVERLAYS, PURE_BLACK, AVATAR_FRAME, BOTTOM_BAR_ANCHORED, BOTTOM_BAR_LABELS, EXAM_MODE_AUTO_SILENCE, ASK_AI_ENABLED,
             SEARCH_IMAGES_ENABLED, GENERATE_IMAGES_ENABLED,
             MOMENTUM_ENABLED, SEMESTER_MANAGER_ENABLED, LOW_STORAGE_COMPRESSOR_ENABLED, SATURDAY_HOLIDAY, SUNDAY_HOLIDAY, REMIND_LOW_ATTENDANCE,
         ).map { it.name }.toSet()
@@ -299,6 +305,8 @@ class SettingsRepository(context: Context) {
             cornerRadiusDp = (this[Keys.CORNER_RADIUS] ?: defaults.cornerRadiusDp).coerceIn(AppSettings.MIN_CORNER_RADIUS, AppSettings.MAX_CORNER_RADIUS),
             avatarShape = enumOrDefault(this[Keys.AVATAR_SHAPE], defaults.avatarShape),
             avatarFrame = this[Keys.AVATAR_FRAME] ?: defaults.avatarFrame,
+            bottomBarAnchored = this[Keys.BOTTOM_BAR_ANCHORED] ?: defaults.bottomBarAnchored,
+            bottomBarLabels = this[Keys.BOTTOM_BAR_LABELS] ?: defaults.bottomBarLabels,
             marksScale = enumOrDefault(this[Keys.MARKS_SCALE], defaults.marksScale),
             // Before Liquid Glass became a toggle it was a theme of its own; that setting becomes the toggle on top of
             // the default theme, and Solid Accent (also gone) falls back to the default as well.

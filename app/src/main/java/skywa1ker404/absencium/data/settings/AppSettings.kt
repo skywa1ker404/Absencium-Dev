@@ -68,6 +68,10 @@ data class AppSettings(
     val avatarShape: AvatarShape = AvatarShape.LEAF8,
     /** A ring and a soft background behind avatars. */
     val avatarFrame: Boolean = true,
+    /** The bottom bar: false is the floating pill (the original look), true is a bar fixed to the bottom edge. */
+    val bottomBarAnchored: Boolean = false,
+    /** Only for the anchored bar: a label under every icon. The floating pill always shows the selected tab's label. */
+    val bottomBarLabels: Boolean = true,
     /** With Liquid Glass on: also frost the profile, search, Add Entry, import and other overlays. Off keeps them solid. */
     val frostedOverlays: Boolean = true,
     /** Optional extra shine on glass surfaces. Only offered while Liquid Glass is on; off by default. */

@@ -384,7 +384,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     hidden = { compactState.value && !fabOpen },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp + 52.dp + 12.dp),
+                        .padding(end = 16.dp, bottom = bottomInset + bottomBarReserve() + 12.dp + 52.dp + 12.dp),
                 ) {
                     ShellFabMenu(
                         expanded = fabOpen,
@@ -399,7 +399,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 hidden = { compactState.value },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = bottomInset + 16.dp + 64.dp + 12.dp),
+                    .padding(end = 16.dp, bottom = bottomInset + bottomBarReserve() + 12.dp),
             ) {
                 ShellSearchButton(backdrop = backdrop, onClick = { showSearch = true })
             }
@@ -412,7 +412,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                 onSelect = { tab = it },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = bottomInset + 16.dp),
+                    .padding(bottom = if (skywa1ker404.absencium.ui.theme.LocalBottomBar.current.anchored) 0.dp else bottomInset + 16.dp),
             )
 
             // Popups live in this layer, above the page, so frosted ones can blur the page behind them like the pill does.

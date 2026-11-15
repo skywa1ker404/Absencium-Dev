@@ -23,6 +23,11 @@ import skywa1ker404.absencium.data.settings.AppStyle
 /** The style the app is drawn in right now, so shared components can switch to their pixel look. */
 val LocalAppStyle = staticCompositionLocalOf { AppStyle.DEFAULT }
 
+/** The bottom bar: [anchored] fixed to the bottom edge (false is the floating pill), and [labels] a label under every icon (anchored only). */
+class BottomBarStyle(val anchored: Boolean, val labels: Boolean)
+
+val LocalBottomBar = staticCompositionLocalOf { BottomBarStyle(anchored = false, labels = true) }
+
 /**
  * A rectangle whose corners are cut in two stair steps of [stepDp] each, like the buttons of an old game. It is a corner-based shape
  * (each corner is twice a step), so Material's Shapes accept it and a sheet can still square off some of its corners.

@@ -134,6 +134,13 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
             )
         }
 
+        BottomBarChoices(
+            anchored = settings.bottomBarAnchored,
+            labels = settings.bottomBarLabels,
+            onAnchored = viewModel::setBottomBarAnchored,
+            onLabels = viewModel::setBottomBarLabels,
+        )
+
         AvatarChoices(shape = settings.avatarShape, frame = settings.avatarFrame, onShape = viewModel::setAvatarShape, onFrame = viewModel::setAvatarFrame)
 
         VisualQualityChoices(
@@ -192,6 +199,54 @@ private fun AppearancePreview(settings: AppSettings) {
         ) {
             Box(Modifier.width(34.dp).height(18.dp).clip(pill).background(colors.primary))
             repeat(3) { Box(Modifier.size(10.dp).clip(pill).background(colors.onSurfaceVariant.copy(alpha = 0.6f))) }
+        }
+    }
+}
+
+/** The bottom bar as two picture tiles, Floating (the pill) or Anchored (fixed to the edge); labels are an Anchored-only choice. */
+@Composable
+private fun BottomBarChoices(anchored: Boolean, labels: Boolean, onAnchored: (Boolean) -> Unit, onLabels: (Boolean) -> Unit) {
+    val c = MaterialTheme.colorScheme
+    SectionTitle("Bottom bar")
+    AppCard(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf(false to "Floating", true to "Anchored").forEach { (isAnchored, name) ->
+                PreviewTile(
+                    title = name,
+                    selected = anchored == isAnchored,
+                    onClick = { onAnchored(isAnchored) },
+                    modifier = Modifier.weight(1f),
+                    aspect = 1.25f,
+                ) {
+                    val pill = skywa1ker404.absencium.ui.theme.pillShape()
+                    Box(Modifier.fillMaxSize().background(c.background)) {
+                        Box(Modifier.align(Alignment.TopStart).padding(10.dp).fillMaxWidth(0.4f).height(6.dp).clip(pill).background(c.onBackground.copy(alpha = 0.8f)))
+                        Row(
+                            modifier = if (isAnchored) {
+                                Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(22.dp).background(c.surfaceContainerHigh)
+                            } else {
+                                Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp).fillMaxWidth(0.68f).height(20.dp).clip(pill).background(c.surfaceContainerHigh)
+                            },
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(Modifier.width(18.dp).height(10.dp).clip(pill).background(c.secondaryContainer))
+                            repeat(2) { Box(Modifier.size(6.dp).clip(pill).background(c.onSurfaceVariant.copy(alpha = 0.6f))) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Labels only exist on the anchored bar; the floating pill shows just the selected tab's label.
+    androidx.compose.animation.AnimatedVisibility(visible = anchored) {
+        AppCard(modifier = Modifier.fillMaxWidth()) {
+            SettingSwitchRow(
+                title = "Show labels",
+                subtitle = "A name under every icon in the bottom bar",
+                checked = labels,
+                onCheckedChange = onLabels,
+            )
         }
     }
 }

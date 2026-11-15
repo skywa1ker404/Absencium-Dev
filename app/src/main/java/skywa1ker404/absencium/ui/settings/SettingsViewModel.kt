@@ -77,6 +77,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setAvatarShape(value: AvatarShape) = launch { repository.setAvatarShape(value) }
 
     fun setAvatarFrame(value: Boolean) = launch { repository.setAvatarFrame(value) }
+    fun setBottomBarAnchored(value: Boolean) = launch { repository.setBottomBarAnchored(value) }
+    fun setBottomBarLabels(value: Boolean) = launch { repository.setBottomBarLabels(value) }
 
     fun setAttendanceThreshold(percent: Int) = launch { repository.setAttendanceThreshold(percent) }
 

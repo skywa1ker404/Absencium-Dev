@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -107,6 +109,11 @@ fun BottomPill(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val barStyle = skywa1ker404.absencium.ui.theme.LocalBottomBar.current
+    if (barStyle.anchored) {
+        AnchoredBar(tabs, selectedIndex, barStyle.labels, backdrop, onSelect, modifier)
+        return
+    }
     val q = LocalQuality.current
     val colors = MaterialTheme.colorScheme
     val isDarkSurface = colors.surface.luminance() < 0.5f
@@ -375,6 +382,130 @@ private fun PillTab(
                     .padding(start = LabelGap)
                     .wrapContentWidth(align = Alignment.Start, unbounded = true)
                     .alpha(weight.coerceIn(0f, 1f)),
+            )
+        }
+    }
+}
+
+/** Height of the anchored bar above the system navigation bar. */
+private val AnchoredHeightLabels = 72.dp
+private val AnchoredHeightIcons = 60.dp
+
+/**
+ * How much room the bottom bar takes above the system navigation bar: the floating pill sits 16dp up and is 64dp tall; the
+ * anchored bar is flush with the edge. Buttons that float above the bar add their own gap to this.
+ */
+@Composable
+fun bottomBarReserve(): androidx.compose.ui.unit.Dp {
+    val bar = skywa1ker404.absencium.ui.theme.LocalBottomBar.current
+    return if (!bar.anchored) 16.dp + PillHeight else if (bar.labels) AnchoredHeightLabels else AnchoredHeightIcons
+}
+
+/** The gap between the screen's bottom edge and the bar itself: the floating pill hovers 16dp up, the anchored bar has none. */
+@Composable
+fun bottomBarGap(): androidx.compose.ui.unit.Dp =
+    if (skywa1ker404.absencium.ui.theme.LocalBottomBar.current.anchored) 0.dp else 16.dp
+
+/**
+ * The anchored navigation bar: full width, fixed to the bottom edge, one equal slot per tab. The selected tab gets a springy tonal
+ * highlight behind its icon; [showLabels] puts a label under every icon. It does not shrink while scrolling.
+ */
+@Composable
+private fun AnchoredBar(
+    tabs: List<MainTab>,
+    selectedIndex: Int,
+    showLabels: Boolean,
+    backdrop: LayerBackdrop?,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val pixel = skywa1ker404.absencium.ui.theme.LocalAppStyle.current == skywa1ker404.absencium.data.settings.AppStyle.PIXELATED
+    val glass = backdrop != null
+    val edge = colors.outline
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .floatingGlass(backdrop, androidx.compose.ui.graphics.RectangleShape, bordered = false, lens = false)
+            .then(
+                if (pixel) Modifier.drawBehind { drawRect(edge, size = androidx.compose.ui.geometry.Size(size.width, 2.dp.toPx())) } else Modifier,
+            ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .height(if (showLabels) AnchoredHeightLabels else AnchoredHeightIcons),
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                AnchoredTab(
+                    tab = tab,
+                    selected = index == selectedIndex,
+                    showLabel = showLabels,
+                    glass = glass,
+                    onClick = { onSelect(index) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnchoredTab(
+    tab: MainTab,
+    selected: Boolean,
+    showLabel: Boolean,
+    glass: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val q = LocalQuality.current
+    val colors = MaterialTheme.colorScheme
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "anchoredPress",
+    )
+    val highlightWidth by animateDpAsState(
+        targetValue = if (selected) 60.dp else 34.dp,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "anchoredWidth",
+    )
+    val highlight by androidx.compose.animation.animateColorAsState(
+        targetValue = if (selected) (if (glass) colors.onSurface.copy(alpha = 0.14f) else colors.secondaryContainer) else Color.Transparent,
+        animationSpec = q.spring(),
+        label = "anchoredHighlight",
+    )
+    val tint = if (selected) (if (glass) colors.onSurface else colors.onSecondaryContainer) else colors.onSurfaceVariant
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(interactionSource = interaction, indication = null, role = androidx.compose.ui.semantics.Role.Tab, onClick = onClick)
+            .semantics { contentDescription = tab.label },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Box(
+            modifier = Modifier.width(highlightWidth).height(32.dp).clip(pillShape()).background(highlight),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(imageVector = tab.icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        }
+        if (showLabel) {
+            Text(
+                text = tab.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = tint,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 4.dp, start = 2.dp, end = 2.dp),
             )
         }
     }

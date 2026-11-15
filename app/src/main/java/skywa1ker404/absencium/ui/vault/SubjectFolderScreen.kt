@@ -157,7 +157,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
         overlay = {
             // Like the main screen: the same pill (it shrinks to icons while the list scrolls down) and the button above it on the right.
             Box(Modifier.fillMaxSize().navigationBarsPadding()) {
-                Box(modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp + 64.dp + 12.dp)) {
+                Box(modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = skywa1ker404.absencium.ui.main.bottomBarReserve() + 12.dp)) {
                     androidx.compose.animation.AnimatedVisibility(
                         visible = !(selectedIds.isNotEmpty() || selectedGuideIds.isNotEmpty()) && subject != null,
                         enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
@@ -188,7 +188,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                     compact = { pillScroll.compact.value },
                     backdrop = LocalBackdrop.current,
                     onSelect = { tab = it; selectedIds = emptySet(); selectedGuideIds = emptySet() },
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = skywa1ker404.absencium.ui.main.bottomBarGap()),
                 )
             }
             // The topics as a side panel over everything, the pill included.

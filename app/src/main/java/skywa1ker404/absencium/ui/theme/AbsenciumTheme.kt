@@ -253,6 +253,7 @@ fun AbsenciumTheme(
         CompositionLocalProvider(
             LocalQuality provides quality,
             LocalAppStyle provides settings.appStyle,
+            LocalBottomBar provides BottomBarStyle(settings.bottomBarAnchored, settings.bottomBarLabels),
             LocalDotIcons provides (settings.appStyle == AppStyle.DOT_MATRIX),
             LocalAvatarStyle provides AvatarStyle(settings.avatarShape, settings.avatarFrame),
             androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
