@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.study
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -127,9 +128,9 @@ fun CapsuleProgress(fraction: Float, color: Color, modifier: Modifier = Modifier
     )
     val hatch = MaterialTheme.colorScheme.outlineVariant
     Box(
-        modifier = modifier.fillMaxWidth().height(height).clip(CircleShape)
+        modifier = modifier.fillMaxWidth().height(height).clip(pillShape())
             .drawBehind { drawHatch(hatch) },
     ) {
-        Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(value).clip(CircleShape).background(color))
+        Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(value).clip(pillShape()).background(color))
     }
 }

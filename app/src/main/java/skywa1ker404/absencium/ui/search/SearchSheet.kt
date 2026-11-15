@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.search
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.components.ExpressiveEmptyState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -214,7 +215,7 @@ private fun ResultCard(title: String, subtitle: String, dotColor: Color, onClick
             Box(
                 modifier = Modifier
                     .size(12.dp)
-                    .clip(CircleShape)
+                    .clip(pillShape())
                     .background(dotColor),
             )
             Column(modifier = Modifier.weight(1f)) {

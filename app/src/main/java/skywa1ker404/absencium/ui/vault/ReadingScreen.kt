@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.components.AppLoading
 import skywa1ker404.absencium.ui.components.AppMenu
 import skywa1ker404.absencium.ui.components.AppMenuDivider
@@ -406,7 +407,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                         .align(Alignment.TopEnd)
                         .statusBarsPadding()
                         .padding(8.dp)
-                        .clip(CircleShape)
+                        .clip(pillShape())
                         .background(colors.surfaceContainerHigh.copy(alpha = 0.8f))
                         .clickable { focus = false }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -583,7 +584,7 @@ private fun ReadOnlyEmbed(block: Block.Embed, attachments: List<AttachmentEntity
                 if (playing) AppIcons.Stop else AppIcons.PlayCircle,
                 contentDescription = if (playing) "Stop" else "Play the recording",
                 tint = colors.onSurface,
-                modifier = Modifier.clip(CircleShape).clickable(enabled = attachment != null) {
+                modifier = Modifier.clip(pillShape()).clickable(enabled = attachment != null) {
                     if (playing) {
                         runCatching { player?.release() }
                         player = null

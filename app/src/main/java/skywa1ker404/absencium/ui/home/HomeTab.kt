@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.home
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.mutableStateOf
@@ -225,7 +226,7 @@ fun HomeTab(
                     Box(
                         modifier = Modifier
                             .size(14.dp)
-                            .clip(CircleShape)
+                            .clip(pillShape())
                             .background(subjectColor(lecture.subject.id)),
                     )
                     Column(modifier = Modifier.weight(1f)) {
@@ -258,7 +259,7 @@ fun HomeTab(
                     onClick = { onOpenExam(exam) },
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(subjectColor(exam.subjectId)))
+                        Box(modifier = Modifier.size(10.dp).clip(pillShape()).background(subjectColor(exam.subjectId)))
                         Text(
                             text = subjectNames[exam.subjectId] ?: "Unknown subject",
                             style = MaterialTheme.typography.labelMedium,
@@ -384,7 +385,7 @@ private fun AttendanceCard(
                 Box(
                     modifier = Modifier
                         .requiredSize(36.dp)
-                        .clip(CircleShape)
+                        .clip(pillShape())
                         .background(onContainer.copy(alpha = 0.22f))
                         .clickable(onClick = onToggleWatch),
                     contentAlignment = Alignment.Center,
@@ -409,7 +410,7 @@ private fun CompactPill(label: String, container: androidx.compose.ui.graphics.C
         color = content,
         maxLines = 1,
         modifier = Modifier
-            .clip(CircleShape)
+            .clip(pillShape())
             .background(container)
             .padding(horizontal = 9.dp, vertical = 4.dp),
     )
@@ -431,7 +432,7 @@ private fun WatchRow(item: SubjectAttendance, threshold: Int) {
     val margin = attendanceMargin(item.present, item.held, threshold)
     val percent = item.percent ?: 0.0
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(subjectColor(item.subject.id)))
+        Box(modifier = Modifier.size(12.dp).clip(pillShape()).background(subjectColor(item.subject.id)))
         Column(modifier = Modifier.weight(1f)) {
             Text(item.subject.name, style = MaterialTheme.typography.titleSmall)
             Text(
@@ -464,7 +465,7 @@ private fun QuickAction(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(
-            modifier = Modifier.size(64.dp).clip(CircleShape).background(hue.container.copy(alpha = 0.8f)),
+            modifier = Modifier.size(64.dp).clip(pillShape()).background(hue.container.copy(alpha = 0.8f)),
             contentAlignment = Alignment.Center,
         ) { Icon(icon, contentDescription = null, tint = hue.onContainer, modifier = Modifier.size(28.dp)) }
         Text(label, style = MaterialTheme.typography.labelMedium, color = colors.onSurface)

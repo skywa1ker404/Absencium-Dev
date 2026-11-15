@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.components
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -137,7 +138,7 @@ fun AttendanceToggle(
     BoxWithConstraints(
         modifier = modifier
             .height(52.dp)
-            .glassControl(CircleShape, colors.surfaceContainerHighest, 0.6f)
+            .glassControl(pillShape(), colors.surfaceContainerHighest, 0.6f)
             .alpha(if (enabled) 1f else 0.5f),
     ) {
         val half = maxWidth / 2
@@ -152,7 +153,7 @@ fun AttendanceToggle(
                     scaleX = pulse.value
                     scaleY = pulse.value
                 }
-                .flatGlassFill(CircleShape, highlightColor, 0.82f),
+                .flatGlassFill(pillShape(), highlightColor, 0.82f),
         )
         Row(modifier = Modifier.fillMaxSize()) {
             ToggleHalf("Present today", presentTint, enabled, presentTap, Modifier.weight(1f))
@@ -184,7 +185,7 @@ private fun ToggleHalf(
                 scaleX = scale
                 scaleY = scale
             }
-            .clip(CircleShape)
+            .clip(pillShape())
             .clickable(
                 enabled = enabled,
                 interactionSource = interaction,

@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import android.graphics.pdf.PdfRenderer
@@ -164,7 +165,7 @@ fun ExtractChoiceDialog(
                             Text(fileName, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
                         }
                         Box(
-                            modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onDismiss).semantics { contentDescription = "Close" },
+                            modifier = Modifier.size(40.dp).clip(pillShape()).clickable(onClick = onDismiss).semantics { contentDescription = "Close" },
                             contentAlignment = Alignment.Center,
                         ) { Icon(AppIcons.Close, contentDescription = null) }
                     }
@@ -190,7 +191,7 @@ fun ExtractChoiceDialog(
                             textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(CircleShape)
+                                .clip(pillShape())
                                 .clickable { onDismiss(); onSkip() }
                                 .padding(vertical = 12.dp),
                         )
@@ -239,7 +240,7 @@ fun ExtractRunningDialog(step: String, onCancel: () -> Unit) {
             ) {
                 skywa1ker404.absencium.ui.vault.entry.LoadingDots(step.ifBlank { "Working" }, modifier = Modifier.weight(1f))
                 Box(
-                    modifier = Modifier.size(44.dp).clip(CircleShape).background(colors.surfaceContainerHighest).clickable(onClick = onCancel).semantics { contentDescription = "Stop" },
+                    modifier = Modifier.size(44.dp).clip(pillShape()).background(colors.surfaceContainerHighest).clickable(onClick = onCancel).semantics { contentDescription = "Stop" },
                     contentAlignment = Alignment.Center,
                 ) { Icon(AppIcons.Stop, contentDescription = null) }
             }
@@ -272,13 +273,13 @@ fun ExtractResultDialog(
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier.size(48.dp).clip(CircleShape).background(colors.surfaceContainerHighest).clickable(onClick = onDismiss).semantics { contentDescription = "Discard this text" },
+                        modifier = Modifier.size(48.dp).clip(pillShape()).background(colors.surfaceContainerHighest).clickable(onClick = onDismiss).semantics { contentDescription = "Discard this text" },
                         contentAlignment = Alignment.Center,
                     ) { Icon(AppIcons.Delete, contentDescription = null) }
                     Row(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(CircleShape)
+                            .clip(pillShape())
                             .background(colors.primary)
                             .clickable(enabled = edited.isNotBlank()) { onAccept(edited.trim()) }
                             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -314,13 +315,13 @@ fun ExtractProblemDialog(message: String, setupMissing: Boolean, onOpenSettings:
                             "Open Settings",
                             style = MaterialTheme.typography.labelLarge,
                             color = colors.onPrimary,
-                            modifier = Modifier.clip(CircleShape).background(colors.primary).clickable { onDismiss(); onOpenSettings() }.padding(horizontal = 18.dp, vertical = 10.dp),
+                            modifier = Modifier.clip(pillShape()).background(colors.primary).clickable { onDismiss(); onOpenSettings() }.padding(horizontal = 18.dp, vertical = 10.dp),
                         )
                     }
                     Text(
                         "Close",
                         style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.clip(CircleShape).background(colors.surfaceContainerHighest).clickable(onClick = onDismiss).padding(horizontal = 18.dp, vertical = 10.dp),
+                        modifier = Modifier.clip(pillShape()).background(colors.surfaceContainerHighest).clickable(onClick = onDismiss).padding(horizontal = 18.dp, vertical = 10.dp),
                     )
                 }
             }
@@ -365,19 +366,19 @@ fun PdfViewerDialog(path: String, name: String, onClose: () -> Unit, onExtract: 
         Column(modifier = Modifier.fillMaxSize().background(colors.surface).statusBarsPadding().navigationBarsPadding()) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onClose).semantics { contentDescription = "Close the PDF" },
+                    modifier = Modifier.size(44.dp).clip(pillShape()).clickable(onClick = onClose).semantics { contentDescription = "Close the PDF" },
                     contentAlignment = Alignment.Center,
                 ) { Icon(AppIcons.Close, contentDescription = null) }
                 Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 1, modifier = Modifier.weight(1f).padding(horizontal = 6.dp))
                 if (onExtract != null) {
                     Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onExtract).semantics { contentDescription = "Extract text" },
+                        modifier = Modifier.size(44.dp).clip(pillShape()).clickable(onClick = onExtract).semantics { contentDescription = "Extract text" },
                         contentAlignment = Alignment.Center,
                     ) { Icon(AppIcons.ExtractText, contentDescription = null) }
                 }
                 if (onOpenElsewhere != null) {
                     Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onOpenElsewhere).semantics { contentDescription = "Open in another app" },
+                        modifier = Modifier.size(44.dp).clip(pillShape()).clickable(onClick = onOpenElsewhere).semantics { contentDescription = "Open in another app" },
                         contentAlignment = Alignment.Center,
                     ) { Icon(AppIcons.OpenInNew, contentDescription = null) }
                 }

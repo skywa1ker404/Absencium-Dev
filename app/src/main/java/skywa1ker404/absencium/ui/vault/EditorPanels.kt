@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -109,9 +110,9 @@ internal fun Tool(
             .then(
                 // Liquid Glass: the picked tool is the same clear, light-bending bead as in the main navigation pill.
                 if (glass && backdrop != null) {
-                    if (selected) Modifier.glassPuck(backdrop, CircleShape, isDark) else Modifier.clip(CircleShape)
+                    if (selected) Modifier.glassPuck(backdrop, pillShape(), isDark) else Modifier.clip(pillShape())
                 } else {
-                    Modifier.clip(CircleShape).background(fill)
+                    Modifier.clip(pillShape()).background(fill)
                 },
             )
             .clickable(interactionSource = source, indication = LocalIndication.current, onClick = onClick)
@@ -201,7 +202,7 @@ fun TextPanel(
                             Box(
                                 modifier = Modifier
                                     .size(30.dp)
-                                    .clip(CircleShape)
+                                    .clip(pillShape())
                                     .border(1.5.dp, MaterialTheme.colorScheme.outline, CircleShape)
                                     .clickable { onUse(); onColor(null) }
                                     .semantics { contentDescription = "Default text colour" },
@@ -211,7 +212,7 @@ fun TextPanel(
                                 Box(
                                     modifier = Modifier
                                         .size(30.dp)
-                                        .clip(CircleShape)
+                                        .clip(pillShape())
                                         .background(Color(0xFF000000.toInt() or rgb))
                                         .clickable { onUse(); onColor(rgb) }
                                         .semantics { contentDescription = "Text colour" },

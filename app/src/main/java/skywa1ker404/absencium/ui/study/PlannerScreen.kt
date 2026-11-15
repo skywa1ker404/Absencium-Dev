@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.study
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -244,7 +245,7 @@ fun PlannerScreen(navigator: DestinationsNavigator) {
             val pressed by interaction.collectIsPressedAsState()
             val pressScale by animateFloatAsState(if (pressed) 0.88f else 1f, q.spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "addPress")
             Box(
-                modifier = Modifier.size(52.dp).graphicsLayer { scaleX = pressScale; scaleY = pressScale }.clip(CircleShape).background(colors.primary)
+                modifier = Modifier.size(52.dp).graphicsLayer { scaleX = pressScale; scaleY = pressScale }.clip(pillShape()).background(colors.primary)
                     .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current) { openAdd(tab == 0) }
                     .semantics { contentDescription = "Add" },
                 contentAlignment = Alignment.Center,
@@ -366,10 +367,10 @@ private fun DayCapsule(date: LocalDate, selected: Boolean, isToday: Boolean, ite
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()), style = MaterialTheme.typography.labelLarge, color = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant)
-        Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(circle), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(36.dp).clip(pillShape()).background(circle), contentAlignment = Alignment.Center) {
             Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = if (selected) colors.onPrimary else colors.onSurface)
         }
-        Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(if (items > 0) (if (selected) colors.primary else colors.tertiary) else androidx.compose.ui.graphics.Color.Transparent))
+        Box(modifier = Modifier.size(6.dp).clip(pillShape()).background(if (items > 0) (if (selected) colors.primary else colors.tertiary) else androidx.compose.ui.graphics.Color.Transparent))
     }
 }
 
@@ -377,8 +378,8 @@ private fun DayCapsule(date: LocalDate, selected: Boolean, isToday: Boolean, ite
 private fun NowMarker() {
     val colors = MaterialTheme.colorScheme
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Now", style = MaterialTheme.typography.labelMedium, color = colors.onPrimary, modifier = Modifier.clip(CircleShape).background(colors.primary).padding(horizontal = 10.dp, vertical = 3.dp))
-        Box(modifier = Modifier.weight(1f).height(2.dp).clip(CircleShape).background(colors.primary.copy(alpha = 0.5f)))
+        Text("Now", style = MaterialTheme.typography.labelMedium, color = colors.onPrimary, modifier = Modifier.clip(pillShape()).background(colors.primary).padding(horizontal = 10.dp, vertical = 3.dp))
+        Box(modifier = Modifier.weight(1f).height(2.dp).clip(pillShape()).background(colors.primary.copy(alpha = 0.5f)))
     }
 }
 
@@ -402,7 +403,7 @@ private fun TimelineRow(entry: AgendaEntry, delayMs: Int, onToggle: () -> Unit) 
         ) {
             Box(modifier = Modifier.fillMaxWidth().then(if (entry.kind == AgendaKind.HOLIDAY) Modifier.clip(MaterialTheme.shapes.medium).drawBehind { drawHatch(hue.accent.copy(alpha = 0.25f)) } else Modifier)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(modifier = Modifier.width(5.dp).height(40.dp).clip(CircleShape).background(hue.accent))
+                    Box(modifier = Modifier.width(5.dp).height(40.dp).clip(pillShape()).background(hue.accent))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             entry.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = hue.onContainer,
@@ -446,10 +447,10 @@ private fun TodoCard(goal: StudyGoalEntity, hue: Hue, delayMs: Int, detail: Stri
                 Text(
                     tag, style = MaterialTheme.typography.labelMedium,
                     color = if (tag == "Overdue") colors.onError else hue.container,
-                    modifier = Modifier.clip(CircleShape).background(if (tag == "Overdue") colors.error else hue.accent).padding(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.clip(pillShape()).background(if (tag == "Overdue") colors.error else hue.accent).padding(horizontal = 10.dp, vertical = 4.dp),
                 )
             }
-            Box(modifier = Modifier.size(32.dp).clip(CircleShape).clickable(onClick = onDelete), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.size(32.dp).clip(pillShape()).clickable(onClick = onDelete), contentAlignment = Alignment.Center) {
                 Icon(AppIcons.Close, contentDescription = "Delete", tint = hue.onContainer.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
             }
         }

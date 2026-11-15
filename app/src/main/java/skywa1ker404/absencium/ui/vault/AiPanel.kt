@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -124,7 +125,7 @@ fun AiPanel(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(CircleShape)
+                                .clip(pillShape())
                                 .background(colors.surfaceContainerHigh)
                                 .padding(start = 14.dp, end = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -202,7 +203,7 @@ fun AiPanel(
                         "Open Settings",
                         style = MaterialTheme.typography.labelLarge,
                         color = colors.primary,
-                        modifier = Modifier.clip(CircleShape).clickable { onOpenSettings() }.padding(vertical = 4.dp),
+                        modifier = Modifier.clip(pillShape()).clickable { onOpenSettings() }.padding(vertical = 4.dp),
                     )
                 }
             }
@@ -233,7 +234,7 @@ private fun ResultButton(label: String, primary: Boolean, onClick: () -> Unit) {
         style = MaterialTheme.typography.labelLarge,
         color = if (primary) colors.onPrimary else colors.onSurface,
         modifier = Modifier
-            .clip(CircleShape)
+            .clip(pillShape())
             .background(if (primary) colors.primary else colors.surfaceContainerHigh)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp),

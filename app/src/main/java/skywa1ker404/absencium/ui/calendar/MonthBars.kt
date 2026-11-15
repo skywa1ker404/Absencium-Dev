@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.calendar
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -85,7 +86,7 @@ internal fun MonthBars(bars: List<MonthBar>, selected: YearMonth, threshold: Int
                             "${bar.percent.roundToInt()}%",
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.inverseOnSurface,
-                            modifier = Modifier.clip(CircleShape).background(colors.inverseSurface).padding(horizontal = 8.dp, vertical = 3.dp),
+                            modifier = Modifier.clip(pillShape()).background(colors.inverseSurface).padding(horizontal = 8.dp, vertical = 3.dp),
                         )
                     }
                 }

@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.calendar
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -86,7 +87,7 @@ fun WeekStrip(days: List<DayOfWeek>, selected: DayOfWeek, today: LocalDate, onSe
                     color = if (on) colors.onPrimary else colors.onSurface,
                 )
                 Box(
-                    Modifier.padding(top = 3.dp).size(5.dp).clip(CircleShape)
+                    Modifier.padding(top = 3.dp).size(5.dp).clip(pillShape())
                         .background(if (date == today) (if (on) colors.onPrimary else colors.primary) else androidx.compose.ui.graphics.Color.Transparent),
                 )
             }
@@ -157,9 +158,9 @@ private fun NowLine(time: String) {
             "Now $time",
             style = MaterialTheme.typography.labelMedium,
             color = colors.onPrimary,
-            modifier = Modifier.clip(CircleShape).background(colors.primary).padding(horizontal = 10.dp, vertical = 3.dp),
+            modifier = Modifier.clip(pillShape()).background(colors.primary).padding(horizontal = 10.dp, vertical = 3.dp),
         )
-        Box(Modifier.weight(1f).height(2.dp).clip(CircleShape).background(colors.primary.copy(alpha = 0.5f)))
+        Box(Modifier.weight(1f).height(2.dp).clip(pillShape()).background(colors.primary.copy(alpha = 0.5f)))
     }
 }
 
@@ -181,7 +182,7 @@ private fun BreakBlock(length: String) {
             "Break  $length",
             style = MaterialTheme.typography.labelMedium,
             color = colors.onSurfaceVariant,
-            modifier = Modifier.clip(CircleShape).background(colors.surfaceContainerHighest).padding(horizontal = 12.dp, vertical = 3.dp),
+            modifier = Modifier.clip(pillShape()).background(colors.surfaceContainerHighest).padding(horizontal = 12.dp, vertical = 3.dp),
         )
     }
 }
@@ -207,7 +208,7 @@ private fun SlotCard(
         container = if (isNow) colors.primaryContainer else null,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.width(5.dp).height(56.dp).clip(CircleShape).background(subjectColor(slot.subjectId)))
+            Box(Modifier.width(5.dp).height(56.dp).clip(pillShape()).background(subjectColor(slot.subjectId)))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(AppIcons.Schedule, contentDescription = null, tint = soft, modifier = Modifier.size(16.dp))
@@ -217,7 +218,7 @@ private fun SlotCard(
                             "${minutesText(total - done)} left",
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.onPrimary,
-                            modifier = Modifier.clip(CircleShape).background(colors.primary).padding(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.clip(pillShape()).background(colors.primary).padding(horizontal = 8.dp, vertical = 2.dp),
                         )
                     }
                 }
@@ -229,8 +230,8 @@ private fun SlotCard(
                 ).joinToString(" · ")
                 if (extra.isNotEmpty()) Text(extra, style = MaterialTheme.typography.bodySmall, color = soft, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (isNow) {
-                    Box(Modifier.padding(top = 4.dp).fillMaxWidth().height(5.dp).clip(CircleShape).background(colors.primary.copy(alpha = 0.2f))) {
-                        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction.coerceIn(0f, 1f)).clip(CircleShape).background(colors.primary))
+                    Box(Modifier.padding(top = 4.dp).fillMaxWidth().height(5.dp).clip(pillShape()).background(colors.primary.copy(alpha = 0.2f))) {
+                        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction.coerceIn(0f, 1f)).clip(pillShape()).background(colors.primary))
                     }
                 }
             }

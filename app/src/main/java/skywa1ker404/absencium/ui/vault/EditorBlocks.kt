@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import android.media.MediaPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -117,7 +118,7 @@ private fun BoxScope.CornerHandle(
             .align(position)
             .padding(4.dp)
             .size(26.dp)
-            .clip(CircleShape)
+            .clip(pillShape())
             .background(colors.primary)
             .border(2.dp, colors.surface, CircleShape)
             .semantics { contentDescription = "Drag to resize" }
@@ -223,7 +224,7 @@ fun EmbedBlock(ref: EmbedRef, attachment: AttachmentEntity?, version: Int, actio
                     Icon(
                         if (playing) AppIcons.Stop else AppIcons.PlayCircle,
                         contentDescription = if (playing) "Stop" else "Play the recording",
-                        modifier = Modifier.clip(CircleShape).clickable(enabled = attachment != null) {
+                        modifier = Modifier.clip(pillShape()).clickable(enabled = attachment != null) {
                             if (playing) {
                                 runCatching { player?.release() }
                                 player = null
@@ -410,7 +411,7 @@ fun TableBlock(text: String, actions: TableActions, modifier: Modifier = Modifie
                     .align(Alignment.BottomEnd)
                     .padding(4.dp)
                     .size(28.dp)
-                    .clip(CircleShape)
+                    .clip(pillShape())
                     .background(colors.primary)
                     .border(2.dp, colors.surface, CircleShape)
                     .semantics { contentDescription = "Drag down to add rows, up to remove empty rows" }

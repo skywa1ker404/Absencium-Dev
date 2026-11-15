@@ -63,6 +63,9 @@ fun ExpressiveEmptyState(
     val colors = MaterialTheme.colorScheme
     val q = LocalQuality.current
     val haptic = LocalHapticFeedback.current
+    val pixel = skywa1ker404.absencium.ui.theme.LocalAppStyle.current == skywa1ker404.absencium.data.settings.AppStyle.PIXELATED
+    val dotted = me.rerere.rikkahub.ui.components.dots.LocalDotIcons.current
+    val stepped = pixel || dotted
     // The same shapes, in the same order, as the Material loading indicator.
     val shapes = remember {
         listOf(
@@ -88,8 +91,8 @@ fun ExpressiveEmptyState(
         label = "emptySpinAngle",
     )
     val step = remember { Animatable(0f) }
-    LaunchedEffect(q) {
-        if (!q.decorativeMotion) return@LaunchedEffect
+    LaunchedEffect(q, stepped) {
+        if (!q.decorativeMotion || stepped) return@LaunchedEffect
         while (true) {
             delay(5000)
             from = index
@@ -103,6 +106,8 @@ fun ExpressiveEmptyState(
         }
     }
     val morph = remember(from, index) { Morph(shapes[from], shapes[index]) }
+    // Pixelated and Dot matrix: a still stepped square or a round dot-style badge instead of the morphing Material shape.
+    val badgeShape: Shape = if (stepped) skywa1ker404.absencium.ui.theme.pixelOr(androidx.compose.foundation.shape.CircleShape, 3f) else MorphShape(morph, morphProgress.value)
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -112,9 +117,9 @@ fun ExpressiveEmptyState(
             modifier = Modifier
                 .size(96.dp)
                 .graphicsLayer {
-                    rotationZ = if (q.decorativeMotion) spin.value + step.value else 0f
+                    rotationZ = if (q.decorativeMotion && !stepped) spin.value + step.value else 0f
                 }
-                .clip(MorphShape(morph, morphProgress.value))
+                .clip(badgeShape)
                 .background(colors.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
@@ -122,7 +127,7 @@ fun ExpressiveEmptyState(
                 imageVector = icon,
                 contentDescription = null,
                 tint = colors.onSecondaryContainer,
-                modifier = Modifier.size(40.dp).graphicsLayer { rotationZ = if (q.decorativeMotion) -(spin.value + step.value) else 0f },
+                modifier = Modifier.size(40.dp).graphicsLayer { rotationZ = if (q.decorativeMotion && !stepped) -(spin.value + step.value) else 0f },
             )
         }
         Text(title, style = titleStyle, textAlign = TextAlign.Center)

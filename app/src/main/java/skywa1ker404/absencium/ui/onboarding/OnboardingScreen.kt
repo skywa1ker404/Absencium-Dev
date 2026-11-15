@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.onboarding
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Spring
@@ -705,7 +706,7 @@ private fun BarButton(
                 scaleY = press
                 alpha = if (enabled) 1f else 0.5f
             }
-            .floatingGlass(backdrop, CircleShape, tint)
+            .floatingGlass(backdrop, pillShape(), tint)
             .clickable(
                 enabled = enabled,
                 interactionSource = interaction,

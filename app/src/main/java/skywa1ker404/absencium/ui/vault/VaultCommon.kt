@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -129,7 +130,7 @@ fun noteBadges(note: NoteEntity, photoCount: Int): String {
 @Composable
 fun CardChip(text: String, color: Color, modifier: Modifier = Modifier, icon: ImageVector? = null) {
     Row(
-        modifier = modifier.clip(CircleShape).background(color.copy(alpha = 0.12f)).padding(horizontal = 10.dp, vertical = 4.dp),
+        modifier = modifier.clip(pillShape()).background(color.copy(alpha = 0.12f)).padding(horizontal = 10.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -177,7 +178,7 @@ fun NoteCard(
             )
             if (selected) {
                 Box(
-                    modifier = Modifier.size(28.dp).clip(CircleShape).background(colors.primary),
+                    modifier = Modifier.size(28.dp).clip(pillShape()).background(colors.primary),
                     contentAlignment = Alignment.Center,
                 ) { Icon(AppIcons.Check, contentDescription = "Selected", tint = colors.onPrimary, modifier = Modifier.size(18.dp)) }
             }
@@ -252,7 +253,7 @@ fun GuideCard(
                 style = MaterialTheme.typography.labelLarge,
                 color = colors.onSurface,
                 modifier = Modifier
-                    .clip(CircleShape)
+                    .clip(pillShape())
                     .background(colors.surface.copy(alpha = 0.9f))
                     .clickable(onClick = onClick)
                     .padding(horizontal = 16.dp, vertical = 9.dp),
@@ -292,7 +293,7 @@ fun NoteRow(
         container = hue.container.copy(alpha = 0.6f),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(12.dp).clip(CircleShape).background(hue.accent))
+            Box(Modifier.size(12.dp).clip(pillShape()).background(hue.accent))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     note.title.ifBlank { "Untitled note" },

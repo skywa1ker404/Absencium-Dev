@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.components.AppLinearProgress
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.graphicsLayer
@@ -132,7 +133,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
             Box {
                 Row(
                     modifier = Modifier
-                        .clip(CircleShape)
+                        .clip(pillShape())
                         .clickable(enabled = tab == 0 && subject != null) { topicsOpen = true }
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -542,7 +543,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                                     "${(progress * 100).toInt()}%",
                                     style = MaterialTheme.typography.labelLarge,
                                     color = colors.onSurface,
-                                    modifier = Modifier.clip(CircleShape).background(colors.surface.copy(alpha = 0.9f)).padding(horizontal = 12.dp, vertical = 7.dp),
+                                    modifier = Modifier.clip(pillShape()).background(colors.surface.copy(alpha = 0.9f)).padding(horizontal = 12.dp, vertical = 7.dp),
                                 )
                             }
                             AppLinearProgress(
@@ -577,7 +578,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 leadingContent = {
                     // The count sits on a round primary badge so it reads as the state of the whole toolbar.
                     Box(
-                        modifier = Modifier.padding(start = 4.dp).size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.padding(start = 4.dp).size(36.dp).clip(pillShape()).background(MaterialTheme.colorScheme.primary),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(

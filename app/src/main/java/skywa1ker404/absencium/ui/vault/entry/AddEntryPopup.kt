@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault.entry
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.components.AppLinearWavy
 import skywa1ker404.absencium.ui.components.AppLoading
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -542,7 +543,7 @@ private fun PicturesStage(
             style = MaterialTheme.typography.labelLarge,
             color = colors.primary,
             modifier = Modifier
-                .clip(CircleShape)
+                .clip(pillShape())
                 .clickable {
                     if (primaryIsCamera) picker.launch("image/*") else camera.launch(viewModel.prepareCameraFile())
                 }
@@ -799,7 +800,7 @@ private fun YouTubeStage(
                     color = colors.primary,
                     modifier = Modifier
                         .padding(end = 8.dp)
-                        .clip(CircleShape)
+                        .clip(pillShape())
                         .clickable(enabled = !running) {
                             val manager = context.getSystemService(android.content.ClipboardManager::class.java)
                             manager?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString()
@@ -933,7 +934,7 @@ private fun YouTubeStage(
                 color = colors.primary,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .clip(CircleShape)
+                    .clip(pillShape())
                     .clickable { viewModel.transcribe(skipAi = true, onSaved = onSaved) }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             )

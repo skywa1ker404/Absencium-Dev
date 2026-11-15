@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.components.AppSlider
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
@@ -370,7 +371,7 @@ private fun DoodlePage(base: Bitmap?, page: PageSetup, onCancel: () -> Unit, onD
                     val tint = if (tab == t) colors.onPrimaryContainer else colors.onSurface
                     when (t) {
                         PageTab.BRUSH -> Icon(AppIcons.Brush, contentDescription = null, tint = tint)
-                        PageTab.COLOUR -> Box(modifier = Modifier.size(22.dp).clip(CircleShape).background(Color(argb)).border(2.dp, tint, CircleShape))
+                        PageTab.COLOUR -> Box(modifier = Modifier.size(22.dp).clip(pillShape()).background(Color(argb)).border(2.dp, tint, CircleShape))
                         PageTab.PAPER -> Icon(AppIcons.Table, contentDescription = null, tint = tint)
                     }
                 }
@@ -410,7 +411,7 @@ private fun DoodlePage(base: Bitmap?, page: PageSetup, onCancel: () -> Unit, onD
                             Box(
                                 modifier = Modifier
                                     .size(30.dp)
-                                    .clip(CircleShape)
+                                    .clip(pillShape())
                                     .background(Color(c))
                                     .border(if (c == argb && !erasing) 3.dp else 1.dp, if (c == argb && !erasing) colors.primary else colors.outlineVariant, CircleShape)
                                     .clickable { argb = c; erasing = false }
@@ -483,7 +484,7 @@ private fun SpectrumBar(brush: Brush, fraction: Float, label: String, thumb: Col
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .clip(CircleShape)
+                .clip(pillShape())
                 .background(brush)
                 .semantics { contentDescription = label }
                 .pointerInput(Unit) { detectTapGestures { onChange((it.x / size.width).coerceIn(0f, 1f)) } }
@@ -494,7 +495,7 @@ private fun SpectrumBar(brush: Brush, fraction: Float, label: String, thumb: Col
             modifier = Modifier
                 .offset(x = (barWidth - thumbSize) * fraction.coerceIn(0f, 1f) + 0.dp, y = 2.dp)
                 .size(thumbSize)
-                .clip(CircleShape)
+                .clip(pillShape())
                 .background(thumb)
                 .border(3.dp, colors.surface, CircleShape),
         )
@@ -539,7 +540,7 @@ private fun DoodleSetup(onStart: (PageSetup) -> Unit, onCancel: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(46.dp)
-                    .clip(CircleShape)
+                    .clip(pillShape())
                     .border(if (background == null) 3.dp else 1.dp, if (background == null) colors.primary else colors.outlineVariant, CircleShape)
                     .clickable { background = null }
                     .semantics { contentDescription = "Transparent background" },
@@ -548,7 +549,7 @@ private fun DoodleSetup(onStart: (PageSetup) -> Unit, onCancel: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(46.dp)
-                        .clip(CircleShape)
+                        .clip(pillShape())
                         .background(Color(c))
                         .border(if (background == c) 3.dp else 1.dp, if (background == c) colors.primary else colors.outlineVariant, CircleShape)
                         .clickable { background = c }
@@ -599,7 +600,7 @@ private fun RoundToolIcon(label: String, selected: Boolean, onClick: () -> Unit,
     Box(
         modifier = Modifier
             .size(46.dp)
-            .clip(CircleShape)
+            .clip(pillShape())
             .background(if (selected) colors.primaryContainer else Color.Transparent)
             .clickable(onClick = onClick)
             .semantics { contentDescription = label },

@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.components
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -44,7 +45,7 @@ fun StatPill(label: String, container: Color, content: Color, modifier: Modifier
         maxLines = 1,
         softWrap = false,
         modifier = modifier
-            .glassControl(CircleShape, container, 0.62f)
+            .glassControl(pillShape(), container, 0.62f)
             .padding(horizontal = 12.dp, vertical = 7.dp),
     )
 }

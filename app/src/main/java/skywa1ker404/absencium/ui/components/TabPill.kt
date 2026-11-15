@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.components
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -68,8 +69,8 @@ fun <T> TabPill(
             .fillMaxWidth()
             .height(56.dp)
             .then(
-                if (floating) Modifier.floatingGlass(LocalBackdrop.current, CircleShape)
-                else Modifier.glassPane(CircleShape, colors.surfaceContainerHigh, 0.6f),
+                if (floating) Modifier.floatingGlass(LocalBackdrop.current, pillShape())
+                else Modifier.glassPane(pillShape(), colors.surfaceContainerHigh, 0.6f),
             )
             .padding(4.dp),
     ) {
@@ -80,7 +81,7 @@ fun <T> TabPill(
                 .offset { IntOffset((position * tabWidthPx).roundToInt(), 0) }
                 .width(tabWidth)
                 .fillMaxHeight()
-                .clip(CircleShape)
+                .clip(pillShape())
                 .background(colors.primaryContainer),
         )
         Row(modifier = Modifier.fillMaxSize()) {
@@ -90,7 +91,7 @@ fun <T> TabPill(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clip(CircleShape)
+                        .clip(pillShape())
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Tab) {
                             if (!chosen) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)

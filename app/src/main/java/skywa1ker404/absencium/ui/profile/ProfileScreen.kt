@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.profile
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.components.AppLinearProgress
 import androidx.compose.foundation.background
 import androidx.compose.ui.unit.sp
@@ -231,7 +232,7 @@ private fun RoundIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, des
     Box(
         modifier = modifier
             .size(40.dp)
-            .clip(CircleShape)
+            .clip(pillShape())
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(onClick = onClick)
             .semantics { contentDescription = description },
@@ -250,7 +251,7 @@ private fun InfoPill(text: String, onClick: (() -> Unit)? = null) {
         color = MaterialTheme.colorScheme.onSecondaryContainer,
         maxLines = 1,
         modifier = Modifier
-            .clip(CircleShape)
+            .clip(pillShape())
             .background(MaterialTheme.colorScheme.secondaryContainer)
             .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(horizontal = 14.dp, vertical = 6.dp),
@@ -264,7 +265,7 @@ internal fun SectionLink(title: String, onClick: (() -> Unit)? = null) {
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).let { if (onClick != null) it.clickable(onClick = onClick) else it }.padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(modifier = Modifier.width(4.dp).height(20.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+        Box(modifier = Modifier.width(4.dp).height(20.dp).clip(pillShape()).background(MaterialTheme.colorScheme.primary))
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, modifier = Modifier.padding(start = 10.dp).weight(1f))
         if (onClick != null) Icon(AppIcons.ChevronRight, contentDescription = "Open", tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -285,7 +286,7 @@ internal fun BigNumber(value: String, label: String, caption: String) {
 internal fun CapsuleBar(parts: List<Triple<String, Int, Color>>) {
     val total = parts.sumOf { it.second }.coerceAtLeast(1)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().height(14.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHighest), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().height(14.dp).clip(pillShape()).background(MaterialTheme.colorScheme.surfaceContainerHighest), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             parts.filter { it.second > 0 }.forEach { (_, count, color) ->
                 Box(modifier = Modifier.weight(count.toFloat() / total).fillMaxHeight().background(color))
             }
@@ -293,7 +294,7 @@ internal fun CapsuleBar(parts: List<Triple<String, Int, Color>>) {
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             parts.forEach { (label, count, color) ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
+                    Box(modifier = Modifier.size(8.dp).clip(pillShape()).background(color))
                     Text("$label $count", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

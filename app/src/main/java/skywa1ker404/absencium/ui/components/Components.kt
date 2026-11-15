@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.components
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -521,7 +522,7 @@ fun PillButton(
     // With Liquid Glass the button is a pane of glass tinted in its usual colour; its own fill becomes clear.
     val glass = LocalCardBackdrop.current != null || LocalFrostedPopup.current
     val tint = if (tonal) colors.secondaryContainer else colors.primary
-    val glassModifier = if (glass) Modifier.glassControl(CircleShape, tint, if (active) 0.78f else 0.3f) else Modifier
+    val glassModifier = if (glass) Modifier.glassControl(pillShape(), tint, if (active) 0.78f else 0.3f) else Modifier
     val pixelStyle = LocalAppStyle.current == AppStyle.PIXELATED
     val buttonShape: androidx.compose.ui.graphics.Shape = if (pixelStyle) PixelCornerShape(2f) else CircleShape
     val pillModifier = modifier
@@ -623,7 +624,7 @@ fun StepIndicator(current: Int, total: Int, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .height(12.dp)
                     .width(barWidth)
-                    .clip(CircleShape)
+                    .clip(pillShape())
                     .background(barColor),
             )
         }

@@ -758,7 +758,7 @@ fun ShellTopBar(displayName: String, avatar: String, onProfile: () -> Unit, onSt
                     scaleX = toolsScale
                     scaleY = toolsScale
                 }
-                .clip(CircleShape)
+                .clip(pillShape())
                 .background(colors.secondaryContainer)
                 .clickable(interactionSource = toolsInteraction, indication = LocalIndication.current, onClick = onStudyTools)
                 .semantics { contentDescription = "Study Tools" },
@@ -780,7 +780,7 @@ fun ShellTopBar(displayName: String, avatar: String, onProfile: () -> Unit, onSt
                     scaleX = scale
                     scaleY = scale
                 }
-                .clip(CircleShape)
+                .clip(pillShape())
                 .background(colors.primaryContainer)
                 .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onProfile)
                 .semantics { contentDescription = "Profile" },

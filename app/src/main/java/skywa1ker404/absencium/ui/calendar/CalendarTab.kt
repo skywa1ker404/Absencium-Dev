@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.calendar
 
+import skywa1ker404.absencium.ui.theme.pillShape
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.DropdownMenu
@@ -425,7 +426,7 @@ private fun MonthScopeSwitch(showAll: Boolean, onShowAll: (Boolean) -> Unit) {
         label = "monthScopeSlide",
     )
     Box(
-        modifier = Modifier.fillMaxWidth().glassControl(CircleShape, colors.surfaceContainerHighest, 0.6f).padding(4.dp),
+        modifier = Modifier.fillMaxWidth().glassControl(pillShape(), colors.surfaceContainerHighest, 0.6f).padding(4.dp),
     ) {
         Box(modifier = Modifier.matchParentSize()) {
             Box(
@@ -438,7 +439,7 @@ private fun MonthScopeSwitch(showAll: Boolean, onShowAll: (Boolean) -> Unit) {
                             placeable.place((placeable.width * slide).roundToInt(), 0)
                         }
                     }
-                    .glassControl(CircleShape, colors.primary, 0.82f),
+                    .glassControl(pillShape(), colors.primary, 0.82f),
             )
         }
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -456,7 +457,7 @@ private fun MonthScopeSwitch(showAll: Boolean, onShowAll: (Boolean) -> Unit) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .weight(1f)
-                        .clip(CircleShape)
+                        .clip(pillShape())
                         .clickable { onShowAll(all) }
                         .padding(vertical = 10.dp),
                 )
@@ -572,7 +573,7 @@ private fun DayCell(
                     x += dot * 2f + gap
                 }
             }
-            .clip(CircleShape)
+            .clip(pillShape())
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -634,7 +635,7 @@ private fun DayPanel(
     exams.forEach { exam ->
         AppCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpenExam(exam) }) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(subjectColor(exam.subjectId)))
+                Box(modifier = Modifier.size(14.dp).clip(pillShape()).background(subjectColor(exam.subjectId)))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(exam.title, style = MaterialTheme.typography.titleMedium)
                     Text(
@@ -669,7 +670,7 @@ private fun DayPanel(
                 Box(
                     modifier = Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(colors.surface.copy(alpha = 0.9f)),
                     contentAlignment = Alignment.Center,
-                ) { Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(subjectColor(lecture.subject.id))) }
+                ) { Box(modifier = Modifier.size(16.dp).clip(pillShape()).background(subjectColor(lecture.subject.id))) }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(lecture.subject.name, style = MaterialTheme.typography.titleLarge, color = hue.onContainer, maxLines = 2)
                     val room = lecture.slot.roomNumber?.takeIf { it.isNotBlank() }
@@ -871,7 +872,7 @@ internal fun TodayCard(
                         absent.forEach { record ->
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(subjectColor(record.subjectId)))
+                                    Box(modifier = Modifier.size(12.dp).clip(pillShape()).background(subjectColor(record.subjectId)))
                                     Text(
                                         text = subjectNames[record.subjectId] ?: "Unknown subject",
                                         style = MaterialTheme.typography.titleSmall,
