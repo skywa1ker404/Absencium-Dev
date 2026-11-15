@@ -1,7 +1,7 @@
 package skywa1ker404.absencium.ui.home
 
 import skywa1ker404.absencium.ui.theme.pillShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue

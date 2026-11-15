@@ -36,7 +36,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -143,7 +143,7 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(140.dp)
-                    .clip(RoundedCornerShape(32.dp))
+                    .clip(skywa1ker404.absencium.ui.theme.pixelOr(RoundedCornerShape(32.dp), 3f))
                     .clickable { navigator.navigate(EditProfileScreenDestination) }
                     .drawBehind {
                         // A slow drift of the gradient and three soft circles; one cheap draw, nothing is recomposed. Off in Performance mode.
@@ -193,7 +193,6 @@ fun ProfileScreen(navigator: DestinationsNavigator) {
                 if (details.isNotBlank()) InfoPill(details, edit)
                 if (loaded.profileCollege.isNotBlank()) InfoPill(loaded.profileCollege, edit)
                 if (loaded.profileDepartment.isNotBlank()) InfoPill(loaded.profileDepartment, edit)
-                InfoPill("Target $threshold%", edit)
                 if (details.isBlank() && loaded.profileCollege.isBlank()) InfoPill("Add your course and college", edit)
             }
         }

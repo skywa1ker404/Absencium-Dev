@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable

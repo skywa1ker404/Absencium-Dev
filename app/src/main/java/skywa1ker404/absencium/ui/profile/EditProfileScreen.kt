@@ -6,6 +6,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import me.rerere.rikkahub.ui.components.dots.Icon
 import skywa1ker404.absencium.ui.components.AlertDialog
@@ -99,7 +100,6 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
     var year by remember(initial) { mutableStateOf(initial.second) }
     var college by remember(loaded.profileCollege) { mutableStateOf(loaded.profileCollege) }
     var department by remember(loaded.profileDepartment) { mutableStateOf(loaded.profileDepartment) }
-    var target by remember(loaded.attendanceThresholdPercent) { mutableStateOf(loaded.attendanceThresholdPercent.toFloat()) }
     var cropPath by remember { mutableStateOf<String?>(null) }
     var showAvatarCard by remember { mutableStateOf(false) }
     var showEmojiSheet by remember { mutableStateOf(false) }
@@ -152,21 +152,13 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
                     value = department, onValueChange = { department = it }, label = { Text("Department or branch") }, singleLine = true,
                     shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
                 )
-                Text("Attendance target: ${target.toInt()}%", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
-                AppSlider(
-                    value = target,
-                    onValueChange = { target = it },
-                    valueRange = skywa1ker404.absencium.data.settings.AppSettings.MIN_ATTENDANCE_THRESHOLD.toFloat()..skywa1ker404.absencium.data.settings.AppSettings.MAX_ATTENDANCE_THRESHOLD.toFloat(),
-                    steps = skywa1ker404.absencium.data.settings.AppSettings.MAX_ATTENDANCE_THRESHOLD - skywa1ker404.absencium.data.settings.AppSettings.MIN_ATTENDANCE_THRESHOLD - 1,
-                )
-                HintText("Course and year are saved together as one line. The target is the attendance you aim for in every subject. Everything stays on this phone.")
+                HintText("Course and year are saved together as one line. Everything stays on this phone.")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
                     PillButton(text = "Save", onClick = {
                         settingsViewModel.setDisplayName(name.trim())
                         val joined = listOf(course.trim(), year.trim()).filter { it.isNotBlank() }.joinToString(", ")
                         settingsViewModel.setProfileDetails(joined, "", college)
                         settingsViewModel.setProfileDepartment(department)
-                        settingsViewModel.setAttendanceThreshold(target.toInt())
                         navigator.navigateUp()
                     })
                     PillButton(text = "Cancel", tonal = true, onClick = { navigator.navigateUp() })
@@ -254,7 +246,14 @@ private fun PickerField(label: String, value: String, options: List<String>, onP
 @Composable
 fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape? = null) {
     val style = skywa1ker404.absencium.ui.theme.LocalAvatarStyle.current
-    val resolved = shape ?: style.shape.toComposeShape()
+    val appStyle = skywa1ker404.absencium.ui.theme.LocalAppStyle.current
+    // Pixelated: a squarish stair-step shape; Dot matrix: a full circle. The shape option only applies to the other styles.
+    val resolved = shape ?: when {
+        appStyle == skywa1ker404.absencium.data.settings.AppStyle.PIXELATED ->
+            skywa1ker404.absencium.ui.theme.PixelCornerShape((size / 14f).coerceAtLeast(2f))
+        appStyle == skywa1ker404.absencium.data.settings.AppStyle.DOT_MATRIX -> androidx.compose.foundation.shape.CircleShape
+        else -> style.shape.toComposeShape()
+    }
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     val isEmoji = fileName.startsWith(EMOJI_PREFIX)
@@ -264,8 +263,10 @@ fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modif
         }
     }
     Box(
-        modifier = modifier.size(size.dp).clip(resolved).then(
-            if (style.frame) Modifier.background(colors.primaryContainer) else Modifier,
+        // The picture fills its shape (the container colour only shows behind a transparent picture or the initials); the
+        // frame is just a thin line along the shape's border.
+        modifier = modifier.size(size.dp).clip(resolved).background(colors.primaryContainer).then(
+            if (style.frame) Modifier.border(2.dp, colors.primary.copy(alpha = 0.55f), resolved) else Modifier,
         ),
         contentAlignment = Alignment.Center,
     ) {

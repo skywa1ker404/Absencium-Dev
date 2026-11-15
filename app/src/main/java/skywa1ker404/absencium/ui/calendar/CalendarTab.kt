@@ -9,7 +9,7 @@ import skywa1ker404.absencium.ui.components.hueFor
 import skywa1ker404.absencium.ui.components.bounceIn
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.shape.RoundedCornerShape
+import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.togetherWith

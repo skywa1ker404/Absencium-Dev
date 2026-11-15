@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -229,8 +229,6 @@ internal fun AcademicTab(nav: DestinationsNavigator, container: AppContainer, d:
         SettingRow("Institution", subtitle = s.profileCollege.ifBlank { "Not set" }, onClick = { nav.navigate(EditProfileScreenDestination) })
         SettingDivider()
         SettingRow("Department", subtitle = s.profileDepartment.ifBlank { "Not set" }, onClick = { nav.navigate(EditProfileScreenDestination) })
-        SettingDivider()
-        SettingRow("Attendance target", subtitle = "${s.attendanceThresholdPercent}% in every subject", onClick = { nav.navigate(EditProfileScreenDestination) })
         SettingDivider()
         SettingRow("Academic year", subtitle = s.profileYear.ifBlank { "Not set" }, onClick = { nav.navigate(EditProfileScreenDestination) })
     }

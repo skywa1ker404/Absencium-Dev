@@ -32,7 +32,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton

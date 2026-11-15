@@ -21,15 +21,19 @@ import androidx.compose.ui.unit.LayoutDirection
 /** True while the app is in its Dot matrix style: every vector icon is then drawn as a grid of round dots instead of a smooth shape. */
 val LocalDotIcons = staticCompositionLocalOf { false }
 
+/** True while the app is in its Pixelated style: every vector icon is then drawn as a grid of square pixels. */
+val LocalPixelIcons = staticCompositionLocalOf { false }
+
 /**
  * The app's Icon. It is Material's Icon, except in the Dot matrix style where a vector icon is drawn as dots (the same grid the style's
  * font uses). Pictures and bitmaps, and icons that keep their own colours (tint unspecified), are drawn as usual.
  */
 @Composable
 fun Icon(imageVector: ImageVector, contentDescription: String?, modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
-    if (LocalDotIcons.current && tint != Color.Unspecified) {
+    val pixels = LocalPixelIcons.current
+    if ((LocalDotIcons.current || pixels) && tint != Color.Unspecified) {
         val base = rememberVectorPainter(imageVector)
-        val dots = remember(base) { DotPainter(imageVector, base, square = false, crop = true) }
+        val dots = remember(base, pixels) { DotPainter(imageVector, base, square = pixels, crop = true) }
         androidx.compose.material3.Icon(painter = dots, contentDescription = contentDescription, modifier = modifier, tint = tint)
     } else {
         androidx.compose.material3.Icon(imageVector = imageVector, contentDescription = contentDescription, modifier = modifier, tint = tint)
@@ -78,13 +82,13 @@ private class DotPainter(private val key: Any, private val base: Painter, privat
         for (y in 0 until GRID) {
             for (x in 0 until GRID) {
                 val coverage = mask[y * GRID + x]
-                if (coverage >= 0.22f) {
+                if (coverage >= (if (square) 0.4f else 0.22f)) {
                     // Edge dots are a little smaller, which softens the outline the way a real dot display does.
                     val radius = maxRadius * (0.62f + 0.38f * ((coverage - 0.22f) / 0.78f).coerceIn(0f, 1f))
                     if (square) {
-                        // Pixelated: each cell is a square pixel (full cells at the core, a touch smaller at the edge).
-                        val w = cellW * (0.78f + 0.22f * ((coverage - 0.22f) / 0.78f).coerceIn(0f, 1f))
-                        val h = cellH * (0.78f + 0.22f * ((coverage - 0.22f) / 0.78f).coerceIn(0f, 1f))
+                        // Pixelated: each cell is a full square pixel, so the icon reads as crisp pixel art.
+                        val w = cellW
+                        val h = cellH
                         drawRect(
                             color = Color.Black,
                             topLeft = Offset(inset + (x + 0.5f) * cellW - w / 2f, inset + (y + 0.5f) * cellH - h / 2f),

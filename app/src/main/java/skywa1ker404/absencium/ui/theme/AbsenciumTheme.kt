@@ -220,6 +220,8 @@ fun AbsenciumTheme(
     val systemDark = isSystemInDarkTheme()
     val isDark = resolveDark(settings, systemDark)
     val engine = effectiveColorEngine(settings.colorEngine)
+    // Read by the app's shape functions (AppShapes.kt) before anything below is composed.
+    StyleFlags.pixelated = settings.appStyle == AppStyle.PIXELATED
 
     val quality = QualityProfile.of(settings.visualQuality)
     // The Liquid Glass colours stay; only the blur itself is switched off when the quality level asks for it.
@@ -254,6 +256,7 @@ fun AbsenciumTheme(
             LocalQuality provides quality,
             LocalAppStyle provides settings.appStyle,
             LocalBottomBar provides BottomBarStyle(settings.bottomBarAnchored, settings.bottomBarLabels),
+            me.rerere.rikkahub.ui.components.dots.LocalPixelIcons provides (settings.appStyle == AppStyle.PIXELATED),
             LocalDotIcons provides (settings.appStyle == AppStyle.DOT_MATRIX),
             LocalAvatarStyle provides AvatarStyle(settings.avatarShape, settings.avatarFrame),
             androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(

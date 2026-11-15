@@ -44,6 +44,12 @@ class PixelCornerShape private constructor(
     override fun copy(topStart: CornerSize, topEnd: CornerSize, bottomEnd: CornerSize, bottomStart: CornerSize): CornerBasedShape =
         PixelCornerShape(stepDp, topStart, topEnd, bottomEnd, bottomStart)
 
+    companion object {
+        /** A pixel shape with its own size for each corner (a zero corner stays square). */
+        fun of(stepDp: Float, topStart: androidx.compose.ui.unit.Dp, topEnd: androidx.compose.ui.unit.Dp, bottomEnd: androidx.compose.ui.unit.Dp, bottomStart: androidx.compose.ui.unit.Dp): PixelCornerShape =
+            PixelCornerShape(stepDp, CornerSize(topStart), CornerSize(topEnd), CornerSize(bottomEnd), CornerSize(bottomStart))
+    }
+
     override fun createOutline(size: Size, topStart: Float, topEnd: Float, bottomEnd: Float, bottomStart: Float, layoutDirection: LayoutDirection): Outline {
         val w = size.width
         val h = size.height

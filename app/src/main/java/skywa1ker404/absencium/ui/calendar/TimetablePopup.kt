@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import skywa1ker404.absencium.ui.components.ExpressiveChip
 import androidx.compose.material3.MaterialTheme
 import skywa1ker404.absencium.ui.components.AppTextField

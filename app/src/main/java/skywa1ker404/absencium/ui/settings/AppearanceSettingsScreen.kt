@@ -271,7 +271,10 @@ private fun DisplaySizeChoices(selected: DisplaySize, onSelect: (DisplaySize) ->
 @Composable
 private fun AvatarChoices(shape: AvatarShape, frame: Boolean, onShape: (AvatarShape) -> Unit, onFrame: (Boolean) -> Unit) {
     SectionTitle("Avatars")
-    AppCard(modifier = Modifier.fillMaxWidth()) {
+    // Pixelated and Dot matrix fix the avatar shape (stair-step square, full circle), so the choice is hidden there.
+    val fixedShape = skywa1ker404.absencium.ui.theme.LocalAppStyle.current == AppStyle.PIXELATED ||
+        skywa1ker404.absencium.ui.theme.LocalAppStyle.current == AppStyle.DOT_MATRIX
+    if (!fixedShape) AppCard(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             AvatarShape.entries.forEach { option ->
                 ChoiceTile(selected = shape == option, onClick = { onShape(option) }, label = option.label, modifier = Modifier.weight(1f)) {
@@ -283,7 +286,7 @@ private fun AvatarChoices(shape: AvatarShape, frame: Boolean, onShape: (AvatarSh
     AppCard(modifier = Modifier.fillMaxWidth()) {
         SettingSwitchRow(
             title = "Show frame",
-            subtitle = "Draws a ring and background behind avatars",
+            subtitle = "A thin line along the avatar's border",
             checked = frame,
             onCheckedChange = onFrame,
         )
