@@ -17,7 +17,8 @@ class AiTasks(private val application: Application) {
      */
     suspend fun run(title: String, instruction: String, images: List<String> = emptyList(), tools: Set<String> = setOf("add_note")): AiHost.TaskResult {
         // A short brief instead of the whole app guide, today's date so nothing has to be looked up, and only the tools the action needs.
-        val text = "Today is ${java.time.LocalDate.now()}, ${java.time.LocalDate.now().dayOfWeek}.\n" + TASK_RULES + AiHost.TASK_MARK + instruction.trim()
+        // Everything before the mark is for the assistant only; the chat shows just the short title after it.
+        val text = "Today is ${java.time.LocalDate.now()}, ${java.time.LocalDate.now().dayOfWeek}.\n" + TASK_RULES + "\n" + instruction.trim() + AiHost.TASK_MARK + title
         return send(title, text, images, tools)
     }
 
@@ -26,7 +27,7 @@ class AiTasks(private val application: Application) {
      * the AI actions folder, but the assistant uses no tools and answers with exactly what the request asks for. The answer is the reply.
      */
     suspend fun ask(title: String, request: String, images: List<String> = emptyList()): AiHost.TaskResult =
-        send(title, TEXT_RULES + AiHost.TASK_MARK + request.trim(), images, emptySet())
+        send(title, TEXT_RULES + "\n" + request.trim() + AiHost.TASK_MARK + title, images, emptySet())
 
     /**
      * [ask] with in-memory pictures or PDFs (they are written to the cache first, since the hub reads files), returning the answer

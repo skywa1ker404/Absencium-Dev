@@ -1615,6 +1615,8 @@ class ChatService(
                     mcpServers = emptySet(),
                     localTools = emptyList(),
                     searchMode = me.rerere.rikkahub.data.model.AssistantSearchMode.Off,
+                    // Actions are decided by the app's own brief, so a short think is enough (the automatic budget took half a minute).
+                    thinkingBudget = 1024,
                 )
             } else {
                 conversationContext.assistant

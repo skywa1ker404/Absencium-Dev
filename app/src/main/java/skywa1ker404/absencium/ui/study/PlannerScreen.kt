@@ -309,6 +309,7 @@ fun PlannerScreen(navigator: DestinationsNavigator) {
                             val result = container.aiTasks.run(
                                 "Study plan",
                                 "Make a study to-do list for the next two weeks. Use app_overview, list_exams, get_syllabus and list_study_goals first so nothing repeats. Add one to-do per study block with add_study_goal (a short title, the subject and a date before each exam). Do not add more than 12.",
+                                tools = setOf("app_overview", "list_exams", "get_syllabus", "list_study_goals", "add_study_goal"),
                             )
                             message = result.error ?: "Done. The new to-dos are in the list."
                             aiBusy = false

@@ -141,89 +141,87 @@ data class NoteBrief(
  */
 object NotePrompts {
 
-    /** What the notes editor can draw. The chat quotes it so its answers can be saved as notes without losing their look. */
-    internal val EDITOR = """
-        Write only with the formatting below. It is what the student's notes editor shows; nothing else renders.
-        - Title and headings: a line starting with "# ", "## " or "### ".
-        - Emphasis: **bold** for key terms, *italic* for names and foreign words, ==highlight== for the one fact to remember, ++underline++ for a label, ~~strike~~ only for a wrong idea being corrected.
-        - Colour a short phrase with {color:C62828|text|} (red: warnings, common mistakes), {color:2E7D32|text|} (green: results, tips), {color:1565C0|text|} (blue: definitions). Use colour sparingly. Every colour or size tag MUST end with a bar and a closing brace, `|}` (never a lone `}`): {color:1565C0|cell division|}.
-        - Lists: "- " bullets, "1. " numbered steps, "a) " lettered options, "- [ ] " a checklist of things to revise or do.
-        - Table: a header row, a separator row, then rows, e.g. "| Feature | A | B |" then "|---|---|---|". Use a table whenever you compare things, list properties, or show data.
-        - Quote or key idea: a line starting with "> ".
-        - Divider between big parts: a line with only "---".
-        - Centre a line (every formula, key result): start it with {align:center}
-        - Link to another note: [[Note title]] only if the student named it.
-    """.trimIndent()
+    private val ALL_NEEDS = setOf("table", "formula", "colour", "extras")
 
-    private val RULES = """
-        Rules for the answer:
-        - Never draw with text characters: no boxes, no +---+ lines, no lone "v" or "|" arrows, no [ boxed ] words. Show a flow as numbered steps, a table, or centred lines joined with arrows such as {align:center}A → B → C.
-        - Never show code or markup symbols. No code fences, no backticks, no LaTeX, no dollar signs, no backslash commands, no HTML.
-        - Write every formula as clean readable Unicode on its own centred line, for example {align:center}**y = mx + c** or {align:center}A → B → C, using Unicode symbols such as ² ½ √ ± ≤ → Δ. Define each symbol on the next line.
-        - Choose the sections this particular topic needs, in the order that teaches it best. Do not reuse one fixed layout, and leave out any section that has nothing real to say.
-        - Sound like a good student or a kind teacher wrote it by hand: plain, direct sentences of uneven length, concrete examples, no filler openers ("Certainly", "In conclusion", "It is important to note"), no lists of three adjectives, no summary that repeats the page.
-        - Be accurate. If you are unsure of something, say so in one short line instead of guessing.
-        - Reply with the notes only: no greeting, no "here are your notes", no closing remark.
-    """.trimIndent()
-
-    private val SECTION_MENU = """
-        Parts a note can have (a menu, not a checklist: take only what this topic truly needs, rename them to suit it, add your own if needed, and drop the rest):
-        a short overview; why it matters; definitions of key terms; the main idea step by step; a derivation or proof; a formula sheet with each symbol defined;
-        a worked example with numbers; a comparison table; a timeline; causes and effects; a process as numbered steps; types as a table; a mnemonic;
-        real-life uses; common mistakes; a quick-revision checklist; a short summary.
-        Let the subject decide the shape: quantitative subjects need formulas, units and worked examples; narrative subjects need timelines, causes and consequences;
-        language subjects need rules, examples and exception tables; descriptive subjects need classifications, comparisons and labelled steps; practical subjects need procedures and observations.
-    """.trimIndent()
-
-    private fun syllabusPart(s: SyllabusContext): String =
-        if (s.isEmpty) "" else "\nThe student's syllabus (stay inside it and follow its depth, terms and order; skip what it does not cover):\n${s.describe()}\n"
-
-    private fun diagramPart(b: NoteBrief): String = when {
-        !b.searchDiagrams && !b.drawDiagrams -> "Do not mention diagrams or pictures."
-        else ->
-            "The student switched diagrams on, so include them: put between two and five lines of the exact form {{diagram: a short description of the picture}} " +
-                "on their own, each where the picture belongs (for example right after the paragraph it illustrates). " +
-                "Describe each picture in plain English words that would find or draw it, using the plain, common English name of the subject, then the word diagram. Use different pictures, not repeats."
+    /**
+     * What the notes editor can draw, written only as far as the notes need: headings, bold, highlight and lists are always there; a table,
+     * a centred formula, colour and the rarer styles are described only when this kind of note or the plan can use them, so a short
+     * summary does not carry the rules for tables and colours.
+     */
+    internal fun editor(needs: Set<String> = ALL_NEEDS): String = buildString {
+        append("The notes editor draws only this: headings \"# \", \"## \", \"### \"; **bold** for key terms; ==highlight== for the one fact to remember; \"- \" bullets; \"1. \" numbered steps.")
+        if ("table" in needs) append("\nTable: a header row, a |---|---| row, then rows; only when things are compared or listed with properties.")
+        if ("formula" in needs) append("\nA formula or key result goes on its own line starting {align:center}, in plain Unicode (² √ ± ≤ → Δ), never LaTeX, e.g. {align:center}**y = mx + c**; define each symbol on the next line.")
+        if ("colour" in needs) append("\nColour, sparingly: {color:C62828|text|} red for a warning or mistake, {color:2E7D32|text|} green for a result, {color:1565C0|text|} blue for a definition. Always close with |}.")
+        if ("extras" in needs) append("\nAlso: \"- [ ] \" checklist, \"> \" key idea, \"---\" between big parts, *italic*, ++underline++, ~~strike~~ for a wrong idea corrected, [[Note title]] only if the student named it.")
     }
 
-    private fun priority(request: String): String =
-        if (request.isBlank()) "The student typed nothing, so work from the attached photo(s) and the defaults below."
-        else "What the student typed is the first priority and overrides every default below, including length, kind and layout, even if it asks for a format different from the one chosen:\n\"\"\"\n${request.trim()}\n\"\"\""
+    /** All of it, for the chat: it quotes this so an answer can be saved as a note without losing its look. */
+    internal val EDITOR: String = editor()
 
-    /** What the kind of notes is allowed to contain; for the full note this is what keeps questions and answers out of it. */
+    /** One rule for the chat, the notes screens and the editor's AI panel: the content decides which styles appear. */
+    internal val STYLE_GUIDE = "Use a style only where the content needs it: a table for comparisons, numbered steps for a process, a centred line for a formula, a checklist only for things to do. Short content stays plain; never repeat one layout from note to note."
+
+    private val RULES = "Rules: never draw with text characters (boxes, +---+ lines, arrows made of v or |); use numbered steps, a table or centred lines with →. No code fences, backticks, LaTeX or HTML. " +
+        "Write like a student or kind teacher: plain, direct sentences, concrete examples, no filler openers, no summary that repeats the page. Be accurate; if unsure, say so in one line. Reply with the notes only."
+
+    private val SECTION_MENU = "Take only the parts this topic needs, in the order that teaches it best, and leave the rest out: overview, definitions, the idea step by step, derivation, formula sheet, worked example, comparison table, timeline, " +
+        "process steps, mnemonic, common mistakes, revision checklist, summary. Quantitative subjects need formulas and worked examples; narrative ones timelines and causes; language ones rules and exceptions; " +
+        "descriptive ones classifications and labelled steps; practical ones procedures and observations."
+
+    /** The editor styles this note can use: from the plan's forms when there is one, else from the kind of notes. */
+    private fun needs(b: NoteBrief, plan: String?): Set<String> {
+        if (plan != null) {
+            val p = plan.lowercase()
+            return buildSet {
+                if ("table" in p) add("table")
+                if ("formula" in p || "example" in p) add("formula")
+                if ("checklist" in p || "mistake" in p) add("colour")
+                if ("checklist" in p || "timeline" in p) add("extras")
+            }
+        }
+        return when (b.template) {
+            NoteTemplate.FULL -> ALL_NEEDS
+            NoteTemplate.KEY_DETAILS -> emptySet()
+            NoteTemplate.SUMMARY -> setOf("formula")
+            NoteTemplate.PYQ, NoteTemplate.PRACTICAL -> setOf("table", "formula")
+            NoteTemplate.LAST_MINUTE -> setOf("formula", "colour", "extras")
+        }
+    }
+
+    private fun syllabusPart(s: SyllabusContext): String =
+        if (s.isEmpty) "" else "\nThe student's syllabus (stay inside it, in its order and depth):\n${s.describe()}"
+
+    private fun diagramPart(b: NoteBrief): String =
+        if (!b.searchDiagrams && !b.drawDiagrams) "Do not mention diagrams or pictures."
+        else "Diagrams are on: put two to five lines of the exact form {{diagram: plain English description, ending in the word diagram}} on their own where each picture belongs, each a different picture."
+
+    private fun priority(request: String, hasPhotos: Boolean): String =
+        if (request.isBlank()) (if (hasPhotos) "The student typed nothing: work from the attached photo(s) and the defaults below." else "")
+        else "The student's own request comes first and overrides every default below, even length, kind and layout: ${request.trim()}"
+
     private fun scope(b: NoteBrief): String = when (b.template) {
-        NoteTemplate.FULL ->
-            "This is the complete note on the topic and nothing else. Do not add questions and answers, previous-year questions, a quiz or practice problems unless the student's own text asks for them."
+        NoteTemplate.FULL -> "Notes only: no questions and answers, quiz or practice problems unless the student's request asks for them."
         NoteTemplate.PYQ -> "This is a question bank, so questions are the content."
-        else -> "Stay inside this kind of notes; do not add the content of other kinds (no questions and answers unless this kind is about questions)."
+        else -> "Stay inside this kind of notes."
     }
 
     /**
-     * The planning step. A short, cheap call made before writing: the model looks at this topic and decides which parts it needs
-     * and in what form. The writing call then follows that plan, so a table, comparison, formula sheet, revision list or
-     * list of mistakes appears only where the topic calls for it, instead of every note getting every part.
+     * The planning step: a short, cheap call before writing in which the model decides which parts this topic needs and in what form,
+     * so a table, comparison, formula sheet or revision list appears only where the topic calls for it.
      */
-    fun plan(b: NoteBrief): String = """
-        You are planning study notes before they are written. Subject: ${b.subject}.
-
-        ${priority(b.request)}
-
-        Kind of notes: ${b.template.label}. ${b.template.guide}
-        Size: ${b.depth.label} (${b.depth.guide}).
-        ${if (b.template.layout.isEmpty()) SECTION_MENU else "This kind may contain: ${b.template.layout}"}
-        ${syllabusPart(b.syllabus)}
-        ${scope(b)}
-
-        Decide what THIS topic needs, as a teacher would before writing, and nothing more. A table only if things are really compared or listed with properties, a formula sheet only if there are formulas,
-        a worked example only if the topic is solved by working, a timeline only if order in time matters, common mistakes or a revision list only if there are real ones worth the space, a mnemonic only if it helps recall.
-        Fit the parts to the size: a small size has few parts.
-
-        Reply with the plan only, in this exact form and nothing else:
-        Type: one word from quantitative, narrative, language, descriptive, practical, mixed
-        Then one line per part, in writing order: Title | what it holds | form
-        where form is one of paragraphs, bullets, steps, table, formula, example, timeline, checklist.
-        At most 12 lines.
-    """.trimIndent()
+    fun plan(b: NoteBrief): String = listOf(
+        "Plan study notes before they are written. Subject: ${b.subject}.",
+        priority(b.request, false),
+        "Kind: ${b.template.label}. ${b.template.guide}",
+        "Size: ${b.depth.label} (${b.depth.guide}).",
+        if (b.template.layout.isEmpty()) SECTION_MENU else "This kind may contain: ${b.template.layout}",
+        syllabusPart(b.syllabus).trim(),
+        scope(b),
+        "Decide what THIS topic needs and nothing more; a small size has few parts.",
+        "Reply with the plan only: first \"Type: \" and one word from quantitative, narrative, language, descriptive, practical, mixed; then one line per part in writing order, " +
+            "\"Title | what it holds | form\", form being paragraphs, bullets, steps, table, formula, example, timeline or checklist. At most 12 lines.",
+    ).filter { it.isNotBlank() }.joinToString("\n")
 
     /** Reads a plan reply: the lines of the form "Title | what it holds | form" and the topic type. Null when it holds no usable part. */
     fun parsePlan(reply: String): String? {
@@ -237,95 +235,41 @@ object NotePrompts {
         }.joinToString("\n")
     }
 
-    /** Study notes. [plan] is the output of [plan] (through [parsePlan]); without one the model is told to decide the parts itself. */
-    fun notes(b: NoteBrief, plan: String? = null): String = """
-        You are an expert teacher writing study notes for a student. Subject: ${b.subject}.
-
-        ${priority(b.request)}
-
-        Defaults, used only where the student's text says nothing different:
-        Kind of notes: ${b.template.label}. ${b.template.guide}
-        Size: ${b.depth.label} (${b.depth.guide}). This size is a requirement, not a hint: do not stop early, and do not pad to reach it either.
-        ${scope(b)}
-        ${if (b.template.layout.isEmpty()) "" else "This kind of notes may contain: ${b.template.layout} Only the student's own typed request can change that."}
-        ${syllabusPart(b.syllabus)}
-        $EDITOR
-
-        ${if (plan != null) planPart(plan) else decidePart(b)}
-
-        $RULES
-        ${diagramPart(b)}
-    """.trimIndent()
-
-    private fun planPart(plan: String) = """
-        The plan for this topic (made by looking at what the topic needs). Write exactly these parts in this order. Do not add a table, comparison, worked example, common-mistakes list, revision list, questions or any other part that is not in the plan, and do not leave a planned part out:
-        $plan
-    """.trimIndent()
-
-    private fun decidePart(b: NoteBrief) = """
-        Before writing, decide silently what this topic needs and write only that. Do not add a table, comparison, formula sheet, worked example, common-mistakes list, revision list or any other part unless this topic really calls for it.
-        ${if (b.template.layout.isEmpty()) SECTION_MENU else ""}
-        $STYLE_GUIDE
-    """.trimIndent()
+    /**
+     * Study notes. Only what this request needs is written into the prompt: the editor styles the kind of note can use, the layout of
+     * that kind, the syllabus, the diagram line, and either the plan or a short menu. [plan] is the output of [plan] through [parsePlan].
+     */
+    fun notes(b: NoteBrief, plan: String? = null): String = listOf(
+        "Write study notes for a student. Subject: ${b.subject}.",
+        priority(b.request, b.hasPhotos),
+        "Kind: ${b.template.label}. ${b.template.guide}",
+        "Size: ${b.depth.label} (${b.depth.guide}). It is a requirement: do not stop early and do not pad.",
+        scope(b),
+        if (b.template.layout.isEmpty()) "" else "This kind may contain: ${b.template.layout} Only the student's own request can change that.",
+        syllabusPart(b.syllabus).trim(),
+        editor(needs(b, plan)),
+        if (plan != null) "Write exactly these parts in this order and add nothing else:\n$plan"
+        else "Decide silently what this topic needs and write only that. " + (if (b.template.layout.isEmpty()) SECTION_MENU else ""),
+        RULES,
+        diagramPart(b),
+    ).filter { it.isNotBlank() }.joinToString("\n")
 
     /** A worked solution to homework given as text and/or photos. The answer's shape and length follow the question. */
-    fun homework(b: NoteBrief): String = """
-        You are a patient tutor. Subject: ${b.subject}.
-        Solve the homework in ${if (b.hasPhotos) "the attached photo(s)" else "the question below"}.
-
-        ${priority(b.request)}
-        ${syllabusPart(b.syllabus)}
-        Work out what the question asks for, then answer in the shape and length it needs: ${SOLUTION}
-        $ASSIGNMENT
-
-        $EDITOR
-
-        $STYLE_GUIDE
-
-        $RULES
-        ${diagramPart(b)}
-    """.trimIndent()
-
-    /**
-     * How to choose among the editor's styles. One rule for the chat, Generate Notes, homework and the editor's AI panel: the content
-     * decides which styles appear, so no two notes need look alike and nothing is added only to show a feature.
-     */
-    internal val STYLE_GUIDE = """
-        How to use the styles: let the content decide. Use a style only where it helps the reader and leave out the rest. Never add a table, colour, highlight, checklist or centred line just to show the editor can do it, and never repeat one layout from note to note.
-        - A table when things are compared, classified or listed with properties. Example: | Term | Meaning |, then |---|---|, then rows.
-        - Numbered steps for a process or working, "a) " letters for options or parts, bullets for properties.
-        - A formula or key result on its own centred line, like {align:center}a + b = c, only when there is one.
-        - ==highlight== for the one fact to remember in a section, **bold** for each key term the first time it appears, ++underline++ for sub-labels, colour only for a real definition ({color:1565C0|..|}), warning ({color:C62828|..|}) or result ({color:2E7D32|..|}).
-        - A "- [ ] " checklist only when there is something to revise or do; "> " only for a rule or idea that must not be forgotten; a line of --- only between big parts.
-        - Quantitative topics want formulas, units and worked examples; narrative topics timelines, causes and consequences; language topics rules, examples and exception tables; descriptive topics classifications and labelled steps; practical topics procedures and observations.
-        - Short content stays simple: a few lines need no headings, tables or colours.
-    """.trimIndent()
-
-    private val SOLUTION = """
-        Shape the answer to the question. For a calculation: the question restated, the given data in a small table, the formula used, the working one numbered step at a time with each result on a centred line, then the final answer highlighted and in bold with its units.
-        For an essay, short answer or theory question: write it as a good exam answer, using headings, a table where things are compared, and the key points highlighted.
-        For several questions, answer each under its own heading. Finish with one line on the idea the question was really testing.
-    """.trimIndent()
-
-    private val ASSIGNMENT = """
-        If the question asks for an assignment, project, report or essay, write the answer as a proper handed-in assignment instead: a title block (title, subject, "Submitted by" and "Date" lines left blank to fill in), an introduction, numbered headed sections that answer the question in order,
-        tables and worked examples where they belong, a conclusion in the student's own voice, and a short list of references to the kinds of sources a student would cite (textbook chapters, never made-up URLs or page numbers).
-    """.trimIndent()
+    fun homework(b: NoteBrief): String = listOf(
+        "You are a patient tutor. Subject: ${b.subject}. Solve the homework in ${if (b.hasPhotos) "the attached photo(s)" else "the question below"}.",
+        priority(b.request, b.hasPhotos),
+        syllabusPart(b.syllabus).trim(),
+        "Shape the answer to the question. Calculation: the given data, the formula, the working one numbered step at a time with each result on a centred line, then the final answer in bold with its units. " +
+            "Theory or essay: a good exam answer with headings and the key points highlighted. Several questions: one heading each. End with one line on what the question tested. " +
+            "If it asks for an assignment, project or report, write a proper one: title block (Submitted by and Date left blank), introduction, numbered sections, conclusion, references to kinds of sources only (never made-up URLs or pages).",
+        editor(setOf("table", "formula")),
+        RULES,
+        diagramPart(b),
+    ).filter { it.isNotBlank() }.joinToString("\n")
 
     /** A request typed in the editor's AI panel, with the text it applies to. */
-    fun edit(instruction: String, selection: String): String = """
-        You are helping a student edit their note.
-        What the student asked (follow it exactly): $instruction
-
-        Text to work on:
-        $selection
-
-        $EDITOR
-
-        $STYLE_GUIDE
-
-        $RULES
-    """.trimIndent()
+    fun edit(instruction: String, selection: String): String =
+        "Edit part of a student's note. Do exactly what they ask: $instruction\n\nText to work on:\n$selection\n\n$EDITOR\n$STYLE_GUIDE\n$RULES"
 
     /** A diagram description found in the answer. */
     val diagramLine = Regex("""(?m)^[ \t]*\{\{diagram:\s*(.+?)\s*\}\}[ \t]*$""")

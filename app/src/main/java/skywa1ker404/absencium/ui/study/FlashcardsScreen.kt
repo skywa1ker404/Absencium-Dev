@@ -164,6 +164,7 @@ fun FlashcardsScreen(navigator: DestinationsNavigator) {
                                     val result = container.aiTasks.run(
                                         "Flashcards",
                                         "Make about 10 short flashcards for $topic. Call list_flashcards first so none repeats, read what you need with get_syllabus, search_notes and read_note, then add them with one add_flashcards call (one card per line: question ||| answer, one fact per card).",
+                                        tools = setOf("list_flashcards", "get_syllabus", "search_notes", "read_note", "add_flashcards"),
                                     )
                                     message = result.error ?: "Done. Open AI actions to see what the assistant did."
                                     aiBusy = false
@@ -186,7 +187,7 @@ fun FlashcardsScreen(navigator: DestinationsNavigator) {
                                 Text(
                                     text = if (card.dueDate.isAfter(today)) "Next ${card.dueDate}" else "Due now",
                                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                                )
+                                    )
                             }
                             PillButton(text = "Delete", tonal = true, compact = true, onClick = { scope.launch { container.database.flashcardDao().delete(card.id) } })
                         }
