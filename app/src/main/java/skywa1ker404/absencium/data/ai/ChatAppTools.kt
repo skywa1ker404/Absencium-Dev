@@ -100,6 +100,26 @@ class ChatAppTools(private val container: AppContainer, private val chatId: Stri
             "set_attendance" to "attendance",
             "add_syllabus" to "syllabus", "set_syllabus_status" to "syllabus",
         )
+        private val ROUTES: List<Pair<Regex, List<String>>> = listOf(
+            Regex("attend|present|absent|bunk|skip|miss|percent|%|75") to listOf("Attendance"),
+            Regex("timetable|schedule|lecture|class|slot|period|room|monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow") to listOf("Timetable", "Attendance"),
+            Regex("exam|test|mark|grade|cgpa|gpa|result|score|paper") to listOf("Exams", "Study"),
+            Regex("holiday|vacation|day off|leave") to listOf("Holidays"),
+            Regex("note|vault|write|summar|draft|attach|tag|homework|assignment|essay|explain|material|pdf|file|document|photo|recording|sketch|version") to listOf("Vault and notes", "Materials", "Subjects"),
+            Regex("syllabus|unit|chapter|topic|course|curriculum") to listOf("Syllabus", "Subjects"),
+            Regex("trash|restore|deleted|recycle") to listOf("Trash"),
+            Regex("flashcard|quiz|study|goal|pomodoro|revise|revision|event|remind|birthday|trip|meeting|plan") to listOf("Study", "Exams"),
+            Regex("subject|course name|rename") to listOf("Subjects"),
+        )
+
+        /** The categories a message needs, always with the overview and search; null (every tool) when the message names none of them. */
+        fun routedCategories(hint: String): Set<String>? {
+            val text = hint.lowercase()
+            if (text.isBlank()) return null
+            val hits = ROUTES.filter { (rx, _) -> rx.containsMatchIn(text) }.flatMap { it.second }.toSet()
+            return if (hits.isEmpty()) null else hits + "Overview and search"
+        }
+
         /** The category folder of every tool in the assistant's Tools page. */
         val CATEGORIES: Map<String, String> = buildMap {
             put("app_overview", "Overview and search"); put("search_app", "Overview and search")
@@ -144,8 +164,11 @@ ${NotePrompts.EDITOR}
      * one it set to run by itself never asks, one it set to ask always asks, and every other tool keeps its own default.
      * Looking things up runs by itself and every change asks first, unless the assistant says otherwise.
      */
-    fun tools(policy: me.rerere.rikkahub.AiHost.ToolPolicy = me.rerere.rikkahub.AiHost.ToolPolicy()): List<Tool> {
-        val base = baseTools().filter { it.name !in policy.off }
+    fun tools(policy: me.rerere.rikkahub.AiHost.ToolPolicy = me.rerere.rikkahub.AiHost.ToolPolicy(), hint: String = ""): List<Tool> {
+        // Only the tools for the subjects the message talks about are sent (every tool costs tokens on every request); a message that
+        // names none of them, such as "yes, do it", keeps the whole list so a follow-up never loses a tool it needs.
+        val routed = routedCategories(hint)
+        val base = baseTools().filter { it.name !in policy.off && (routed == null || CATEGORIES[it.name] in routed) }
         fun effective(t: Tool) = when {
             policy.autoAll -> ToolApprovalMode.Auto
             t.name in policy.auto -> ToolApprovalMode.Auto

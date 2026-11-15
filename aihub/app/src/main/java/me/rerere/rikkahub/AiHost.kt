@@ -23,8 +23,8 @@ object AiHost {
     /** One of the host's tools as listed in the assistant's Tools page, under its category folder. */
     data class ToolInfo(val name: String, val title: String, val description: String, val category: String, val asksByDefault: Boolean)
 
-    /** Extra tools the host app offers the chat (Absencium's attendance, timetable, notes and so on). Asked again for every request. */
-    var tools: (ToolPolicy, String) -> List<Tool> = { _, _ -> emptyList() }
+    /** Extra tools the host app offers the chat (Absencium's attendance, timetable, notes and so on), given the policy, the chat id and the latest message (so only the relevant ones are sent). Asked again for every request. */
+    var tools: (ToolPolicy, String, String) -> List<Tool> = { _, _, _ -> emptyList() }
 
     /**
      * Chats the host's AI makes for its own actions (a note written from Add Entry, an outline imported, and so on) belong to this

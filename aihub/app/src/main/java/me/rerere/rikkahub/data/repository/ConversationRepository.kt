@@ -366,6 +366,12 @@ class ConversationRepository(
         conversationDAO.reassignAssistant(from, to)
     }
 
+    /** Puts the action chats (the ones that begin with the host's marker) back under [actionsAssistantId]. */
+    suspend fun adoptActionChats(actionsAssistantId: String, mark: String) = withContext(Dispatchers.IO) {
+        val escaped = mark.map { "\\u" + it.code.toString(16).padStart(4, '0') }.joinToString("")
+        conversationDAO.adoptActionChats(actionsAssistantId, "%$mark%", "%$escaped%")
+    }
+
     // ===== Daily Activity Tracking (for the activity heatmap) =====
     
     /**

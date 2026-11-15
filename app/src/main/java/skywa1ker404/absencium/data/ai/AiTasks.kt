@@ -15,9 +15,10 @@ class AiTasks(private val application: Application) {
      * Runs [instruction] as one action. [images] are picture file paths sent along (a photographed page, a timetable). The assistant
      * is told the structure of the app and that nobody can answer questions or approve, so it decides and uses the tools itself.
      */
-    suspend fun run(title: String, instruction: String, images: List<String> = emptyList()): AiHost.TaskResult {
-        val text = ChatAppTools.APP_PROMPT + "\n\n" + TASK_RULES + AiHost.TASK_MARK + instruction.trim()
-        return send(title, text, images)
+    suspend fun run(title: String, instruction: String, images: List<String> = emptyList(), tools: Set<String> = setOf("add_note")): AiHost.TaskResult {
+        // A short brief instead of the whole app guide, today's date so nothing has to be looked up, and only the tools the action needs.
+        val text = "Today is ${java.time.LocalDate.now()}, ${java.time.LocalDate.now().dayOfWeek}.\n" + TASK_RULES + AiHost.TASK_MARK + instruction.trim()
+        return send(title, text, images, tools)
     }
 
     /**
@@ -25,7 +26,7 @@ class AiTasks(private val application: Application) {
      * the AI actions folder, but the assistant uses no tools and answers with exactly what the request asks for. The answer is the reply.
      */
     suspend fun ask(title: String, request: String, images: List<String> = emptyList()): AiHost.TaskResult =
-        send(title, TEXT_RULES + AiHost.TASK_MARK + request.trim(), images)
+        send(title, TEXT_RULES + AiHost.TASK_MARK + request.trim(), images, emptySet())
 
     /**
      * [ask] with in-memory pictures or PDFs (they are written to the cache first, since the hub reads files), returning the answer
@@ -42,7 +43,7 @@ class AiTasks(private val application: Application) {
         return result.reply
     }
 
-    private suspend fun send(title: String, text: String, images: List<String>): AiHost.TaskResult {
+    private suspend fun send(title: String, text: String, images: List<String>, tools: Set<String>): AiHost.TaskResult {
         val parts = buildList<UIMessagePart> {
             add(UIMessagePart.Text(text))
             images.forEach { path ->
@@ -50,7 +51,7 @@ class AiTasks(private val application: Application) {
                 else add(UIMessagePart.Image("file://$path"))
             }
         }
-        return AiApp.runHostTask(application, title, parts)
+        return AiApp.runHostTask(application, title, parts, tools)
     }
 
     private companion object {
@@ -59,7 +60,7 @@ class AiTasks(private val application: Application) {
                 "Answer with exactly what the request asks for, in the format it asks for, and nothing else."
 
         const val TASK_RULES =
-            "This request comes from a button in the app, not from a person typing. Nobody can answer a question or approve a change, so do not ask: " +
-                "decide, use the tools, and finish. Deleting is not available here. Keep the final answer to one or two plain sentences saying what was made or changed."
+            "You are Absencium AI inside a student's college app. This request comes from a button in the app, not from a person typing. Nobody can answer a question or approve a change, so do not ask: " +
+                "do exactly what the request says with as few tool calls as possible, look nothing up and read nothing the request does not need, and finish. Deleting is not available here. Keep the final answer to one or two plain sentences saying what was made or changed."
     }
 }

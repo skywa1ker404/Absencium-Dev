@@ -949,7 +949,13 @@ class ChatService(
      * Runs one host action as a hidden, read-only chat (see [me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID]): sends [parts] as the
      * first message, waits until the assistant has finished, and returns what it ended with.
      */
-    suspend fun runHostTask(title: String, parts: List<UIMessagePart>): me.rerere.rikkahub.AiHost.TaskResult {
+    /**
+     * The tools an action chat may use, by chat. An action sends only these (none at all for an empty set) so a request is not weighed
+     * down by the whole tool list; a chat that is not listed gets every tool the host allows for actions.
+     */
+    private val actionToolAllow = java.util.concurrent.ConcurrentHashMap<Uuid, Set<String>>()
+
+    suspend fun runHostTask(title: String, parts: List<UIMessagePart>, allowedTools: Set<String>? = null): me.rerere.rikkahub.AiHost.TaskResult {
         // Say plainly, before anything is sent, when the chosen model cannot take what the action needs.
         val model = settingsStore.settingsFlow.value.resolveConversationContext(me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID).chatModel
             ?: return me.rerere.rikkahub.AiHost.TaskResult("", "", "No chat model is chosen. Pick one in Absencium AI's settings.")
@@ -958,6 +964,7 @@ class ChatService(
         }
         val conversation = Conversation.ofId(id = Uuid.random(), assistantId = me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID)
             .copy(title = title, isConsolidated = true)
+        allowedTools?.let { actionToolAllow[conversation.id] = it }
         saveConversation(conversation.id, conversation)
         sendMessage(conversation.id, parts, answer = true, suppressCompletionNotification = true)
         getConversationJobs().first { it[conversation.id] == null }
@@ -1594,7 +1601,24 @@ class ChatService(
         runCatching {
             var conversation = normalizeConversation(getConversationFlow(conversationId).value)
             val conversationContext = settings.resolveConversationContext(conversation)
-            val assistant = conversationContext.assistant
+            // An action chat runs bare: the app's button gave it everything it needs, so the user's persona, memories, lorebooks, skills,
+            // search and extra servers are not sent (they only add tokens and make the assistant wander off to read other things).
+            val assistant = if (conversation.assistantId == me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID) {
+                conversationContext.assistant.copy(
+                    systemPrompt = "",
+                    enableMemory = false,
+                    enableMemorySearchTool = false,
+                    enableRecentChatsReference = false,
+                    presetMessages = emptyList(),
+                    enabledLorebookIds = emptySet(),
+                    enabledSkillIds = emptySet(),
+                    mcpServers = emptySet(),
+                    localTools = emptyList(),
+                    searchMode = me.rerere.rikkahub.data.model.AssistantSearchMode.Off,
+                )
+            } else {
+                conversationContext.assistant
+            }
             val model = conversationContext.chatModel ?: return
 
             // reset suggestions
@@ -1920,7 +1944,9 @@ class ChatService(
         if (!model.abilities.contains(ModelAbility.TOOL)) return emptyList()
         // An action chat gets only the host's tools, the ones the host allows for actions.
         if (conversation.assistantId == me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID) {
-            return me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.actionToolPolicy(), conversation.id.toString())
+            val all = me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.actionToolPolicy(), conversation.id.toString(), "")
+            val allow = actionToolAllow[conversation.id]
+            return if (allow == null) all else all.filter { it.name in allow }
         }
         return buildList {
             val useBuiltInSearch = shouldUseBuiltInSearch(model, assistant)
@@ -1944,7 +1970,10 @@ class ChatService(
                 )
             )
 
-            addAll(me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.ToolPolicy(off = assistant.hostToolsOff, autoAll = assistant.vaultApprovalAuto), conversation.id.toString()))
+            // The host sends only the tools the latest message (and the tools used in the last few messages) is about.
+            val toolHint = conversation.currentMessages.lastOrNull { it.role == MessageRole.USER }?.toText().orEmpty() + " " +
+                conversation.currentMessages.takeLast(12).flatMap { m -> m.getToolCalls().map { it.toolName } }.joinToString(" ")
+            addAll(me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.ToolPolicy(off = assistant.hostToolsOff, autoAll = assistant.vaultApprovalAuto), conversation.id.toString(), toolHint))
 
             mcpManager.getAvailableTools(assistant).forEach { (serverId, tool) ->
                 add(

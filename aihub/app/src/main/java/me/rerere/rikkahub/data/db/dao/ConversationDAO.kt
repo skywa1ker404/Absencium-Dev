@@ -94,6 +94,10 @@ interface ConversationDAO {
     @Query("UPDATE conversationentity SET assistant_id = :to WHERE assistant_id = :from")
     suspend fun reassignAssistant(from: String, to: String)
 
+    /** Puts chats that start with the host's action marker back under the actions assistant (an older recovery moved them away). */
+    @Query("UPDATE conversationentity SET assistant_id = :to WHERE assistant_id != :to AND (nodes LIKE :raw OR nodes LIKE :escaped)")
+    suspend fun adoptActionChats(to: String, raw: String, escaped: String)
+
     @Query(
         """
         SELECT EXISTS(

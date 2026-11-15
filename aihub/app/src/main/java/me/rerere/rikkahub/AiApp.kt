@@ -78,9 +78,9 @@ object AiApp {
      * Runs one of the host's AI actions as a hidden, read-only chat (listed in the AI actions folder): the chat's assistant decides what
      * to do with the host's tools. Starts the chat runtime first when it has not started yet.
      */
-    suspend fun runHostTask(application: Application, title: String, parts: List<me.rerere.ai.ui.UIMessagePart>): AiHost.TaskResult {
+    suspend fun runHostTask(application: Application, title: String, parts: List<me.rerere.ai.ui.UIMessagePart>, allowedTools: Set<String>? = null): AiHost.TaskResult {
         start(application)
-        return get<me.rerere.rikkahub.service.ChatService>().runHostTask(title, parts)
+        return get<me.rerere.rikkahub.service.ChatService>().runHostTask(title, parts, allowedTools)
     }
 
     @Synchronized
@@ -178,10 +178,14 @@ object AiApp {
                 val stubs = settings.assistants.filter { it.name == "Recovered" && it.systemPrompt.isBlank() }
                 val keep = settings.assistants.filter { it !in stubs }
                 val fallback = keep.firstOrNull { it.id == DEFAULT_ASSISTANT_ID } ?: keep.firstOrNull() ?: return@runCatching
-                val knownIds = keep.map { it.id.toString() }.toSet()
+                // The actions assistant is hidden (it is not in the settings), but its chats are the AI actions history: never move them.
+                val actionsId = AiHost.ACTIONS_ASSISTANT_ID.toString()
+                val knownIds = keep.map { it.id.toString() }.toSet() + actionsId
                 conversationRepo.getDistinctAssistantIds().filter { it !in knownIds }.forEach {
                     conversationRepo.reassignAssistant(it, fallback.id.toString())
                 }
+                // Earlier builds moved every action chat into the default assistant at start-up; bring them back.
+                conversationRepo.adoptActionChats(actionsId, AiHost.TASK_MARK)
                 if (stubs.isNotEmpty()) {
                     Log.i(TAG, "Folded ${stubs.size} stub assistants into ${fallback.name}")
                     settingsStore.update(
