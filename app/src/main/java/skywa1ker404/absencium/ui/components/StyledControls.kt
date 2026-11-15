@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LinearWavyProgressIndicator
@@ -28,7 +27,21 @@ import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import kotlin.math.roundToInt
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -101,7 +114,6 @@ fun AppSwitch(
 }
 
 /** Material's Slider, or in the Pixelated style a segmented bar with a square block thumb. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSlider(
     value: Float,
@@ -124,42 +136,72 @@ fun AppSlider(
         )
         return
     }
+    // Drawn by hand: a block bar with a square thumb, dragged or tapped. Steps snap to equal stops.
     val c = MaterialTheme.colorScheme
     val shape = PixelCornerShape(2f)
-    Slider(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier,
-        enabled = enabled,
-        valueRange = valueRange,
-        steps = steps,
-        onValueChangeFinished = onValueChangeFinished,
-        thumb = {
-            Box(
-                modifier = Modifier
-                    .size(width = 14.dp, height = 28.dp)
-                    .clip(shape)
-                    .background(if (enabled) c.primary else c.onSurface.copy(alpha = 0.38f))
-                    .pixelBevel(c.outline),
-            )
-        },
-        track = { state ->
-            val span = (state.valueRange.endInclusive - state.valueRange.start).coerceAtLeast(1e-6f)
-            StepBar(
-                fraction = ((state.value - state.valueRange.start) / span).coerceIn(0f, 1f),
-                modifier = Modifier.fillMaxWidth().height(12.dp),
-                color = if (enabled) c.primary else c.onSurface.copy(alpha = 0.38f),
-                trackColor = c.surfaceContainerHighest,
-                dotted = false,
-            )
-        },
-    )
+    val start = valueRange.start
+    val span = (valueRange.endInclusive - valueRange.start).coerceAtLeast(1e-6f)
+    val fraction = ((value - start) / span).coerceIn(0f, 1f)
+    var widthPx by remember { mutableFloatStateOf(1f) }
+    val currentChange by rememberUpdatedState(onValueChange)
+    val currentFinished by rememberUpdatedState(onValueChangeFinished)
+    fun valueAt(x: Float): Float {
+        var f = (x / widthPx).coerceIn(0f, 1f)
+        if (steps > 0) f = (f * (steps + 1)).roundToInt() / (steps + 1f)
+        return start + f * span
+    }
+    val ink = if (enabled) c.primary else c.onSurface.copy(alpha = 0.38f)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .onSizeChanged { widthPx = it.width.toFloat().coerceAtLeast(1f) }
+            .pointerInput(enabled, steps, start, span) {
+                if (enabled) detectTapGestures { offset ->
+                    currentChange(valueAt(offset.x))
+                    currentFinished?.invoke()
+                }
+            }
+            .pointerInput(enabled, steps, start, span) {
+                if (enabled) detectHorizontalDragGestures(
+                    onDragEnd = { currentFinished?.invoke() },
+                    onDragCancel = { currentFinished?.invoke() },
+                ) { change, _ ->
+                    change.consume()
+                    currentChange(valueAt(change.position.x))
+                }
+            }
+            .semantics {
+                progressBarRangeInfo = ProgressBarRangeInfo(value.coerceIn(valueRange), valueRange, steps)
+                if (enabled) setProgress { target ->
+                    currentChange(target.coerceIn(valueRange.start, valueRange.endInclusive))
+                    true
+                }
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        StepBar(
+            fraction = fraction,
+            modifier = Modifier.fillMaxWidth().height(12.dp),
+            color = ink,
+            trackColor = c.surfaceContainerHighest,
+            dotted = false,
+        )
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(((widthPx - 14.dp.toPx()) * fraction).roundToInt(), 0) }
+                .size(width = 14.dp, height = 28.dp)
+                .clip(shape)
+                .background(ink)
+                .pixelBevel(c.outline),
+        )
+    }
 }
 
 /** Material's linear progress bar, a block bar in Pixelated, a row of dots in Dot matrix. Null [progress] is indeterminate. */
 @Composable
 fun AppLinearProgress(
-    progress: (() -> Float)?,
+    progress: (() -> Float)? = null,
     modifier: Modifier = Modifier,
     color: Color = ProgressIndicatorDefaults.linearColor,
     trackColor: Color = ProgressIndicatorDefaults.linearTrackColor,
@@ -177,7 +219,7 @@ fun AppLinearProgress(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppLinearWavy(
-    progress: (() -> Float)?,
+    progress: (() -> Float)? = null,
     modifier: Modifier = Modifier,
     color: Color = ProgressIndicatorDefaults.linearColor,
     trackColor: Color = ProgressIndicatorDefaults.linearTrackColor,
