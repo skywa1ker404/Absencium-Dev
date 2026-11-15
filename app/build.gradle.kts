@@ -30,6 +30,12 @@ android {
         if (isDev) ndk { abiFilters += "arm64-v8a" }
     }
 
+    // Only the languages the app and its AI hub are written in; the many other translations that libraries bring
+    // along (about 80) are left out and fall back to English.
+    androidResources {
+        localeFilters += listOf("en", "ar", "ja", "ko", "ru", "zh")
+    }
+
     // Stable builds are one APK per processor type (no universal APK), each a fraction of a combined one.
     splits {
         abi {

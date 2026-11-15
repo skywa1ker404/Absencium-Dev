@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -103,6 +104,11 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
     var cropPath by remember { mutableStateOf<String?>(null) }
     var showAvatarCard by remember { mutableStateOf(false) }
     var showEmojiSheet by remember { mutableStateOf(false) }
+    var showUrlCard by remember { mutableStateOf(false) }
+    var urlText by remember { mutableStateOf("") }
+    var urlError by remember { mutableStateOf<String?>(null) }
+    var urlBusy by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
@@ -168,7 +174,7 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
     }
 
     if (showAvatarCard) {
-        // The same card the AI uses for its avatar: pick an image, pick an emoji, or reset. (No web address option: the app works offline.)
+        // The same choices as the AI's avatar card: pick an image, pick an emoji, use a web address (fetched once and kept on the phone), or reset.
         AlertDialog(
             onDismissRequest = { showAvatarCard = false },
             title = { Text("Change avatar") },
@@ -182,6 +188,12 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
                         showAvatarCard = false
                         showEmojiSheet = true
                     })
+                    PillButton(text = "Web address", modifier = Modifier.fillMaxWidth(), onClick = {
+                        showAvatarCard = false
+                        urlText = ""
+                        urlError = null
+                        showUrlCard = true
+                    })
                     PillButton(text = "Reset", tonal = true, modifier = Modifier.fillMaxWidth(), onClick = {
                         showAvatarCard = false
                         if (loaded.profileAvatar.isNotBlank() && !loaded.profileAvatar.startsWith(EMOJI_PREFIX)) File(context.filesDir, loaded.profileAvatar).delete()
@@ -192,7 +204,55 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
             confirmButton = { TextButton(onClick = { showAvatarCard = false }) { Text("Cancel") } },
         )
     }
+    if (showUrlCard) {
+        AlertDialog(
+            onDismissRequest = { if (!urlBusy) showUrlCard = false },
+            title = { Text("Picture web address") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppTextField(value = urlText, onValueChange = { urlText = it; urlError = null }, label = { Text("https://…") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    Text(
+                        urlError ?: "The picture is downloaded once and kept on this phone, so it works offline afterwards.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (urlError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !urlBusy && urlText.isNotBlank(), onClick = {
+                    urlBusy = true
+                    scope.launch {
+                        val result = withContext(Dispatchers.IO) {
+                            runCatching {
+                                val link = urlText.trim()
+                                require(link.startsWith("https://") || link.startsWith("http://")) { "Use an address starting with https://" }
+                                val temp = File(context.cacheDir, "profile-pick.jpg")
+                                val connection = java.net.URL(link).openConnection() as java.net.HttpURLConnection
+                                connection.connectTimeout = 10_000
+                                connection.readTimeout = 15_000
+                                try {
+                                    check(connection.responseCode in 200..299) { "The site answered ${connection.responseCode}" }
+                                    check(connection.contentLengthLong <= 12_000_000L) { "That picture is too large" }
+                                    connection.inputStream.use { input -> temp.outputStream().use { input.copyTo(it) } }
+                                } finally {
+                                    connection.disconnect()
+                                }
+                                check(ImageTools.decode(temp.absolutePath, 64) != null) { "That address is not a picture" }
+                                temp.absolutePath
+                            }
+                        }
+                        urlBusy = false
+                        result.onSuccess { cropPath = it; showUrlCard = false }
+                            .onFailure { urlError = it.message ?: "Could not download the picture" }
+                    }
+                }) { Text(if (urlBusy) "Loading…" else "Use") }
+            },
+            dismissButton = { TextButton(enabled = !urlBusy, onClick = { showUrlCard = false }) { Text("Cancel") } },
+        )
+    }
     if (showEmojiSheet) {
+        // The emoji list lives in the AI hub's container, which only starts when the hub is first opened: start it here too.
+        androidx.compose.runtime.remember { me.rerere.rikkahub.AiApp.start(context.applicationContext as android.app.Application); true }
         ModalBottomSheet(onDismissRequest = { showEmojiSheet = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
             me.rerere.rikkahub.ui.components.ui.EmojiPicker(
                 onEmojiSelected = { emoji ->
