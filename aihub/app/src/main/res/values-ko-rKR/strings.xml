@@ -7,10 +7,6 @@
   <string name="about_page_version">버전</string>
   <string name="about_page_website">웹사이트</string>
   <string name="add">추가</string>
-  <string name="assistant_importer_import_failed">가져오기 실패</string>
-  <string name="assistant_importer_import_tavern_json">타번 캐릭터 카드 가져오기 (JSON)</string>
-  <string name="assistant_importer_import_tavern_png">타번 캐릭터 카드 가져오기 (PNG)</string>
-  <string name="assistant_importer_importing">가져오는 중...</string>
   <string name="assistant_importer_missing_data_field">데이터 필드가 누락됨</string>
   <string name="assistant_importer_missing_name_field">이름 필드가 누락됨</string>
   <string name="assistant_importer_missing_spec_field">spec 필드가 누락됨</string>
@@ -689,7 +685,6 @@
     <string name="chat_page_export_activity_failed">Activity를 가져오지 못했습니다</string>
     <string name="chat_page_export_image_failed">이미지 내보내기에 실패했습니다: %1$s</string>
     <string name="imggen_page_prompt_copied">프롬프트를 클립보드에 복사했습니다</string>
-    <string name="lorebook_embedding_failed">임베딩 생성에 실패했습니다: %1$s</string>
     <string name="context_refresh_error_conversation_not_found">대화를 찾을 수 없습니다</string>
     <string name="context_refresh_error_no_messages">요약할 메시지가 없습니다</string>
     <string name="context_refresh_error_no_model">구성된 모델이 없습니다</string>

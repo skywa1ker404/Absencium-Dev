@@ -79,7 +79,7 @@ import kotlin.uuid.Uuid
 
 /**
  * Bottom sheet dialog displaying the list of pooled API keys for a provider.
- * Follows the Lorebook interface pattern with list grouping, swipe-to-delete with undo,
+ * Uses list grouping, swipe-to-delete with undo,
  * and drag-to-reorder for priority assignment.
  */
 @Composable

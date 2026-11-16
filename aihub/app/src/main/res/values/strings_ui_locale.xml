@@ -5,18 +5,13 @@
     <string name="assistant_importer_missing_models_desc">This character uses the following models which are not configured in your settings. They will be unselected:</string>
     <string name="assistant_importer_missing_models_hint">You can re-configure them after import.</string>
     <string name="assistant_importer_include_components">Include Components</string>
-    <string name="assistant_importer_lorebooks">Lorebooks</string>
-    <string name="assistant_importer_lorebooks_desc">Import and link associated lorebooks</string>
     <string name="assistant_importer_memories">Memories</string>
     <string name="assistant_importer_memories_desc">Import core and episodic memories</string>
     <string name="assistant_importer_ready">Ready to import this character.</string>
     <string name="assistant_detail_export">Export</string>
     <string name="assistant_detail_export_aihub_bundle">Absencium AI Bundle (.json)</string>
-    <string name="assistant_detail_export_card_json">Character Card V2 (.json)</string>
-    <string name="assistant_detail_export_card_png">Character Card V2 (.png)</string>
     <string name="assistant_detail_export_options">Export Options</string>
     <string name="export_failed_message">Export failed: %1$s</string>
-    <string name="export_failed_create_png">Export failed: Could not create PNG</string>
 
     <!-- Common UI -->
     <string name="common_default">Default</string>
@@ -297,26 +292,8 @@
     <string name="setting_mcp_import_placeholder">{ \"mcpServers\": { ... } }</string>
 
     <!-- RP optimizations -->
-    <string name="setting_rp_optimizations_title">RP Optimizations</string>
-    <string name="setting_rp_custom_text_styling">Custom Text Styling</string>
-    <string name="setting_rp_custom_text_styling_desc">Define custom color rules for markdown elements. Add rules with patterns below to change their text color.</string>
-    <string name="setting_rp_supported_patterns">Supported Patterns</string>
-    <string name="setting_rp_no_rules">No rules yet. Tap + to add one.</string>
-    <string name="setting_rp_add_rule">Add Rule</string>
-    <string name="setting_rp_edit_rule">Edit Rule</string>
-    <string name="setting_rp_pattern">Pattern</string>
-    <string name="setting_rp_pattern_placeholder">e.g., *, **, ~~, &gt;, #, %%, ||</string>
-    <string name="setting_rp_heading_level">Heading level %1$d</string>
-    <string name="setting_rp_blockquotes">Blockquotes</string>
-    <string name="setting_rp_italic">Italic text (*text*)</string>
-    <string name="setting_rp_bold">Bold text (**text**)</string>
-    <string name="setting_rp_strikethrough">Strikethrough (~~text~~)</string>
-    <string name="setting_rp_inline_code">Inline code (`text`)</string>
     <string name="setting_rp_custom_preview">Custom: %1$stext%1$s</string>
-    <string name="setting_rp_enter_pattern">Enter any pattern</string>
     <string name="setting_rp_color_hex">Color (Hex)</string>
-    <string name="setting_rp_presets">Presets</string>
-    <string name="setting_rp_example_text">%1$sexample text%1$s</string>
 
     <!-- Search settings -->
     <string name="setting_search_delete_service">Are you sure you want to delete this search service?</string>

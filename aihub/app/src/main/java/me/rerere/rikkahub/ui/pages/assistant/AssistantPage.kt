@@ -93,7 +93,6 @@ import me.rerere.rikkahub.ui.hooks.EditState
 import me.rerere.rikkahub.ui.hooks.EditStateContent
 import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.modifier.onClick
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantImporter
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -520,12 +519,11 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
         ImportConfigDialog(
             onDismissRequest = { pendingImportResult = null },
             hasMemories = res.hasMemories,
-            hasLorebooks = res.hasLorebooks,
             missingModels = res.missingModels,
-            onConfirm = { m, l ->
+            onConfirm = { m ->
                  scope.launch {
                      val assistant = if (res.exportV1 != null) {
-                         AssistantExportImport.finalizeAiImport(res.exportV1, context, m, l)
+                         AssistantExportImport.finalizeAiImport(res.exportV1, context, m)
                      } else {
                          res.assistant
                      }
@@ -544,7 +542,7 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
         state = createState,
         onImportClick = {
             createState.dismiss()
-            importLauncher.launch(arrayOf("*/*"))
+            importLauncher.launch(arrayOf("application/json", "*/*"))
         }
     )
 }

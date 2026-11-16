@@ -17,8 +17,6 @@ enum class OwnedFileDirectory(
 ) {
     AVATAR("avatars"),
     ASSISTANT_BACKGROUND("assistant_backgrounds"),
-    LOREBOOK_COVER("lorebook_covers"),
-    LOREBOOK_ATTACHMENT("lorebook_attachments"),
 }
 
 suspend fun Context.importOwnedFile(

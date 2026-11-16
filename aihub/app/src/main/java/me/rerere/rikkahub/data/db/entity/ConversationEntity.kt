@@ -33,6 +33,7 @@ data class ConversationEntity(
     val isConsolidated: Boolean = false,
     @ColumnInfo(name = "enabled_mode_ids", defaultValue = "[]")
     val enabledModeIds: String = "[]",
+    // Unused since lorebooks were removed; the column is dropped with the next schema bump.
     @ColumnInfo(name = "enabled_lorebook_ids", defaultValue = "")
     val enabledLorebookIds: String = "",
     @ColumnInfo(name = "context_summary", defaultValue = "")

@@ -55,7 +55,6 @@ import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.UsedLorebookEntry
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.getEffectiveDisplaySetting
 import me.rerere.ai.ui.MessageNode
@@ -76,8 +75,6 @@ fun ColumnScope.ChatMessageActionButtons(
     onRegenerate: () -> Unit,
     showRegenerate: Boolean = true,
     onOpenActionSheet: () -> Unit,
-    onEditLorebookEntry: ((UsedLorebookEntry) -> Unit)? = null,
-    onModeClick: ((me.rerere.ai.ui.UsedMode) -> Unit)? = null,
     onMemoryClick: ((me.rerere.ai.ui.UsedMemory) -> Unit)? = null,
     ttsProviderOverride: TTSProviderSetting? = null,
 ) {
@@ -87,10 +84,8 @@ fun ColumnScope.ChatMessageActionButtons(
     var isPendingDelete by remember { mutableStateOf(false) }
     var showContextSheet by remember { mutableStateOf(false) }
     
-    val usedEntries = message.usedLorebookEntries ?: emptyList()
-    val usedModes = message.usedModes ?: emptyList()
     val usedMemories = message.usedMemories ?: emptyList()
-    val hasContextSources = usedEntries.isNotEmpty() || usedModes.isNotEmpty() || usedMemories.isNotEmpty()
+    val hasContextSources = usedMemories.isNotEmpty()
     val showContextStacks = effectiveDisplay.showContextStacks && hasContextSources
 
     LaunchedEffect(isPendingDelete) {
@@ -103,20 +98,10 @@ fun ColumnScope.ChatMessageActionButtons(
     // Context sources sheet
     if (showContextSheet && hasContextSources) {
         ContextSourcesSheet(
-            modes = usedModes,
             memories = usedMemories,
-            entries = usedEntries,
-            onModeClick = { mode ->
-                showContextSheet = false
-                onModeClick?.invoke(mode)
-            },
             onMemoryClick = { memory ->
                 showContextSheet = false
                 onMemoryClick?.invoke(memory)
-            },
-            onEntryClick = { entry ->
-                showContextSheet = false
-                onEditLorebookEntry?.invoke(entry)
             },
             onDismissRequest = { showContextSheet = false }
         )
@@ -129,9 +114,7 @@ fun ColumnScope.ChatMessageActionButtons(
         // Context stack indicator at the start
         if (showContextStacks) {
             ContextStackIndicator(
-                modes = usedModes,
                 memories = usedMemories,
-                entries = usedEntries,
                 onClick = { showContextSheet = true },
                 modifier = Modifier.padding(start = 4.dp)
             )

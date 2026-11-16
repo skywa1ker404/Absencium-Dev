@@ -100,7 +100,6 @@ data class Assistant(
     val materialYouColorIndex: Int = 0, // 0 = auto (default pick), 1-3 = alternative palette colors
     val customMaterialYouColor: String? = null, // Hex seed used when materialYouColorIndex == -1
     val learningMode: Boolean = false,
-    val enabledLorebookIds: Set<Uuid> = emptySet(), // Lorebooks enabled for this assistant
     val enabledSkillIds: Set<Uuid> = emptySet(), // Skills enabled for this assistant
     val enableAutomaticSkillInvocation: Boolean = true, // Let the model discover and activate otherwise unselected skills
 
@@ -306,22 +305,4 @@ fun String.replacePersonaPlaceholders(
         .replace(oldValue = "{char}", newValue = charName, ignoreCase = true)
         .replace(oldValue = "{{user}}", newValue = userName, ignoreCase = true)
         .replace(oldValue = "{user}", newValue = userName, ignoreCase = true)
-}
-
-@Serializable
-sealed class PromptInjection {
-    @Serializable
-    @SerialName("mode")
-    data class ModeInjection(
-        val name: String,
-        val priority: Int,
-        val prompt: String,
-    ) : PromptInjection()
-
-    @Serializable
-    @SerialName("regex")
-    data class RegexInjection(
-        val name: String,
-        val regex: String,
-    ) : PromptInjection()
 }

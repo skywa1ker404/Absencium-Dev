@@ -40,7 +40,6 @@ private const val TAG = "AppStorageRepo"
 
 private const val CATEGORY_CHAT = "chat_attachments"
 private const val CATEGORY_ASSISTANT_MEDIA = "assistant_media"
-private const val CATEGORY_LOREBOOK_MEDIA = "lorebook_media"
 private const val CATEGORY_GENERATED_MEDIA = "generated_media"
 private const val CATEGORY_WORKSPACES = "workspaces"
 private const val CATEGORY_ICONS_AND_FONTS = "icons_and_fonts"
@@ -267,6 +266,12 @@ class AppStorageRepository(
     }
 
     private suspend fun migrateLegacyOwnedUploadFiles() {
+        // Lorebooks were removed; drop the media folders they left behind.
+        withContext(Dispatchers.IO) {
+            listOf("lorebook_covers", "lorebook_attachments").forEach { name ->
+                runCatching { context.filesDir.resolve(name).deleteRecursively() }
+            }
+        }
         val settings = settingsStore.settingsFlow.value
         if (settings.init) {
             return
@@ -304,58 +309,12 @@ class AppStorageRepository(
             }
         }
 
-        val migratedLorebooks = settings.lorebooks.map { lorebook ->
-            val migratedCover = when (val cover = lorebook.cover) {
-                is Avatar.Image -> migrateUploadUrlIfNeeded(
-                    sourceUrl = cover.url,
-                    directory = OwnedFileDirectory.LOREBOOK_COVER,
-                    migrationCache = migrationCache,
-                    migratedSourceUrls = migratedSourceUrls,
-                )?.let { Avatar.Image(url = it) } ?: cover
-
-                else -> cover
-            }
-            val migratedEntries = lorebook.entries.map { entry ->
-                val migratedAttachments = entry.attachments.map { attachment ->
-                    val migratedUrl = migrateUploadUrlIfNeeded(
-                        sourceUrl = attachment.url,
-                        directory = OwnedFileDirectory.LOREBOOK_ATTACHMENT,
-                        migrationCache = migrationCache,
-                        migratedSourceUrls = migratedSourceUrls,
-                    )
-                    if (migratedUrl != null && migratedUrl != attachment.url) {
-                        hasChanges = true
-                        attachment.copy(url = migratedUrl)
-                    } else {
-                        attachment
-                    }
-                }
-                if (migratedAttachments != entry.attachments) {
-                    hasChanges = true
-                    entry.copy(attachments = migratedAttachments)
-                } else {
-                    entry
-                }
-            }
-            if (migratedCover != lorebook.cover || migratedEntries != lorebook.entries) {
-                hasChanges = true
-                lorebook.copy(
-                    cover = migratedCover,
-                    entries = migratedEntries,
-                    updatedAt = System.currentTimeMillis(),
-                )
-            } else {
-                lorebook
-            }
-        }
-
         if (!hasChanges) {
             return
         }
 
         val updatedSettings = settings.copy(
             assistants = migratedAssistants,
-            lorebooks = migratedLorebooks,
         )
         settingsStore.update(updatedSettings)
 
@@ -406,19 +365,6 @@ class AppStorageRepository(
                     ?.takeIf { it.toOwnedFileOrNull(context)?.isInside(context.filesDir.resolve("upload")) == true }
                     ?.let(::add)
             }
-            settings.lorebooks.forEach { lorebook ->
-                (lorebook.cover as? Avatar.Image)
-                    ?.url
-                    ?.takeIf { it.toOwnedFileOrNull(context)?.isInside(context.filesDir.resolve("upload")) == true }
-                    ?.let(::add)
-                lorebook.entries.forEach { entry ->
-                    entry.attachments.forEach { attachment ->
-                        attachment.url
-                            .takeIf { it.toOwnedFileOrNull(context)?.isInside(context.filesDir.resolve("upload")) == true }
-                            ?.let(::add)
-                    }
-                }
-            }
         }
     }
 
@@ -429,8 +375,6 @@ class AppStorageRepository(
         val protectedUploadPaths = trackedAttachmentPaths + collectProtectedUploadPaths(excludeTrackedChatPaths = true)
         val assistantMediaBytes = safeDirectoryBytes(context.getOwnedDirectory(OwnedFileDirectory.AVATAR)) +
             safeDirectoryBytes(context.getOwnedDirectory(OwnedFileDirectory.ASSISTANT_BACKGROUND))
-        val lorebookMediaBytes = safeDirectoryBytes(context.getOwnedDirectory(OwnedFileDirectory.LOREBOOK_COVER)) +
-            safeDirectoryBytes(context.getOwnedDirectory(OwnedFileDirectory.LOREBOOK_ATTACHMENT))
         val generatedMediaBytes = safeDirectoryBytes(context.filesDir.resolve("images")) +
             safeDirectoryBytes(context.filesDir.resolve("chat_files"))
         val workspacesBytes = safeDirectoryBytes(context.filesDir.resolve("workspaces"))
@@ -457,7 +401,6 @@ class AppStorageRepository(
 
         listOf(
             StorageCategoryUsage(CATEGORY_ASSISTANT_MEDIA, "Assistant media", assistantMediaBytes),
-            StorageCategoryUsage(CATEGORY_LOREBOOK_MEDIA, "Lorebook media", lorebookMediaBytes),
             StorageCategoryUsage(CATEGORY_GENERATED_MEDIA, "Generated media", generatedMediaBytes),
             StorageCategoryUsage(CATEGORY_WORKSPACES, "Workspaces", workspacesBytes),
             StorageCategoryUsage(CATEGORY_ICONS_AND_FONTS, "Icons and fonts", iconsAndFontsBytes),

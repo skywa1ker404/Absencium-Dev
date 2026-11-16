@@ -25,11 +25,9 @@ fun ExportOptionsDialog(
     title: String,
     onDismissRequest: () -> Unit,
     showMemoriesOption: Boolean,
-    showLorebooksOption: Boolean,
-    onConfirm: (includeMemories: Boolean, includeLorebooks: Boolean) -> Unit
+    onConfirm: (includeMemories: Boolean) -> Unit
 ) {
     var includeMemories by remember { mutableStateOf(showMemoriesOption) }
-    var includeLorebooks by remember { mutableStateOf(showLorebooksOption) }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -55,25 +53,6 @@ fun ExportOptionsDialog(
                     }
                 }
                 
-                if (showLorebooksOption) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { includeLorebooks = !includeLorebooks }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = includeLorebooks,
-                            onCheckedChange = { includeLorebooks = it }
-                        )
-                        Text(
-                            stringResource(R.string.export_include_linked_lorebooks),
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    }
-                }
-                
                 Text(
                     stringResource(R.string.export_character_always_included),
                     style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
@@ -83,7 +62,7 @@ fun ExportOptionsDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(includeMemories, includeLorebooks) }
+                onClick = { onConfirm(includeMemories) }
             ) {
                 Text(stringResource(R.string.export_label))
             }

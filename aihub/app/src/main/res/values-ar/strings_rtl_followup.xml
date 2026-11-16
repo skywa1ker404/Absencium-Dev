@@ -8,11 +8,7 @@
     <string name="chat_input_add_file_failed">تعذرت إضافة الملف: %1$s</string>
     <string name="activity_pill_replying">جارٍ الرد</string>
     <string name="context_sources_title">مصادر السياق</string>
-    <string name="context_sources_skill">مهارة</string>
-    <string name="context_sources_skills">المهارات</string>
     <string name="context_sources_memories">الذكريات</string>
-    <string name="context_sources_lorebook_entries">إدخالات كتب المعرفة</string>
-    <string name="used_lorebooks_title">إدخالات كتب المعرفة المستخدمة</string>
     <string name="attachment_image_fallback">صورة</string>
     <string name="attachment_file_fallback">ملف</string>
     <string name="update_check_failed">تعذر التحقق من التحديثات</string>
@@ -34,7 +30,6 @@
     <string name="mcp_status_error">خطأ: %1$s</string>
     <string name="mcp_tools_enabled_count">%1$d/%2$d أداة</string>
     <string name="export_include_memories">تضمين الذكريات</string>
-    <string name="export_include_linked_lorebooks">تضمين كتب المعرفة المرتبطة</string>
     <string name="export_character_always_included">تُضمَّن إعدادات الشخصية والملف الشخصي دائمًا.</string>
     <string name="setting_display_ui_customization_desc">عرض الدردشة، واللمسات، وكتل الكود، وحجم الخط والمزيد</string>
     <string name="setting_display_check_updates_title">التحقق من التحديثات</string>
@@ -112,7 +107,6 @@
     <string name="setting_chat_storage_delete_all_orphaned">حذف كل التحميلات اليتيمة</string>
     <string name="setting_chat_storage_category_chat_attachments">مرفقات الدردشة</string>
     <string name="setting_chat_storage_category_assistant_media">وسائط المساعد</string>
-    <string name="setting_chat_storage_category_lorebook_media">وسائط كتب المعرفة</string>
     <string name="setting_chat_storage_category_generated_media">وسائط مولدة</string>
     <string name="setting_chat_storage_category_workspaces">مساحات العمل</string>
     <string name="setting_chat_storage_category_icons_and_fonts">الأيقونات والخطوط</string>

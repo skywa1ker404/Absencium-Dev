@@ -1100,7 +1100,7 @@ private fun ModelList(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Model picker FAB (gray, like lorebook toggle button)
+            // Model picker FAB (gray)
             ModelPickerFab(
                 models = modelList.orEmpty(),
                 modelsLoaded = modelList != null,

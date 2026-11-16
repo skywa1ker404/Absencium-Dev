@@ -253,7 +253,6 @@ fun MinimalChatInput(
     onCancelClick: () -> Unit,
     onSendClick: () -> Unit,
     onLongSendClick: () -> Unit,
-    onNavigateToLorebook: (String) -> Unit = {},
     onRefreshContext: suspend () -> ChatService.ContextRefreshResult = {
         ChatService.ContextRefreshResult(
             success = false,
@@ -1350,7 +1349,6 @@ containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceCon
                 onUpdateConversation = onUpdateConversation,
                 onUpdateAssistant = onUpdateAssistant,
                 onUpdateSearchService = onUpdateSearchService,
-                onNavigateToLorebook = onNavigateToLorebook,
                 onRefreshContext = onRefreshContext,
                 importScope = scope,
                 onAttachmentImportStarted = onAttachmentImportStarted,
@@ -1802,7 +1800,6 @@ private fun MinimalPickerContent(
     onUpdateConversation: (Conversation) -> Unit,
     onUpdateAssistant: (Assistant) -> Unit,
     onUpdateSearchService: (Int) -> Unit,
-    onNavigateToLorebook: (String) -> Unit,
     onRefreshContext: suspend () -> ChatService.ContextRefreshResult,
     importScope: CoroutineScope,
     onAttachmentImportStarted: () -> Unit,
@@ -1837,7 +1834,6 @@ private fun MinimalPickerContent(
     var showVaultPicker by remember { mutableStateOf(false) }
     var showReasoningPicker by remember { mutableStateOf(false) }
     var showSkillsPicker by remember { mutableStateOf(false) }
-    var showLorebooksPicker by remember { mutableStateOf(false) }
     var showPluginsPicker by remember { mutableStateOf(false) }
     var showContextRefreshDialog by remember { mutableStateOf(false) }
     var showContextSummaryEditDialog by remember { mutableStateOf(false) }
@@ -2177,29 +2173,6 @@ private fun MinimalPickerContent(
             )
         }
         
-        if (settings.lorebooks.isNotEmpty()) {
-            // Lorebooks - show active count and blue icon when enabled
-            val lorebookIds = settings.lorebooks.map { it.id }.toSet()
-            val activeLorebookIds = (conversation.enabledLorebookIds ?: assistant.enabledLorebookIds).intersect(lorebookIds)
-            val activeLorebooksCount = activeLorebookIds.size
-            val lorebooksActive = activeLorebooksCount > 0
-            MinimalPickerItem(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Rounded.Book,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (lorebooksActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                title = stringResource(R.string.minimal_input_lorebooks),
-                subtitle = if (activeLorebooksCount > 0) "$activeLorebooksCount active" else stringResource(R.string.minimal_input_lorebooks_desc),
-                onClick = {
-                    showLorebooksPicker = true
-                }
-            )
-        }
-
         if (settings.mcpServers.isNotEmpty()) {
             val availablePluginIds = settings.mcpServers
                 .filter { it.commonOptions.enable }
@@ -2346,21 +2319,6 @@ containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceCon
         )
     }
     
-    // Lorebooks picker sheet
-    if (showLorebooksPicker) {
-        LorebooksPickerSheet(
-            settings = settings,
-            assistant = assistant,
-            conversation = conversation,
-            onUpdateConversation = onUpdateConversation,
-            onNavigateToLorebook = { lorebookId ->
-                showLorebooksPicker = false
-                onNavigateToLorebook(lorebookId)
-            },
-            onDismiss = { showLorebooksPicker = false }
-        )
-    }
-
     if (showPluginsPicker) {
         PluginsPickerSheet(
             settings = settings,

@@ -90,10 +90,6 @@ import me.rerere.rikkahub.ui.pages.setting.SettingProviderPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTTSProviderDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTTSPage
-import me.rerere.rikkahub.ui.pages.setting.SettingRpOptimizationsPage
-import me.rerere.rikkahub.ui.pages.setting.SettingPromptInjectionsPage
-import me.rerere.rikkahub.ui.pages.setting.SettingLorebooksPage
-import me.rerere.rikkahub.ui.pages.setting.SettingLorebookDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSkillsPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.webview.WebViewPage
@@ -1143,130 +1139,7 @@ fun ChatAppRoutes(
                     }
                 }
 
-                composable<Screen.SettingRpOptimizations> {
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.RpOptimizations) {
-                        SettingRpOptimizationsPage()
-                    }
-                }
-
-                composable<Screen.SettingPromptInjections> {
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.PromptInjections) {
-                        SettingPromptInjectionsPage()
-                    }
-                }
-
-                composable<Screen.SettingLorebooks>(
-                    enterTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (initialState.destination.route?.contains("SettingSkills") == true) {
-                            lateralEnterTransition(
-                                offset = { it },
-                                motionPolicy = motionPolicy
-                            )
-                        } else {
-                            null
-                        }
-                    },
-                    exitTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (targetState.destination.route?.contains("SettingSkills") == true) {
-                            lateralExitTransition(
-                                offset = { it },
-                                motionPolicy = motionPolicy
-                            )
-                        } else {
-                            null
-                        }
-                    },
-                    popEnterTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (initialState.destination.route?.contains("SettingSkills") == true) {
-                            lateralEnterTransition(
-                                offset = { it },
-                                motionPolicy = motionPolicy
-                            )
-                        } else {
-                            null
-                        }
-                    },
-                    popExitTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (targetState.destination.route?.contains("SettingSkills") == true) {
-                            lateralExitTransition(
-                                offset = { it },
-                                motionPolicy = motionPolicy
-                            )
-                        } else {
-                            null
-                        }
-                    }
-                ) {
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.Lorebooks) {
-                        SettingLorebooksPage()
-                    }
-                }
-
-                composable<Screen.SettingLorebookDetail> { backStackEntry ->
-                    val route = backStackEntry.toRoute<Screen.SettingLorebookDetail>()
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.Lorebooks) {
-                        SettingLorebookDetailPage(id = route.id, scrollToEntryId = route.scrollToEntryId)
-                    }
-                }
-
-                composable<Screen.SettingSkills>(
-                    enterTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (initialState.destination.route?.contains("SettingLorebooks") == true) {
-                            lateralEnterTransition(
-                                offset = { -it },
-                                motionPolicy = motionPolicy
-                            )
-                        } else {
-                            null
-                        }
-                    },
-                    exitTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (targetState.destination.route?.contains("SettingLorebooks") == true) {
-                            lateralExitTransition(
-                                offset = { -it },
-                                motionPolicy = motionPolicy
-                            )
-                        } else {
-                            null
-                        }
-                    },
-                    popEnterTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (initialState.destination.route?.contains("SettingLorebooks") == true) {
-                            lateralEnterTransition(
-                                offset = { -it },
-                                motionPolicy = motionPolicy
-                            )
-                        } else {
-                            null
-                        }
-                    },
-                    popExitTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (targetState.destination.route?.contains("SettingLorebooks") == true) {
-                            lateralExitTransition(
-                                offset = { -it },
-                                motionPolicy = motionPolicy
-                            )
-                        } else {
-                            null
-                        }
-                    }
-                ) { backStackEntry ->
+                composable<Screen.SettingSkills> { backStackEntry ->
                     val route = backStackEntry.toRoute<Screen.SettingSkills>()
                     AdaptiveSettingsScaffold(selected = SettingsDestination.Skills) {
                         SettingSkillsPage(scrollToSkillId = route.scrollToSkillId)
@@ -1380,18 +1253,6 @@ sealed interface Screen {
 
     @Serializable
     data object SettingMcp : Screen
-
-    @Serializable
-    data object SettingRpOptimizations : Screen
-
-    @Serializable
-    data object SettingPromptInjections : Screen
-
-    @Serializable
-    data object SettingLorebooks : Screen
-
-    @Serializable
-    data class SettingLorebookDetail(val id: String, val scrollToEntryId: String? = null) : Screen
 
     @Serializable
     data class SettingSkills(val scrollToSkillId: String? = null) : Screen

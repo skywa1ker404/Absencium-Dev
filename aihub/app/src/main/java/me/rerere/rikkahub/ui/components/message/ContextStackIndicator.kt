@@ -37,17 +37,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import coil3.compose.AsyncImage
-import kotlinx.serialization.json.Json
-import me.rerere.ai.ui.UsedLorebookEntry
 import me.rerere.ai.ui.UsedMemory
-import me.rerere.ai.ui.UsedMode
 import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.ui.components.ui.icons.ModeIcons
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
-
-private val json = Json { ignoreUnknownKeys = true }
 
 /**
  * Represents a single context source item for unified display
@@ -55,41 +47,29 @@ private val json = Json { ignoreUnknownKeys = true }
 private sealed class ContextStackItem {
     abstract val priority: Int
     
-    data class Mode(val mode: UsedMode) : ContextStackItem() {
-        override val priority: Int get() = mode.priority
-    }
-    
     data class Memory(val memory: UsedMemory) : ContextStackItem() {
         override val priority: Int get() = memory.priority
-    }
-    
-    data class Lorebook(val entry: UsedLorebookEntry) : ContextStackItem() {
-        override val priority: Int get() = entry.priority
     }
 }
 
 /**
- * Displays stacked context source covers indicating which modes, memories, and lorebook entries were used.
+ * Displays stacked context source covers indicating which memories were used.
  * Up to 3 covers are shown stacked, with a "+N" badge if more exist.
  * Left-most = highest priority at full visibility.
  * Uses color overlay for dimming instead of transparency.
  */
 @Composable
 fun ContextStackIndicator(
-    modes: List<UsedMode> = emptyList(),
     memories: List<UsedMemory> = emptyList(),
-    entries: List<UsedLorebookEntry> = emptyList(),
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isDarkMode = LocalDarkMode.current
     
     // Combine all items and sort by priority
-    val allItems = remember(modes, memories, entries) {
+    val allItems = remember(memories) {
         buildList {
-            modes.forEach { add(ContextStackItem.Mode(it)) }
             memories.forEach { add(ContextStackItem.Memory(it)) }
-            entries.forEach { add(ContextStackItem.Lorebook(it)) }
         }.sortedByDescending { it.priority }
     }
     
@@ -140,45 +120,9 @@ fun ContextStackIndicator(
             }
             
             when (item) {
-                is ContextStackItem.Mode -> {
-                    ModeCover(
-                        mode = item.mode,
-                        overlayColor = overlayColor,
-                        overlayAlpha = overlayAlpha,
-                        modifier = Modifier
-                            .offset(x = overlap * index)
-                            .zIndex((displayItems.size - index).toFloat())
-                            .width(bookWidth)
-                            .height(bookHeight)
-                    )
-                }
                 is ContextStackItem.Memory -> {
                     MemoryCover(
                         memory = item.memory,
-                        overlayColor = overlayColor,
-                        overlayAlpha = overlayAlpha,
-                        modifier = Modifier
-                            .offset(x = overlap * index)
-                            .zIndex((displayItems.size - index).toFloat())
-                            .width(bookWidth)
-                            .height(bookHeight)
-                    )
-                }
-                is ContextStackItem.Lorebook -> {
-                    val cover = remember(item.entry.lorebookCover) {
-                        item.entry.lorebookCover?.let { coverJson ->
-                            try {
-                                json.decodeFromString(Avatar.serializer(), coverJson)
-                            } catch (e: Exception) {
-                                null
-                            }
-                        }
-                    }
-                    
-                    LorebookCover(
-                        lorebookName = item.entry.lorebookName,
-                        cover = cover,
-                        entryIndex = item.entry.entryIndex,
                         overlayColor = overlayColor,
                         overlayAlpha = overlayAlpha,
                         modifier = Modifier
@@ -217,51 +161,6 @@ fun ContextStackIndicator(
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             }
-        }
-    }
-}
-
-/**
- * Mode cover with Material icon and colored background
- */
-@Composable
-private fun ModeCover(
-    mode: UsedMode,
-    overlayColor: Color,
-    overlayAlpha: Float,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(MaterialTheme.colorScheme.tertiaryContainer)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(6.dp)
-            )
-            .drawWithContent {
-                drawContent()
-                // Draw overlay on top for dimming
-                if (overlayAlpha > 0f) {
-                    drawRect(overlayColor.copy(alpha = overlayAlpha))
-                }
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        if (!mode.modeIcon.isNullOrBlank()) {
-            Icon(
-                imageVector = ModeIcons.getIcon(mode.modeIcon),
-                contentDescription = mode.modeName,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.onTertiaryContainer
-            )
-        } else {
-            Text(
-                text = mode.modeName.take(1).uppercase(),
-                style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
-                color = MaterialTheme.colorScheme.onTertiaryContainer
-            )
         }
     }
 }
@@ -341,89 +240,3 @@ private fun MemoryCover(
     }
 }
 
-/**
- * Lorebook entry cover
- */
-@Composable
-private fun LorebookCover(
-    lorebookName: String,
-    cover: Avatar?,
-    entryIndex: Int,
-    overlayColor: Color,
-    overlayAlpha: Float,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(6.dp)
-            )
-            .drawWithContent {
-                drawContent()
-                if (overlayAlpha > 0f) {
-                    drawRect(overlayColor.copy(alpha = overlayAlpha))
-                }
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        when (cover) {
-            is Avatar.Image -> {
-                AsyncImage(
-                    model = cover.url,
-                    contentDescription = lorebookName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-            is Avatar.Emoji -> {
-                Text(
-                    text = cover.content,
-                    fontSize = 14.sp
-                )
-            }
-            is Avatar.Resource -> {
-                AsyncImage(
-                    model = cover.id,
-                    contentDescription = lorebookName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-            else -> {
-                Text(
-                    text = lorebookName.take(1).uppercase(),
-                    style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-        
-        // Entry number at bottom
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(18.dp)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.8f)
-                        )
-                    )
-                )
-                .padding(bottom = 1.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Text(
-                text = "#${entryIndex + 1}",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                color = Color.White
-            )
-        }
-    }
-}

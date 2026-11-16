@@ -26,12 +26,10 @@ import me.rerere.rikkahub.R
 fun ImportConfigDialog(
     onDismissRequest: () -> Unit,
     hasMemories: Boolean,
-    hasLorebooks: Boolean,
     missingModels: List<String>,
-    onConfirm: (importMemories: Boolean, importLorebooks: Boolean) -> Unit
+    onConfirm: (importMemories: Boolean) -> Unit
 ) {
     var importMemories by remember { mutableStateOf(hasMemories) }
-    var importLorebooks by remember { mutableStateOf(hasLorebooks) }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -66,34 +64,12 @@ fun ImportConfigDialog(
                     )
                 }
 
-                if (hasMemories || hasLorebooks) {
+                if (hasMemories) {
                     Text(
                         text = stringResource(R.string.assistant_importer_include_components),
                         style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-
-                    if (hasLorebooks) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp)
-                        ) {
-                            Checkbox(
-                                checked = importLorebooks,
-                                onCheckedChange = { importLorebooks = it }
-                            )
-                            Column(modifier = Modifier.padding(start = 8.dp)) {
-                                Text(stringResource(R.string.assistant_importer_lorebooks))
-                                Text(
-                                    stringResource(R.string.assistant_importer_lorebooks_desc),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
 
                     if (hasMemories) {
                         Row(
@@ -122,7 +98,7 @@ fun ImportConfigDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    onConfirm(importMemories, importLorebooks)
+                    onConfirm(importMemories)
                 }
             ) {
                 Text(stringResource(R.string.import_label))

@@ -584,16 +584,6 @@ private fun SharedTransitionScope.ChatListNormal(
         val onUpdateNode = remember(onUpdateMessage) {
             { node: MessageNode -> onUpdateMessage(node) }
         }
-        val onEditLorebookEntry = remember(navController) {
-            { entry: me.rerere.ai.ui.UsedLorebookEntry ->
-                navController.navigate(Screen.SettingLorebookDetail(entry.lorebookId, entry.entryId))
-            }
-        }
-        val onModeClick = remember(navController) {
-            { mode: me.rerere.ai.ui.UsedMode ->
-                navController.navigate(Screen.SettingSkills(scrollToSkillId = mode.modeId))
-            }
-        }
         val onMemoryClick = remember(navController, conversation.assistantId) {
             { memory: me.rerere.ai.ui.UsedMemory ->
                 navController.navigate(
@@ -705,8 +695,6 @@ private fun SharedTransitionScope.ChatListNormal(
                                 onFork = onForkNode,
                                 onDelete = onDeleteNode,
                                 onUpdate = onUpdateNode,
-                                onEditLorebookEntry = onEditLorebookEntry,
-                                onModeClick = onModeClick,
                                 onMemoryClick = onMemoryClick,
                                 showRegenerate = showRegenerate,
                                 onExpandedStreamingCodeBlockChanged = if (loading && isLastTurn) onStreamingCodeBlockExpanded else null,

@@ -87,7 +87,6 @@ private object AssistantDetailRoutes {
     const val MODEL = "model"
     const val PROMPTS = "prompts"
     const val CONTEXT_MANAGEMENT = "context_management"
-    const val LOREBOOKS = "lorebooks"
     const val SKILLS = "skills"
     const val TOOLS = "tools"
     const val MEMORY = "memory"
@@ -123,7 +122,6 @@ fun AssistantDetailPage(
     val snackbarMessage by vm.snackbarMessage.collectAsStateWithLifecycle()
 
     val hasMemories by vm.hasMemories.collectAsStateWithLifecycle()
-    val hasLorebooks by vm.hasLorebooks.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
 
@@ -133,7 +131,6 @@ fun AssistantDetailPage(
     var showExportMenu by remember { androidx.compose.runtime.mutableStateOf(false) }
     var showExportOptionsDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
     var pendingExportContent by remember { androidx.compose.runtime.mutableStateOf("") }
-    var pendingExportBytes by remember { androidx.compose.runtime.mutableStateOf<ByteArray?>(null) }
     
     // Export file launcher (JSON)
     val exportLauncher = rememberLauncherForActivityResult(
@@ -160,31 +157,6 @@ fun AssistantDetailPage(
         }
     }
     
-    // Export file launcher (PNG)
-    val pngExportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("image/png")
-    ) { uri ->
-        if (uri != null && pendingExportBytes != null) {
-            scope.launch {
-                try {
-                    context.contentResolver.openOutputStream(uri)?.use { 
-                        it.write(pendingExportBytes!!)
-                    }
-                    toaster.show(context.getString(R.string.export_success))
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    toaster.show(
-                        context.getString(
-                            R.string.export_failed_message,
-                            e.message ?: context.getString(R.string.backup_page_unknown_error)
-                        )
-                    )
-                }
-                pendingExportBytes = null
-            }
-        }
-    }
-
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(snackbarMessage) {
@@ -252,7 +224,7 @@ fun AssistantDetailPage(
                                     text = { Text(stringResource(R.string.assistant_detail_export_aihub_bundle)) },
                                     onClick = {
                                         showExportMenu = false
-                                        if (hasMemories || hasLorebooks) {
+                                        if (hasMemories) {
                                             showExportOptionsDialog = true
                                         } else {
                                             scope.launch {
@@ -260,8 +232,7 @@ fun AssistantDetailPage(
                                                     val content = AssistantExportImport.exportToAiBundle(
                                                         assistant = assistant,
                                                         context = context,
-                                                        includeMemories = false,
-                                                        includeLorebooks = false
+                                                        includeMemories = false
                                                     )
                                                     pendingExportContent = content
                                                     val fileName = AssistantExportImport.getSuggestedFileName(assistant, "aihub")
@@ -275,54 +246,6 @@ fun AssistantDetailPage(
                                                         )
                                                     )
                                                 }
-                                            }
-                                        }
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.assistant_detail_export_card_json)) },
-                                    onClick = {
-                                        showExportMenu = false
-                                        scope.launch {
-                                            try {
-                                                val content = AssistantExportImport.exportToCharacterCardV2(assistant, context)
-                                                pendingExportContent = content
-                                                val fileName = AssistantExportImport.getSuggestedFileName(assistant, "card_v2")
-                                                exportLauncher.launch(fileName)
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
-                                                toaster.show(
-                                                    context.getString(
-                                                        R.string.export_failed_message,
-                                                        e.message ?: context.getString(R.string.backup_page_unknown_error)
-                                                    )
-                                                )
-                                            }
-                                        }
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.assistant_detail_export_card_png)) },
-                                    onClick = {
-                                        showExportMenu = false
-                                        scope.launch {
-                                            try {
-                                                val bytes = AssistantExportImport.exportToCharacterCardPng(assistant, context)
-                                                if (bytes != null) {
-                                                    pendingExportBytes = bytes
-                                                    val fileName = AssistantExportImport.getSuggestedFileName(assistant, "card_v2_png")
-                                                    pngExportLauncher.launch(fileName)
-                                                } else {
-                                                    toaster.show(context.getString(R.string.export_failed_create_png))
-                                                }
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
-                                                toaster.show(
-                                                    context.getString(
-                                                        R.string.export_failed_message,
-                                                        e.message ?: context.getString(R.string.backup_page_unknown_error)
-                                                    )
-                                                )
                                             }
                                         }
                                     }
@@ -414,17 +337,7 @@ fun AssistantDetailPage(
                     assistant = assistant,
                     hasSummarizerModelConfigured = settings.summarizerModelId != null,
                     onUpdate = { onUpdate(it) },
-                    onNavigateToLorebooks = { navController.navigate(AssistantDetailRoutes.LOREBOOKS) },
                     onNavigateToSummarizerSettings = { rootNavController.navigate(Screen.SettingModels) }
-                )
-            }
-
-            // Lorebooks (nested under Context Management)
-            composable(AssistantDetailRoutes.LOREBOOKS) {
-                AssistantLorebooksSubPage(
-                    assistant = assistant,
-                    onUpdate = { onUpdate(it) },
-                    vm = vm
                 )
             }
 
@@ -501,16 +414,14 @@ fun AssistantDetailPage(
             title = stringResource(R.string.assistant_detail_export_options),
             onDismissRequest = { showExportOptionsDialog = false },
             showMemoriesOption = hasMemories,
-            showLorebooksOption = hasLorebooks,
-            onConfirm = { includeMemories, includeLorebooks ->
+            onConfirm = { includeMemories ->
                 showExportOptionsDialog = false
                 scope.launch {
                     try {
                         val content = AssistantExportImport.exportToAiBundle(
                             assistant = assistant, 
                             context = context, 
-                            includeMemories = includeMemories, 
-                            includeLorebooks = includeLorebooks
+                            includeMemories = includeMemories
                         )
                         pendingExportContent = content
                         val fileName = AssistantExportImport.getSuggestedFileName(assistant, "aihub")

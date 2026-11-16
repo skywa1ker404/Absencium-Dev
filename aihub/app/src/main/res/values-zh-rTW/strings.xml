@@ -7,10 +7,6 @@
   <string name="about_page_version">版本</string>
   <string name="about_page_website">官網</string>
   <string name="add">添加</string>
-  <string name="assistant_importer_import_failed">匯入失敗</string>
-  <string name="assistant_importer_import_tavern_json">匯入酒館角色卡 (JSON)</string>
-  <string name="assistant_importer_import_tavern_png">匯入酒館角色卡 (PNG)</string>
-  <string name="assistant_importer_importing">匯入中...</string>
   <string name="assistant_importer_missing_data_field">缺少資料欄位</string>
   <string name="assistant_importer_missing_name_field">缺少名稱欄位</string>
   <string name="assistant_importer_missing_spec_field">缺少 spec 欄位</string>
@@ -689,7 +685,6 @@
     <string name="chat_page_export_activity_failed">無法取得 Activity</string>
     <string name="chat_page_export_image_failed">匯出圖片失敗：%1$s</string>
     <string name="imggen_page_prompt_copied">提示詞已複製到剪貼簿</string>
-    <string name="lorebook_embedding_failed">產生嵌入失敗：%1$s</string>
     <string name="context_refresh_error_conversation_not_found">找不到對話</string>
     <string name="context_refresh_error_no_messages">沒有可摘要的訊息</string>
     <string name="context_refresh_error_no_model">未設定模型</string>

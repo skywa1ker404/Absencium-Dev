@@ -8,11 +8,7 @@
     <string name="about_page_version">Version</string>
     <string name="about_page_website">Website</string>
     <string name="add">Add</string>
-    <string name="assistant_importer_import_failed">Import Failed</string>
     <string name="assistant_importer_import_character">Import Character Card</string>
-    <string name="assistant_importer_import_tavern_json">Import Tavern Card (JSON)</string>
-    <string name="assistant_importer_import_tavern_png">Import Tavern Card (PNG)</string>
-    <string name="assistant_importer_importing">Importing...</string>
     <string name="assistant_importer_missing_data_field">Missing data field</string>
     <string name="assistant_importer_missing_name_field">Missing name field</string>
     <string name="assistant_importer_missing_spec_field">Missing spec field</string>
@@ -721,8 +717,6 @@
     <string name="backup_content_workspaces_desc">Workspace project files and code (excluding system Linux environment)</string>
     <string name="backup_content_skills">Skills &amp; Tools</string>
     <string name="backup_content_skills_desc">Custom skills and tool outputs</string>
-    <string name="backup_content_lorebooks">Lorebooks</string>
-    <string name="backup_content_lorebooks_desc">World info lorebooks, entries, and attachments</string>
     <string name="backup_content_settings">App Settings</string>
     <string name="backup_content_settings_desc">Display, theme, font, network, and audio preferences</string>
     <string name="backup_export_no_content_selected">Please select at least one item to export.</string>
@@ -1052,7 +1046,6 @@
     <string name="prompt_injections_page_injection_types">Add-on Types</string>
     <string name="prompt_injections_page_modes">Skills</string>
     <string name="prompt_injections_page_modes_desc">Structured instructions that can be toggled per chat</string>
-    <string name="prompt_injections_page_lorebooks">Lorebooks</string>
     <string name="prompt_injections_page_lorebooks_desc">Context-triggered prompt entries</string>
     
     <!-- Modes -->
@@ -1071,9 +1064,6 @@
     <string name="modes_page_prompt_placeholder">Enter the instructions to inject...</string>
     <string name="modes_page_injection_position">Injection Position</string>
     <string name="modes_page_depth">Depth</string>
-    <string name="modes_page_attachments">Attachments</string>
-    <string name="modes_page_add_image">Image</string>
-    <string name="modes_page_add_file">File</string>
     <string name="drag_to_reorder">Drag to reorder</string>
     <string name="save">Save</string>
     <string name="create">Create</string>
@@ -1090,46 +1080,13 @@
     <!-- Lorebooks -->
     <string name="lorebooks_page_description_title">World Lorebooks</string>
     <string name="lorebooks_page_description_text">Create organized collections of prompts that activate based on keywords or semantic similarity.</string>
-    <string name="lorebooks_page_deleted">Lorebook \"%s\" deleted</string>
-    <string name="lorebooks_page_empty_title">No lorebooks yet</string>
-    <string name="lorebooks_page_empty_desc">Add lorebooks to inject context-aware prompts</string>
-    <string name="lorebooks_page_unnamed">Unnamed Lorebook</string>
-    <string name="lorebooks_page_no_description">No description</string>
-    <string name="lorebooks_page_entries_count">%d entries</string>
-    <string name="lorebooks_page_create_lorebook">Create Lorebook</string>
-    <string name="lorebooks_page_name">Name</string>
-    <string name="lorebooks_page_name_placeholder">e.g. Fantasy World</string>
-    <string name="lorebooks_page_description">Description</string>
-    <string name="lorebooks_page_description_placeholder">Describe what this lorebook contains...</string>
     <string name="lorebooks_page_cover">Cover Image</string>
     <string name="lorebooks_page_cover_hint">Tap to select an image or emoji</string>
     
     <!-- Lorebook Detail -->
-    <string name="lorebook_detail_not_found">Lorebook not found</string>
-    <string name="lorebook_detail_no_entries">No entries yet</string>
-    <string name="lorebook_detail_add_entry_hint">Add entries to inject prompts when triggered</string>
-    <string name="lorebook_edit">Edit Lorebook</string>
-    <string name="lorebook_entry_unnamed">Unnamed Entry</string>
-    <string name="lorebook_entry_add">Add Entry</string>
-    <string name="lorebook_entry_edit">Edit Entry</string>
-    <string name="lorebook_entry_name">Name</string>
-    <string name="lorebook_entry_name_placeholder">e.g. Character Name</string>
-    <string name="lorebook_entry_prompt">Content</string>
-    <string name="lorebook_entry_prompt_placeholder">Enter the content to inject...</string>
-    <string name="lorebook_entry_activation_type">Activation Type</string>
-    <string name="lorebook_entry_keywords">Keywords</string>
-    <string name="lorebook_entry_keywords_placeholder">keyword1, keyword2, keyword3</string>
-    <string name="lorebook_entry_case_sensitive">Case Sensitive</string>
-    <string name="lorebook_entry_use_regex">Use Regex</string>
-    <string name="lorebook_entry_scan_depth">Scan Depth</string>
     <string name="lorebook_entry_injection_position">Injection Position</string>
-    <string name="lorebook_search_entries_placeholder">Search entries...</string>
     
     <!-- Activation Types -->
-    <string name="activation_always">Always Active</string>
-    <string name="activation_keywords">Keywords</string>
-    <string name="activation_keywords_with_count">Keywords (%d)</string>
-    <string name="activation_rag">RAG (Semantic)</string>
     
     <!-- Modes Picker -->
     <string name="modes_page_default_on">On by default</string>
@@ -1139,14 +1096,9 @@
     <string name="modes_picker_none">No skills configured</string>
     <string name="modes_page_default_enabled">Enable by default</string>
     <string name="modes_page_default_enabled_desc">Automatically enable for new chats</string>
-    <string name="lorebook_entry_deleted">Entry %s deleted</string>
     
     <!-- Lorebooks Picker -->
-    <string name="lorebooks_picker_title">Lorebooks</string>
-    <string name="lorebooks_picker_none">No lorebooks</string>
-    <string name="lorebooks_section_available">Available Lorebooks</string>
     <string name="export_success">Export successful</string>
-    <string name="lorebook_toggle_assistants">Toggle Characters</string>
     <string name="lorebook_select_to_toggle">Select a lorebook to toggle</string>
     
     <!-- Skills -->
@@ -1201,10 +1153,6 @@
     <string name="character_questions_custom_answer_placeholder">Write your own answer...</string>
 
     <!-- Character Lorebooks Selection -->
-    <string name="assistant_lorebooks_title">Lorebooks</string>
-    <string name="assistant_lorebooks_desc">Select which lorebooks to use with this character</string>
-    <string name="assistant_lorebooks_empty">No lorebooks configured</string>
-    <string name="assistant_lorebooks_empty_hint">Create lorebooks in Settings → Add-ons → Lorebooks</string>
     <string name="assistant_lorebooks_enabled">%d enabled</string>
     <string name="assistant_skills_title">Skills</string>
     <string name="assistant_skills_desc">Select which skills to use with this character</string>
@@ -1214,8 +1162,6 @@
     <!-- Context Management -->
     <string name="context_management_title">Context Management</string>
     <string name="context_management_desc">Lorebooks, time awareness, message history, search results</string>
-    <string name="context_lorebooks_title">Lorebooks</string>
-    <string name="context_lorebooks_desc">Select which lorebooks to use with this assistant</string>
     <string name="context_skills_title">Skills</string>
     <string name="context_skills_desc">Select which skills to use with this assistant</string>
     <string name="context_time_awareness_title">Time Awareness</string>
@@ -1258,13 +1204,7 @@
     <string name="context_refresh_edit_summary_placeholder">Summary</string>
     
     <!-- Import/Export -->
-    <string name="lorebook_import_success">Imported: %s</string>
-    <string name="lorebook_export_success">Lorebook exported successfully</string>
-    <string name="lorebook_export_error">Failed to export lorebook</string>
     <string name="lorebook_export_format">Export Format</string>
-    <string name="export_format_aihub">Absencium AI (Full)</string>
-    <string name="export_format_sillytavern">SillyTavern</string>
-    <string name="export_format_tavern">Tavern (Compatible)</string>
     
     <!-- Text Selection Integration -->
 
@@ -1330,8 +1270,6 @@
     <string name="minimal_input_search_desc">Search the web for information</string>
     <string name="minimal_input_skills">Skills</string>
     <string name="minimal_input_skills_desc">Apply skills to this chat</string>
-    <string name="minimal_input_lorebooks">Lorebooks</string>
-    <string name="minimal_input_lorebooks_desc">Add context from your lorebooks</string>
     <string name="minimal_input_plugins">Plugins</string>
     <string name="minimal_input_plugins_desc">Choose tools for this assistant</string>
     <string name="plugins_picker_active_count">%1$d active</string>
@@ -1377,7 +1315,6 @@
     <string name="chat_page_export_activity_failed">Failed to get activity</string>
     <string name="chat_page_export_image_failed">Failed to export image: %1$s</string>
     <string name="imggen_page_prompt_copied">Prompt copied to clipboard</string>
-    <string name="lorebook_embedding_failed">Failed to generate embedding: %1$s</string>
     <string name="context_refresh_error_conversation_not_found">Conversation not found</string>
     <string name="context_refresh_error_no_messages">No messages to summarize</string>
     <string name="context_refresh_error_no_model">No model configured</string>
@@ -1562,7 +1499,6 @@
   <string name="context_meter_summary">Summary</string>
   <string name="context_meter_memory">Memory</string>
   <string name="context_meter_skills_modes">Skills / modes</string>
-  <string name="context_meter_lorebook">Lorebook</string>
   <string name="context_meter_tool_definitions">Tools</string>
   <string name="context_meter_tool_calls">Tool calls</string>
   <string name="context_meter_media">Media</string>

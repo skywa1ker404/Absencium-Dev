@@ -135,7 +135,6 @@ import org.koin.compose.koinInject
 
 private const val CATEGORY_CHAT = "chat_attachments"
 private const val CATEGORY_ASSISTANT_MEDIA = "assistant_media"
-private const val CATEGORY_LOREBOOK_MEDIA = "lorebook_media"
 private const val CATEGORY_GENERATED_MEDIA = "generated_media"
 private const val CATEGORY_WORKSPACES = "workspaces"
 private const val CATEGORY_ICONS_AND_FONTS = "icons_and_fonts"
@@ -1401,7 +1400,6 @@ private fun StorageCategoryUsage.localizedLabel(context: Context): String {
     return when (id) {
         CATEGORY_CHAT -> context.getString(R.string.setting_chat_storage_category_chat_attachments)
         CATEGORY_ASSISTANT_MEDIA -> context.getString(R.string.setting_chat_storage_category_assistant_media)
-        CATEGORY_LOREBOOK_MEDIA -> context.getString(R.string.setting_chat_storage_category_lorebook_media)
         CATEGORY_GENERATED_MEDIA -> context.getString(R.string.setting_chat_storage_category_generated_media)
         CATEGORY_WORKSPACES -> context.getString(R.string.setting_chat_storage_category_workspaces)
         CATEGORY_ICONS_AND_FONTS -> context.getString(R.string.setting_chat_storage_category_icons_and_fonts)
@@ -1421,7 +1419,6 @@ private fun StorageCategoryUsage.icon(): ImageVector {
     return when (id) {
         CATEGORY_CHAT -> Icons.Rounded.Storage
         CATEGORY_ASSISTANT_MEDIA -> Icons.Rounded.Visibility
-        CATEGORY_LOREBOOK_MEDIA -> Icons.Rounded.FolderOpen
         CATEGORY_GENERATED_MEDIA -> Icons.Rounded.Image
         CATEGORY_WORKSPACES -> Icons.Rounded.Code
         CATEGORY_ICONS_AND_FONTS -> Icons.Rounded.AutoAwesome

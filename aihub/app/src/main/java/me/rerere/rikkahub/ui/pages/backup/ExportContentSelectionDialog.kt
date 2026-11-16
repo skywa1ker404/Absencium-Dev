@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material.icons.rounded.FolderZip
 import androidx.compose.material.icons.rounded.Handyman
@@ -70,7 +69,6 @@ private fun BackupContentOption.icon(): ImageVector = when (this) {
     BackupContentOption.API_KEYS -> Icons.Rounded.Key
     BackupContentOption.WORKSPACES -> Icons.Rounded.FolderZip
     BackupContentOption.SKILLS -> Icons.Rounded.Handyman
-    BackupContentOption.LOREBOOKS -> Icons.Rounded.AutoStories
     BackupContentOption.SETTINGS -> Icons.Rounded.Settings
 }
 

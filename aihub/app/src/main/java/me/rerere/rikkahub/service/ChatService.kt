@@ -518,7 +518,6 @@ internal fun mergeLiveMessagesIfIncomingIsStale(
         chatSuggestions = incomingConversation.chatSuggestions,
         isPinned = incomingConversation.isPinned,
         enabledModeIds = incomingConversation.enabledModeIds,
-        enabledLorebookIds = incomingConversation.enabledLorebookIds,
         updateAt = liveConversation.updateAt,
         isConsolidated = incomingConversation.isConsolidated,
         contextSummary = incomingConversation.contextSummary,
@@ -1600,7 +1599,7 @@ class ChatService(
         runCatching {
             var conversation = normalizeConversation(getConversationFlow(conversationId).value)
             val conversationContext = settings.resolveConversationContext(conversation)
-            // An action chat runs bare: the app's button gave it everything it needs, so the user's persona, memories, lorebooks, skills,
+            // An action chat runs bare: the app's button gave it everything it needs, so the user's persona, memories, skills,
             // search and extra servers are not sent (they only add tokens and make the assistant wander off to read other things).
             val assistant = if (conversation.assistantId == me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID) {
                 conversationContext.assistant.copy(
@@ -1609,7 +1608,6 @@ class ChatService(
                     enableMemorySearchTool = false,
                     enableRecentChatsReference = false,
                     presetMessages = emptyList(),
-                    enabledLorebookIds = emptySet(),
                     enabledSkillIds = emptySet(),
                     mcpServers = emptySet(),
                     localTools = emptyList(),
@@ -1716,7 +1714,6 @@ class ChatService(
                 tools = tools,
                 truncateIndex = conversation.truncateIndex,
                 enabledModeIds = conversation.enabledModeIds,
-                enabledLorebookIds = conversation.enabledLorebookIds,
                 activeConversationId = conversation.id,
                 contextSummary = conversation.contextSummary,
                 contextSummaryUpToIndex = conversation.contextSummaryUpToIndex,

@@ -35,8 +35,6 @@ import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV1Migration
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.ChatStorageSettings
-import me.rerere.rikkahub.data.model.Lorebook
-import me.rerere.rikkahub.data.model.Mode
 import me.rerere.rikkahub.data.model.Skill
 import me.rerere.rikkahub.data.model.Tag
 import me.rerere.rikkahub.ui.theme.PresetThemes
@@ -68,7 +66,7 @@ class SettingsStore(
     private val secretKeyManager: SecretKeyManager,
 ) : KoinComponent {
     companion object {
-        private val REMOVED_KEYS = listOf("text_selection_config", "assistant_overlay_config")
+        private val REMOVED_KEYS = listOf("text_selection_config", "assistant_overlay_config", "modes", "lorebooks")
 
         // 版本号
         val VERSION = intPreferencesKey("data_version")
@@ -143,8 +141,6 @@ class SettingsStore(
         val WEB_SERVER_BACKGROUND_SETUP_SHOWN = booleanPreferencesKey("web_server_background_setup_shown")
 
         // Prompt Injections
-        val MODES = stringPreferencesKey("modes")
-        val LOREBOOKS = stringPreferencesKey("lorebooks")
         val SKILLS = stringPreferencesKey("skills")
         val CHAT_STORAGE = stringPreferencesKey("chat_storage")
 
@@ -157,7 +153,6 @@ class SettingsStore(
     private val dataStore = context.settingsStore
 
     // One-time migration flags
-    private var hasPersistedLegacyModeMigration = false
     private var hasPersistedLegacySummarizerMigration = false
 
     val settingsFlowRaw = dataStore.data
@@ -240,8 +235,6 @@ class SettingsStore(
                     webServerJwtEnabled = preferences[WEB_SERVER_JWT_ENABLED] == true,
                     webServerAccessPassword = preferences[WEB_SERVER_ACCESS_PASSWORD] ?: "",
                     webServerBackgroundSetupShown = preferences[WEB_SERVER_BACKGROUND_SETUP_SHOWN] == true,
-                    modes = decodePreferenceList(preferences[MODES]) ?: emptyList(),
-                    lorebooks = decodePreferenceList(preferences[LOREBOOKS]) ?: emptyList(),
                     skills = decodePreferenceList(preferences[SKILLS]) ?: emptyList(),
                     chatStorage = decodePreferenceValue(
                         preferences[CHAT_STORAGE],
@@ -359,18 +352,6 @@ class SettingsStore(
             }
             migrated.normalizeFontSettings()
         }
-        .map { settings ->
-            val migrated = settings.migrateLegacyModesToSkills()
-            if (!hasPersistedLegacyModeMigration) {
-                hasPersistedLegacyModeMigration = true
-                if (migrated != settings) {
-                    scope.launch(Dispatchers.IO) {
-                        persistLegacyModeMigration(migrated)
-                    }
-                }
-            }
-            migrated.normalizeFontSettings()
-        }
         .onEach {
             get<MessageTemplateCache>().invalidateAll()
         }
@@ -425,17 +406,6 @@ class SettingsStore(
     }
 
     /**
-     * Persist one-time legacy mode -> skill migration.
-     */
-    private suspend fun persistLegacyModeMigration(settings: Settings) {
-        dataStore.edit { preferences ->
-            preferences[ASSISTANTS] = JsonInstant.encodeToString(settings.assistants)
-            preferences[MODES] = JsonInstant.encodeToString(settings.modes)
-            preferences[SKILLS] = JsonInstant.encodeToString(settings.skills)
-        }
-    }
-
-    /**
      * Persist one-time assistant summarizer -> global summarizer migration.
      */
     private suspend fun persistLegacySummarizerMigration(settings: Settings) {
@@ -472,7 +442,6 @@ class SettingsStore(
         
         val normalizedSettings = settingsToSave
             .normalizeWebServerSettings()
-            .migrateLegacyModesToSkills()
             .normalizeFontSettings()
             .normalizeThemeId()
             .normalizeTtsSettings()
@@ -560,8 +529,6 @@ class SettingsStore(
             preferences[WEB_SERVER_ACCESS_PASSWORD] = normalizedSettings.webServerAccessPassword
             preferences[WEB_SERVER_BACKGROUND_SETUP_SHOWN] = normalizedSettings.webServerBackgroundSetupShown
 
-            preferences[MODES] = JsonInstant.encodeToString(normalizedSettings.modes)
-            preferences[LOREBOOKS] = JsonInstant.encodeToString(normalizedSettings.lorebooks)
             preferences[SKILLS] = JsonInstant.encodeToString(normalizedSettings.skills)
             preferences[CHAT_STORAGE] = JsonInstant.encodeToString(normalizedSettings.chatStorage)
             // Settings of features that were removed: dropped from existing installs the next time anything is saved.

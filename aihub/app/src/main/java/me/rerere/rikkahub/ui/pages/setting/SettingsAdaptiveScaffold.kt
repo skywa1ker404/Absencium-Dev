@@ -63,7 +63,6 @@ private var lastSettingsPaneSelected: SettingsDestination? = null
 enum class SettingsDestination {
     Display,
     Assistants,
-    PromptInjections,
     Models,
     Providers,
     ProviderModels,
@@ -75,11 +74,9 @@ enum class SettingsDestination {
     BackupWebDav,
     BackupLocal,
     ChatStorage,
-    Lorebooks,
     Skills,
     Fonts,
     UiCustomization,
-    RpOptimizations,
     Workspaces,
 }
 
@@ -272,7 +269,6 @@ private fun settingsDetailParent(route: String): Screen? {
     return when {
         route.contains("SettingProviderDetail") -> Screen.SettingProvider
         route.contains("SettingTTSProviderDetail") -> Screen.SettingTTS
-        route.contains("SettingLorebookDetail") -> Screen.SettingLorebooks
         route.contains("AssistantDetail") -> Screen.Assistant
         else -> null
     }
@@ -290,15 +286,13 @@ private fun isSettingsPaneRoute(route: String?): Boolean {
 private fun SettingsDestination.mainDestination(): SettingsDestination {
     return when (this) {
         SettingsDestination.Fonts,
-        SettingsDestination.UiCustomization,
-        SettingsDestination.RpOptimizations -> SettingsDestination.Display
+        SettingsDestination.UiCustomization -> SettingsDestination.Display
         SettingsDestination.BackupWebDav,
         SettingsDestination.BackupLocal -> SettingsDestination.Backup
         SettingsDestination.ProviderModels,
         SettingsDestination.Search,
         SettingsDestination.Tts -> SettingsDestination.Providers
-        SettingsDestination.Skills,
-        SettingsDestination.Lorebooks -> SettingsDestination.PromptInjections
+        SettingsDestination.Skills -> SettingsDestination.Display
         else -> this
     }
 }

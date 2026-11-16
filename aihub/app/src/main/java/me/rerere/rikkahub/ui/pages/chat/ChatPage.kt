@@ -169,7 +169,6 @@ import me.rerere.rikkahub.data.ai.prompts.DEFAULT_LEARNING_MODE_PROMPT
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.LorebookActivationType
 import me.rerere.rikkahub.data.model.ModeAttachmentType
 import me.rerere.rikkahub.navigation.CHAT_ROUTE_TARGET_KEY
 import me.rerere.rikkahub.navigation.ChatRouteTarget
@@ -1983,9 +1982,6 @@ private fun ChatPageContent(
                             answer = answer,
                         )
                     },
-                    onNavigateToLorebook = { lorebookId ->
-                        navController.navigate(Screen.SettingLorebookDetail(lorebookId))
-                    },
                     onRefreshContext = { vm.refreshContext() },
                     onDeleteFile = { vm.deleteFile(it) },
                     bottomAccessory = bottomToolbarContent,
@@ -3098,61 +3094,6 @@ private fun rememberContextMeterUsage(
             .map { skill -> skill.id }
             .toSet(),
     )
-    val activeLorebookIds = conversation.enabledLorebookIds ?: assistant.enabledLorebookIds
-    val activeLoreEntries = remember(settings.lorebooks, activeLorebookIds) {
-        settings.lorebooks
-            .filter { lorebook -> lorebook.enabled && lorebook.id in activeLorebookIds }
-            .flatMap { lorebook -> lorebook.entries.filter { it.enabled } }
-    }
-    val deterministicLoreEntries = remember(activeLoreEntries, rawMessages) {
-        val recentText = rawMessages.takeLast(10).joinToString(" ") { message -> message.toText() }
-        activeLoreEntries.filter { entry ->
-            when (entry.activationType) {
-                LorebookActivationType.ALWAYS -> true
-                LorebookActivationType.RAG -> false
-                LorebookActivationType.KEYWORDS -> entry.keywords.any { keyword ->
-                    if (entry.useRegex) {
-                        runCatching {
-                            val options = if (entry.caseSensitive) emptySet() else setOf(RegexOption.IGNORE_CASE)
-                            Regex(keyword, options).containsMatchIn(recentText)
-                        }.getOrDefault(false)
-                    } else if (entry.caseSensitive) {
-                        recentText.contains(keyword)
-                    } else {
-                        recentText.contains(keyword, ignoreCase = true)
-                    }
-                }
-            }
-        }
-    }
-    fun loreEntryTokenCost(entry: me.rerere.rikkahub.data.model.LorebookEntry): Int =
-        ContextTokenEstimator.textTokens(entry.prompt, activeModel) +
-            entry.attachments.sumOf { attachment ->
-                when (attachment.type) {
-                    ModeAttachmentType.IMAGE -> 1_024
-                    ModeAttachmentType.VIDEO -> 4_096
-                    ModeAttachmentType.AUDIO -> 2_000
-                    ModeAttachmentType.DOCUMENT -> 512
-                }
-            }
-    val loreEntryTokensById = remember(activeLoreEntries, activeModel) {
-        activeLoreEntries.associate { entry ->
-            entry.id.toString() to loreEntryTokenCost(entry)
-        }
-    }
-    val observedConditionalTokenTotals = rawMessages.asReversed().mapNotNull { message ->
-        message.usedLorebookEntries.orEmpty()
-            .filter { it.activationReason?.startsWith("RAG Match") == true }
-            .sumOf { used ->
-                used.contextTokenCount ?: loreEntryTokensById[used.entryId] ?: 0
-            }
-            .takeIf { it > 0 }
-    }.take(6)
-    val conditionalContextCandidateTokens = remember(activeLoreEntries, loreEntryTokensById) {
-        activeLoreEntries
-            .filter { it.activationType == LorebookActivationType.RAG }
-            .sumOf { entry -> loreEntryTokensById[entry.id.toString()] ?: 0 }
-    }
     val eligibleMemoryCandidateTokens = remember(eligibleMemoryCandidates, activeModel) {
         eligibleMemoryCandidates.sumOf { memory ->
             ContextTokenEstimator.textTokens(memory.content, activeModel).toLong()
@@ -3171,8 +3112,8 @@ private fun rememberContextMeterUsage(
             me.rerere.rikkahub.data.model.ContextPriority.MEMORIES -> 0.65
         },
         observedMemoryTokenTotals = observedMemoryTokenTotals,
-        conditionalContextCandidateTokens = conditionalContextCandidateTokens,
-        observedConditionalTokenTotals = observedConditionalTokenTotals,
+        conditionalContextCandidateTokens = 0,
+        observedConditionalTokenTotals = emptyList(),
     )
     val skillText = remember(availableSkills, activeSkillIds) {
         buildString {
@@ -3184,14 +3125,8 @@ private fun rememberContextMeterUsage(
                 }
         }
     }
-    val lorebookText = remember(deterministicLoreEntries) {
-        deterministicLoreEntries.joinToString("\n") { entry -> entry.prompt }
-    }
     val skillTokens = remember(skillText, activeModel) {
         ContextTokenEstimator.textTokens(skillText, activeModel)
-    }
-    val lorebookTokens = remember(lorebookText, activeModel) {
-        ContextTokenEstimator.textTokens(lorebookText, activeModel)
     }
     fun me.rerere.rikkahub.data.model.ModeAttachment.toContextPart(): UIMessagePart = when (type) {
         ModeAttachmentType.IMAGE -> UIMessagePart.Image(url)
@@ -3199,13 +3134,11 @@ private fun rememberContextMeterUsage(
         ModeAttachmentType.AUDIO -> UIMessagePart.Audio(url)
         ModeAttachmentType.DOCUMENT -> UIMessagePart.Document(url, fileName, mime)
     }
-    val knownContextAttachments = remember(availableSkills, activeSkillIds, deterministicLoreEntries) {
+    val knownContextAttachments = remember(availableSkills, activeSkillIds) {
         buildList {
             availableSkills
                 .filter { skill -> skill.id in activeSkillIds }
                 .flatMapTo(this) { skill -> skill.attachments.map { it.toContextPart() } }
-            deterministicLoreEntries
-                .flatMapTo(this) { entry -> entry.attachments.map { it.toContextPart() } }
         }
     }
     val knownContextMediaTokens = remember(knownContextAttachments, activeModel) {
@@ -3290,7 +3223,7 @@ private fun rememberContextMeterUsage(
     }
     val deterministicContextTokens = ContextTokenEstimator.textTokens(systemPromptText, activeModel) +
         ContextTokenEstimator.textTokens(conversation.contextSummary.orEmpty(), activeModel) +
-        skillTokens + lorebookTokens + toolDefinitionTokens + knownContextMediaTokens
+        skillTokens + toolDefinitionTokens + knownContextMediaTokens
     val fixedMemorySelection = remember(
         eligibleMemoryCandidates,
         activeModel,
@@ -3331,9 +3264,7 @@ private fun rememberContextMeterUsage(
         fixedMemoryText,
         fixedMemoryTokens,
         skillText,
-        lorebookText,
         skillTokens,
-        lorebookTokens,
         toolDefinitionText,
         toolDefinitionTokens,
         knownContextAttachments,
@@ -3343,7 +3274,7 @@ private fun rememberContextMeterUsage(
         val messagesToCount = if (smartActive) {
             val namedTokens = ContextTokenEstimator.textTokens(systemPromptText, activeModel) +
                 ContextTokenEstimator.textTokens(conversation.contextSummary.orEmpty(), activeModel) +
-                fixedMemoryTokens + skillTokens + lorebookTokens +
+                fixedMemoryTokens + skillTokens +
                 toolDefinitionTokens +
                 knownContextMediaTokens
             val messageBudget = ((effectiveSmartInputBudget ?: Int.MAX_VALUE) - namedTokens)
@@ -3364,9 +3295,7 @@ private fun rememberContextMeterUsage(
             memoryText = fixedMemoryText,
             memoryTokensOverride = fixedMemoryTokens,
             skillText = skillText,
-            lorebookText = lorebookText,
             skillTokensOverride = skillTokens,
-            lorebookTokensOverride = lorebookTokens,
             toolDefinitionText = toolDefinitionText,
             toolDefinitionTokensOverride = toolDefinitionTokens,
             pendingParts = knownContextAttachments,
@@ -3403,7 +3332,7 @@ private fun rememberContextMeterUsage(
             val pendingMessage = UIMessage(role = MessageRole.USER, parts = pendingParts)
             val namedTokens = ContextTokenEstimator.textTokens(systemPromptText, activeModel) +
                 ContextTokenEstimator.textTokens(conversation.contextSummary.orEmpty(), activeModel) +
-                fixedMemoryTokens + skillTokens + lorebookTokens +
+                fixedMemoryTokens + skillTokens +
                 toolDefinitionTokens +
                 knownContextMediaTokens
             val messageBudget = (budgetLimit - namedTokens).coerceAtLeast(1)
@@ -3420,10 +3349,8 @@ private fun rememberContextMeterUsage(
                 memoryText = fixedMemoryText,
                 memoryTokensOverride = fixedMemoryTokens,
                 skillText = skillText,
-                lorebookText = lorebookText,
-                skillTokensOverride = skillTokens,
-                lorebookTokensOverride = lorebookTokens,
-                toolDefinitionText = toolDefinitionText,
+                    skillTokensOverride = skillTokens,
+                    toolDefinitionText = toolDefinitionText,
                 toolDefinitionTokensOverride = toolDefinitionTokens,
                 pendingParts = knownContextAttachments,
                 usableInputTokens = effectiveSmartInputBudget,
@@ -3649,7 +3576,6 @@ private fun ContextUsagePopupContent(
     val animatedSummary by animateIntAsState(usage.summaryTokens, tokenAnimation, label = "context_summary")
     val animatedMemory by animateIntAsState(usage.memoryTokens, tokenAnimation, label = "context_memory")
     val animatedSkills by animateIntAsState(usage.skillTokens, tokenAnimation, label = "context_skills")
-    val animatedLorebook by animateIntAsState(usage.lorebookTokens, tokenAnimation, label = "context_lorebook")
     val animatedToolDefinitions by animateIntAsState(usage.toolDefinitionTokens, tokenAnimation, label = "context_tool_definitions")
     val animatedToolCalls by animateIntAsState(usage.toolCallTokens, tokenAnimation, label = "context_tool_calls")
     val animatedMedia by animateIntAsState(usage.mediaTokens, tokenAnimation, label = "context_media")
@@ -3704,7 +3630,6 @@ private fun ContextUsagePopupContent(
         Triple(stringResource(R.string.context_meter_summary), animatedSummary, categoryColors[2]),
         Triple(stringResource(R.string.context_meter_memory), animatedMemory, categoryColors[3]),
         Triple(stringResource(R.string.context_meter_skills_modes), animatedSkills, categoryColors[4]),
-        Triple(stringResource(R.string.context_meter_lorebook), animatedLorebook, categoryColors[5]),
         Triple(stringResource(R.string.context_meter_tool_definitions), animatedToolDefinitions, categoryColors[6]),
         Triple(stringResource(R.string.context_meter_tool_calls), animatedToolCalls, categoryColors[7]),
         Triple(stringResource(R.string.context_meter_media), animatedMedia, categoryColors[8]),

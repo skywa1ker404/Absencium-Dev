@@ -15,7 +15,6 @@ enum class BackupContentOption(
     API_KEYS(R.string.backup_content_api_keys, R.string.backup_content_api_keys_desc),
     WORKSPACES(R.string.backup_content_workspaces, R.string.backup_content_workspaces_desc),
     SKILLS(R.string.backup_content_skills, R.string.backup_content_skills_desc),
-    LOREBOOKS(R.string.backup_content_lorebooks, R.string.backup_content_lorebooks_desc),
     SETTINGS(R.string.backup_content_settings, R.string.backup_content_settings_desc),
 }
 
@@ -53,8 +52,6 @@ internal object BackupArchiveFormat {
         "custom_fonts",
         "images",
         "chat_files",
-        "lorebook_covers",
-        "lorebook_attachments",
         "skills",
         "tool_outputs",
         WORKSPACES_DIR,

@@ -241,10 +241,6 @@ class ConversationRepository(
             chatSuggestions = JsonInstant.encodeToString(conversation.chatSuggestions),
             isPinned = conversation.isPinned,
             isConsolidated = conversation.isConsolidated,
-            enabledModeIds = JsonInstant.encodeToString(conversation.enabledModeIds.map { it.toString() }),
-            enabledLorebookIds = conversation.enabledLorebookIds
-                ?.let { JsonInstant.encodeToString(it.map { id -> id.toString() }) }
-                .orEmpty(),
             contextSummary = conversation.contextSummary ?: "",
             contextSummaryUpToIndex = conversation.contextSummaryUpToIndex,
             lastPruneTime = conversation.lastPruneTime,
@@ -264,24 +260,6 @@ class ConversationRepository(
             Log.e(TAG, "Failed to decode conversation nodes for ${conversationEntity.id}", error)
             emptyList()
         }
-        val enabledModeIds = try {
-            JsonInstant.decodeFromString<List<String>>(conversationEntity.enabledModeIds)
-                .map { Uuid.parse(it) }
-                .toSet()
-        } catch (e: Exception) {
-            emptySet()
-        }
-        val enabledLorebookIds = if (conversationEntity.enabledLorebookIds.isBlank()) {
-            null
-        } else {
-            try {
-                JsonInstant.decodeFromString<List<String>>(conversationEntity.enabledLorebookIds)
-                    .map { Uuid.parse(it) }
-                    .toSet()
-            } catch (e: Exception) {
-                null
-            }
-        }
         val chatSuggestions = runCatching {
             JsonInstant.decodeFromString<List<String>>(conversationEntity.chatSuggestions)
         }.getOrDefault(emptyList())
@@ -296,8 +274,6 @@ class ConversationRepository(
             chatSuggestions = chatSuggestions,
             isPinned = conversationEntity.isPinned,
             isConsolidated = conversationEntity.isConsolidated,
-            enabledModeIds = enabledModeIds,
-            enabledLorebookIds = enabledLorebookIds,
             contextSummary = conversationEntity.contextSummary.takeIf { it.isNotBlank() },
             contextSummaryUpToIndex = conversationEntity.contextSummaryUpToIndex,
             lastPruneTime = conversationEntity.lastPruneTime,

@@ -37,8 +37,7 @@ data class Conversation(
     val truncateIndex: Int = -1,
     val chatSuggestions: List<String> = emptyList(),
     val isPinned: Boolean = false,
-    val enabledModeIds: Set<Uuid> = emptySet(), // Per-chat enabled modes
-    val enabledLorebookIds: Set<Uuid>? = null, // Null inherits assistant defaults; non-null is a per-chat override
+    val enabledModeIds: Set<Uuid> = emptySet(), // Legacy name; holds the per-chat skill selection (renamed when Skills are removed)
     @Serializable(with = InstantSerializer::class)
     val createAt: Instant = Instant.now(),
     @Serializable(with = InstantSerializer::class)

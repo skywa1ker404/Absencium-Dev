@@ -8,11 +8,7 @@
     <string name="chat_input_add_file_failed">无法添加文件：%1$s</string>
     <string name="activity_pill_replying">正在回复</string>
     <string name="context_sources_title">上下文来源</string>
-    <string name="context_sources_skill">技能</string>
-    <string name="context_sources_skills">技能</string>
     <string name="context_sources_memories">记忆</string>
-    <string name="context_sources_lorebook_entries">设定集条目</string>
-    <string name="used_lorebooks_title">已使用的设定集条目</string>
     <string name="attachment_image_fallback">图片</string>
     <string name="attachment_file_fallback">文件</string>
     <string name="update_check_failed">检查更新失败</string>
@@ -34,7 +30,6 @@
     <string name="mcp_status_error">错误：%1$s</string>
     <string name="mcp_tools_enabled_count">%1$d/%2$d 个工具</string>
     <string name="export_include_memories">包含记忆</string>
-    <string name="export_include_linked_lorebooks">包含已链接的设定集</string>
     <string name="export_character_always_included">角色设置和资料始终会被包含。</string>
     <string name="setting_display_ui_customization_desc">聊天显示、触感反馈、代码块、字体大小等</string>
     <string name="setting_display_check_updates_title">检查更新</string>
@@ -112,7 +107,6 @@
     <string name="setting_chat_storage_delete_all_orphaned">删除所有孤立上传</string>
     <string name="setting_chat_storage_category_chat_attachments">聊天附件</string>
     <string name="setting_chat_storage_category_assistant_media">助手媒体</string>
-    <string name="setting_chat_storage_category_lorebook_media">设定集媒体</string>
     <string name="setting_chat_storage_category_generated_media">生成媒体</string>
     <string name="setting_chat_storage_category_workspaces">工作区</string>
     <string name="setting_chat_storage_category_icons_and_fonts">图标和字体</string>

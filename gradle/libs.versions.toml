@@ -33,7 +33,6 @@ browser = "1.9.0"
 appcompat = "1.7.1"
 material = "1.13.0"
 securityCrypto = "1.1.0-alpha06"
-metadataExtractor = "2.19.0"
 haze = "2.0.0-alpha02"
 markdown = "0.7.3"
 coil = "3.3.0"
@@ -102,7 +101,6 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraCore" }
-metadata-extractor = { module = "com.drewnoakes:metadata-extractor", version.ref = "metadataExtractor" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 haze-blur-materials = { module = "dev.chrisbanes.haze:haze-blur-materials", version.ref = "haze" }

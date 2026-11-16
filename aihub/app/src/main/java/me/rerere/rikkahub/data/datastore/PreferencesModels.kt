@@ -19,8 +19,6 @@ import me.rerere.rikkahub.data.model.AssistantSearchMode
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.ChatStorageSettings
 import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.Lorebook
-import me.rerere.rikkahub.data.model.Mode
 import me.rerere.rikkahub.data.model.Skill
 import me.rerere.rikkahub.data.model.Tag
 import me.rerere.rikkahub.data.sync.BackupCleanupResult
@@ -90,8 +88,6 @@ data class Settings(
     val webServerJwtEnabled: Boolean = false,
     val webServerAccessPassword: String = "",
     val webServerBackgroundSetupShown: Boolean = false,
-    val modes: List<Mode> = emptyList(),
-    val lorebooks: List<Lorebook> = emptyList(),
     val skills: List<Skill> = emptyList(),
     val chatStorage: ChatStorageSettings = ChatStorageSettings(),
 ) {
@@ -771,7 +767,7 @@ fun Settings.sanitize(): Pair<Settings, BackupCleanupResult> {
         assistants = cleanedAssistants,
         favoriteModels = cleanedFavorites,
         searchServiceSelected = clampedSearchSelected,
-    ).migrateLegacyModesToSkills()
+    )
 
     val result = BackupCleanupResult(
         invalidSearchModeCount = invalidSearchModeCount,

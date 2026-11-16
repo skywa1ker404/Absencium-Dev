@@ -31,8 +31,7 @@ data class UIMessage(
     val usage: TokenUsage? = null,
     val translation: String? = null,
     val generationDurationMs: Long? = null, // Duration of AI generation in milliseconds
-    val usedLorebookEntries: List<UsedLorebookEntry>? = null, // Lorebook entries used in this message
-    val usedModes: List<UsedMode>? = null, // Modes used in this message
+    val usedModes: List<UsedMode>? = null, // Skills used in this message (named Mode for stored-data compatibility)
     val usedMemories: List<UsedMemory>? = null, // Memories used in this message
     val versionTag: String? = null // Links messages from same generation for multi-node turn versioning
 ) {
@@ -292,25 +291,7 @@ data class UIMessage(
 }
 
 /**
- * Represents a lorebook entry that was used when generating a message.
- * Stores enough info to display the entry and allow editing.
- */
-@Serializable
-data class UsedLorebookEntry(
-    val lorebookId: String,  // UUID as string for serialization compatibility
-    val lorebookName: String,
-    val lorebookCover: String? = null,  // Avatar serialized as string or null
-    val entryId: String,  // UUID as string
-    val entryName: String,
-    val entryIndex: Int,  // Position in the lorebook's entry list
-    val priority: Int = 0,  // Higher = more priority (for sorting display)
-    val activationReason: String? = null, // e.g. "Always Active", "Keywords: foo, bar", "RAG (0.85)"
-    /** Full injected prompt cost, retained because [entryName] alone cannot reconstruct it. */
-    val contextTokenCount: Int? = null,
-)
-
-/**
- * Represents a mode that was used when generating a message.
+ * Represents a skill that was used when generating a message (named Mode for stored-data compatibility).
  */
 @Serializable
 data class UsedMode(

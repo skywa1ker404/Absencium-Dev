@@ -70,9 +70,6 @@ import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.InjectionPosition
-import me.rerere.rikkahub.data.model.Lorebook
-import me.rerere.rikkahub.data.model.LorebookActivationType
-import me.rerere.rikkahub.data.model.LorebookEntry
 import me.rerere.rikkahub.data.model.ModeAttachmentType
 import me.rerere.rikkahub.data.model.hasManualSkillSelectionOverride
 import me.rerere.rikkahub.data.model.withoutSkillSelectionOverride
@@ -246,7 +243,6 @@ private const val SKILL_REASON_ALWAYS = "Always enabled"
  */
 data class BuildMessagesResult(
     val messages: List<UIMessage>,
-    val activatedLorebookEntries: List<me.rerere.ai.ui.UsedLorebookEntry>,
     val usedModes: List<me.rerere.ai.ui.UsedMode> = emptyList(),
     val usedMemories: List<me.rerere.ai.ui.UsedMemory> = emptyList(),
     val contextUsage: ContextUsageBreakdown? = null,
@@ -654,7 +650,6 @@ class GenerationHandler(
         truncateIndex: Int = -1,
         maxSteps: Int = 256,
         enabledModeIds: Set<Uuid> = emptySet(),
-        enabledLorebookIds: Set<Uuid>? = null,
         activeConversationId: Uuid? = null,
         contextSummary: String? = null,
         contextSummaryUpToIndex: Int = -1,
@@ -765,7 +760,6 @@ class GenerationHandler(
                 stream = assistant.streamOutput,
                 conversationEnabledModeIds = conversationSkillIds,
                 turnScopedEnabledModeIds = currentTurnScopedSkillIds,
-                conversationEnabledLorebookIds = enabledLorebookIds,
                 activeConversationId = activeConversationId,
                 contextSummary = contextSummary,
                 contextSummaryUpToIndex = contextSummaryUpToIndex,
@@ -897,7 +891,6 @@ class GenerationHandler(
         truncateIndex: Int,
         conversationEnabledModeIds: Set<Uuid> = emptySet(),
         turnScopedEnabledModeIds: Set<Uuid> = emptySet(),
-        conversationEnabledLorebookIds: Set<Uuid>? = null,
         activeConversationId: Uuid? = null,
         contextSummary: String? = null,
         contextSummaryUpToIndex: Int = -1,
@@ -935,81 +928,6 @@ class GenerationHandler(
         }
         var currentTokens = 0
 
-        // Cosine similarity for RAG matching
-        fun cosineSimilarity(a: List<Float>, b: List<Float>): Float {
-            if (a.size != b.size) return 0f
-            var dotProduct = 0f
-            var normA = 0f
-            var normB = 0f
-            for (i in a.indices) {
-                dotProduct += a[i] * b[i]
-                normA += a[i] * a[i]
-                normB += b[i] * b[i]
-            }
-            val denominator = kotlin.math.sqrt(normA) * kotlin.math.sqrt(normB)
-            return if (denominator == 0f) 0f else dotProduct / denominator
-        }
-        
-        // Helper to check if and why lorebook entry activated
-        fun getLorebookEntryActivationReason(entry: LorebookEntry, recentMessages: List<String>, queryEmbedding: List<Float>? = null): String? {
-            if (!entry.enabled) return null
-            return when (entry.activationType) {
-                LorebookActivationType.ALWAYS -> "Always Active"
-                LorebookActivationType.KEYWORDS -> {
-                    val searchText = recentMessages.joinToString(" ")
-                    val matchingKeyword = entry.keywords.firstOrNull { keyword ->
-                        if (entry.useRegex) {
-                            try {
-                                val regex = if (entry.caseSensitive) {
-                                    Regex(keyword)
-                                } else {
-                                    Regex(keyword, RegexOption.IGNORE_CASE)
-                                }
-                                regex.containsMatchIn(searchText)
-                            } catch (e: Exception) {
-                                Log.w(TAG, "Invalid regex in lorebook entry: $keyword", e)
-                                false
-                            }
-                        } else {
-                            if (entry.caseSensitive) {
-                                searchText.contains(keyword)
-                            } else {
-                                searchText.contains(keyword, ignoreCase = true)
-                            }
-                        }
-                    }
-                    if (matchingKeyword != null) "Keyword: $matchingKeyword" else null
-                }
-                LorebookActivationType.RAG -> {
-                    // RAG activation uses embedding similarity
-                    if (entry.embedding == null || entry.embedding.isEmpty()) {
-                        Log.d(TAG, "RAG entry '${entry.name}' has no embedding, skipping")
-                        null
-                    } else if (queryEmbedding == null) {
-                        Log.d(TAG, "No query embedding available for RAG matching")
-                        null
-                    } else {
-                        // Compute cosine similarity
-                        val similarity = cosineSimilarity(entry.embedding, queryEmbedding)
-                        val threshold = 0.7f // Similarity threshold for activation
-                        val activated = similarity >= threshold
-                        if (activated) {
-                            val scoreStr = try {
-                                "%.2f".format(similarity)
-                            } catch (e: Exception) {
-                                similarity.toString().take(4)
-                            }
-                            Log.d(TAG, "RAG entry '${entry.name}' activated with similarity $similarity")
-                            "RAG Match ($scoreStr)"
-                        } else null
-                    }
-                }
-            }
-        }
-
-        // Get recent message text for lorebook keyword scanning
-        val recentMessagesForScan = messages.takeLast(10).map { it.toText() }
-
         val availableSkills = settings.skills.filter { skill ->
             skill.enabled && skill.instructions.isNotBlank()
         }
@@ -1043,77 +961,12 @@ class GenerationHandler(
             alwaysEnabledSkillIds = alwaysEnabledSkillIds,
         )
 
-        // Check if any lorebook entries use RAG activation
-        val activeLorebookIds = conversationEnabledLorebookIds ?: assistant.enabledLorebookIds
-        val lorebooksForAssistant = settings.lorebooks
-            .filter { it.enabled && activeLorebookIds.contains(it.id) }
-        val hasRagEntries = lorebooksForAssistant.any { lorebook ->
-            lorebook.entries.any { it.activationType == LorebookActivationType.RAG && it.enabled }
-        }
-        
-        // Compute query embedding only if there are RAG entries
-        val queryEmbedding: List<Float>? = if (hasRagEntries) {
-            try {
-                val queryText = recentMessagesForScan.takeLast(3).joinToString("\n")
-                if (queryText.isNotBlank()) {
-                    embeddingService.embed(queryText)
-                } else null
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to compute query embedding for RAG", e)
-                null
-            }
-        } else null
-
-        // Collect activated lorebook entries from enabled lorebooks assigned to this assistant
-        // Also track UsedLorebookEntry info for the UI display
-        // Collect activated lorebook entries from enabled lorebooks assigned to this assistant
-        // Also track UsedLorebookEntry info for the UI display
-        data class ActivatedEntryWithLorebook(val lorebook: Lorebook, val entry: LorebookEntry, val entryIndex: Int, val reason: String)
-        val activatedEntriesWithLorebook = lorebooksForAssistant
-            .flatMap { lorebook -> 
-                lorebook.entries.mapIndexedNotNull { index, entry ->
-                    val reason = getLorebookEntryActivationReason(entry, recentMessagesForScan, queryEmbedding)
-                    if (reason != null) {
-                        ActivatedEntryWithLorebook(lorebook, entry, index, reason)
-                    } else null
-                }
-            }
-        val activatedEntries = activatedEntriesWithLorebook.map { it.entry }
-        
-        // Build UsedLorebookEntry list for UI display
-        val usedLorebookEntries = activatedEntriesWithLorebook.mapIndexed { priority, activated ->
-            // Serialize cover Avatar to JSON string for UI display
-            val coverJson = activated.lorebook.cover?.let { cover ->
-                try {
-                    json.encodeToString(me.rerere.rikkahub.data.model.Avatar.serializer(), cover)
-                } catch (e: Exception) {
-                    null
-                }
-            }
-            me.rerere.ai.ui.UsedLorebookEntry(
-                lorebookId = activated.lorebook.id.toString(),
-                lorebookName = activated.lorebook.name,
-                lorebookCover = coverJson,
-                entryId = activated.entry.id.toString(),
-                entryName = activated.entry.name,
-                entryIndex = activated.entryIndex,
-                priority = activatedEntriesWithLorebook.size - priority, // Higher priority for first entries
-                activationReason = activated.reason,
-                contextTokenCount = estimateTokens(activated.entry.prompt),
-            )
-        }
-
         // Group injections by position
         val beforeSystemSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.BEFORE_SYSTEM }
         val afterSystemSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.AFTER_SYSTEM }
         val topOfChatSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.TOP_OF_CHAT }
         val beforeLatestSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.BEFORE_LATEST }
         val depthSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.AT_DEPTH }
-        val beforeSystemEntries = activatedEntries.filter { it.injectionPosition == InjectionPosition.BEFORE_SYSTEM }
-        val afterSystemEntries = activatedEntries.filter { it.injectionPosition == InjectionPosition.AFTER_SYSTEM }
-        val topOfChatEntries = activatedEntries.filter { it.injectionPosition == InjectionPosition.TOP_OF_CHAT }
-        val beforeLatestEntries = activatedEntries.filter { it.injectionPosition == InjectionPosition.BEFORE_LATEST }
-        val depthEntries = activatedEntries.filter { it.injectionPosition == InjectionPosition.AT_DEPTH }
 
         // 1. Base System Prompt (BEFORE_SYSTEM skills/entries + System + Learning + AFTER_SYSTEM skills/entries + Tools)
         val baseSystemPromptBuilder = StringBuilder()
@@ -1146,10 +999,6 @@ class GenerationHandler(
             appendSkillPrompt(skill)
             baseSystemPromptBuilder.appendLine()
         }
-        beforeSystemEntries.forEach { entry ->
-            baseSystemPromptBuilder.append(entry.prompt)
-            baseSystemPromptBuilder.appendLine()
-        }
         
         // Original system prompt  
         if (assistant.systemPrompt.isNotBlank()) {
@@ -1167,10 +1016,6 @@ class GenerationHandler(
         afterSystemSkills.forEach { skill ->
             baseSystemPromptBuilder.appendLine()
             appendSkillPrompt(skill)
-        }
-        afterSystemEntries.forEach { entry ->
-            baseSystemPromptBuilder.appendLine()
-            baseSystemPromptBuilder.append(entry.prompt)
         }
         
         val toolSystemPromptText = effectiveTools.joinToString("\n") { tool -> tool.systemPrompt(model, messages) }
@@ -1460,24 +1305,8 @@ class GenerationHandler(
             }
         }
         
-        // Collect attachments from activated lorebook entries
-        val lorebookAttachmentParts = activatedEntries.flatMap { entry ->
-            entry.attachments.map { attachment ->
-                when (attachment.type) {
-                    ModeAttachmentType.IMAGE -> UIMessagePart.Image(url = attachment.url)
-                    ModeAttachmentType.VIDEO -> UIMessagePart.Video(url = attachment.url)
-                    ModeAttachmentType.AUDIO -> UIMessagePart.Audio(url = attachment.url)
-                    ModeAttachmentType.DOCUMENT -> UIMessagePart.Document(
-                        url = attachment.url,
-                        fileName = attachment.fileName,
-                        mime = attachment.mime
-                    )
-                }
-            }
-        }
-        
         // Combine all context attachments
-        val allContextAttachments = skillAttachmentParts + lorebookAttachmentParts
+        val allContextAttachments = skillAttachmentParts
         
         val orderedSelectedMessages = if (smartEnabled) {
             // Smart preparation creates message copies (OCR/media/tool compaction), so looking
@@ -1500,15 +1329,11 @@ class GenerationHandler(
             fun skillMessage(skill: me.rerere.rikkahub.data.model.Skill): UIMessage = UIMessage.user(
                 "<system>\n[Skill: ${skill.name}]\n${skill.instructions}\nSkill directory: ${skill.workspaceDirectory()}\n</system>"
             )
-            fun lorebookMessage(entry: LorebookEntry): UIMessage = UIMessage.user(
-                "<system>\n${entry.prompt}\n</system>"
-            )
 
             // These positions intentionally become in-context messages rather than
             // system-prompt text. That makes TOP_OF_CHAT, BEFORE_LATEST and AT_DEPTH
             // materially distinct and preserves their documented ordering.
             topOfChatSkills.forEach { add(skillMessage(it)) }
-            topOfChatEntries.forEach { add(lorebookMessage(it)) }
             
             val dynamicContext = buildList {
                 if (!contextSummary.isNullOrBlank()) {
@@ -1531,13 +1356,9 @@ class GenerationHandler(
                 val depthByGroupIndex = depthSkills.groupBy { skill ->
                     (historicalTurnGroups.size - skill.depth.coerceAtLeast(0)).coerceIn(0, historicalTurnGroups.size)
                 }
-                val lorebookDepthByGroupIndex = depthEntries.groupBy { entry ->
-                    (historicalTurnGroups.size - entry.depth.coerceAtLeast(0)).coerceIn(0, historicalTurnGroups.size)
-                }
 
                 for (groupIndex in 0..historicalTurnGroups.size) {
                     depthByGroupIndex[groupIndex].orEmpty().forEach { add(skillMessage(it)) }
-                    lorebookDepthByGroupIndex[groupIndex].orEmpty().forEach { add(lorebookMessage(it)) }
                     if (groupIndex < historicalTurnGroups.size) {
                         addAll(historicalTurnGroups[groupIndex].messages)
                     }
@@ -1545,7 +1366,6 @@ class GenerationHandler(
 
                 // Injections BEFORE the latest turn sit strictly outside the active TurnGroup
                 beforeLatestSkills.forEach { add(skillMessage(it)) }
-                beforeLatestEntries.forEach { add(lorebookMessage(it)) }
 
                 // Attach dynamic context (summary, memories, time) strictly to the initiating USER message.
                 // In multi-step tool turns, attaching text to TOOL messages triggers Gemini 400 INVALID_ARGUMENT
@@ -1581,9 +1401,7 @@ class GenerationHandler(
                 }
             } else {
                 depthSkills.forEach { add(skillMessage(it)) }
-                depthEntries.forEach { add(lorebookMessage(it)) }
                 beforeLatestSkills.forEach { add(skillMessage(it)) }
-                beforeLatestEntries.forEach { add(lorebookMessage(it)) }
                 if (dynamicContext.isNotBlank()) {
                     add(UIMessage.system(dynamicContext))
                 }
@@ -1629,7 +1447,6 @@ class GenerationHandler(
         
         return BuildMessagesResult(
             messages = builtMessages,
-            activatedLorebookEntries = usedLorebookEntries,
             usedModes = usedModes,
             usedMemories = usedMemories,
             effectiveTools = effectiveTools,
@@ -1642,7 +1459,6 @@ class GenerationHandler(
                         appendLine(skill.instructions)
                     }
                 }
-                val lorebookText = activatedEntries.joinToString("\n") { entry -> entry.prompt }
                 val systemPromptText = buildString {
                     append(assistant.systemPrompt)
                     if (assistant.learningMode) {
@@ -1657,7 +1473,6 @@ class GenerationHandler(
                     summaryText = contextSummary.orEmpty(),
                     memoryText = selectedMemoryPromptText,
                     skillText = skillText,
-                    lorebookText = lorebookText,
                     toolDefinitionText = toolDefinitionText,
                     toolDefinitionTokensOverride = toolDefinitionTokens,
                     embeddedToolText = toolSystemPromptText,
@@ -1788,7 +1603,6 @@ class GenerationHandler(
         stream: Boolean,
         conversationEnabledModeIds: Set<Uuid> = emptySet(),
         turnScopedEnabledModeIds: Set<Uuid> = emptySet(),
-        conversationEnabledLorebookIds: Set<Uuid>? = null,
         activeConversationId: Uuid? = null,
         contextSummary: String? = null,
         contextSummaryUpToIndex: Int = -1,
@@ -1806,7 +1620,6 @@ class GenerationHandler(
             truncateIndex = truncateIndex,
             conversationEnabledModeIds = conversationEnabledModeIds,
             turnScopedEnabledModeIds = turnScopedEnabledModeIds,
-            conversationEnabledLorebookIds = conversationEnabledLorebookIds,
             activeConversationId = activeConversationId,
             contextSummary = contextSummary,
             contextSummaryUpToIndex = contextSummaryUpToIndex,
@@ -1848,10 +1661,9 @@ class GenerationHandler(
             )
         }
         transformedUsage?.let { onContextUsage(it) }
-        val usedLorebookEntries = buildResult.activatedLorebookEntries
         val usedModes = buildResult.usedModes
         val usedMemories = buildResult.usedMemories
-        val hasContextSources = usedLorebookEntries.isNotEmpty() || usedModes.isNotEmpty() || usedMemories.isNotEmpty()
+        val hasContextSources = usedModes.isNotEmpty() || usedMemories.isNotEmpty()
 
         var messages: List<UIMessage> = uiMessages
         if (transformedInput.annotations.isNotEmpty()) {
@@ -2019,7 +1831,6 @@ class GenerationHandler(
                 messages = messages.mapIndexed { index, message ->
                     if (index == messages.lastIndex && message.role == me.rerere.ai.core.MessageRole.ASSISTANT) {
                         message.copy(
-                            usedLorebookEntries = usedLorebookEntries.ifEmpty { null },
                             usedModes = usedModes.ifEmpty { null },
                             usedMemories = usedMemories.ifEmpty { null }
                         )
@@ -2072,7 +1883,6 @@ class GenerationHandler(
                 messages = messages.mapIndexed { index, message ->
                     if (index == messages.lastIndex && message.role == me.rerere.ai.core.MessageRole.ASSISTANT) {
                         message.copy(
-                            usedLorebookEntries = usedLorebookEntries.ifEmpty { null },
                             usedModes = usedModes.ifEmpty { null },
                             usedMemories = usedMemories.ifEmpty { null }
                         )

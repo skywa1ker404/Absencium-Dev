@@ -484,10 +484,6 @@ class AssistantDetailVM(
     val hasMemories = combine(memories, episodes) { m, e ->
         m.isNotEmpty() || e.isNotEmpty()
     }.stateIn(viewModelScope, SharingStarted.Lazily, false)
-
-    val hasLorebooks = assistant.map { 
-        it.enabledLorebookIds.isNotEmpty()
-    }.stateIn(viewModelScope, SharingStarted.Lazily, false)
 }
 
 data class EmbeddingProgress(

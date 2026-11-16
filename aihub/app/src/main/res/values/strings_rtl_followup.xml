@@ -8,11 +8,7 @@
     <string name="chat_input_add_file_failed">Couldn\'t add file: %1$s</string>
     <string name="activity_pill_replying">Replying</string>
     <string name="context_sources_title">Context Sources</string>
-    <string name="context_sources_skill">Skill</string>
-    <string name="context_sources_skills">Skills</string>
     <string name="context_sources_memories">Memories</string>
-    <string name="context_sources_lorebook_entries">Lorebook Entries</string>
-    <string name="used_lorebooks_title">Lorebook Entries Used</string>
     <string name="attachment_image_fallback">Image</string>
     <string name="attachment_file_fallback">File</string>
     <string name="update_check_failed">Failed to check for updates</string>
@@ -36,7 +32,6 @@
     <string name="mcp_status_error_short">Error</string>
     <string name="mcp_tools_enabled_count">%1$d/%2$d tools</string>
     <string name="export_include_memories">Include Memories</string>
-    <string name="export_include_linked_lorebooks">Include Linked Lorebooks</string>
     <string name="export_character_always_included">Character settings and profile are always included.</string>
     <string name="setting_display_ui_customization_desc">Chat display, haptics, code blocks, font size and more</string>
     <string name="setting_display_check_updates_title">Check for Updates</string>
@@ -114,7 +109,6 @@
     <string name="setting_chat_storage_delete_all_orphaned">Delete all orphaned uploads</string>
     <string name="setting_chat_storage_category_chat_attachments">Chat attachments</string>
     <string name="setting_chat_storage_category_assistant_media">Assistant media</string>
-    <string name="setting_chat_storage_category_lorebook_media">Lorebook media</string>
     <string name="setting_chat_storage_category_generated_media">Generated media</string>
     <string name="setting_chat_storage_category_workspaces">Workspaces</string>
     <string name="setting_chat_storage_category_icons_and_fonts">Icons and fonts</string>
