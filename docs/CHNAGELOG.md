@@ -136,7 +136,7 @@ working on it
 - Changed (branch Absencium-ai, CI green `43003913457`): Absent is a split button with Excused inside; the read-only AI action chat hides Edit, Fork, Delete and Regenerate; models that cannot read images say so plainly; the app is 43.8 MB instead of 74.1 MB.
 - Changed (branch Absencium-ai, CI green `43202471499`): Study Tools and the calendar page redesigned (hero summary card, pastel tiles, shape badges, week strip, timeline, to-do progress).
 - Fixed (branch Absencium-ai, CI green `43203890335`): "Ask Absencium AI" in a note's menu opens the AI hub with the note linked in the message box.
-- Fixed (branch Absencium-ai, CI pending): the top Back button of the AI hub and its settings leaves the chat for the app when nothing is left to go back to.
+- Fixed (branch Absencium-ai, CI green 43801246123): the top Back button of the AI hub and its settings leaves the chat for the app when nothing is left to go back to.
 - Fixed (branch Absencium-ai, CI green `43284989972`): the top Back button of the AI hub and its settings now leaves the chat for the app.
 - Changed (branch Absencium-ai, CI green `43351210596`): Absent is one button again; Excused is a chip beside Notes collected once Absent is chosen. The chat's first-run provider setup no longer shows inside the app. An AI action's long answer that was cut off is continued automatically.
 - Changed (branch Absencium-ai, CI green `43351276080`): AI action chats show only the request, not the fixed instructions.
@@ -160,4 +160,4 @@ working on it
 - Changed (branch Absencium-ai, CI green `43747770122`, Batch 45): AI action prompts are shorter and built only from what the request needs; the chat of an AI action shows a short title instead of the whole brief; Planner and Flashcards AI buttons keep their tools; action chats use a short thinking budget.
 - Changed (branch Absencium-ai, CI green `43748189157`, Batch 45): the AI hub Settings no longer lists Prompt injections, MCP servers, Android integration, About, Developer, Text to speech or RP optimisations (stage 1 of removing them); the app's AI settings page lost the matching links.
 - Changed (branch Absencium-ai, CI green `43748700816`, Batch 45): Pixelated and Dot matrix: every circle in the app follows the style, gauge arcs become blocks or dots, and the header fades into the page so scrolled content does not run into the wordmark.
-- Removed (branch Absencium-ai, CI pending, Batch 45): the AI hub's Android integration, Developer and About pages with the text-selection and assistant-overlay code behind them; the Licences screen now carries the AI hub's AGPL-3.0 credit, source links and licence text.
+- Removed (branch Absencium-ai, CI green 43801246123, Batch 45): the AI hub's Android integration, Developer and About pages with the text-selection and assistant-overlay code behind them; the Licences screen now carries the AI hub's AGPL-3.0 credit, source links and licence text.
