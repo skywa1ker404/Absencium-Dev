@@ -1367,8 +1367,6 @@ sealed interface Screen {
     data object SettingModels : Screen
 
     @Serializable
-
-    @Serializable
     data object SettingChatStorage : Screen
 
     @Serializable
@@ -1396,11 +1394,7 @@ sealed interface Screen {
     data class SettingLorebookDetail(val id: String, val scrollToEntryId: String? = null) : Screen
 
     @Serializable
-
-    @Serializable
     data class SettingSkills(val scrollToSkillId: String? = null) : Screen
-
-    @Serializable
 
     @Serializable
     data object SettingUICustomization : Screen
