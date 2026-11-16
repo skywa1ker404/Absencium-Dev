@@ -29,7 +29,6 @@
     <string name="not_now">Not now</string>
     <string name="local_label">Local</string>
     <string name="clear_search">Clear</string>
-    <string name="developer">Developer</string>
 
     <!-- Context refresh -->
     <string name="context_refresh_error_title">Error</string>

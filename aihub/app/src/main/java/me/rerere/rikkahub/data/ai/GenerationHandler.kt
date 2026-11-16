@@ -125,7 +125,7 @@ internal fun smartContextSafeCustomBodies(bodies: List<CustomBody>): List<Custom
  * image URLs / data-URLs. [extractInjectedImageParts] strips the key from the tool result
  * (so the raw base64 never reaches the provider — which would 400) and re-delivers the
  * images as a synthetic USER message right after the tool results, where every provider
- * accepts them. Used by the assistant-overlay `look_at_screen` tool.
+ * accepts them. Used by tools that return a picture the model must look at.
  */
 internal const val TOOL_RESULT_INJECT_USER_IMAGE_PARTS_KEY = "__inject_user_image_parts"
 internal const val TOOL_RESULT_INJECT_USER_IMAGE_PROMPT_KEY = "__inject_user_image_prompt"
@@ -183,7 +183,7 @@ internal fun extractInjectedImagePayloads(
                         val dataUrl = element.contentOrNull.orEmpty()
                         if (dataUrl.isNotBlank()) {
                             val mimeType = me.rerere.ai.ui.extractMimeTypeFromDataUrl(dataUrl, "image/jpeg")
-                            val originTool = result.toolName.ifBlank { "look_at_screen" }
+                            val originTool = result.toolName.ifBlank { "tool" }
                             toolResultImages.add(
                                 me.rerere.ai.ui.ToolResultImage(
                                     url = dataUrl,
@@ -292,7 +292,6 @@ internal fun selectSmartTools(
         val semanticHits = queryTerms.count { term -> searchable.contains(term) }
         val score = when {
             tool.name in recentlyUsedNames -> 10_000
-            tool.name == "look_at_screen" -> 8_000
             tool.name == SKILL_MANAGEMENT_TOOL_NAME || tool.name == "ask_user" -> 2_000
             else -> semanticHits * 100 - index
         }

@@ -517,7 +517,6 @@
     <string name="search_ability_search">Search</string>
     <string name="search_picker_title">Search Settings</string>
     <string name="select_and_copy">Select &amp; Copy</string>
-    <string name="send">Send</string>
     <string name="setting_display_page_amoled_dark_mode_desc">Use pure black background in dark mode</string>
     <string name="setting_display_page_amoled_dark_mode_title">AMOLED Dark Mode</string>
     <string name="setting_display_page_auto_collapse_thinking_desc">Automatically collapse thinking content when done</string>
@@ -617,7 +616,6 @@
     <string name="setting_model_page_translate_model">Translate Model</string>
     <string name="setting_model_page_translate_model_desc">Model for translation features</string>
     <string name="setting_model_page_translate_prompt_vars">Vars: Source: {source_text}, Target Lang: {target_lang}</string>
-    <string name="setting_page_about">About</string>
     <string name="setting_page_about_desc">About this App</string>
     <string name="setting_page_assistant">Characters</string>
     <string name="setting_page_assistant_desc">Configure your characters</string>
@@ -1001,7 +999,6 @@
     <string name="silicon_flow_built_in_models">* SiliconFlow free models built-in. No API Key needed. For more powerful models, please use your own API Key.</string>
     <string name="silicon_flow_description">**Leading AI Provider, Accelerating AGI.**</string>
     <string name="silicon_flow_website">Website: [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/i/u1Ia4Ycf)</string>
-    <string name="stop">Stop</string>
     <string name="tag_input_dialog_create_new">Create New Tag</string>
     <string name="tag_input_dialog_existing_tags">Existing Tags</string>
     <string name="tag_input_dialog_label">Tag Name</string>
@@ -1270,53 +1267,20 @@
     <string name="export_format_tavern">Tavern (Compatible)</string>
     
     <!-- Text Selection Integration -->
-    <string name="text_selection_menu_label">Ask Absencium AI</string>
-    <string name="text_selection_translate">Translate</string>
-    <string name="text_selection_explain">Explain</string>
-    <string name="text_selection_summarize">Summarize</string>
-    <string name="text_selection_ask">Ask anything…</string>
-    <string name="text_selection_custom_placeholder">Ask a question about this text…</string>
-    <string name="text_selection_copy">Copy</string>
-    <string name="text_selection_continue_chat">Continue in App</string>
-    <string name="text_selection_generating">Generating…</string>
 
     <!-- Android Integration Settings -->
-    <string name="setting_android_integration">Android Integration</string>
     <string name="setting_android_integration_desc">Text selection popup settings</string>
     <!-- Digital assistant overlay -->
     <string name="assistant_overlay_service_label">Absencium AI Assistant</string>
-    <string name="assistant_overlay_section">Digital Assistant</string>
-    <string name="assistant_overlay_set_default">Set as default assistant</string>
-    <string name="assistant_overlay_set_default_desc">Open Android settings to make Absencium AI your device assistant</string>
-    <string name="assistant_overlay_is_default">Absencium AI is your default assistant</string>
-    <string name="assistant_overlay_assistant">Assistant character</string>
-    <string name="assistant_overlay_auto_stt">Start listening on trigger</string>
-    <string name="assistant_overlay_auto_stt_desc">Begin speech‑to‑text as soon as the overlay opens</string>
-    <string name="assistant_overlay_auto_send">Send when speech ends</string>
-    <string name="assistant_overlay_auto_send_desc">Automatically send the message when transcription finishes</string>
-    <string name="assistant_overlay_auto_read">Read reply aloud</string>
-    <string name="assistant_overlay_auto_read_desc">Speak the assistant\'s reply with the selected TTS voice</string>
-    <string name="assistant_overlay_attach_screenshot">Attach current screen</string>
-    <string name="assistant_overlay_attach_screenshot_desc">Include a screenshot of the screen you were on when summoning the assistant</string>
-    <string name="assistant_overlay_open_in_app">Open in app</string>
     <string name="assistant_overlay_hint">Ask %1$s</string>
     <string name="assistant_overlay_listening">Listening…</string>
     <string name="text_selection_preview">Preview</string>
     <string name="text_selection_assistant">Character</string>
     <string name="text_selection_use_default">Use default character</string>
-    <string name="text_selection_translate_language">Translate to</string>
-    <string name="text_selection_edit_action">Edit Action</string>
-    <string name="text_selection_add_action">Add Action</string>
     <string name="text_selection_action_name">Button Name</string>
-    <string name="text_selection_action_prompt">Prompt Template</string>
-    <string name="text_selection_actions">Quick Actions</string>
     <string name="text_selection_action_delete">Delete Action</string>
     <string name="text_selection_action_cannot_delete">Cannot delete this action</string>
     <string name="reset">Reset</string>
-    <string name="text_selection_try_it">Try It</string>
-    <string name="text_selection_setup_instructions">Select text anywhere on your device, look for \"Absencium AI\" in the toolbar that appears, and tap it to use these features.</string>
-    <string name="text_selection_demo_text">This is sample text you can select! Try long-pressing to select these words, then look for \"Absencium AI\" in the selection toolbar. If you don\'t see it, you may need to tap the overflow menu (⋮) to find it.</string>
-    <string name="text_selection_demo_hint">👆 Long-press the text above to try selecting it</string>
 
     <!-- Additional Greetings -->
     <string name="greeting_early_morning">Rise and shine!</string>
@@ -1414,9 +1378,6 @@
     <string name="chat_page_export_image_failed">Failed to export image: %1$s</string>
     <string name="imggen_page_prompt_copied">Prompt copied to clipboard</string>
     <string name="lorebook_embedding_failed">Failed to generate embedding: %1$s</string>
-    <string name="setting_android_integration_reset_actions">Restore default actions</string>
-    <string name="setting_android_integration_reset_actions_confirm">Are you sure you want to restore default actions? This will replace all your custom actions.</string>
-    <string name="setting_android_integration_reset_actions_success">Actions reset to defaults</string>
     <string name="context_refresh_error_conversation_not_found">Conversation not found</string>
     <string name="context_refresh_error_no_messages">No messages to summarize</string>
     <string name="context_refresh_error_no_model">No model configured</string>

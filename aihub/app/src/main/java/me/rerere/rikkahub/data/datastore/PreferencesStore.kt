@@ -39,8 +39,6 @@ import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.Mode
 import me.rerere.rikkahub.data.model.Skill
 import me.rerere.rikkahub.data.model.Tag
-import me.rerere.rikkahub.data.model.AssistantOverlayConfig
-import me.rerere.rikkahub.data.model.TextSelectionConfig
 import me.rerere.rikkahub.ui.theme.PresetThemes
 import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.toMutableStateFlow
@@ -70,6 +68,8 @@ class SettingsStore(
     private val secretKeyManager: SecretKeyManager,
 ) : KoinComponent {
     companion object {
+        private val REMOVED_KEYS = listOf("text_selection_config", "assistant_overlay_config")
+
         // 版本号
         val VERSION = intPreferencesKey("data_version")
 
@@ -78,7 +78,6 @@ class SettingsStore(
         val SETUP_COMPLETED = booleanPreferencesKey("setup_completed")
         val THEME_ID = stringPreferencesKey("theme_id")
         val DISPLAY_SETTING = stringPreferencesKey("display_setting")
-        val DEVELOPER_MODE = booleanPreferencesKey("developer_mode")
         val ENABLE_RAG_LOGGING = booleanPreferencesKey("enable_rag_logging")
 
         // 模型选择
@@ -150,8 +149,6 @@ class SettingsStore(
         val CHAT_STORAGE = stringPreferencesKey("chat_storage")
 
         // Android Integration
-        val TEXT_SELECTION_CONFIG = stringPreferencesKey("text_selection_config")
-        val ASSISTANT_OVERLAY_CONFIG = stringPreferencesKey("assistant_overlay_config")
 
         // Local Models
         val DEVICE_PERFORMANCE_PROFILE = stringPreferencesKey("device_performance_profile")
@@ -207,7 +204,6 @@ class SettingsStore(
                         ?: emptyList(),
                     dynamicColor = preferences[DYNAMIC_COLOR] != false,
                     themeId = preferences[THEME_ID] ?: PresetThemes[0].id,
-                    developerMode = preferences[DEVELOPER_MODE] == true,
                     enableRagLogging = preferences[ENABLE_RAG_LOGGING] == true,
                     displaySetting = decodePreferenceValue(
                         preferences[DISPLAY_SETTING],
@@ -250,14 +246,6 @@ class SettingsStore(
                     chatStorage = decodePreferenceValue(
                         preferences[CHAT_STORAGE],
                         ChatStorageSettings(),
-                    ),
-                    textSelectionConfig = decodePreferenceValue(
-                        preferences[TEXT_SELECTION_CONFIG],
-                        TextSelectionConfig(),
-                    ),
-                    assistantOverlayConfig = decodePreferenceValue(
-                        preferences[ASSISTANT_OVERLAY_CONFIG],
-                        AssistantOverlayConfig(),
                     ),
                 ).normalizeThemeId()
             }.getOrElse {
@@ -508,7 +496,6 @@ class SettingsStore(
             preferences[DYNAMIC_COLOR] = normalizedSettings.dynamicColor
             preferences[SETUP_COMPLETED] = normalizedSettings.setupCompleted
             preferences[THEME_ID] = normalizedSettings.themeId
-            preferences[DEVELOPER_MODE] = normalizedSettings.developerMode
             preferences[ENABLE_RAG_LOGGING] = normalizedSettings.enableRagLogging
             preferences[DISPLAY_SETTING] = JsonInstant.encodeToString(normalizedSettings.displaySetting)
 
@@ -577,8 +564,9 @@ class SettingsStore(
             preferences[LOREBOOKS] = JsonInstant.encodeToString(normalizedSettings.lorebooks)
             preferences[SKILLS] = JsonInstant.encodeToString(normalizedSettings.skills)
             preferences[CHAT_STORAGE] = JsonInstant.encodeToString(normalizedSettings.chatStorage)
-            preferences[TEXT_SELECTION_CONFIG] = JsonInstant.encodeToString(normalizedSettings.textSelectionConfig)
-            preferences[ASSISTANT_OVERLAY_CONFIG] = JsonInstant.encodeToString(normalizedSettings.assistantOverlayConfig)
+            // Settings of features that were removed: dropped from existing installs the next time anything is saved.
+            REMOVED_KEYS.forEach { preferences.remove(stringPreferencesKey(it)) }
+            preferences.remove(booleanPreferencesKey("developer_mode"))
         }
     }
 

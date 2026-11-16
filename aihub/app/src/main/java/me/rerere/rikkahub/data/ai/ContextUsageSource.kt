@@ -55,7 +55,6 @@ internal fun contextUsageSourceKey(
     settings.searchServices,
     settings.searchCommonOptions,
     settings.searchServiceSelected,
-    settings.assistantOverlayConfig,
     settings.providers,
     model.id,
     model.modelId,

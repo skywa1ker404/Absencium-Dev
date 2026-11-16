@@ -36,6 +36,8 @@ import skywa1ker404.absencium.ui.components.verticalScrollbar
 /** The notices shipped inside the app (assets/licences, copied from docs/ by scripts/sync_licences.sh). */
 private val LicenceFiles = listOf(
     "Third-party notices" to "licences/THIRD_PARTY_LICENSES.md",
+    "Absencium AI (AGPL-3.0)" to "licences/licenses/Absencium-AI-notice.txt",
+    "GNU AGPL-3.0" to "licences/licenses/AGPL-3.0.txt",
     "Inter font (SIL OFL 1.1)" to "licences/licenses/Inter-OFL-1.1.txt",
     "Outfit font (SIL OFL 1.1)" to "licences/licenses/Outfit-OFL-1.1.txt",
     "Material icons (Apache 2.0)" to "licences/licenses/Material-Icons-Apache-2.0.txt",

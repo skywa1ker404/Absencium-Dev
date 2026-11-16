@@ -23,9 +23,6 @@ import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.Mode
 import me.rerere.rikkahub.data.model.Skill
 import me.rerere.rikkahub.data.model.Tag
-import me.rerere.rikkahub.data.model.TextSelectionAction
-import me.rerere.rikkahub.data.model.AssistantOverlayConfig
-import me.rerere.rikkahub.data.model.TextSelectionConfig
 import me.rerere.rikkahub.data.sync.BackupCleanupResult
 import me.rerere.rikkahub.ui.theme.PresetThemes
 import me.rerere.rikkahub.ui.theme.normalizePresetThemeId
@@ -47,7 +44,6 @@ data class Settings(
     val setupCompleted: Boolean = false,
     val dynamicColor: Boolean = true,
     val themeId: String = PresetThemes[0].id,
-    val developerMode: Boolean = false,
     val enableRagLogging: Boolean = false,
     val displaySetting: DisplaySetting = DisplaySetting(),
     val enableWebSearch: Boolean = false,
@@ -98,8 +94,6 @@ data class Settings(
     val lorebooks: List<Lorebook> = emptyList(),
     val skills: List<Skill> = emptyList(),
     val chatStorage: ChatStorageSettings = ChatStorageSettings(),
-    val textSelectionConfig: TextSelectionConfig = TextSelectionConfig(),
-    val assistantOverlayConfig: AssistantOverlayConfig = AssistantOverlayConfig(),
 ) {
     companion object {
         fun dummy() = Settings(init = true)
@@ -457,31 +451,6 @@ fun Settings.getChatModelForAssistant(assistant: Assistant): Model? {
     return findModelById(assistant.chatModelId ?: chatModelId)
 }
 
-fun Settings.resolveTextSelectionAssistant(): Assistant {
-    return textSelectionConfig.assistantId?.let { getAssistantById(it) }
-        ?: getCurrentAssistant()
-}
-
-fun Settings.resolveAssistantOverlayAssistant(): Assistant {
-    return assistantOverlayConfig.assistantId?.let { getAssistantById(it) }
-        ?: getCurrentAssistant()
-}
-
-fun Settings.findTextSelectionAction(actionId: String): TextSelectionAction? {
-    return textSelectionConfig.actions.find { it.id == actionId }
-}
-
-fun Settings.getTextSelectionActionModel(
-    actionId: String,
-    assistant: Assistant = resolveTextSelectionAssistant(),
-): Model? {
-    findTextSelectionAction(actionId)?.modelId?.let { configuredModelId ->
-        findModelById(configuredModelId)?.let { return it }
-    }
-
-    return getChatModelForAssistant(assistant)
-}
-
 fun Settings.resolveConversationContext(assistantId: Uuid): ConversationContext {
     val assistant = getAssistantById(assistantId) ?: getCurrentAssistant()
     return ConversationContext(
@@ -670,16 +639,6 @@ internal fun Settings.clearMissingModelReferences(): Settings {
         embeddingModelId = embeddingModelId.ensureValidOrDisabled(embeddingFallback),
         favoriteModels = favoriteModels.filter { it in allModelIds },
         assistants = updatedAssistants,
-        textSelectionConfig = textSelectionConfig.copy(
-            assistantId = textSelectionConfig.assistantId?.takeIf { id -> updatedAssistants.any { it.id == id } },
-            actions = textSelectionConfig.actions.map { action ->
-                action.copy(modelId = action.modelId.ensureValidOrNull())
-            }
-        ),
-        assistantOverlayConfig = assistantOverlayConfig.copy(
-            assistantId = assistantOverlayConfig.assistantId?.takeIf { id -> updatedAssistants.any { it.id == id } },
-            modelId = assistantOverlayConfig.modelId.ensureValidOrNull(),
-        ),
     )
 }
 
@@ -802,16 +761,6 @@ fun Settings.sanitize(): Pair<Settings, BackupCleanupResult> {
     val cleanedFavorites = favoriteModels.filter { it in allModelIds }
     orphanedModelReferences += favoriteModels.size - cleanedFavorites.size
 
-    val cleanedTextSelectionActions = textSelectionConfig.actions.map { action ->
-        val modelId = action.modelId
-        if (modelId != null && modelId !in allModelIds) {
-            orphanedModelReferences++
-            action.copy(modelId = null)
-        } else {
-            action
-        }
-    }
-
     val clampedSearchSelected = if (searchServices.isNotEmpty()) {
         searchServiceSelected.coerceIn(0, searchServices.size - 1)
     } else {
@@ -822,7 +771,6 @@ fun Settings.sanitize(): Pair<Settings, BackupCleanupResult> {
         assistants = cleanedAssistants,
         favoriteModels = cleanedFavorites,
         searchServiceSelected = clampedSearchSelected,
-        textSelectionConfig = textSelectionConfig.copy(actions = cleanedTextSelectionActions),
     ).migrateLegacyModesToSkills()
 
     val result = BackupCleanupResult(

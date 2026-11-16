@@ -75,11 +75,9 @@ import me.rerere.rikkahub.ui.pages.assistant.AssistantPage
 import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantDetailPage
 import me.rerere.rikkahub.ui.pages.backup.BackupPage
 import me.rerere.rikkahub.ui.pages.chat.ChatPage
-import me.rerere.rikkahub.ui.pages.developer.DeveloperPage
 import me.rerere.rikkahub.ui.pages.imggen.ImageGenPage
 import me.rerere.rikkahub.ui.pages.menu.MenuPage
 import me.rerere.rikkahub.ui.pages.onboarding.OnboardingPage
-import me.rerere.rikkahub.ui.pages.setting.SettingAboutPage
 import me.rerere.rikkahub.ui.pages.setting.SettingChatStoragePage
 import me.rerere.rikkahub.ui.pages.setting.SettingDisplayPage
 
@@ -99,7 +97,6 @@ import me.rerere.rikkahub.ui.pages.setting.SettingLorebookDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSkillsPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.webview.WebViewPage
-import me.rerere.rikkahub.ui.pages.setting.SettingAndroidIntegrationPage
 import me.rerere.rikkahub.ui.pages.setting.SettingUICustomizationPage
 import me.rerere.rikkahub.ui.pages.setting.SettingFontsPage
 import me.rerere.rikkahub.ui.pages.setting.AdaptiveSettingsScaffold
@@ -114,9 +111,6 @@ import me.rerere.rikkahub.service.EXTRA_SPONTANEOUS_MESSAGE
 import me.rerere.rikkahub.service.EXTRA_SPONTANEOUS_RELATION
 import me.rerere.rikkahub.service.ChatPersistenceMode
 import me.rerere.rikkahub.data.model.getInitialMessageNodes
-import me.rerere.rikkahub.ui.activity.QuickAskContinuationData
-import me.rerere.rikkahub.ui.activity.readQuickAskContinuationData
-import me.rerere.rikkahub.ui.activity.seedQuickAskChat
 import me.rerere.rikkahub.utils.navigateToChatPage
 import org.koin.android.ext.android.inject
 import me.rerere.rikkahub.utils.fileSizeToString
@@ -314,7 +308,6 @@ class RouteActivity : ComponentActivity() {
         if (returnToHostSettings) overridePendingTransition(R.anim.ai_page_back_enter, R.anim.ai_page_back_exit)
     }
 
-    private var pendingTextSelection by mutableStateOf<QuickAskContinuationData?>(null)
     private var pendingConversationId by mutableStateOf<String?>(null)
     private var pendingResolvedSpontaneousTarget by mutableStateOf<ResolvedSpontaneousChatTarget?>(null)
     private var pendingShareIntent by mutableStateOf<ResolvedSharePayload?>(null)
@@ -359,10 +352,9 @@ class RouteActivity : ComponentActivity() {
                 null
             }
             val intentWebServerSettings = intent?.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) == true
-            pendingTextSelection = intent?.readQuickAskContinuationData()
             pendingShareIntent = intent?.readResolvedSharePayload()
             lifecycleScope.launch {
-                // A conversation hand-off from the assistant overlay must select its
+                // A conversation hand-off from a notification must select its
                 // character before ChatVM initializes. This also covers the short window
                 // where the in-memory conversation is released while the app task resumes.
                 if (!intentConversationId.isNullOrBlank()) {
@@ -392,7 +384,6 @@ class RouteActivity : ComponentActivity() {
                     } else {
                         val context = LocalContext.current
                         ShareHandler(navStack)
-                        TextSelectionHandler(navStack)
                         NotificationHandler(navStack)
                         AppRoutes(navStack, startScreen)
                         
@@ -595,52 +586,6 @@ class RouteActivity : ComponentActivity() {
         )
     }
 
-    @Composable
-    private fun TextSelectionHandler(navBackStack: NavHostController) {
-        val data = pendingTextSelection
-        val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
-        
-        
-        LaunchedEffect(data) {
-            if (data != null) {
-                pendingTextSelection = null
-                try {
-                    val assistantId = data.assistantId?.takeIf { it.isNotBlank() }?.let {
-                        try { Uuid.parse(it) } catch (e: Exception) { null }
-                    } ?: settings.assistantId
-
-                    // Select the right assistant and mark it as used
-                    settingsStore.updateAssistant(assistantId)
-                    settingsStore.markAssistantUsed(assistantId)
-
-                    val assistant = settings.assistants.find { it.id == assistantId }
-                        ?: settings.assistants.firstOrNull()
-                    val existingConvos = conversationRepo.getRecentConversations(assistantId, limit = 1)
-                    val seed = seedQuickAskChat(
-                        data = data,
-                        existingConversation = existingConvos.firstOrNull(),
-                        introNodes = assistant?.getInitialMessageNodes().orEmpty(),
-                    )
-                    val conversationId = seed.reuseConversationId ?: Uuid.random()
-                    if (seed.messageNodes.isNotEmpty()) {
-                        val base = existingConvos.firstOrNull()?.takeIf { it.id == conversationId }
-                        val conversation = (base ?: me.rerere.rikkahub.data.model.Conversation.ofId(
-                            id = conversationId,
-                            assistantId = assistantId,
-                        )).copy(
-                            assistantId = assistantId,
-                            messageNodes = seed.messageNodes,
-                        )
-                        chatService.saveConversation(conversationId, conversation)
-                    }
-                    navigateToChatPage(navBackStack, chatId = conversationId)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-    }
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -649,7 +594,6 @@ class RouteActivity : ComponentActivity() {
         val assistantIdText = intent.getStringExtra(EXTRA_ASSISTANT_ID)
         android.util.Log.d(TAG, "Intent extras: conversationId=$conversationIdText, assistantId=$assistantIdText")
         pendingShareIntent = intent.readResolvedSharePayload()
-        pendingTextSelection = intent.readQuickAskContinuationData() ?: pendingTextSelection
 
         settingsScreenFor(intent.getStringExtra(EXTRA_SETTINGS_DESTINATION))?.let { page ->
             returnToHostSettings = true
@@ -1080,12 +1024,6 @@ fun ChatAppRoutes(
                     }
                 }
 
-                composable<Screen.SettingAbout> {
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.About) {
-                        SettingAboutPage()
-                    }
-                }
-
                 composable<Screen.SettingChatStorage> {
                     AdaptiveSettingsScaffold(selected = SettingsDestination.ChatStorage) {
                         SettingChatStoragePage()
@@ -1335,16 +1273,6 @@ fun ChatAppRoutes(
                     }
                 }
 
-                composable<Screen.Developer> {
-                    DeveloperPage()
-                }
-
-                composable<Screen.SettingAndroidIntegration> {
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.AndroidIntegration) {
-                        SettingAndroidIntegrationPage()
-                    }
-                }
-
                 composable<Screen.SettingUICustomization> {
                     AdaptiveSettingsScaffold(selected = SettingsDestination.UiCustomization) {
                         SettingUICustomizationPage()
@@ -1439,7 +1367,6 @@ sealed interface Screen {
     data object SettingModels : Screen
 
     @Serializable
-    data object SettingAbout : Screen
 
     @Serializable
     data object SettingChatStorage : Screen
@@ -1469,13 +1396,11 @@ sealed interface Screen {
     data class SettingLorebookDetail(val id: String, val scrollToEntryId: String? = null) : Screen
 
     @Serializable
-    data object Developer : Screen
 
     @Serializable
     data class SettingSkills(val scrollToSkillId: String? = null) : Screen
 
     @Serializable
-    data object SettingAndroidIntegration : Screen
 
     @Serializable
     data object SettingUICustomization : Screen

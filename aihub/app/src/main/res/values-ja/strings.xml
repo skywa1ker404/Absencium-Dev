@@ -335,7 +335,6 @@
   <string name="search_ability_search">検索</string>
   <string name="search_picker_title">検索設定</string>
   <string name="select_and_copy">選択コピー</string>
-  <string name="send">送信</string>
   <string name="setting_display_page_amoled_dark_mode_desc">ダークテーマで純粋な黒色背景を使用、AMOLED画面に適しています</string>
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED ダークモード</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">思考が完了したら思考内容を自動的に折りたたむ</string>
@@ -420,7 +419,6 @@
   <string name="setting_model_page_translate_model">翻訳モデル</string>
   <string name="setting_model_page_translate_model_desc">翻訳機能に使用されるモデル</string>
   <string name="setting_model_page_translate_prompt_vars">変数: 原文テキスト: {source_text}, 対象言語: {target_lang}</string>
-  <string name="setting_page_about">アプリについて</string>
   <string name="setting_page_about_desc">このアプリについて</string>
   <string name="setting_page_assistant">アシスタント</string>
   <string name="setting_page_assistant_desc">カスタムアシスタント（エージェント）を設定</string>
@@ -614,7 +612,6 @@
   <string name="silicon_flow_built_in_models">* Silicon Flowの無料モデルが内蔵されており、API Keyなしで使用できます。より強力なモデルが必要な場合は、独自のAPI Keyを申請・設定してください。</string>
   <string name="silicon_flow_description">**世界をリードするAI能力プロバイダー、AGIの普及を加速して人類に貢献。**</string>
   <string name="silicon_flow_website">公式サイト: [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/i/u1Ia4Ycf)</string>
-  <string name="stop">停止</string>
   <string name="tag_input_dialog_create_new">新しいタグを作成</string>
   <string name="tag_input_dialog_existing_tags">既存のタグ</string>
   <string name="tag_input_dialog_label">タグ名</string>
@@ -693,9 +690,6 @@
     <string name="chat_page_export_image_failed">画像のエクスポートに失敗しました: %1$s</string>
     <string name="imggen_page_prompt_copied">プロンプトをクリップボードにコピーしました</string>
     <string name="lorebook_embedding_failed">埋め込みの生成に失敗しました: %1$s</string>
-    <string name="setting_android_integration_reset_actions">デフォルトのアクションに戻す</string>
-    <string name="setting_android_integration_reset_actions_confirm">デフォルトのアクションに戻しますか？ すべてのカスタムアクションが置き換えられます。</string>
-    <string name="setting_android_integration_reset_actions_success">アクションをデフォルトに戻しました</string>
     <string name="context_refresh_error_conversation_not_found">会話が見つかりません</string>
     <string name="context_refresh_error_no_messages">要約するメッセージがありません</string>
     <string name="context_refresh_error_no_model">モデルが設定されていません</string>

@@ -69,7 +69,6 @@ import me.rerere.common.android.Logging
 import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.data.ai.TOOL_RESULT_INJECT_USER_IMAGE_PARTS_KEY
 import me.rerere.rikkahub.data.ai.transformers.OcrTransformer
-import me.rerere.rikkahub.service.assist.AssistScreenHolder
 import me.rerere.rikkahub.CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID
 import me.rerere.rikkahub.R
 import me.rerere.common.platform.PlatformHttpClient
@@ -1993,15 +1992,6 @@ class ChatService(
                     )
                 )
             }
-
-            // look_at_screen: available whenever a fresh assist screenshot was captured (i.e.
-            // the assistant overlay was just summoned) and screenshot-attach is enabled. Vision
-            // models get the image (injected as a follow-up USER message via
-            // TOOL_RESULT_INJECT_USER_IMAGE_PARTS_KEY so it isn't stuffed into a tool result);
-            // non-vision models get OCR text.
-            if (settings.assistantOverlayConfig.attachScreenshot && AssistScreenHolder.hasFreshScreenshot()) {
-                add(createLookAtScreenTool(model))
-            }
         }.withUniqueToolNames()
     }
 
@@ -3134,70 +3124,6 @@ class ChatService(
         )
     }
 }
-
-internal fun createLookAtScreenTool(model: Model): Tool = Tool(
-    name = "look_at_screen",
-    description = "Inspect the screenshot of the user's active screen captured when the assistant was summoned. " +
-        "Call this tool proactively whenever the user's query lacks sufficient context, contains ambiguous references " +
-        "(such as 'this', 'that', 'here', 'it', 'what happened', 'why is this failing'), asks about an error, message, " +
-        "image, app, UI, or webpage, or whenever seeing what is currently on screen would help answer accurately. " +
-        "Do NOT ask the user to explain what they are looking at or wait for them to explicitly ask to look at the screen—call this tool first.",
-    parameters = { InputSchema.Obj(properties = buildJsonObject { }) },
-    approvalMode = ToolApprovalMode.Auto,
-    systemPrompt = { _, messages ->
-        val hasScreenInContext = messages.any { msg ->
-            msg.getToolCalls().any { it.toolName == "look_at_screen" }
-        }
-        buildString {
-            appendLine("## Tool: look_at_screen")
-            appendLine("A screenshot of the user's screen was captured when the assistant was summoned and is available via `look_at_screen`.")
-            appendLine()
-            appendLine("### Proactive Screen Inspection Guidelines:")
-            appendLine("- You are a digital assistant invoked directly over the user's active screen. Users frequently speak with assumed visual context, expecting you to see what is on their screen without having to explicitly say 'look at my screen' or 'check this screenshot'.")
-            appendLine("- **Ambiguous or Missing Context**: If the user's message is vague, underspecified, or lacks full context (e.g., 'What does this mean?', 'How do I fix this?', 'Can you explain this?', 'Is this safe?', 'What should I do?'), DO NOT ask the user for clarification or guess blindly. Proactively call `look_at_screen` first to inspect their screen and discover the context.")
-            appendLine("- **Deictic and Contextual References**: Immediately call `look_at_screen` when the user refers to pronouns or on-screen elements like 'this', 'that', 'here', 'the error', 'this message', 'this post', 'the article', 'this code', 'the price', or the current app/page.")
-            appendLine("- **Character Persona Integration**: Regardless of your persona or character role, always perform this tool call first in the background to gather necessary context. Once you have the visual context, seamlessly incorporate it and respond in your established character tone and personality. Do NOT break character to say you cannot see the screen or ask the user to describe what is visible when this tool is available.")
-            if (hasScreenInContext) {
-                appendLine("- **Current Status**: A screenshot has already been inspected in earlier turns of this conversation. Only call `look_at_screen` again if you need to re-verify the summon-time screen.")
-            } else {
-                appendLine("- **Current Status**: The summon-time screenshot has not been inspected yet in this conversation. When in doubt, call `look_at_screen`.")
-            }
-        }
-    },
-    execute = {
-        AssistScreenHolder.notifyScreenRead()
-        val dataUrl = AssistScreenHolder.dataUrlOrNull()
-        if (dataUrl.isNullOrBlank()) {
-            buildJsonObject {
-                put("note", JsonPrimitive("No screenshot is available."))
-            }
-        } else if (model.inputModalities.contains(Modality.IMAGE)) {
-            // Vision model: hand the image over as a follow-up USER message (providers can't
-            // carry images inside a tool result — doing so 400s).
-            buildJsonObject {
-                put("note", JsonPrimitive("Screenshot of the user's screen is attached below."))
-                put(
-                    TOOL_RESULT_INJECT_USER_IMAGE_PARTS_KEY,
-                    JsonArray(listOf(JsonPrimitive(dataUrl))),
-                )
-            }
-        } else {
-            // Non-vision model: OCR fallback.
-            val ocrText = runCatching {
-                OcrTransformer.performOcr(UIMessagePart.Image(url = dataUrl))
-            }.getOrNull()
-            buildJsonObject {
-                put("type", JsonPrimitive("ocr_text"))
-                if (ocrText.isNullOrBlank()) {
-                    put("text", JsonPrimitive(""))
-                    put("note", JsonPrimitive("OCR could not extract text from the screenshot."))
-                } else {
-                    put("text", JsonPrimitive(ocrText))
-                }
-            }
-        }
-    },
-)
 
 internal fun List<Tool>.withUniqueToolNames(): List<Tool> {
     val occurrences = mutableMapOf<String, Int>()

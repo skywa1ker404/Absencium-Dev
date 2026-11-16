@@ -26,7 +26,6 @@
   <string name="not_now">ليس الآن</string>
   <string name="local_label">محلي</string>
   <string name="clear_search">واضح</string>
-  <string name="developer">المطور</string>
   <string name="context_refresh_error_title">خطأ</string>
   <string name="context_refresh_summary_impact">سيتم تلخيص رسائل %1$d وسيتم تنظيف الرموز المميزة ~%2$d.</string>
   <string name="context_refresh_previous_summary">الملخص السابق:</string>

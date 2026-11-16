@@ -335,7 +335,6 @@
   <string name="search_ability_search">搜尋</string>
   <string name="search_picker_title">搜尋設定</string>
   <string name="select_and_copy">選擇複製</string>
-  <string name="send">發送</string>
   <string name="setting_display_page_amoled_dark_mode_desc">在暗色主題中使用純黑背景，適合 AMOLED 螢幕</string>
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED 暗色模式</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">思考完成自動折疊思考內容</string>
@@ -420,7 +419,6 @@
   <string name="setting_model_page_translate_model">翻譯模型</string>
   <string name="setting_model_page_translate_model_desc">用於翻譯功能的模型</string>
   <string name="setting_model_page_translate_prompt_vars">變數: 原始文字: {source_text}, 目標語言: {target_lang}</string>
-  <string name="setting_page_about">關於</string>
   <string name="setting_page_about_desc">關於本APP</string>
   <string name="setting_page_assistant">助手</string>
   <string name="setting_page_assistant_desc">設定個性化助手 (智能體)</string>
@@ -614,7 +612,6 @@
   <string name="silicon_flow_built_in_models">* 已內建矽基流動免費模型，無需API Key即可使用，如需更強大的模型，請自行申請和配置自己的API Key。</string>
   <string name="silicon_flow_description">**全球領先的 AI 能力提供商，加速 AGI 普惠人類。**</string>
   <string name="silicon_flow_website">官網: [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/i/u1Ia4Ycf)</string>
-  <string name="stop">停止</string>
   <string name="tag_input_dialog_create_new">創建新標籤</string>
   <string name="tag_input_dialog_existing_tags">現有標籤</string>
   <string name="tag_input_dialog_label">標籤名稱</string>
@@ -693,9 +690,6 @@
     <string name="chat_page_export_image_failed">匯出圖片失敗：%1$s</string>
     <string name="imggen_page_prompt_copied">提示詞已複製到剪貼簿</string>
     <string name="lorebook_embedding_failed">產生嵌入失敗：%1$s</string>
-    <string name="setting_android_integration_reset_actions">還原預設動作</string>
-    <string name="setting_android_integration_reset_actions_confirm">你確定要還原預設動作嗎？這會取代你所有自訂動作。</string>
-    <string name="setting_android_integration_reset_actions_success">已將動作重設為預設值</string>
     <string name="context_refresh_error_conversation_not_found">找不到對話</string>
     <string name="context_refresh_error_no_messages">沒有可摘要的訊息</string>
     <string name="context_refresh_error_no_model">未設定模型</string>

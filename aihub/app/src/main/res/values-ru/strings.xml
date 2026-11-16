@@ -335,7 +335,6 @@
   <string name="search_ability_search">Поиск</string>
   <string name="search_picker_title">Поиск настроек</string>
   <string name="select_and_copy">Выделить и скопировать</string>
-  <string name="send">Отправить</string>
   <string name="setting_display_page_amoled_dark_mode_desc">Использовать чёрный фон в тёмной теме, подходит для AMOLED-экранов</string>
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED-тёмная тема</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">Автоматически сворачивать блок мышления после его завершения</string>
@@ -420,7 +419,6 @@
   <string name="setting_model_page_translate_model">Модель перевода</string>
   <string name="setting_model_page_translate_model_desc">Модель, используемая для функций перевода</string>
   <string name="setting_model_page_translate_prompt_vars">Переменные: Исходный текст: {source_text}, Целевой язык: {target_lang}</string>
-  <string name="setting_page_about">О приложении</string>
   <string name="setting_page_about_desc">Об этом приложении</string>
   <string name="setting_page_assistant">Ассистент</string>
   <string name="setting_page_assistant_desc">Настроить персонализированных ассистентов (агентов)</string>
@@ -614,7 +612,6 @@
   <string name="silicon_flow_built_in_models">* Встроенные бесплатные модели Silicon Flow доступны без ключа API. Для использования более мощных моделей получите и настройте собственный ключ API.</string>
   <string name="silicon_flow_description">**Ведущий мировой поставщик ИИ-возможностей, ускоряющий AGI на благо человечества.**</string>
   <string name="silicon_flow_website">Веб-сайт: [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/i/u1Ia4Ycf)</string>
-  <string name="stop">Остановить</string>
   <string name="tag_input_dialog_create_new">Создать новый тег</string>
   <string name="tag_input_dialog_existing_tags">Существующие теги</string>
   <string name="tag_input_dialog_label">Название тега</string>
@@ -693,9 +690,6 @@
     <string name="chat_page_export_image_failed">Не удалось экспортировать изображение: %1$s</string>
     <string name="imggen_page_prompt_copied">Запрос скопирован в буфер обмена</string>
     <string name="lorebook_embedding_failed">Не удалось создать эмбеддинг: %1$s</string>
-    <string name="setting_android_integration_reset_actions">Восстановить действия по умолчанию</string>
-    <string name="setting_android_integration_reset_actions_confirm">Восстановить действия по умолчанию? Это заменит все ваши пользовательские действия.</string>
-    <string name="setting_android_integration_reset_actions_success">Действия сброшены к значениям по умолчанию</string>
     <string name="context_refresh_error_conversation_not_found">Диалог не найден</string>
     <string name="context_refresh_error_no_messages">Нет сообщений для сводки</string>
     <string name="context_refresh_error_no_model">Модель не настроена</string>

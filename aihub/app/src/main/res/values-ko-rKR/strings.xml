@@ -335,7 +335,6 @@
   <string name="search_ability_search">검색</string>
   <string name="search_picker_title">검색 설정</string>
   <string name="select_and_copy">선택 및 복사</string>
-  <string name="send">전송</string>
   <string name="setting_display_page_amoled_dark_mode_desc">다크 테마에서 순수 검정 배경 사용, AMOLED 화면에 적합</string>
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED 다크 모드</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">사고 완료 후 자동으로 사고 내용 접기</string>
@@ -420,7 +419,6 @@
   <string name="setting_model_page_translate_model">번역 모델</string>
   <string name="setting_model_page_translate_model_desc">번역 기능에 사용되는 모델</string>
   <string name="setting_model_page_translate_prompt_vars">변수: 원문: {source_text}, 대상 언어: {target_lang}</string>
-  <string name="setting_page_about">정보</string>
   <string name="setting_page_about_desc">앱 정보</string>
   <string name="setting_page_assistant">어시스턴트</string>
   <string name="setting_page_assistant_desc">개인화된 어시스턴트(에이전트) 설정</string>
@@ -614,7 +612,6 @@
   <string name="silicon_flow_built_in_models">* 내장된 Silicon Flow의 무료 모델은 API 키 없이도 사용 가능합니다. 더 강력한 모델을 위해선 직접 API 키를 신청하고 설정하세요.</string>
   <string name="silicon_flow_description">**세계를 선도하는 AI 서비스 제공업체로, 인공 일반 지능(AGI)의 발전을 통해 인류에 기여합니다.**</string>
   <string name="silicon_flow_website">웹사이트: [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/i/u1Ia4Ycf)</string>
-  <string name="stop">중지</string>
   <string name="tag_input_dialog_create_new">새 태그 생성</string>
   <string name="tag_input_dialog_existing_tags">기존 태그</string>
   <string name="tag_input_dialog_label">태그 이름</string>
@@ -693,9 +690,6 @@
     <string name="chat_page_export_image_failed">이미지 내보내기에 실패했습니다: %1$s</string>
     <string name="imggen_page_prompt_copied">프롬프트를 클립보드에 복사했습니다</string>
     <string name="lorebook_embedding_failed">임베딩 생성에 실패했습니다: %1$s</string>
-    <string name="setting_android_integration_reset_actions">기본 동작 복원</string>
-    <string name="setting_android_integration_reset_actions_confirm">기본 동작을 복원하시겠습니까? 사용자 지정 동작이 모두 대체됩니다.</string>
-    <string name="setting_android_integration_reset_actions_success">동작을 기본값으로 재설정했습니다</string>
     <string name="context_refresh_error_conversation_not_found">대화를 찾을 수 없습니다</string>
     <string name="context_refresh_error_no_messages">요약할 메시지가 없습니다</string>
     <string name="context_refresh_error_no_model">구성된 모델이 없습니다</string>

@@ -213,7 +213,6 @@ class WebdavSync(
             result = result.copy(
                 dynamicColor = defaults.dynamicColor,
                 themeId = defaults.themeId,
-                developerMode = defaults.developerMode,
                 enableRagLogging = defaults.enableRagLogging,
                 displaySetting = defaults.displaySetting,
                 enableWebSearch = defaults.enableWebSearch,
@@ -224,8 +223,6 @@ class WebdavSync(
                 ocrPrompt = defaults.ocrPrompt,
                 ttsAutoplayMode = defaults.ttsAutoplayMode,
                 chatStorage = defaults.chatStorage,
-                textSelectionConfig = defaults.textSelectionConfig,
-                assistantOverlayConfig = defaults.assistantOverlayConfig,
                 webServerEnabled = defaults.webServerEnabled,
                 webServerPort = defaults.webServerPort,
                 webServerJwtEnabled = defaults.webServerJwtEnabled,

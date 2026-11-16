@@ -1,0 +1,14 @@
+Absencium AI (the AI chat inside Absencium)
+
+Absencium AI is built on LastChat (https://github.com/Cocolalilal/LastChat), a fork of RikkaHub (https://github.com/rikkahub/rikkahub).
+Copyright (c) the RikkaHub and LastChat authors.
+
+Both projects are licensed under the GNU Affero General Public License version 3 (AGPL-3.0). The ported files stay under AGPL-3.0 and
+the rest of Absencium is GPL-3.0; GPL-3.0 section 13 and AGPL-3.0 section 13 allow the two to be combined. The full AGPL-3.0 text follows
+this notice and is listed below as "GNU AGPL-3.0".
+
+Source code of this app, including the ported files and a list of what was changed (THIRD_PARTY_NOTICES.md): https://github.com/skywa1ker404/Absencium-Dev (development) and https://github.com/skywa1ker404/Absencium (releases)
+Original projects: https://github.com/Cocolalilal/LastChat and https://github.com/rikkahub/rikkahub
+
+The document reader inside Absencium AI bundles MuPDF (AGPL-3.0, Artifex Software), and its speech to text uses the sherpa-onnx
+library (Apache-2.0, k2-fsa). The other libraries it uses are listed under "Third-party notices".

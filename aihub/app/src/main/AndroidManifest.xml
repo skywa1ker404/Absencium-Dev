@@ -62,16 +62,6 @@
       android:foregroundServiceType="dataSync"
       tools:node="merge" />
 
-    <activity
-      android:name="me.rerere.rikkahub.ui.activity.AssistantOverlayActivity"
-      android:exported="false"
-      android:theme="@style/Theme.Rikkahub.Translucent"
-      android:excludeFromRecents="true"
-      android:launchMode="singleTask"
-      android:configChanges="keyboardHidden|orientation|screenSize"
-      android:windowSoftInputMode="adjustResize"
-      tools:ignore="Instantiatable" />
-
     <provider
       android:name="me.rerere.rikkahub.utils.AiFileProvider"
       android:authorities="${applicationId}.fileprovider"

@@ -1,11 +1,9 @@
 package me.rerere.rikkahub.di
 
-import me.rerere.rikkahub.ui.activity.TextSelectionVM
 import me.rerere.rikkahub.ui.pages.assistant.AssistantVM
 import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantDetailVM
 import me.rerere.rikkahub.ui.pages.backup.BackupVM
 import me.rerere.rikkahub.ui.pages.chat.ChatVM
-import me.rerere.rikkahub.ui.pages.developer.DeveloperVM
 import me.rerere.rikkahub.ui.pages.imggen.ImgGenVM
 import me.rerere.rikkahub.ui.pages.setting.SettingVM
 
@@ -68,7 +66,6 @@ val viewModelModule = module {
     }
     viewModelOf(::BackupVM)
     viewModelOf(::ImgGenVM)
-    viewModelOf(::DeveloperVM)
     viewModelOf(::MenuVM)
     viewModel<OnboardingVM> {
         OnboardingVM(
@@ -76,20 +73,6 @@ val viewModelModule = module {
             providerManager = get(),
             modelCatalogService = get(),
             modelMetadataResolver = get(),
-        )
-    }
-    viewModel<TextSelectionVM> {
-        TextSelectionVM(
-            settingsStore = get(),
-            generationHandler = get(),
-            memoryRepository = get(),
-            templateTransformer = get(),
-        )
-    }
-    viewModel<me.rerere.rikkahub.ui.activity.AssistantOverlayVM> {
-        me.rerere.rikkahub.ui.activity.AssistantOverlayVM(
-            settingsStore = get(),
-            chatService = get(),
         )
     }
     viewModel {
