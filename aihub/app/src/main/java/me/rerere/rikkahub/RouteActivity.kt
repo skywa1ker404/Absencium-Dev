@@ -81,7 +81,6 @@ import me.rerere.rikkahub.ui.pages.onboarding.OnboardingPage
 import me.rerere.rikkahub.ui.pages.setting.SettingChatStoragePage
 import me.rerere.rikkahub.ui.pages.setting.SettingDisplayPage
 
-import me.rerere.rikkahub.ui.pages.setting.SettingMcpPage
 // import me.rerere.rikkahub.ui.pages.setting.locallm.SettingLocalLlmPage
 import me.rerere.rikkahub.ui.pages.setting.SettingModelPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPage
@@ -90,7 +89,6 @@ import me.rerere.rikkahub.ui.pages.setting.SettingProviderPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTTSProviderDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTTSPage
-import me.rerere.rikkahub.ui.pages.setting.SettingSkillsPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.webview.WebViewPage
 import me.rerere.rikkahub.ui.pages.setting.SettingUICustomizationPage
@@ -659,7 +657,7 @@ class RouteActivity : ComponentActivity() {
     companion object {
         /** Absencium opens the chat straight on its settings (providers, models, assistants) with this extra. */
         const val EXTRA_OPEN_SETTINGS = "openSettings"
-        /** Opens one settings page of the chat directly (models, providers, assistants, search, mcp, skills, android, tts, storage, about). */
+        /** Opens one settings page of the chat directly (models, providers, assistants, search, tts, storage). */
         const val EXTRA_SETTINGS_DESTINATION = "settingsDestination"
         const val EXTRA_CONVERSATION_ID = "conversationId"
         const val EXTRA_ASSISTANT_ID = "assistantId"
@@ -1133,19 +1131,6 @@ fun ChatAppRoutes(
                 }
 
 
-                composable<Screen.SettingMcp> {
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.Mcp) {
-                        SettingMcpPage()
-                    }
-                }
-
-                composable<Screen.SettingSkills> { backStackEntry ->
-                    val route = backStackEntry.toRoute<Screen.SettingSkills>()
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.Skills) {
-                        SettingSkillsPage(scrollToSkillId = route.scrollToSkillId)
-                    }
-                }
-
                 composable<Screen.SettingUICustomization> {
                     AdaptiveSettingsScaffold(selected = SettingsDestination.UiCustomization) {
                         SettingUICustomizationPage()
@@ -1250,12 +1235,6 @@ sealed interface Screen {
 
     @Serializable
     data object SettingWeb : Screen
-
-    @Serializable
-    data object SettingMcp : Screen
-
-    @Serializable
-    data class SettingSkills(val scrollToSkillId: String? = null) : Screen
 
     @Serializable
     data object SettingUICustomization : Screen

@@ -109,7 +109,6 @@
     <string name="assistant_page_system_prompt">System Prompt</string>
     <string name="assistant_page_tab_basic">Basic</string>
     <string name="assistant_page_tab_local_tools">Local Tools</string>
-    <string name="assistant_page_tab_mcp">Plugins</string>
     <string name="assistant_page_tab_memory">Memory</string>
     <string name="assistant_page_tab_prompt">Prompt</string>
     <string name="assistant_page_tab_request">Request</string>
@@ -266,7 +265,6 @@
     <string name="activity_timeline_tool_workspace_write_file">Writing workspace file</string>
     <string name="activity_timeline_tool_workspace_edit_file">Editing workspace file</string>
     <string name="activity_timeline_tool_workspace_shell">Running workspace command</string>
-    <string name="activity_timeline_tool_manage_skills">Managing skills</string>
     <string name="activity_timeline_tool_ask_user">Asking a question</string>
     <string name="activity_pill_memory_recalled">Recalled memories</string>
     <string name="activity_pill_memory_recalled_count">Recalled memories x%1$d</string>
@@ -278,9 +276,6 @@
     <string name="activity_timeline_questionnaire_skipped">Skipped</string>
     <string name="activity_timeline_questionnaire_source_option">Picked option</string>
     <string name="activity_timeline_questionnaire_source_custom">Custom answer</string>
-    <string name="activity_timeline_activated">Activated</string>
-    <string name="activity_timeline_disabled">Disabled</string>
-    <string name="activity_timeline_no_skill_changes">No skill changes</string>
     <string name="activity_timeline_expand">Expand</string>
     <string name="activity_timeline_collapse">Collapse</string>
     <string name="activity_timeline_edit_memory_title">Edit memory</string>
@@ -444,8 +439,6 @@
     <string name="language_simplified_chinese">🇨🇳 简体中文</string>
     <string name="language_spanish">🇪🇸 Español</string>
     <string name="language_traditional_chinese">🇨🇳 繁體中文</string>
-    <string name="mcp_picker_syncing">Syncing plugins...</string>
-    <string name="mcp_picker_title">Plugins</string>
     <string name="menu">Menu</string>
     <string name="menu_page_afternoon_greeting">Good Afternoon!</string>
     <string name="menu_page_evening_greeting">Good Evening!</string>
@@ -552,39 +545,6 @@
     <string name="setting_display_page_show_assistant_bubbles_title">Message Bubbles for Characters</string>
     <string name="setting_display_page_show_assistant_bubbles_desc">Show chat bubbles around character messages</string>
     <string name="setting_display_page_title">Advanced Settings</string>
-    <string name="setting_mcp_page_add_header">Add Header</string>
-    <string name="setting_mcp_page_add_one_to_get_started">Add one to get started</string>
-    <string name="setting_mcp_page_basic_settings">Basic Settings</string>
-    <string name="setting_mcp_page_custom_headers">Custom Headers</string>
-    <string name="setting_mcp_page_custom_headers_desc">Add custom HTTP headers for MCP server requests</string>
-    <string name="setting_mcp_page_delete_header">Delete Header</string>
-    <string name="setting_mcp_page_enable">Enable</string>
-    <string name="setting_mcp_page_enable_desc">Enable this MCP server</string>
-    <string name="setting_mcp_page_header_name">Header Name</string>
-    <string name="setting_mcp_page_header_name_placeholder">e.g. Authorization</string>
-    <string name="setting_mcp_page_header_value">Header Value</string>
-    <string name="setting_mcp_page_header_value_placeholder">e.g. Bearer token123</string>
-    <string name="setting_mcp_page_name">Name</string>
-    <string name="setting_mcp_page_name_desc">Display name for MCP server</string>
-    <string name="setting_mcp_page_name_placeholder">e.g. My MCP Server</string>
-    <string name="setting_mcp_page_no_mcp_servers_found">No MCP servers found</string>
-    <string name="setting_mcp_page_import_title">Import MCP Servers</string>
-    <string name="setting_mcp_page_import_desc">Paste an `mcpServers` JSON config to add servers quickly.</string>
-    <string name="setting_mcp_page_import_confirm">Import Servers</string>
-    <string name="setting_mcp_page_import_no_valid_config">No valid MCP servers were found in this JSON.</string>
-    <string name="setting_mcp_page_import_parse_error">Could not parse MCP JSON: %s</string>
-    <string name="setting_mcp_page_save">Save</string>
-    <string name="setting_mcp_page_server_url">Server URL</string>
-    <string name="setting_mcp_page_sse_url_desc">SSE Transport URL</string>
-    <string name="setting_mcp_page_sse_url_placeholder">https://example.com/sse</string>
-    <string name="setting_mcp_page_streamable_http_url_desc">Streamable HTTP URL</string>
-    <string name="setting_mcp_page_streamable_http_url_placeholder">https://example.com/mcp</string>
-    <string name="setting_mcp_page_title">Plugins</string>
-    <string name="setting_mcp_page_tools">Tools</string>
-    <string name="setting_mcp_page_tools_unavailable_message">Tools list unavailable during creation. Please view after adding.</string>
-    <string name="setting_mcp_page_transport_type">Transport Type</string>
-    <string name="setting_mcp_page_transport_type_desc">Select transport protocol</string>
-    <string name="setting_mcp_page_url_label">URL</string>
     <string name="setting_model_page_chat_model">Chat Model</string>
     <string name="setting_model_page_chat_model_desc">Global default chat model</string>
     <string name="setting_model_page_learning_mode">Learning Mode Prompt</string>
@@ -715,8 +675,6 @@
     <string name="backup_content_api_keys_customize">Customize keys (%1$d of %2$d selected)</string>
     <string name="backup_content_workspaces">Workspaces</string>
     <string name="backup_content_workspaces_desc">Workspace project files and code (excluding system Linux environment)</string>
-    <string name="backup_content_skills">Skills &amp; Tools</string>
-    <string name="backup_content_skills_desc">Custom skills and tool outputs</string>
     <string name="backup_content_settings">App Settings</string>
     <string name="backup_content_settings_desc">Display, theme, font, network, and audio preferences</string>
     <string name="backup_export_no_content_selected">Please select at least one item to export.</string>
@@ -757,7 +715,6 @@
     <string name="setting_search_delete_consequence">The search service will be removed from this device.</string>
     <string name="setting_tts_delete_title">Delete this TTS service?</string>
     <string name="setting_tts_delete_consequence">The TTS service will be removed from this device.</string>
-    <string name="setting_mcp_delete_title">Delete this MCP server?</string>
     <string name="setting_fonts_delete_title">Remove this font?</string>
     <string name="setting_fonts_delete_consequence">The custom font file will be deleted from this device.</string>
     <string name="setting_chat_storage_delete_unused_embeddings_title">Delete unused embeddings?</string>
@@ -1064,18 +1021,11 @@
     <string name="modes_page_prompt_placeholder">Enter the instructions to inject...</string>
     <string name="modes_page_injection_position">Injection Position</string>
     <string name="modes_page_depth">Depth</string>
-    <string name="drag_to_reorder">Drag to reorder</string>
     <string name="save">Save</string>
-    <string name="create">Create</string>
     <string name="import_label">Import</string>
     <string name="export_label">Export</string>
     
     <!-- Injection Positions -->
-    <string name="injection_position_before_system">Before System Prompt</string>
-    <string name="injection_position_after_system">After System Prompt</string>
-    <string name="injection_position_top_of_chat">Top of Chat</string>
-    <string name="injection_position_before_latest">Before Latest Message</string>
-    <string name="injection_position_at_depth">At Specific Depth</string>
     
     <!-- Lorebooks -->
     <string name="lorebooks_page_description_title">World Lorebooks</string>
@@ -1084,7 +1034,6 @@
     <string name="lorebooks_page_cover_hint">Tap to select an image or emoji</string>
     
     <!-- Lorebook Detail -->
-    <string name="lorebook_entry_injection_position">Injection Position</string>
     
     <!-- Activation Types -->
     
@@ -1102,49 +1051,21 @@
     <string name="lorebook_select_to_toggle">Select a lorebook to toggle</string>
     
     <!-- Skills -->
-    <string name="prompt_injections_page_skills">Skills</string>
     <string name="skills_page_description_title">Claude Skills</string>
     <string name="skills_page_description_text">Import or create skills that follow the Claude Skills standard. Skills provide structured instructions with metadata that guide AI behaviour.</string>
-    <string name="skills_page_deleted">Skill \"%s\" deleted</string>
-    <string name="skills_page_empty_title">No skills yet</string>
-    <string name="skills_page_empty_desc">Add skills to extend AI capabilities with structured instructions</string>
-    <string name="skills_page_unnamed">Unnamed Skill</string>
-    <string name="skills_page_add_skill">Add Skill</string>
-    <string name="skills_page_edit_skill">Edit Skill</string>
-    <string name="skills_page_name">Name</string>
-    <string name="skills_page_name_placeholder">e.g. code-reviewer</string>
     <string name="skills_page_icon">Icon</string>
-    <string name="skills_page_description">Description</string>
-    <string name="skills_page_description_placeholder">What the skill does and when to use it…</string>
-    <string name="skills_page_instructions">Instructions</string>
-    <string name="skills_page_instructions_placeholder">Markdown instructions for the skill…</string>
     <string name="skills_page_attachments">Attachments</string>
     <string name="skills_page_add_image">Image</string>
     <string name="skills_page_add_file">File</string>
     <string name="skills_page_enable_by_default">Enable by default</string>
-    <string name="skills_page_available_for_all_characters">Available for all characters</string>
-    <string name="skills_page_available_for_all_characters_desc">Turn this off to choose exactly which characters can use this skill</string>
     <string name="skills_page_available_for_characters_desc">Choose which characters can autonomously enable or disable this skill</string>
-    <string name="skills_page_always_enabled">Always enabled</string>
-    <string name="skills_page_always_enabled_desc">Enabled by default for every character this skill is available for. You can still turn it off in a chat.</string>
     <string name="skills_page_available_in_all">All characters</string>
     <string name="skills_page_available_in_count">%d characters</string>
     <string name="skills_page_injection_position">Injection Position</string>
     <string name="skills_page_depth">Depth</string>
-    <string name="skills_page_disable_model_invocation">User-only invocation</string>
-    <string name="skills_page_disable_model_invocation_desc">Prevent the AI from activating this skill automatically</string>
-    <string name="skills_page_user_invocable">User can invoke</string>
-    <string name="skills_page_user_invocable_desc">Allow user to invoke this skill directly</string>
     <string name="skills_page_argument_hint">Slash command hint</string>
     <string name="skills_page_argument_hint_placeholder">e.g. /review</string>
-    <string name="skill_import_success">Imported: %s</string>
-    <string name="skill_export_success">Skill exported successfully</string>
-    <string name="skill_export_format">Export Format</string>
-    <string name="export_format_skill_md">SKILL.md (Standard)</string>
     <string name="export_format_skill_json">JSON (Absencium AI)</string>
-    <string name="skills_picker_title">Skills</string>
-    <string name="skills_picker_none">No skills configured</string>
-    <string name="skills_picker_active_count">%d active</string>
     <string name="banner_dismiss">Dismiss</string>
     <string name="previous">Previous</string>
     <string name="next">Next</string>
@@ -1154,10 +1075,6 @@
 
     <!-- Character Lorebooks Selection -->
     <string name="assistant_lorebooks_enabled">%d enabled</string>
-    <string name="assistant_skills_title">Skills</string>
-    <string name="assistant_skills_desc">Select which skills to use with this character</string>
-    <string name="assistant_skills_empty">No skills available</string>
-    <string name="assistant_skills_empty_hint">Create skills in Settings > Add-ons > Skills</string>
     
     <!-- Context Management -->
     <string name="context_management_title">Context Management</string>
@@ -1215,7 +1132,6 @@
     <string name="assistant_overlay_hint">Ask %1$s</string>
     <string name="assistant_overlay_listening">Listening…</string>
     <string name="text_selection_preview">Preview</string>
-    <string name="text_selection_assistant">Character</string>
     <string name="text_selection_use_default">Use default character</string>
     <string name="text_selection_action_name">Button Name</string>
     <string name="text_selection_action_delete">Delete Action</string>
@@ -1268,11 +1184,6 @@
     <string name="minimal_input_thinking_desc">Think longer for better answers</string>
     <string name="minimal_input_search">Search</string>
     <string name="minimal_input_search_desc">Search the web for information</string>
-    <string name="minimal_input_skills">Skills</string>
-    <string name="minimal_input_skills_desc">Apply skills to this chat</string>
-    <string name="minimal_input_plugins">Plugins</string>
-    <string name="minimal_input_plugins_desc">Choose tools for this assistant</string>
-    <string name="plugins_picker_active_count">%1$d active</string>
     <string name="minimal_input_summarize">Summarize</string>
     <string name="minimal_input_summarize_desc">Summarize the conversation</string>
     <string name="backup_restore_permissions_required">Permissions Required</string>
@@ -1498,7 +1409,6 @@
   <string name="context_meter_system_prompt">System prompt</string>
   <string name="context_meter_summary">Summary</string>
   <string name="context_meter_memory">Memory</string>
-  <string name="context_meter_skills_modes">Skills / modes</string>
   <string name="context_meter_tool_definitions">Tools</string>
   <string name="context_meter_tool_calls">Tool calls</string>
   <string name="context_meter_media">Media</string>

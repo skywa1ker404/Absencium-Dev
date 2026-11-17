@@ -165,16 +165,12 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.ToolApprovalState
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.models.ModelCatalogService
-import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.resolveConversationContext
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.canManuallySummarizeConversation
 import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.hasManualSkillSelectionOverride
-import me.rerere.rikkahub.data.model.Skill
-import me.rerere.rikkahub.data.model.withoutSkillSelectionOverride
 import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.ui.components.crop.CropImageScreen
 import me.rerere.rikkahub.ui.components.chat.AiComposerAddButton
@@ -189,7 +185,6 @@ import me.rerere.rikkahub.ui.components.chat.AiComposerInputShape
 import me.rerere.rikkahub.ui.components.chat.AiComposerMediaAttachment
 import me.rerere.rikkahub.ui.components.chat.AiComposerRow
 import me.rerere.rikkahub.ui.components.chat.AiComposerVideoIcon
-import me.rerere.rikkahub.ui.components.ui.icons.ModeIcons
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionCamera
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionMicrophone
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
@@ -238,7 +233,6 @@ fun MinimalChatInput(
     state: ChatInputState,
     conversation: Conversation,
     settings: Settings,
-    mcpManager: McpManager,
     enableSearch: Boolean,
     onToggleSearch: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -276,13 +270,6 @@ fun MinimalChatInput(
     val modelCatalog = koinInject<ModelCatalogService>()
     val keyboardController = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
-    val availableSkills = remember(settings.skills) {
-        settings.skills
-    }
-    val availableSkillIds = remember(availableSkills) { availableSkills.map { it.id }.toSet() }
-    val assistantAvailableSkillIds = remember(settings.skills, assistant.id) {
-        settings.skills.filter { it.isAvailableForAssistant(assistant.id) }.map { it.id }.toSet()
-    }
     val pendingQuestionnaire = remember(conversation.messageNodes) {
         conversation.currentMessages.findPendingAskUserToolCall()
     }
@@ -1810,13 +1797,6 @@ private fun MinimalPickerContent(
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     val haptics = rememberPremiumHaptics(enabled = settings.displaySetting.enableUIHaptics)
-    val availableSkills = remember(settings.skills) {
-        settings.skills
-    }
-    val availableSkillIds = remember(availableSkills) { availableSkills.map { it.id }.toSet() }
-    val assistantAvailableSkillIds = remember(settings.skills, assistant.id) {
-        settings.skills.filter { it.isAvailableForAssistant(assistant.id) }.map { it.id }.toSet()
-    }
     
     // OLED dark mode detection for buttons (not sheet backgrounds)
     val amoledMode by me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode()
@@ -1833,8 +1813,6 @@ private fun MinimalPickerContent(
     var showModelPicker by remember { mutableStateOf(false) }
     var showVaultPicker by remember { mutableStateOf(false) }
     var showReasoningPicker by remember { mutableStateOf(false) }
-    var showSkillsPicker by remember { mutableStateOf(false) }
-    var showPluginsPicker by remember { mutableStateOf(false) }
     var showContextRefreshDialog by remember { mutableStateOf(false) }
     var showContextSummaryEditDialog by remember { mutableStateOf(false) }
     var editableContextSummary by remember(conversation.contextSummary) {
@@ -1843,16 +1821,6 @@ private fun MinimalPickerContent(
     var showSearchPicker by remember { mutableStateOf(false) }
     val modelCatalogService: ModelCatalogService = koinInject()
     val catalogSnapshot by modelCatalogService.snapshotFlow.collectAsStateWithLifecycle()
-    val assistantDefaultSkillIds = assistant.enabledSkillIds.intersect(assistantAvailableSkillIds)
-    val alwaysEnabledSkillIds = availableSkills
-        .filter { it.alwaysEnabled && assistantAvailableSkillIds.contains(it.id) }
-        .map { it.id }
-        .toSet()
-    val effectiveActiveSkillIds = if (conversation.enabledModeIds.hasManualSkillSelectionOverride() || conversation.enabledModeIds.isNotEmpty()) {
-        conversation.enabledModeIds.withoutSkillSelectionOverride()
-    } else {
-        assistantDefaultSkillIds + alwaysEnabledSkillIds
-    }.intersect(availableSkillIds)
     
     // Track the last valid search provider index so selection persists when search is disabled
     // Initialize from assistant's searchMode if available, otherwise use global setting
@@ -2140,65 +2108,6 @@ private fun MinimalPickerContent(
             }
         )
         
-        if (settings.skills.isNotEmpty()) {
-            // Skills - use enabledModeIds (legacy field) for per-chat overrides.
-            val activeSkills = availableSkills.filter { skill ->
-                effectiveActiveSkillIds.contains(skill.id)
-            }
-            val activeSkillsCount = activeSkills.size
-            val skillsActive = activeSkillsCount > 0
-            val singleActiveSkillIcon = activeSkills.singleOrNull()?.icon
-            MinimalPickerItem(
-                icon = {
-                    Icon(
-                        imageVector = if (singleActiveSkillIcon != null) {
-                            ModeIcons.getIcon(singleActiveSkillIcon)
-                        } else {
-                            Icons.Rounded.Category
-                        },
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (skillsActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                title = stringResource(R.string.minimal_input_skills),
-                subtitle = if (activeSkillsCount > 0) {
-                    stringResource(R.string.skills_picker_active_count, activeSkillsCount)
-                } else {
-                    stringResource(R.string.minimal_input_skills_desc)
-                },
-                onClick = {
-                    showSkillsPicker = true
-                }
-            )
-        }
-        
-        if (settings.mcpServers.isNotEmpty()) {
-            val availablePluginIds = settings.mcpServers
-                .filter { it.commonOptions.enable }
-                .map { it.id }
-                .toSet()
-            val activePluginsCount = assistant.mcpServers.intersect(availablePluginIds).size
-            val pluginsActive = activePluginsCount > 0
-            MinimalPickerItem(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Rounded.Extension,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = if (pluginsActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                },
-                title = stringResource(R.string.minimal_input_plugins),
-                subtitle = if (pluginsActive) {
-                    stringResource(R.string.plugins_picker_active_count, activePluginsCount)
-                } else {
-                    stringResource(R.string.minimal_input_plugins_desc)
-                },
-                onClick = { showPluginsPicker = true },
-            )
-        }
-        
         // Summarize button - show whenever there is enough history to summarize
         if (assistant.canManuallySummarizeConversation(conversation.currentMessages.size)) {
             MinimalPickerItem(
@@ -2306,26 +2215,6 @@ containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceCon
                 )
             }
         }
-    }
-    
-    // Skills picker sheet
-    if (showSkillsPicker) {
-        SkillsPickerSheet(
-            settings = settings,
-            assistant = assistant,
-            conversation = conversation,
-            onUpdateConversation = onUpdateConversation,
-            onDismiss = { showSkillsPicker = false }
-        )
-    }
-    
-    if (showPluginsPicker) {
-        PluginsPickerSheet(
-            settings = settings,
-            assistant = assistant,
-            onUpdateAssistant = onUpdateAssistant,
-            onDismiss = { showPluginsPicker = false },
-        )
     }
     
     // Context Refresh dialog (same as floating toolbar)

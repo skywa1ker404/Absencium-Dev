@@ -180,8 +180,6 @@
   <string name="assistant_tools_search_provider">مزود البحث</string>
   <string name="assistant_tools_prefer_builtin">تفضل البحث المدمج</string>
   <string name="assistant_tools_prefer_builtin_desc">استخدم البحث الأصلي للنموذج \' عندما يكون متاحًا</string>
-  <string name="assistant_tools_mcp_enabled_count">%1$d تم تمكينه لـ %2$d</string>
-  <string name="assistant_tools_mcp_select">حدد خوادم الأدوات الخارجية</string>
   <string name="assistant_tools_provider_fallback">الموفر %1$d</string>
   <string name="setting_ui_show_avatar_header_title">إظهار الصورة الرمزية في الرأس</string>
   <string name="setting_ui_show_avatar_header_desc">عرض الصورة الرمزية للشخصية في رأس الدردشة الجديد</string>
@@ -244,10 +242,6 @@
   <string name="update_dialog_title">التحديث إلى %1$s</string>
   <string name="update_changelog">سجل التغيير:</string>
   <string name="update_no_changelog">لا يوجد سجل التغيير متاح</string>
-  <string name="setting_mcp_delete_server">هل أنت متأكد أنك تريد حذف خادم MCP هذا؟</string>
-  <string name="setting_mcp_transport_sse">SSE</string>
-  <string name="setting_mcp_transport_streamable_http">HTTP قابل للتدفق</string>
-  <string name="setting_mcp_import_placeholder">{ \"mcpServers\": { ... } }</string>
   <string name="setting_rp_custom_preview">مخصص: %1$stext%1$s</string>
   <string name="setting_rp_color_hex">اللون (ست عشري)</string>
   <string name="setting_search_delete_service">هل أنت متأكد أنك تريد حذف خدمة البحث هذه؟</string>
@@ -293,7 +287,6 @@
   <string name="search_field_include_images_desc">تضمين الصور في نتائج البحث</string>
   <string name="search_field_stealth_mode">وضع التخفي</string>
   <string name="search_field_stealth_mode_desc">استخدم وضع التخفي لتجريف الويب</string>
-  <string name="skills_claude_standard">متوافق مع معيار مهارات كلود</string>
   <string name="setting_tts_settings_title">إعدادات تحويل النص إلى كلام</string>
   <string name="setting_tts_error">خطأ تحويل النص إلى كلام: %1$s</string>
   <string name="setting_tts_delete_service">هل أنت متأكد أنك تريد حذف خدمة تحويل النص إلى كلام (TTS) هذه؟</string>

@@ -266,9 +266,9 @@ class AppStorageRepository(
     }
 
     private suspend fun migrateLegacyOwnedUploadFiles() {
-        // Lorebooks were removed; drop the media folders they left behind.
+        // Lorebooks and Skills were removed; drop the folders they left behind.
         withContext(Dispatchers.IO) {
-            listOf("lorebook_covers", "lorebook_attachments").forEach { name ->
+            listOf("lorebook_covers", "lorebook_attachments", "skills").forEach { name ->
                 runCatching { context.filesDir.resolve(name).deleteRecursively() }
             }
         }

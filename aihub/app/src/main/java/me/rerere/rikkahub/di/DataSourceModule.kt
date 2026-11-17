@@ -9,16 +9,6 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
-import io.ktor.http.HttpHeaders
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.sse.SSE
-import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.util.StringValues
-import io.modelcontextprotocol.kotlin.sdk.client.SseClientTransport
-import io.modelcontextprotocol.kotlin.sdk.client.StreamableHttpClientTransport
 import io.pebbletemplates.pebble.PebbleEngine
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.common.platform.PlatformFileStore
@@ -46,10 +36,6 @@ import me.rerere.rikkahub.data.datastore.SecretKeyManager
 import me.rerere.rikkahub.data.datastore.SpontaneousMessagingStateStore
 import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.db.Migration_6_7
-import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.ai.mcp.McpOAuthManager
-import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
-import me.rerere.rikkahub.data.ai.mcp.McpTransportFactory
 import me.rerere.rikkahub.data.sync.WebdavSync
 import me.rerere.rikkahub.ui.image.AppImageLoaderFactory
 import me.rerere.rikkahub.ui.image.HttpUrlImageInterceptor
@@ -69,8 +55,6 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 const val SEARCH_PLATFORM_HTTP_CLIENT = "searchPlatformHttpClient"
-private const val MCP_OKHTTP_CLIENT = "mcpOkHttpClient"
-private const val MCP_PLATFORM_HTTP_CLIENT = "mcpPlatformHttpClient"
 
 val dataSourceModule = module {
     single {
@@ -203,45 +187,6 @@ val dataSourceModule = module {
     }
 
     single {
-        McpOAuthManager(
-            context = get(),
-            scope = get<me.rerere.rikkahub.AppScope>(),
-            client = get<PlatformHttpClient>(named(MCP_PLATFORM_HTTP_CLIENT)),
-            settingsStore = get(),
-            secretKeyManager = get(),
-        )
-    }
-
-    single {
-        McpManager(
-            settingsStore = get(),
-            appScope = get(),
-            transportFactory = get(),
-            oauthManager = get(),
-        )
-    }
-
-    single<McpTransportFactory> {
-        val httpClient = get<HttpClient>(named(MCP_OKHTTP_CLIENT))
-        val oauthManager = get<McpOAuthManager>()
-        McpTransportFactory { config ->
-            when (config) {
-                is McpServerConfig.SseTransportServer -> SseClientTransport(
-                    urlString = config.url,
-                    client = httpClient,
-                    requestBuilder = { appendMcpHeaders(config, oauthManager) },
-                )
-
-                is McpServerConfig.StreamableHTTPServer -> StreamableHttpClientTransport(
-                    url = config.url,
-                    client = httpClient,
-                    requestBuilder = { appendMcpHeaders(config, oauthManager) },
-                )
-            }
-        }
-    }
-
-    single {
         GenerationHandler(
             context = get(),
             providerManager = get(),
@@ -268,8 +213,8 @@ val dataSourceModule = module {
             .fastFallback(true)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
-                    .addHeader(HttpHeaders.AcceptLanguage, acceptLang)
-                    .addHeader(HttpHeaders.UserAgent, "Absencium-AI-Android/${BuildConfig.VERSION_NAME}")
+                    .addHeader("Accept-Language", acceptLang)
+                    .addHeader("User-Agent", "Absencium-AI-Android/${BuildConfig.VERSION_NAME}")
                     .build()
                 chain.proceed(request)
             }
@@ -277,37 +222,6 @@ val dataSourceModule = module {
                 level = HttpLoggingInterceptor.Level.HEADERS
             })
             .build()
-    }
-
-    single<OkHttpClient>(named(MCP_OKHTTP_CLIENT)) {
-        OkHttpClient.Builder()
-            .connectTimeout(20.seconds)
-            .readTimeout(10.minutes)
-            .writeTimeout(120.seconds)
-            .followSslRedirects(true)
-            .followRedirects(true)
-            .retryOnConnectionFailure(true)
-            .fastFallback(true)
-            .build()
-    }
-
-    single<HttpClient>(named(MCP_OKHTTP_CLIENT)) {
-        val okHttpClient = get<OkHttpClient>(named(MCP_OKHTTP_CLIENT))
-        HttpClient(OkHttp) {
-            engine { preconfigured = okHttpClient }
-            install(ContentNegotiation) {
-                json(kotlinx.serialization.json.Json {
-                    prettyPrint = true
-                    isLenient = true
-                })
-            }
-            install(SSE)
-        }
-    }
-
-
-    single<PlatformHttpClient>(named(MCP_PLATFORM_HTTP_CLIENT)) {
-        OkHttpPlatformHttpClient(get<OkHttpClient>(named(MCP_OKHTTP_CLIENT)))
     }
 
     single<PlatformHttpClient> {
@@ -393,22 +307,6 @@ val dataSourceModule = module {
             appDatabase = get(),
         )
     }
-}
-
-private fun HttpRequestBuilder.appendMcpHeaders(
-    config: McpServerConfig,
-    oauthManager: McpOAuthManager,
-) {
-    headers.appendAll(StringValues.build {
-        val base = config.commonOptions.headers.toMap()
-        val hasManualAuthorization = base.keys.any { it.equals("Authorization", ignoreCase = true) }
-        val resolved = if (hasManualAuthorization) {
-            base
-        } else {
-            base + oauthManager.authorizationHeaders(config.id)
-        }
-        resolved.forEach { (name, value) -> append(name, value) }
-    })
 }
 
 private fun String.toCheckedHttpUrl(label: String): HttpUrl {

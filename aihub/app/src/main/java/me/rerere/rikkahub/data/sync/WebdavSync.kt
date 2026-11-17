@@ -88,9 +88,6 @@ class WebdavSync(
                 if (BackupContentOption.WORKSPACES in selectedContent) {
                     add(BackupArchiveFormat.WORKSPACES_DIR)
                 }
-                if (BackupContentOption.SKILLS in selectedContent) {
-                    add("skills")
-                }
             }.filter { BackupArchiveFormat.MANAGED_FILE_DIRS.contains(it) }
         }
 
@@ -195,12 +192,9 @@ class WebdavSync(
         } else if (BackupContentOption.API_KEYS !in selectedContent) {
             // Keep providers structure, but keys are already blanked out by populateSecretsForExport
         }
-        if (BackupContentOption.SKILLS !in selectedContent) {
-            result = result.copy(skills = emptyList())
-        }
         // If SETTINGS is not selected, reset general appearance/behavior preferences to defaults
-        // so they don't override the importing device's settings. Data lists (providers, assistants,
-        // skills) are already handled by their respective options above.
+        // so they don't override the importing device's settings. Data lists (providers, assistants)
+        // are already handled by their respective options above.
         if (BackupContentOption.SETTINGS !in selectedContent) {
             val defaults = Settings()
             result = result.copy(

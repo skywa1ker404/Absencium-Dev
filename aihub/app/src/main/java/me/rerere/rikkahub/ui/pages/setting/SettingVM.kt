@@ -18,7 +18,6 @@ import me.rerere.rikkahub.data.ai.models.ModelMetadataResolver
 import me.rerere.rikkahub.data.ai.models.mergeCatalogIntoSettings
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.repository.AppStorageRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.utils.IconStorageManager
@@ -26,7 +25,6 @@ import me.rerere.common.platform.PlatformHttpClient
 
 class SettingVM(
     private val settingsStore: SettingsStore,
-    private val mcpManager: McpManager,
     private val context: Context,
     private val platformHttpClient: PlatformHttpClient,
     private val appStorageRepository: AppStorageRepository,

@@ -4,7 +4,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkRemove
 import androidx.compose.material.icons.rounded.Build
-import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material.icons.rounded.Description
@@ -24,12 +23,9 @@ import me.rerere.rikkahub.data.ai.tools.AskUserAnswerPayload
 import me.rerere.rikkahub.data.ai.tools.AskUserQuestionnaire
 import me.rerere.rikkahub.data.ai.tools.normalizeAskUserAnswerPayload
 import me.rerere.rikkahub.data.ai.tools.parseAskUserQuestionnaire
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
 import me.rerere.rikkahub.R
-import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
 
 sealed interface TimelineEntry {
     val id: String
@@ -94,11 +90,6 @@ internal data class MemoryEditTarget(
 internal data class MemoryDeleteTarget(
     val id: Int,
     val content: String?
-)
-
-internal data class SkillChangeSummary(
-    val activated: List<String>,
-    val disabled: List<String>
 )
 
 internal data class AskUserTimelineState(
@@ -168,39 +159,6 @@ internal fun buildEntryFollowSignature(entry: TimelineEntry): String {
     }
 }
 
-private fun parseSkillNames(value: JsonElement?): List<String> {
-    val array = value as? JsonArray ?: return emptyList()
-    return array.mapNotNull { item ->
-        when (item) {
-            is JsonObject -> {
-                item["name"]?.jsonPrimitiveOrNull?.contentOrNull?.takeIf { it.isNotBlank() }
-                    ?: item["id"]?.jsonPrimitiveOrNull?.contentOrNull?.takeIf { it.isNotBlank() }
-            }
-
-            else -> item.jsonPrimitiveOrNull?.contentOrNull?.takeIf { it.isNotBlank() }
-        }
-    }.distinct()
-}
-
-internal fun getSkillChangeSummary(entry: TimelineEntry.ToolCall): SkillChangeSummary {
-    val argsObj = entry.argumentsJson as? JsonObject
-    val resultObj = entry.resultJson as? JsonObject
-
-    val activated = parseSkillNames(resultObj?.get("activated"))
-    val disabled = parseSkillNames(resultObj?.get("disabled"))
-    if (activated.isNotEmpty() || disabled.isNotEmpty()) {
-        return SkillChangeSummary(activated = activated, disabled = disabled)
-    }
-
-    val matched = parseSkillNames(resultObj?.get("matched"))
-    val operation = argsObj?.get("operation")?.jsonPrimitiveOrNull?.contentOrNull?.lowercase()
-    return when (operation) {
-        "disable" -> SkillChangeSummary(activated = emptyList(), disabled = matched)
-        "enable", "set" -> SkillChangeSummary(activated = matched, disabled = emptyList())
-        else -> SkillChangeSummary(activated = emptyList(), disabled = emptyList())
-    }
-}
-
 internal fun parseAskUserTimelineState(entry: TimelineEntry.ToolCall): AskUserTimelineState? {
     if (entry.toolName != ASK_USER_TOOL_NAME) {
         return null
@@ -236,7 +194,6 @@ internal fun getTimelineIcon(entry: TimelineEntry): ImageVector {
             "workspace_shell" -> Icons.Rounded.Terminal
             "workspace_read_file", "workspace_write_file", "workspace_edit_file" -> Icons.Rounded.Description
             "workspace_view_image" -> Icons.Rounded.Image
-            "manage_skills" -> Icons.Rounded.Category
             else -> if (entry.toolName.startsWith("workspace_")) Icons.Rounded.Computer else Icons.Rounded.Build
         }
 
@@ -269,7 +226,6 @@ private fun getLocalizedToolLabel(toolName: String, fallback: String): String {
         "workspace_shell" -> stringResource(R.string.activity_timeline_tool_workspace_shell)
         "workspace_view_image" -> stringResource(R.string.activity_timeline_tool_workspace_view_image)
         "ask_user" -> stringResource(R.string.activity_timeline_tool_ask_user)
-        "manage_skills" -> stringResource(R.string.activity_timeline_tool_manage_skills)
         else -> fallback
     }
 }
@@ -288,23 +244,6 @@ internal fun getTimelineLabel(entry: TimelineEntry): String {
         is TimelineEntry.Ocr -> stringResource(R.string.activity_timeline_ocr)
 
         is TimelineEntry.Reply -> stringResource(R.string.activity_timeline_reply)
-    }
-}
-
-@Composable
-internal fun getSkillSummaryPreview(summary: SkillChangeSummary): String {
-    val sections = buildList {
-        if (summary.activated.isNotEmpty()) {
-            add("${stringResource(R.string.activity_timeline_activated)}: ${summary.activated.joinToString(", ")}")
-        }
-        if (summary.disabled.isNotEmpty()) {
-            add("${stringResource(R.string.activity_timeline_disabled)}: ${summary.disabled.joinToString(", ")}")
-        }
-    }
-    return if (sections.isNotEmpty()) {
-        sections.joinToString(" | ")
-    } else {
-        stringResource(R.string.activity_timeline_no_skill_changes)
     }
 }
 

@@ -24,7 +24,6 @@ import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.provider.withComfyDefaults
 import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.data.ai.transformers.MessageTemplateCache
-import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_LEARNING_MODE_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_OCR_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
@@ -35,7 +34,6 @@ import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV1Migration
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.ChatStorageSettings
-import me.rerere.rikkahub.data.model.Skill
 import me.rerere.rikkahub.data.model.Tag
 import me.rerere.rikkahub.ui.theme.PresetThemes
 import me.rerere.rikkahub.utils.JsonInstant
@@ -66,7 +64,7 @@ class SettingsStore(
     private val secretKeyManager: SecretKeyManager,
 ) : KoinComponent {
     companion object {
-        private val REMOVED_KEYS = listOf("text_selection_config", "assistant_overlay_config", "modes", "lorebooks")
+        private val REMOVED_KEYS = listOf("text_selection_config", "assistant_overlay_config", "modes", "lorebooks", "mcp_servers", "skills")
 
         // 版本号
         val VERSION = intPreferencesKey("data_version")
@@ -116,9 +114,6 @@ class SettingsStore(
         val SEARCH_COMMON = stringPreferencesKey("search_common")
         val SEARCH_SELECTED = intPreferencesKey("search_selected")
 
-        // MCP
-        val MCP_SERVERS = stringPreferencesKey("mcp_servers")
-
         // WebDAV
         val WEBDAV_CONFIG = stringPreferencesKey("webdav_config")
 
@@ -140,8 +135,6 @@ class SettingsStore(
         val WEB_SERVER_ACCESS_PASSWORD = stringPreferencesKey("web_server_access_password")
         val WEB_SERVER_BACKGROUND_SETUP_SHOWN = booleanPreferencesKey("web_server_background_setup_shown")
 
-        // Prompt Injections
-        val SKILLS = stringPreferencesKey("skills")
         val CHAT_STORAGE = stringPreferencesKey("chat_storage")
 
         // Android Integration
@@ -211,7 +204,6 @@ class SettingsStore(
                         SearchCommonOptions(),
                     ),
                     searchServiceSelected = preferences[SEARCH_SELECTED] ?: 0,
-                    mcpServers = decodePreferenceList(preferences[MCP_SERVERS]) ?: emptyList(),
                     webDavConfig = decodePreferenceValue(preferences[WEBDAV_CONFIG], WebDavConfig()),
                     ttsProviders = decodePreferenceList<TTSProviderSetting>(preferences[TTS_PROVIDERS])
                         ?: DEFAULT_TTS_PROVIDERS,
@@ -235,7 +227,6 @@ class SettingsStore(
                     webServerJwtEnabled = preferences[WEB_SERVER_JWT_ENABLED] == true,
                     webServerAccessPassword = preferences[WEB_SERVER_ACCESS_PASSWORD] ?: "",
                     webServerBackgroundSetupShown = preferences[WEB_SERVER_BACKGROUND_SETUP_SHOWN] == true,
-                    skills = decodePreferenceList(preferences[SKILLS]) ?: emptyList(),
                     chatStorage = decodePreferenceValue(
                         preferences[CHAT_STORAGE],
                         ChatStorageSettings(),
@@ -283,7 +274,6 @@ class SettingsStore(
         }
         .map { settings ->
             // 去重并清理无效引用
-            val validMcpServerIds = settings.mcpServers.map { it.id }.toSet()
             settings.copy(
                 providers = settings.providers
                     .distinctBy { it.id }
@@ -311,14 +301,7 @@ class SettingsStore(
                         )
                     }
                 },
-                assistants = settings.assistants.distinctBy { it.id }.map { assistant ->
-                    assistant.copy(
-                        // 过滤掉不存在的 MCP 服务器 ID
-                        mcpServers = assistant.mcpServers.filter { serverId ->
-                            serverId in validMcpServerIds
-                        }.toSet()
-                    )
-                },
+                assistants = settings.assistants.distinctBy { it.id },
                 ttsProviders = settings.ttsProviders.distinctBy { it.id }.map { provider ->
                     val defaultVoiceId = if (provider.id == DEFAULT_SYSTEM_TTS_ID) DEFAULT_SYSTEM_TTS_VOICE_ID else null
                     provider.copyProvider(
@@ -510,7 +493,6 @@ class SettingsStore(
                 normalizedSettings.searchServiceSelected.coerceIn(0, normalizedSettings.searchServices.size - 1)
             }
 
-            preferences[MCP_SERVERS] = JsonInstant.encodeToString(normalizedSettings.mcpServers)
             preferences[WEBDAV_CONFIG] = JsonInstant.encodeToString(migratedSettings.webDavConfig)
             preferences[TTS_PROVIDERS] = JsonInstant.encodeToString(migratedSettings.ttsProviders)
             normalizedSettings.selectedTTSProviderId?.let {
@@ -529,7 +511,6 @@ class SettingsStore(
             preferences[WEB_SERVER_ACCESS_PASSWORD] = normalizedSettings.webServerAccessPassword
             preferences[WEB_SERVER_BACKGROUND_SETUP_SHOWN] = normalizedSettings.webServerBackgroundSetupShown
 
-            preferences[SKILLS] = JsonInstant.encodeToString(normalizedSettings.skills)
             preferences[CHAT_STORAGE] = JsonInstant.encodeToString(normalizedSettings.chatStorage)
             // Settings of features that were removed: dropped from existing installs the next time anything is saved.
             REMOVED_KEYS.forEach { preferences.remove(stringPreferencesKey(it)) }

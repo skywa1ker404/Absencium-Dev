@@ -107,13 +107,6 @@ dependencies {
     implementation(libs.okhttp.sse)
     implementation(libs.okhttp.logging)
 
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.kotlinx.json)
-    // Only the loopback listener that receives an MCP server's OAuth redirect.
-    implementation(libs.ktor.server.core)
-    implementation(libs.ktor.server.cio)
 
     implementation(libs.pebble)
     implementation(libs.coil.compose)
@@ -141,7 +134,6 @@ dependencies {
     implementation(libs.jlatexmath)
     implementation(libs.jlatexmath.font.greek)
     implementation(libs.jlatexmath.font.cyrillic)
-    implementation(libs.modelcontextprotocol.kotlin.sdk)
     implementation(libs.jsoup)
     implementation(libs.quickjs)
     implementation(libs.floatingx)

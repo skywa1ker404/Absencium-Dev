@@ -25,10 +25,7 @@
     <string name="chat_message_cached">（缓存 %1$s）</string>
     <string name="chat_message_tokens_per_second">%1$.1f 令牌/秒</string>
     <string name="mcp_status_idle">空闲</string>
-    <string name="mcp_status_connecting">连接中</string>
-    <string name="mcp_status_connected">已连接</string>
     <string name="mcp_status_error">错误：%1$s</string>
-    <string name="mcp_tools_enabled_count">%1$d/%2$d 个工具</string>
     <string name="export_include_memories">包含记忆</string>
     <string name="export_character_always_included">角色设置和资料始终会被包含。</string>
     <string name="setting_display_ui_customization_desc">聊天显示、触感反馈、代码块、字体大小等</string>

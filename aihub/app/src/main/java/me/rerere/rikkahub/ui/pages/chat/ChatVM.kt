@@ -322,9 +322,6 @@ class ChatVM(
         chatService.stopGeneration(_conversationId)
     }
 
-    // MCP管理器 (从ChatService获取)
-    val mcpManager = chatService.mcpManager
-
     // 更新设置
     fun updateSettings(newSettings: Settings) {
         viewModelScope.launch {

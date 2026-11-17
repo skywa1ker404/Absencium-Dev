@@ -31,6 +31,7 @@ data class ConversationEntity(
     val isPinned: Boolean,
     @ColumnInfo(name = "is_consolidated", defaultValue = "0")
     val isConsolidated: Boolean = false,
+    // Unused since Skills were removed; the column is dropped with the next schema bump.
     @ColumnInfo(name = "enabled_mode_ids", defaultValue = "[]")
     val enabledModeIds: String = "[]",
     // Unused since lorebooks were removed; the column is dropped with the next schema bump.

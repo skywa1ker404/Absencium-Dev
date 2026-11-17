@@ -68,13 +68,11 @@ enum class SettingsDestination {
     ProviderModels,
     Search,
     Tts,
-    Mcp,
     Web,
     Backup,
     BackupWebDav,
     BackupLocal,
     ChatStorage,
-    Skills,
     Fonts,
     UiCustomization,
     Workspaces,
@@ -292,7 +290,6 @@ private fun SettingsDestination.mainDestination(): SettingsDestination {
         SettingsDestination.ProviderModels,
         SettingsDestination.Search,
         SettingsDestination.Tts -> SettingsDestination.Providers
-        SettingsDestination.Skills -> SettingsDestination.Display
         else -> this
     }
 }

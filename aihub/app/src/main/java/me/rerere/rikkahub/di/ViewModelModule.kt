@@ -32,7 +32,6 @@ val viewModelModule = module {
     viewModel<SettingVM> {
         SettingVM(
             settingsStore = get(),
-            mcpManager = get(),
             context = get(),
             platformHttpClient = get(),
             appStorageRepository = get(),

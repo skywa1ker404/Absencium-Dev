@@ -69,21 +69,14 @@ import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
-import me.rerere.rikkahub.data.model.InjectionPosition
-import me.rerere.rikkahub.data.model.ModeAttachmentType
-import me.rerere.rikkahub.data.model.hasManualSkillSelectionOverride
-import me.rerere.rikkahub.data.model.withoutSkillSelectionOverride
 import me.rerere.rikkahub.data.repository.ChatAttachmentRepository
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.utils.applyPlaceholders
-import me.rerere.rikkahub.utils.SkillExportImport
-import java.io.File
 import java.util.Locale
 import kotlin.uuid.Uuid
 
 private const val TAG = "GenerationHandler"
-private const val SKILL_MANAGEMENT_TOOL_NAME = "manage_skills"
 internal const val MEMORY_SEARCH_TOOL_NAME = "search_memory"
 
 private val SMART_CONTEXT_PROTECTED_BODY_KEYS = setOf(
@@ -233,17 +226,12 @@ internal fun extractInjectedImageParts(
 internal fun shouldRegisterMemorySearchTool(assistant: Assistant): Boolean {
     return assistant.enableMemory && assistant.enableMemorySearchTool
 }
-private const val SKILL_REASON_ASSISTANT = "Enabled for assistant"
-private const val SKILL_REASON_CONVERSATION = "Enabled for chat"
-private const val SKILL_REASON_TURN = "Activated for this turn"
-private const val SKILL_REASON_ALWAYS = "Always enabled"
 
 /**
  * Result of building messages, includes both the messages and info about activated context sources.
  */
 data class BuildMessagesResult(
     val messages: List<UIMessage>,
-    val usedModes: List<me.rerere.ai.ui.UsedMode> = emptyList(),
     val usedMemories: List<me.rerere.ai.ui.UsedMemory> = emptyList(),
     val contextUsage: ContextUsageBreakdown? = null,
     val effectiveTools: List<Tool> = emptyList(),
@@ -251,372 +239,6 @@ data class BuildMessagesResult(
     /** Inclusive prompt budget before tool definitions are allocated out of message history. */
     val effectiveInputBudgetTokens: Int? = null,
 )
-
-internal data class SkillToolState(
-    val activeSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    val availableSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    val blockedSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    val activeSkillIds: Set<Uuid>,
-)
-
-internal fun selectSmartTools(
-    tools: List<Tool>,
-    messages: List<UIMessage>,
-    model: Model,
-    inputBudgetTokens: Int,
-): List<Tool> {
-    if (tools.isEmpty()) return tools
-    val recentMessages = messages.takeLast(12)
-    val recentlyUsedNames = recentMessages.flatMap { message ->
-        message.getToolCalls().map { it.toolName }
-    }.toSet()
-    val queryTerms = recentMessages.lastOrNull { it.role == MessageRole.USER }
-        ?.toText()
-        .orEmpty()
-        .lowercase()
-        .split(Regex("[^a-z0-9_]+"))
-        .filter { it.length >= 3 }
-        .toSet()
-    data class RankedTool(val index: Int, val tool: Tool, val tokens: Int, val score: Int)
-    val ranked = tools.mapIndexed { index, tool ->
-        val systemPromptTokens = runCatching { tool.systemPrompt(model, messages) }
-            .getOrNull()
-            ?.takeIf { it.isNotBlank() }
-            ?.let { ContextTokenEstimator.textTokens(it, model) }
-            ?: 0
-        val searchable = "${tool.name} ${tool.description}".lowercase()
-        val semanticHits = queryTerms.count { term -> searchable.contains(term) }
-        val score = when {
-            tool.name in recentlyUsedNames -> 10_000
-            tool.name == SKILL_MANAGEMENT_TOOL_NAME || tool.name == "ask_user" -> 2_000
-            else -> semanticHits * 100 - index
-        }
-        RankedTool(
-            index = index,
-            tool = tool,
-            tokens = (ContextTokenEstimator.toolDefinitionTokens(tool, model).toLong() + systemPromptTokens)
-                .coerceAtMost(Int.MAX_VALUE.toLong())
-                .toInt(),
-            score = score,
-        )
-    }
-    val total = ranked.sumOf { it.tokens }
-    val allocation = (inputBudgetTokens * 0.22).toInt()
-        .coerceAtLeast(128)
-        .coerceAtMost((inputBudgetTokens - 128).coerceAtLeast(0))
-    if (total <= allocation) return tools
-
-    var remaining = allocation
-    val selected = mutableSetOf<Int>()
-    ranked.sortedByDescending { it.score }.forEach { candidate ->
-        if (candidate.tokens <= remaining) {
-            selected += candidate.index
-            remaining = (remaining - candidate.tokens).coerceAtLeast(0)
-        }
-    }
-    return ranked.filter { it.index in selected }.map { it.tool }
-}
-
-internal data class SkillActivationOutcome(
-    val activatedSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    val alreadyActiveSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    val blockedSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    val unmatchedTargets: List<String>,
-    val updatedTurnScopedSkillIds: Set<Uuid>,
-    val activeSkillIds: Set<Uuid>,
-)
-
-internal fun resolveManualSkillIds(
-    assistantDefaultSkillIds: Set<Uuid>,
-    conversationSkillIds: Set<Uuid>,
-    allSkillIds: Set<Uuid>,
-): Set<Uuid> {
-    val baseSkillIds = if (conversationSkillIds.hasManualSkillSelectionOverride() || conversationSkillIds.isNotEmpty()) {
-        conversationSkillIds.withoutSkillSelectionOverride()
-    } else {
-        assistantDefaultSkillIds
-    }
-    return baseSkillIds.intersect(allSkillIds)
-}
-
-internal fun resolveActiveSkillIds(
-    assistantDefaultSkillIds: Set<Uuid>,
-    conversationSkillIds: Set<Uuid>,
-    turnScopedSkillIds: Set<Uuid>,
-    allSkillIds: Set<Uuid>,
-    alwaysEnabledSkillIds: Set<Uuid> = emptySet(),
-): Set<Uuid> {
-    val defaultEnabledSkillIds = if (conversationSkillIds.hasManualSkillSelectionOverride()) {
-        emptySet()
-    } else {
-        alwaysEnabledSkillIds
-    }
-    return (
-        resolveManualSkillIds(
-            assistantDefaultSkillIds = assistantDefaultSkillIds,
-            conversationSkillIds = conversationSkillIds,
-            allSkillIds = allSkillIds,
-        ) + turnScopedSkillIds + defaultEnabledSkillIds
-        ).intersect(allSkillIds)
-}
-
-internal fun buildSkillToolState(
-    skills: List<me.rerere.rikkahub.data.model.Skill>,
-    assistantId: Uuid,
-    assistantDefaultSkillIds: Set<Uuid>,
-    conversationSkillIds: Set<Uuid>,
-    turnScopedSkillIds: Set<Uuid>,
-): SkillToolState {
-    val usableSkills = skills.filter { skill ->
-        skill.instructions.isNotBlank() && skill.isAvailableForAssistant(assistantId)
-    }
-    val allSkillIds = usableSkills.map { it.id }.toSet()
-    val alwaysEnabledSkillIds = usableSkills.filter { it.alwaysEnabled }.map { it.id }.toSet()
-    val activeSkillIds = resolveActiveSkillIds(
-        assistantDefaultSkillIds = assistantDefaultSkillIds,
-        conversationSkillIds = conversationSkillIds,
-        turnScopedSkillIds = turnScopedSkillIds,
-        allSkillIds = allSkillIds,
-        alwaysEnabledSkillIds = alwaysEnabledSkillIds,
-    )
-    // Always-enabled skills are invisible to the manage_skills tool:
-    // they cannot be toggled by the AI so they don't appear in any tool list.
-    // A skill may be enabled by the user but opt out of model-driven discovery.
-    // Keep it active when selected, while preventing the model from activating it.
-    val toggleableSkills = usableSkills.filterNot { it.disableModelInvocation }
-    val autonomousSkills = toggleableSkills.filter { skill ->
-        skill.canAssistantAutonomouslyToggle(assistantId)
-    }
-
-    return SkillToolState(
-        activeSkills = autonomousSkills.filter { skill -> activeSkillIds.contains(skill.id) },
-        availableSkills = autonomousSkills.filterNot { skill -> activeSkillIds.contains(skill.id) },
-        blockedSkills = toggleableSkills.filterNot { skill -> skill.canAssistantAutonomouslyToggle(assistantId) },
-        activeSkillIds = activeSkillIds,
-    )
-}
-
-private fun normalizeSkillKey(value: String): String {
-    return value.trim().lowercase(Locale.ROOT)
-}
-
-private fun buildSkillLookup(
-    skills: List<me.rerere.rikkahub.data.model.Skill>,
-): Map<String, me.rerere.rikkahub.data.model.Skill> {
-    return buildMap {
-        skills.forEach { skill ->
-            put(skill.id.toString().lowercase(Locale.ROOT), skill)
-            val normalizedName = skill.name.trim().lowercase(Locale.ROOT)
-            if (normalizedName.isNotBlank()) {
-                put(normalizedName, skill)
-            }
-        }
-    }
-}
-
-internal fun activateSkillsForTurn(
-    targets: List<String>,
-    availableSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    activeSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    blockedSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    currentTurnScopedSkillIds: Set<Uuid>,
-): SkillActivationOutcome {
-    val availableByKey = buildSkillLookup(availableSkills)
-    val activeByKey = buildSkillLookup(activeSkills)
-    val blockedByKey = buildSkillLookup(blockedSkills)
-
-    val activated = linkedSetOf<me.rerere.rikkahub.data.model.Skill>()
-    val alreadyActive = linkedSetOf<me.rerere.rikkahub.data.model.Skill>()
-    val blocked = linkedSetOf<me.rerere.rikkahub.data.model.Skill>()
-    val unmatched = mutableListOf<String>()
-
-    targets.forEach { rawTarget ->
-        val targetKey = normalizeSkillKey(rawTarget)
-        when {
-            availableByKey.containsKey(targetKey) -> activated += availableByKey.getValue(targetKey)
-            activeByKey.containsKey(targetKey) -> alreadyActive += activeByKey.getValue(targetKey)
-            blockedByKey.containsKey(targetKey) -> blocked += blockedByKey.getValue(targetKey)
-            else -> unmatched += rawTarget
-        }
-    }
-
-    return SkillActivationOutcome(
-        activatedSkills = activated.toList(),
-        alreadyActiveSkills = alreadyActive.toList(),
-        blockedSkills = blocked.toList(),
-        unmatchedTargets = unmatched,
-        updatedTurnScopedSkillIds = currentTurnScopedSkillIds + activated.map { it.id },
-        activeSkillIds = activeSkills.map { it.id }.toSet() + activated.map { it.id },
-    )
-}
-
-internal fun buildUsedModes(
-    availableSkills: List<me.rerere.rikkahub.data.model.Skill>,
-    assistantDefaultSkillIds: Set<Uuid>,
-    conversationSkillIds: Set<Uuid>,
-    turnScopedSkillIds: Set<Uuid>,
-    alwaysEnabledSkillIds: Set<Uuid> = availableSkills.filter { it.alwaysEnabled }.map { it.id }.toSet(),
-): List<me.rerere.ai.ui.UsedMode> {
-    val allSkillIds = availableSkills.map { it.id }.toSet()
-    val activeSkillIds = resolveActiveSkillIds(
-        assistantDefaultSkillIds = assistantDefaultSkillIds,
-        conversationSkillIds = conversationSkillIds,
-        turnScopedSkillIds = turnScopedSkillIds,
-        allSkillIds = allSkillIds,
-        alwaysEnabledSkillIds = alwaysEnabledSkillIds,
-    )
-    val enabledSkills = availableSkills.filter { skill ->
-        activeSkillIds.contains(skill.id)
-    }
-
-    return enabledSkills.mapIndexed { index, skill ->
-        val reason = when {
-            skill.alwaysEnabled -> SKILL_REASON_ALWAYS
-            turnScopedSkillIds.contains(skill.id) -> SKILL_REASON_TURN
-            conversationSkillIds.contains(skill.id) -> SKILL_REASON_CONVERSATION
-            else -> SKILL_REASON_ASSISTANT
-        }
-        me.rerere.ai.ui.UsedMode(
-            modeId = skill.id.toString(),
-            modeName = skill.name,
-            modeIcon = skill.icon,
-            priority = enabledSkills.size - index,
-            activationReason = reason,
-        )
-    }
-}
-
-internal fun createSkillManagementTool(
-    state: SkillToolState,
-    currentTurnScopedSkillIds: Set<Uuid>,
-    automaticInvocationEnabled: Boolean = true,
-    onUpdateTurnScopedSkillIds: suspend (Set<Uuid>) -> Unit,
-): Tool? {
-    if (!automaticInvocationEnabled || state.availableSkills.isEmpty()) {
-        return null
-    }
-
-    fun parseTargets(args: kotlinx.serialization.json.JsonElement): List<String> {
-        val params = args.jsonObject
-        val targetsFromList = (params["skills"] as? JsonArray)
-            ?.mapNotNull { item ->
-                (item as? JsonPrimitive)?.contentOrNull
-                    ?.trim()
-                    ?.takeIf { it.isNotBlank() }
-            }
-            ?: emptyList()
-        val targetFromSingle = (params["skill"] as? JsonPrimitive)
-            ?.contentOrNull
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-        return (targetsFromList + listOfNotNull(targetFromSingle))
-            .flatMap { raw ->
-                raw.split(",")
-                    .map { it.trim() }
-                    .filter { it.isNotBlank() }
-            }
-            .distinct()
-    }
-
-    fun summarizeSkill(skill: me.rerere.rikkahub.data.model.Skill): String {
-        val description = skill.description
-            .ifBlank { "No description provided." }
-            .replace('\n', ' ')
-            .trim()
-            .take(120)
-        return skill.compatibility
-            ?.takeIf { it.isNotBlank() }
-            ?.let { "$description (Requires: ${it.replace('\n', ' ').take(64)})" }
-            ?: description
-    }
-
-    val availableSkillSummary = state.availableSkills.joinToString("; ") { skill ->
-        val label = skill.name.ifBlank { skill.id.toString() }
-        "$label: ${summarizeSkill(skill)}"
-    }
-
-    return Tool(
-        name = SKILL_MANAGEMENT_TOOL_NAME,
-        description = "Activate relevant skills for this turn; their full instructions load on the next step. Available: $availableSkillSummary",
-        parameters = {
-            InputSchema.Obj(
-                properties = buildJsonObject {
-                    put("skills", buildJsonObject {
-                        put("type", "array")
-                        put("description", "Skills to activate for this turn, referenced by exact id or exact skill name.")
-                        put("items", buildJsonObject {
-                            put("type", "string")
-                        })
-                    })
-                },
-                required = listOf("skills"),
-            )
-        },
-        execute = { args ->
-            val targets = parseTargets(args)
-            if (targets.isEmpty()) {
-                error("Provide at least one skill target in `skills` or `skill`.")
-            }
-
-            val outcome = activateSkillsForTurn(
-                targets = targets,
-                availableSkills = state.availableSkills,
-                activeSkills = state.activeSkills,
-                blockedSkills = state.blockedSkills,
-                currentTurnScopedSkillIds = currentTurnScopedSkillIds,
-            )
-
-            if (outcome.updatedTurnScopedSkillIds != currentTurnScopedSkillIds) {
-                onUpdateTurnScopedSkillIds(outcome.updatedTurnScopedSkillIds)
-            }
-
-            buildJsonObject {
-                put("updated", JsonPrimitive(outcome.updatedTurnScopedSkillIds != currentTurnScopedSkillIds))
-                put(
-                    "activated",
-                    JsonArray(
-                        outcome.activatedSkills.map { skill ->
-                            buildJsonObject {
-                                put("id", JsonPrimitive(skill.id.toString()))
-                                put("name", JsonPrimitive(skill.name))
-                            }
-                        }
-                    )
-                )
-                put(
-                    "already_active",
-                    JsonArray(
-                        outcome.alreadyActiveSkills.map { skill ->
-                            buildJsonObject {
-                                put("id", JsonPrimitive(skill.id.toString()))
-                                put("name", JsonPrimitive(skill.name))
-                            }
-                        }
-                    )
-                )
-                put(
-                    "blocked",
-                    JsonArray(
-                        outcome.blockedSkills.map { skill ->
-                            buildJsonObject {
-                                put("id", JsonPrimitive(skill.id.toString()))
-                                put("name", JsonPrimitive(skill.name))
-                            }
-                        }
-                    )
-                )
-                put(
-                    "unmatched",
-                    JsonArray(outcome.unmatchedTargets.map { JsonPrimitive(it) })
-                )
-                put(
-                    "enabled_skill_ids",
-                    JsonArray(outcome.activeSkillIds.map { JsonPrimitive(it.toString()) })
-                )
-            }
-        }
-    )
-}
 
 @Serializable
 sealed interface GenerationChunk {
@@ -649,7 +271,6 @@ class GenerationHandler(
         tools: List<Tool> = emptyList(),
         truncateIndex: Int = -1,
         maxSteps: Int = 256,
-        enabledModeIds: Set<Uuid> = emptySet(),
         activeConversationId: Uuid? = null,
         contextSummary: String? = null,
         contextSummaryUpToIndex: Int = -1,
@@ -657,30 +278,12 @@ class GenerationHandler(
         contextUsageSourceKey: Int? = null,
         contextBudgetScale: Double = 1.0,
     ): Flow<GenerationChunk> = channelFlow {
-        // Older app-created skills predate package storage. Materialize their
-        // canonical SKILL.md before a workspace starts so resource paths in the
-        // prompt always point to a real package.
-        settings.skills.forEach { skill ->
-            runCatching { SkillExportImport.ensureManagedSkillPackage(context, skill) }
-                .onFailure { Log.w(TAG, "Could not sync skill package ${skill.name}", it) }
-        }
         val provider = secretKeyManager.populateProviderSecrets(
             model.findProvider(settings.providers) ?: error("Provider not found")
         )
         val providerImpl = providerManager.getProviderByType(provider)
 
         var messages: List<UIMessage> = messages
-        val allSkillIds = settings.skills
-            .filter { it.instructions.isNotBlank() }
-            .map { it.id }
-            .toSet()
-        val assistantDefaultSkillIds = settings.skills
-            .filter { it.instructions.isNotBlank() && it.isAvailableForAssistant(assistant.id) }
-            .map { it.id }
-            .toSet()
-            .let { assistant.enabledSkillIds.intersect(it) }
-        val conversationSkillIds = enabledModeIds
-        var currentTurnScopedSkillIds = emptySet<Uuid>()
 
         for (stepIndex in 0 until maxSteps) {
             Log.i(TAG, "streamText: start step #$stepIndex (${model.id})")
@@ -714,21 +317,6 @@ class GenerationHandler(
                         }
                     ).let(this::addAll)
                 }
-                createSkillManagementTool(
-                    state = buildSkillToolState(
-                        skills = settings.skills,
-                        assistantId = assistant.id,
-                        assistantDefaultSkillIds = assistantDefaultSkillIds,
-                        conversationSkillIds = conversationSkillIds,
-                        turnScopedSkillIds = currentTurnScopedSkillIds,
-                    ),
-                    currentTurnScopedSkillIds = currentTurnScopedSkillIds,
-                    automaticInvocationEnabled = assistant.enableAutomaticSkillInvocation &&
-                        model.abilities.contains(ModelAbility.TOOL),
-                    onUpdateTurnScopedSkillIds = { updatedIds ->
-                        currentTurnScopedSkillIds = updatedIds.intersect(allSkillIds)
-                    },
-                )?.let(this::add)
                 addAll(tools)
             }
 
@@ -758,8 +346,6 @@ class GenerationHandler(
                 memories = memories ?: emptyList(),
                 truncateIndex = truncateIndex,
                 stream = assistant.streamOutput,
-                conversationEnabledModeIds = conversationSkillIds,
-                turnScopedEnabledModeIds = currentTurnScopedSkillIds,
                 activeConversationId = activeConversationId,
                 contextSummary = contextSummary,
                 contextSummaryUpToIndex = contextSummaryUpToIndex,
@@ -889,8 +475,6 @@ class GenerationHandler(
         tools: List<Tool>,
         memories: List<AssistantMemory>,
         truncateIndex: Int,
-        conversationEnabledModeIds: Set<Uuid> = emptySet(),
-        turnScopedEnabledModeIds: Set<Uuid> = emptySet(),
         activeConversationId: Uuid? = null,
         contextSummary: String? = null,
         contextSummaryUpToIndex: Int = -1,
@@ -928,78 +512,9 @@ class GenerationHandler(
         }
         var currentTokens = 0
 
-        val availableSkills = settings.skills.filter { skill ->
-            skill.enabled && skill.instructions.isNotBlank()
-        }
-        val allSkillIds = availableSkills.map { it.id }.toSet()
-        val assistantAvailableSkillIds = settings.skills
-            .filter { it.enabled && it.instructions.isNotBlank() && it.isAvailableForAssistant(assistant.id) }
-            .map { it.id }
-            .toSet()
-        val alwaysEnabledSkillIds = availableSkills
-            .filter { it.alwaysEnabled && assistantAvailableSkillIds.contains(it.id) }
-            .map { it.id }
-            .toSet()
-        val assistantDefaultSkillIds = settings.skills
-            .filter { it.enabled && it.instructions.isNotBlank() && it.isAvailableForAssistant(assistant.id) }
-            .map { it.id }
-            .toSet()
-            .let { assistant.enabledSkillIds.intersect(it) }
-        val activeSkillIds = resolveActiveSkillIds(
-            assistantDefaultSkillIds = assistantDefaultSkillIds,
-            conversationSkillIds = conversationEnabledModeIds,
-            turnScopedSkillIds = turnScopedEnabledModeIds,
-            allSkillIds = allSkillIds,
-            alwaysEnabledSkillIds = alwaysEnabledSkillIds,
-        )
-        val enabledSkills = availableSkills.filter { activeSkillIds.contains(it.id) }
-        val usedModes = buildUsedModes(
-            availableSkills = availableSkills,
-            assistantDefaultSkillIds = assistantDefaultSkillIds,
-            conversationSkillIds = conversationEnabledModeIds,
-            turnScopedSkillIds = turnScopedEnabledModeIds,
-            alwaysEnabledSkillIds = alwaysEnabledSkillIds,
-        )
-
-        // Group injections by position
-        val beforeSystemSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.BEFORE_SYSTEM }
-        val afterSystemSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.AFTER_SYSTEM }
-        val topOfChatSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.TOP_OF_CHAT }
-        val beforeLatestSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.BEFORE_LATEST }
-        val depthSkills = enabledSkills.filter { it.injectionPosition == InjectionPosition.AT_DEPTH }
-
-        // 1. Base System Prompt (BEFORE_SYSTEM skills/entries + System + Learning + AFTER_SYSTEM skills/entries + Tools)
+        // 1. Base System Prompt (System + Learning + Tools)
         val baseSystemPromptBuilder = StringBuilder()
 
-        fun appendSkillPrompt(skill: me.rerere.rikkahub.data.model.Skill) {
-            if (skill.name.isNotBlank()) {
-                baseSystemPromptBuilder.append("[Skill: ${skill.name}]")
-                baseSystemPromptBuilder.appendLine()
-            }
-            baseSystemPromptBuilder.append(skill.instructions)
-            val skillsRoot = File(context.filesDir, "skills")
-            val resources = File(skillsRoot, skill.workspaceDirectory().removePrefix("/skills/"))
-                .takeIf { it.isDirectory }
-                ?.walkTopDown()
-                ?.filter { it.isFile && it.name != "SKILL.md" }
-                ?.map { it.relativeTo(skillsRoot).invariantSeparatorsPath }
-                ?.take(64)
-                ?.toList()
-                .orEmpty()
-            if (resources.isNotEmpty()) {
-                baseSystemPromptBuilder.appendLine()
-                baseSystemPromptBuilder.appendLine("Skill package: ${skill.workspaceDirectory()}")
-                baseSystemPromptBuilder.appendLine("Bundled resources (load only when needed):")
-                resources.forEach { baseSystemPromptBuilder.appendLine("- /skills/$it") }
-            }
-        }
-        
-        // BEFORE_SYSTEM injections
-        beforeSystemSkills.forEach { skill ->
-            appendSkillPrompt(skill)
-            baseSystemPromptBuilder.appendLine()
-        }
-        
         // Original system prompt  
         if (assistant.systemPrompt.isNotBlank()) {
             baseSystemPromptBuilder.append(assistant.systemPrompt)
@@ -1012,19 +527,13 @@ class GenerationHandler(
             baseSystemPromptBuilder.appendLine()
         }
         
-        // AFTER_SYSTEM injections
-        afterSystemSkills.forEach { skill ->
-            baseSystemPromptBuilder.appendLine()
-            appendSkillPrompt(skill)
-        }
-        
         val toolSystemPromptText = effectiveTools.joinToString("\n") { tool -> tool.systemPrompt(model, messages) }
         if (toolSystemPromptText.isNotBlank()) {
             baseSystemPromptBuilder.appendLine()
             baseSystemPromptBuilder.append(toolSystemPromptText)
         }
 
-        val visualToolNames = setOf("search_web", "workspace_view_image", "workspace_read_file", "look_at_screen")
+        val visualToolNames = setOf("search_web", "workspace_view_image", "workspace_read_file")
         val hasVisualToolResults = messages.any { msg ->
             msg.role == MessageRole.TOOL && msg.parts.any { it is UIMessagePart.ToolResult && it.inspectedImages.isNotEmpty() }
         }
@@ -1289,25 +798,6 @@ class GenerationHandler(
         }
 
         // 4. Construct Final List
-        // Collect all attachments from enabled skills
-        val skillAttachmentParts = enabledSkills.flatMap { skill ->
-            skill.attachments.map { attachment ->
-                when (attachment.type) {
-                    ModeAttachmentType.IMAGE -> UIMessagePart.Image(url = attachment.url)
-                    ModeAttachmentType.VIDEO -> UIMessagePart.Video(url = attachment.url)
-                    ModeAttachmentType.AUDIO -> UIMessagePart.Audio(url = attachment.url)
-                    ModeAttachmentType.DOCUMENT -> UIMessagePart.Document(
-                        url = attachment.url,
-                        fileName = attachment.fileName,
-                        mime = attachment.mime
-                    )
-                }
-            }
-        }
-        
-        // Combine all context attachments
-        val allContextAttachments = skillAttachmentParts
-        
         val orderedSelectedMessages = if (smartEnabled) {
             // Smart preparation creates message copies (OCR/media/tool compaction), so looking
             // them up in the original list can return -1 and reverse history. They are already
@@ -1326,15 +816,6 @@ class GenerationHandler(
                 add(UIMessage.system(baseSystemPrompt))
             }
 
-            fun skillMessage(skill: me.rerere.rikkahub.data.model.Skill): UIMessage = UIMessage.user(
-                "<system>\n[Skill: ${skill.name}]\n${skill.instructions}\nSkill directory: ${skill.workspaceDirectory()}\n</system>"
-            )
-
-            // These positions intentionally become in-context messages rather than
-            // system-prompt text. That makes TOP_OF_CHAT, BEFORE_LATEST and AT_DEPTH
-            // materially distinct and preserves their documented ordering.
-            topOfChatSkills.forEach { add(skillMessage(it)) }
-            
             val dynamicContext = buildList {
                 if (!contextSummary.isNullOrBlank()) {
                     add("[Conversation Summary (Earlier context)]:\n$contextSummary")
@@ -1352,20 +833,7 @@ class GenerationHandler(
                 val latestTurnGroup = turnGroups.last()
                 val historicalTurnGroups = turnGroups.dropLast(1)
 
-                // Depth injections are aligned to atomic TurnGroup boundaries to prevent interleaving inside tool exchanges
-                val depthByGroupIndex = depthSkills.groupBy { skill ->
-                    (historicalTurnGroups.size - skill.depth.coerceAtLeast(0)).coerceIn(0, historicalTurnGroups.size)
-                }
-
-                for (groupIndex in 0..historicalTurnGroups.size) {
-                    depthByGroupIndex[groupIndex].orEmpty().forEach { add(skillMessage(it)) }
-                    if (groupIndex < historicalTurnGroups.size) {
-                        addAll(historicalTurnGroups[groupIndex].messages)
-                    }
-                }
-
-                // Injections BEFORE the latest turn sit strictly outside the active TurnGroup
-                beforeLatestSkills.forEach { add(skillMessage(it)) }
+                addAll(historicalTurnGroups.flatMap { it.messages })
 
                 // Attach dynamic context (summary, memories, time) strictly to the initiating USER message.
                 // In multi-step tool turns, attaching text to TOOL messages triggers Gemini 400 INVALID_ARGUMENT
@@ -1377,9 +845,6 @@ class GenerationHandler(
                     latestMessages.forEachIndexed { idx, msg ->
                         if (idx == initiatingUserIndex) {
                             var userParts = msg.parts
-                            if (allContextAttachments.isNotEmpty()) {
-                                userParts = allContextAttachments + userParts
-                            }
                             if (dynamicContext.isNotBlank()) {
                                 userParts = listOf(UIMessagePart.Text("<system>\n$dynamicContext\n</system>\n\n")) + userParts
                             }
@@ -1394,23 +859,11 @@ class GenerationHandler(
                     if (dynamicContext.isNotBlank()) {
                         add(UIMessage.system(dynamicContext))
                     }
-                    if (allContextAttachments.isNotEmpty()) {
-                        add(UIMessage(role = MessageRole.USER, parts = allContextAttachments))
-                    }
                     addAll(latestMessages)
                 }
             } else {
-                depthSkills.forEach { add(skillMessage(it)) }
-                beforeLatestSkills.forEach { add(skillMessage(it)) }
                 if (dynamicContext.isNotBlank()) {
                     add(UIMessage.system(dynamicContext))
-                }
-                
-                if (allContextAttachments.isNotEmpty()) {
-                    add(UIMessage(
-                        role = me.rerere.ai.core.MessageRole.USER,
-                        parts = allContextAttachments
-                    ))
                 }
             }
         }.limitImagesForModel(model)
@@ -1447,18 +900,11 @@ class GenerationHandler(
         
         return BuildMessagesResult(
             messages = builtMessages,
-            usedModes = usedModes,
             usedMemories = usedMemories,
             effectiveTools = effectiveTools,
             messageBudgetTokens = smartMessageBudget,
             effectiveInputBudgetTokens = maxTokens.takeIf { smartEnabled },
             contextUsage = model.contextCapacityTokens?.let {
-                val skillText = buildString {
-                    enabledSkills.forEach { skill ->
-                        appendLine(skill.name)
-                        appendLine(skill.instructions)
-                    }
-                }
                 val systemPromptText = buildString {
                     append(assistant.systemPrompt)
                     if (assistant.learningMode) {
@@ -1472,7 +918,6 @@ class GenerationHandler(
                     systemPromptText = systemPromptText,
                     summaryText = contextSummary.orEmpty(),
                     memoryText = selectedMemoryPromptText,
-                    skillText = skillText,
                     toolDefinitionText = toolDefinitionText,
                     toolDefinitionTokensOverride = toolDefinitionTokens,
                     embeddedToolText = toolSystemPromptText,
@@ -1601,8 +1046,6 @@ class GenerationHandler(
         memories: List<AssistantMemory>,
         truncateIndex: Int,
         stream: Boolean,
-        conversationEnabledModeIds: Set<Uuid> = emptySet(),
-        turnScopedEnabledModeIds: Set<Uuid> = emptySet(),
         activeConversationId: Uuid? = null,
         contextSummary: String? = null,
         contextSummaryUpToIndex: Int = -1,
@@ -1618,8 +1061,6 @@ class GenerationHandler(
             tools = tools,
             memories = memories,
             truncateIndex = truncateIndex,
-            conversationEnabledModeIds = conversationEnabledModeIds,
-            turnScopedEnabledModeIds = turnScopedEnabledModeIds,
             activeConversationId = activeConversationId,
             contextSummary = contextSummary,
             contextSummaryUpToIndex = contextSummaryUpToIndex,
@@ -1661,9 +1102,8 @@ class GenerationHandler(
             )
         }
         transformedUsage?.let { onContextUsage(it) }
-        val usedModes = buildResult.usedModes
         val usedMemories = buildResult.usedMemories
-        val hasContextSources = usedModes.isNotEmpty() || usedMemories.isNotEmpty()
+        val hasContextSources = usedMemories.isNotEmpty()
 
         var messages: List<UIMessage> = uiMessages
         if (transformedInput.annotations.isNotEmpty()) {
@@ -1831,7 +1271,6 @@ class GenerationHandler(
                 messages = messages.mapIndexed { index, message ->
                     if (index == messages.lastIndex && message.role == me.rerere.ai.core.MessageRole.ASSISTANT) {
                         message.copy(
-                            usedModes = usedModes.ifEmpty { null },
                             usedMemories = usedMemories.ifEmpty { null }
                         )
                     } else {
@@ -1883,7 +1322,6 @@ class GenerationHandler(
                 messages = messages.mapIndexed { index, message ->
                     if (index == messages.lastIndex && message.role == me.rerere.ai.core.MessageRole.ASSISTANT) {
                         message.copy(
-                            usedModes = usedModes.ifEmpty { null },
                             usedMemories = usedMemories.ifEmpty { null }
                         )
                     } else {

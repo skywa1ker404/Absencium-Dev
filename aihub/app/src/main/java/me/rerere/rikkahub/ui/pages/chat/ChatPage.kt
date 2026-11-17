@@ -162,14 +162,12 @@ import me.rerere.rikkahub.data.datastore.getEffectiveTTSProvider
 import me.rerere.rikkahub.data.datastore.getEffectiveTtsAutoplayMode
 import me.rerere.rikkahub.data.ai.contextUsageSourceKey
 import me.rerere.rikkahub.data.ai.buildTimeAwarenessBlock
-import me.rerere.rikkahub.data.ai.resolveActiveSkillIds
 import me.rerere.rikkahub.data.ai.tools.toDefinitionPreviews
 import me.rerere.rikkahub.data.ai.selectSmartMemoryContext
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_LEARNING_MODE_PROMPT
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.ModeAttachmentType
 import me.rerere.rikkahub.navigation.CHAT_ROUTE_TARGET_KEY
 import me.rerere.rikkahub.navigation.ChatRouteTarget
 import me.rerere.rikkahub.data.repository.ChatAttachmentManager
@@ -1895,7 +1893,6 @@ private fun ChatPageContent(
                     state = inputState,
                     settings = setting,
                     conversation = conversation,
-                    mcpManager = vm.mcpManager,
                     chatSuggestions = conversation.chatSuggestions,
                     onClickSuggestion = { suggestion ->
                         if (currentChatModel != null) {
@@ -3076,24 +3073,6 @@ private fun rememberContextMeterUsage(
             }
             .takeIf { it > 0 }
     }.take(6)
-    val availableSkills = settings.skills.filter { skill ->
-        skill.enabled && skill.instructions.isNotBlank()
-    }
-    val allSkillIds = availableSkills.map { skill -> skill.id }.toSet()
-    val assistantAvailableSkillIds = availableSkills
-        .filter { skill -> skill.isAvailableForAssistant(assistant.id) }
-        .map { skill -> skill.id }
-        .toSet()
-    val activeSkillIds = resolveActiveSkillIds(
-        assistantDefaultSkillIds = assistant.enabledSkillIds.intersect(assistantAvailableSkillIds),
-        conversationSkillIds = conversation.enabledModeIds,
-        turnScopedSkillIds = emptySet(),
-        allSkillIds = allSkillIds,
-        alwaysEnabledSkillIds = availableSkills
-            .filter { skill -> skill.alwaysEnabled && skill.id in assistantAvailableSkillIds }
-            .map { skill -> skill.id }
-            .toSet(),
-    )
     val eligibleMemoryCandidateTokens = remember(eligibleMemoryCandidates, activeModel) {
         eligibleMemoryCandidates.sumOf { memory ->
             ContextTokenEstimator.textTokens(memory.content, activeModel).toLong()
@@ -3115,47 +3094,11 @@ private fun rememberContextMeterUsage(
         conditionalContextCandidateTokens = 0,
         observedConditionalTokenTotals = emptyList(),
     )
-    val skillText = remember(availableSkills, activeSkillIds) {
-        buildString {
-            availableSkills
-                .filter { skill -> skill.id in activeSkillIds }
-                .forEach { skill ->
-                    appendLine(skill.name)
-                    appendLine(skill.instructions)
-                }
-        }
-    }
-    val skillTokens = remember(skillText, activeModel) {
-        ContextTokenEstimator.textTokens(skillText, activeModel)
-    }
-    fun me.rerere.rikkahub.data.model.ModeAttachment.toContextPart(): UIMessagePart = when (type) {
-        ModeAttachmentType.IMAGE -> UIMessagePart.Image(url)
-        ModeAttachmentType.VIDEO -> UIMessagePart.Video(url)
-        ModeAttachmentType.AUDIO -> UIMessagePart.Audio(url)
-        ModeAttachmentType.DOCUMENT -> UIMessagePart.Document(url, fileName, mime)
-    }
-    val knownContextAttachments = remember(availableSkills, activeSkillIds) {
-        buildList {
-            availableSkills
-                .filter { skill -> skill.id in activeSkillIds }
-                .flatMapTo(this) { skill -> skill.attachments.map { it.toContextPart() } }
-        }
-    }
-    val knownContextMediaTokens = remember(knownContextAttachments, activeModel) {
-        knownContextAttachments.sumOf { part ->
-            ContextTokenEstimator.partTokens(part, activeModel)
-        }
-    }
     val toolAccounting = remember(
         activeModel,
         assistant.localTools,
-        assistant.mcpServers,
-        settings.mcpServers,
     ) {
         if (ModelAbility.TOOL !in activeModel.abilities) return@remember "" to 0
-        val activeMcpTools = settings.mcpServers
-            .filter { server -> server.commonOptions.enable && server.id in assistant.mcpServers }
-            .flatMap { server -> server.commonOptions.tools.filter { tool -> tool.enable } }
         val localPreviews = assistant.localTools.flatMap { it.toDefinitionPreviews() }
         val definitionText = buildString {
             localPreviews.forEach { tool ->
@@ -3164,15 +3107,6 @@ private fun rememberContextMeterUsage(
                         name = tool.name,
                         description = tool.description,
                         schema = tool.schema,
-                    )
-                )
-            }
-            activeMcpTools.forEach { tool ->
-                appendLine(
-                    ContextTokenEstimator.toolDefinitionText(
-                        name = tool.name,
-                        description = tool.description.orEmpty(),
-                        schema = tool.inputSchema,
                     )
                 )
             }
@@ -3185,20 +3119,12 @@ private fun rememberContextMeterUsage(
                 model = activeModel,
             ).toLong()
         }
-        val mcpTokens = activeMcpTools.sumOf { tool ->
-            ContextTokenEstimator.toolDefinitionTokens(
-                name = tool.name,
-                description = tool.description.orEmpty(),
-                schema = tool.inputSchema,
-                model = activeModel,
-            ).toLong()
-        }
-        definitionText to (localTokens + mcpTokens)
+        definitionText to localTokens
             .coerceAtMost(Int.MAX_VALUE.toLong())
             .toInt()
     }
     val toolDefinitionText = toolAccounting.first
-    // Once a request has resolved runtime/local/MCP/memory tools, retain that exact definition
+    // Once a request has resolved runtime/local/memory tools, retain that exact definition
     // cost while typing instead of falling back to the necessarily incomplete settings preview.
     val toolDefinitionTokens = matchingRequestUsage?.toolDefinitionTokens ?: toolAccounting.second
     val systemPromptText = buildString {
@@ -3223,7 +3149,7 @@ private fun rememberContextMeterUsage(
     }
     val deterministicContextTokens = ContextTokenEstimator.textTokens(systemPromptText, activeModel) +
         ContextTokenEstimator.textTokens(conversation.contextSummary.orEmpty(), activeModel) +
-        skillTokens + toolDefinitionTokens + knownContextMediaTokens
+        toolDefinitionTokens
     val fixedMemorySelection = remember(
         eligibleMemoryCandidates,
         activeModel,
@@ -3263,20 +3189,16 @@ private fun rememberContextMeterUsage(
         conversation.contextSummary,
         fixedMemoryText,
         fixedMemoryTokens,
-        skillText,
-        skillTokens,
         toolDefinitionText,
         toolDefinitionTokens,
-        knownContextAttachments,
         effectiveSmartInputBudget,
         sourceKey,
     ) {
         val messagesToCount = if (smartActive) {
             val namedTokens = ContextTokenEstimator.textTokens(systemPromptText, activeModel) +
                 ContextTokenEstimator.textTokens(conversation.contextSummary.orEmpty(), activeModel) +
-                fixedMemoryTokens + skillTokens +
-                toolDefinitionTokens +
-                knownContextMediaTokens
+                fixedMemoryTokens +
+                toolDefinitionTokens
             val messageBudget = ((effectiveSmartInputBudget ?: Int.MAX_VALUE) - namedTokens)
                 .coerceAtLeast(1)
             smartFitContext(
@@ -3294,11 +3216,8 @@ private fun rememberContextMeterUsage(
             summaryText = conversation.contextSummary.orEmpty(),
             memoryText = fixedMemoryText,
             memoryTokensOverride = fixedMemoryTokens,
-            skillText = skillText,
-            skillTokensOverride = skillTokens,
             toolDefinitionText = toolDefinitionText,
             toolDefinitionTokensOverride = toolDefinitionTokens,
-            pendingParts = knownContextAttachments,
             usableInputTokens = effectiveSmartInputBudget,
             sourceKey = sourceKey,
         )
@@ -3332,9 +3251,8 @@ private fun rememberContextMeterUsage(
             val pendingMessage = UIMessage(role = MessageRole.USER, parts = pendingParts)
             val namedTokens = ContextTokenEstimator.textTokens(systemPromptText, activeModel) +
                 ContextTokenEstimator.textTokens(conversation.contextSummary.orEmpty(), activeModel) +
-                fixedMemoryTokens + skillTokens +
-                toolDefinitionTokens +
-                knownContextMediaTokens
+                fixedMemoryTokens +
+                toolDefinitionTokens
             val messageBudget = (budgetLimit - namedTokens).coerceAtLeast(1)
             val messagesToCount = smartFitContext(
                 messages = messages + listOf(pendingMessage),
@@ -3348,11 +3266,8 @@ private fun rememberContextMeterUsage(
                 summaryText = conversation.contextSummary.orEmpty(),
                 memoryText = fixedMemoryText,
                 memoryTokensOverride = fixedMemoryTokens,
-                skillText = skillText,
-                    skillTokensOverride = skillTokens,
-                    toolDefinitionText = toolDefinitionText,
+                toolDefinitionText = toolDefinitionText,
                 toolDefinitionTokensOverride = toolDefinitionTokens,
-                pendingParts = knownContextAttachments,
                 usableInputTokens = effectiveSmartInputBudget,
                 sourceKey = sourceKey,
             )
@@ -3575,7 +3490,6 @@ private fun ContextUsagePopupContent(
     val animatedSystemPrompt by animateIntAsState(usage.systemPromptTokens, tokenAnimation, label = "context_system_prompt")
     val animatedSummary by animateIntAsState(usage.summaryTokens, tokenAnimation, label = "context_summary")
     val animatedMemory by animateIntAsState(usage.memoryTokens, tokenAnimation, label = "context_memory")
-    val animatedSkills by animateIntAsState(usage.skillTokens, tokenAnimation, label = "context_skills")
     val animatedToolDefinitions by animateIntAsState(usage.toolDefinitionTokens, tokenAnimation, label = "context_tool_definitions")
     val animatedToolCalls by animateIntAsState(usage.toolCallTokens, tokenAnimation, label = "context_tool_calls")
     val animatedMedia by animateIntAsState(usage.mediaTokens, tokenAnimation, label = "context_media")
@@ -3629,7 +3543,6 @@ private fun ContextUsagePopupContent(
         Triple(stringResource(R.string.context_meter_system_prompt), animatedSystemPrompt, categoryColors[1]),
         Triple(stringResource(R.string.context_meter_summary), animatedSummary, categoryColors[2]),
         Triple(stringResource(R.string.context_meter_memory), animatedMemory, categoryColors[3]),
-        Triple(stringResource(R.string.context_meter_skills_modes), animatedSkills, categoryColors[4]),
         Triple(stringResource(R.string.context_meter_tool_definitions), animatedToolDefinitions, categoryColors[6]),
         Triple(stringResource(R.string.context_meter_tool_calls), animatedToolCalls, categoryColors[7]),
         Triple(stringResource(R.string.context_meter_media), animatedMedia, categoryColors[8]),

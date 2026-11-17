@@ -1063,7 +1063,6 @@ private fun buildToolCopyText(entry: TimelineEntry.ToolCall): String {
         "eval_python" -> buildPythonCopyText(entry, header)
         in SANDBOX_FILE_TOOLS -> buildSandboxFileCopyText(entry, header)
         in WORKSPACE_TOOLS -> buildWorkspaceCopyText(entry, header)
-        "manage_skills" -> buildSkillCopyText(entry, header)
         else -> buildGenericToolCopyText(entry, header)
     }.trim()
 }
@@ -1154,15 +1153,6 @@ private fun buildWorkspaceCopyText(entry: TimelineEntry.ToolCall, header: String
     }.joinToString("\n\n")
 }
 
-private fun buildSkillCopyText(entry: TimelineEntry.ToolCall, header: String): String {
-    val summary = getSkillChangeSummary(entry)
-    return buildList {
-        add(header)
-        if (summary.activated.isNotEmpty()) add("Activated: ${summary.activated.joinToString(", ")}")
-        if (summary.disabled.isNotEmpty()) add("Disabled: ${summary.disabled.joinToString(", ")}")
-    }.joinToString("\n")
-}
-
 private fun buildGenericToolCopyText(entry: TimelineEntry.ToolCall, header: String): String {
     val argumentsPretty = entry.argumentsJson?.let { JsonInstantPretty.encodeToString(it) }
         ?: entry.argumentsText
@@ -1228,7 +1218,6 @@ private fun ToolCallDetails(entry: TimelineEntry.ToolCall) {
         in SANDBOX_FILE_TOOLS -> SandboxFileTimelineDetails(entry)
         in WORKSPACE_TOOLS -> WorkspaceTimelineDetails(entry)
         "ask_user" -> AskUserTimelineDetails(entry)
-        "manage_skills" -> SkillManagementTimelineDetails(entry)
         else -> GenericToolDetails(entry)
     }
 }
@@ -1464,7 +1453,6 @@ private fun ToolCallCompactDetails(entry: TimelineEntry.ToolCall) {
         in SANDBOX_FILE_TOOLS -> SandboxFileTimelineCompactDetails(entry)
         in WORKSPACE_TOOLS -> WorkspaceTimelineCompactDetails(entry)
         "ask_user" -> AskUserTimelineCompactDetails(entry)
-        "manage_skills" -> SkillManagementTimelineCompactDetails(entry)
         else -> GenericToolCompactDetails(entry)
     }
 }
@@ -1765,37 +1753,6 @@ private fun AskUserTimelineCompactDetails(entry: TimelineEntry.ToolCall) {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
-}
-
-@Composable
-private fun SkillManagementTimelineCompactDetails(entry: TimelineEntry.ToolCall) {
-    val summary = getSkillChangeSummary(entry)
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        summary.activated.forEach {
-            TimelineTagChip(
-                text = it,
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-            )
-        }
-        summary.disabled.forEach {
-            TimelineTagChip(
-                text = it,
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (summary.activated.isEmpty() && summary.disabled.isEmpty()) {
-            Text(
-                text = stringResource(R.string.activity_timeline_no_skill_changes),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
 }
 
 @Composable
@@ -2389,57 +2346,6 @@ private fun WorkspaceTimelineDetails(entry: TimelineEntry.ToolCall) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-    }
-}
-
-@Composable
-private fun SkillManagementTimelineDetails(entry: TimelineEntry.ToolCall) {
-    val summary = getSkillChangeSummary(entry)
-
-    if (summary.activated.isNotEmpty()) {
-        Text(
-            text = stringResource(R.string.activity_timeline_activated),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.secondary
-        )
-        Surface(
-            shape = AppShapes.CardSmallInner8,
-            color = MaterialTheme.colorScheme.tertiaryContainer
-        ) {
-            Text(
-                text = summary.activated.joinToString(", "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.padding(10.dp)
-            )
-        }
-    }
-
-    if (summary.disabled.isNotEmpty()) {
-        Text(
-            text = stringResource(R.string.activity_timeline_disabled),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.secondary
-        )
-        Surface(
-            shape = AppShapes.CardSmallInner8,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh
-        ) {
-            Text(
-                text = summary.disabled.joinToString(", "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(10.dp)
-            )
-        }
-    }
-
-    if (summary.activated.isEmpty() && summary.disabled.isEmpty()) {
-        Text(
-            text = stringResource(R.string.activity_timeline_no_skill_changes),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 

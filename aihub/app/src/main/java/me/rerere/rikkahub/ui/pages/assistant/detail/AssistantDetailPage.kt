@@ -87,7 +87,6 @@ private object AssistantDetailRoutes {
     const val MODEL = "model"
     const val PROMPTS = "prompts"
     const val CONTEXT_MANAGEMENT = "context_management"
-    const val SKILLS = "skills"
     const val TOOLS = "tools"
     const val MEMORY = "memory"
     const val UI = "ui"
@@ -114,7 +113,6 @@ fun AssistantDetailPage(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val mcpServerConfigs by vm.mcpServerConfigs.collectAsStateWithLifecycle()
     val assistant by vm.assistant.collectAsStateWithLifecycle()
     val memories by vm.memories.collectAsStateWithLifecycle()
     val providers by vm.providers.collectAsStateWithLifecycle()
@@ -341,22 +339,12 @@ fun AssistantDetailPage(
                 )
             }
 
-            // Skills (nested under Context Management)
-            composable(AssistantDetailRoutes.SKILLS) {
-                AssistantSkillsSubPage(
-                    assistant = assistant,
-                    onUpdate = { onUpdate(it) },
-                    vm = vm
-                )
-            }
-
             // Tools
             composable(AssistantDetailRoutes.TOOLS) {
                 AssistantToolsSubPage(
                     assistant = assistant,
                     onUpdate = { onUpdate(it) },
                     vm = vm,
-                    mcpServerConfigs = mcpServerConfigs
                 )
             }
 

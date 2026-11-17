@@ -7,7 +7,6 @@ import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.provider.withInheritedCredentials
 import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_LEARNING_MODE_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_OCR_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
@@ -19,7 +18,6 @@ import me.rerere.rikkahub.data.model.AssistantSearchMode
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.ChatStorageSettings
 import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.Skill
 import me.rerere.rikkahub.data.model.Tag
 import me.rerere.rikkahub.data.sync.BackupCleanupResult
 import me.rerere.rikkahub.ui.theme.PresetThemes
@@ -74,7 +72,6 @@ data class Settings(
     val searchServices: List<SearchServiceOptions> = listOf(SearchServiceOptions.DEFAULT),
     val searchCommonOptions: SearchCommonOptions = SearchCommonOptions(),
     val searchServiceSelected: Int = 0,
-    val mcpServers: List<McpServerConfig> = emptyList(),
     val webDavConfig: WebDavConfig = WebDavConfig(),
     val ttsProviders: List<TTSProviderSetting> = DEFAULT_TTS_PROVIDERS,
     val selectedTTSProviderId: Uuid = DEFAULT_SYSTEM_TTS_ID,
@@ -88,7 +85,6 @@ data class Settings(
     val webServerJwtEnabled: Boolean = false,
     val webServerAccessPassword: String = "",
     val webServerBackgroundSetupShown: Boolean = false,
-    val skills: List<Skill> = emptyList(),
     val chatStorage: ChatStorageSettings = ChatStorageSettings(),
 ) {
     companion object {

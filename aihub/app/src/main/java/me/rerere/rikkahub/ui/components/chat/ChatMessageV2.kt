@@ -864,7 +864,6 @@ private fun getToolDisplayName(toolName: String): String {
         "edit_memory" -> "Editing memory"
         "delete_memory" -> "Deleting memory"
         "ask_user" -> "Asking a question"
-        "manage_skills" -> "Managing skills"
         else -> toolName.replace("_", " ").replaceFirstChar { it.uppercase() }
     }
 }

@@ -14,7 +14,6 @@ enum class BackupContentOption(
     PROVIDERS(R.string.backup_content_providers, R.string.backup_content_providers_desc),
     API_KEYS(R.string.backup_content_api_keys, R.string.backup_content_api_keys_desc),
     WORKSPACES(R.string.backup_content_workspaces, R.string.backup_content_workspaces_desc),
-    SKILLS(R.string.backup_content_skills, R.string.backup_content_skills_desc),
     SETTINGS(R.string.backup_content_settings, R.string.backup_content_settings_desc),
 }
 
@@ -52,7 +51,6 @@ internal object BackupArchiveFormat {
         "custom_fonts",
         "images",
         "chat_files",
-        "skills",
         "tool_outputs",
         WORKSPACES_DIR,
     )

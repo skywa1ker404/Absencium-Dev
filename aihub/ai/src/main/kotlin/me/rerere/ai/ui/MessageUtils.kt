@@ -31,7 +31,6 @@ data class UIMessage(
     val usage: TokenUsage? = null,
     val translation: String? = null,
     val generationDurationMs: Long? = null, // Duration of AI generation in milliseconds
-    val usedModes: List<UsedMode>? = null, // Skills used in this message (named Mode for stored-data compatibility)
     val usedMemories: List<UsedMemory>? = null, // Memories used in this message
     val versionTag: String? = null // Links messages from same generation for multi-node turn versioning
 ) {
@@ -289,18 +288,6 @@ data class UIMessage(
         )
     }
 }
-
-/**
- * Represents a skill that was used when generating a message (named Mode for stored-data compatibility).
- */
-@Serializable
-data class UsedMode(
-    val modeId: String,  // UUID as string for serialization compatibility
-    val modeName: String,
-    val modeIcon: String? = null,  // Material icon name
-    val priority: Int = 0,  // Position in mode list (higher = more priority)
-    val activationReason: String? = null  // "Activated by user" or "Default enabled"
-)
 
 /**
  * Represents a memory that was used when generating a message.

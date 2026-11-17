@@ -60,13 +60,6 @@ class AssistantDetailVM(
     val settings: StateFlow<Settings> =
         settingsStore.settingsFlow.stateIn(viewModelScope, SharingStarted.Lazily, Settings.dummy())
 
-    val mcpServerConfigs = settingsStore
-        .settingsFlow.map { settings ->
-            settings.mcpServers
-        }.stateIn(
-            scope = viewModelScope, started = SharingStarted.Lazily, initialValue = emptyList()
-        )
-
     val assistant: StateFlow<Assistant> = settingsStore
         .settingsFlow
         .map { settings ->

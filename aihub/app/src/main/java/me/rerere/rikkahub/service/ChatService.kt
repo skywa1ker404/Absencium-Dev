@@ -91,7 +91,6 @@ import me.rerere.rikkahub.data.ai.GenerationHandler
 import me.rerere.rikkahub.data.ai.buildSuggestionGenerationParams
 import me.rerere.rikkahub.data.ai.buildSummarizerGenerationParams
 import me.rerere.rikkahub.data.ai.buildTitleGenerationParams
-import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.ai.prompts.buildSuggestionPromptContent
 import me.rerere.rikkahub.data.ai.prompts.parseSuggestionLines
 import me.rerere.rikkahub.data.ai.shouldUseBuiltInSearch
@@ -517,7 +516,6 @@ internal fun mergeLiveMessagesIfIncomingIsStale(
         truncateIndex = incomingConversation.truncateIndex,
         chatSuggestions = incomingConversation.chatSuggestions,
         isPinned = incomingConversation.isPinned,
-        enabledModeIds = incomingConversation.enabledModeIds,
         updateAt = liveConversation.updateAt,
         isConsolidated = incomingConversation.isConsolidated,
         contextSummary = incomingConversation.contextSummary,
@@ -649,7 +647,6 @@ class ChatService(
     private val templateTransformer: TemplateTransformer,
     private val providerManager: ProviderManager,
     private val localTools: LocalTools,
-    val mcpManager: McpManager,
     private val platformHttpClient: PlatformHttpClient,
 ) {
     // 存储每个对话的状态
@@ -1599,7 +1596,7 @@ class ChatService(
         runCatching {
             var conversation = normalizeConversation(getConversationFlow(conversationId).value)
             val conversationContext = settings.resolveConversationContext(conversation)
-            // An action chat runs bare: the app's button gave it everything it needs, so the user's persona, memories, skills,
+            // An action chat runs bare: the app's button gave it everything it needs, so the user's persona, memories,
             // search and extra servers are not sent (they only add tokens and make the assistant wander off to read other things).
             val assistant = if (conversation.assistantId == me.rerere.rikkahub.AiHost.ACTIONS_ASSISTANT_ID) {
                 conversationContext.assistant.copy(
@@ -1608,8 +1605,6 @@ class ChatService(
                     enableMemorySearchTool = false,
                     enableRecentChatsReference = false,
                     presetMessages = emptyList(),
-                    enabledSkillIds = emptySet(),
-                    mcpServers = emptySet(),
                     localTools = emptyList(),
                     searchMode = me.rerere.rikkahub.data.model.AssistantSearchMode.Off,
                     // Actions are decided by the app's own brief, so a short think is enough (the automatic budget took half a minute).
@@ -1713,7 +1708,6 @@ class ChatService(
                 outputTransformers = defaultChatOutputTransformers,
                 tools = tools,
                 truncateIndex = conversation.truncateIndex,
-                enabledModeIds = conversation.enabledModeIds,
                 activeConversationId = conversation.id,
                 contextSummary = conversation.contextSummary,
                 contextSummaryUpToIndex = conversation.contextSummaryUpToIndex,
@@ -1972,23 +1966,6 @@ class ChatService(
             val toolHint = conversation.currentMessages.lastOrNull { it.role == MessageRole.USER }?.toText().orEmpty() + " " +
                 conversation.currentMessages.takeLast(12).flatMap { m -> m.getToolCalls().map { it.toolName } }.joinToString(" ")
             addAll(me.rerere.rikkahub.AiHost.tools(me.rerere.rikkahub.AiHost.ToolPolicy(off = assistant.hostToolsOff, autoAll = assistant.vaultApprovalAuto), conversation.id.toString(), toolHint))
-
-            mcpManager.getAvailableTools(assistant).forEach { (serverId, tool) ->
-                add(
-                    Tool(
-                        name = tool.name,
-                        description = tool.description ?: "",
-                        parameters = { tool.inputSchema },
-                        execute = {
-                            val contextAwareCharacterLimit = (
-                                (model.contextCapacityTokens?.toLong() ?: 16_000L) * 2L
-                                ).coerceIn(2_000L, 32_000L).toInt()
-                            mcpManager.callTool(serverId, tool.name, it.jsonObject)
-                                .truncateLargeJsonText(contextAwareCharacterLimit)
-                        },
-                    )
-                )
-            }
         }.withUniqueToolNames()
     }
 
@@ -3135,77 +3112,5 @@ internal fun List<Tool>.withUniqueToolNames(): List<Tool> {
         }
     }
 
-}
-
-private fun kotlinx.serialization.json.JsonElement.truncateLargeJsonText(
-    maxLength: Int = 32_000,
-): kotlinx.serialization.json.JsonElement {
-    var remaining = maxLength.coerceAtLeast(256)
-    var omittedCharacters = 0
-    fun recordOmitted(amount: Long) {
-        omittedCharacters = (omittedCharacters.toLong() + amount.coerceAtLeast(0L))
-            .coerceAtMost(Int.MAX_VALUE.toLong())
-            .toInt()
-    }
-
-    fun compact(element: kotlinx.serialization.json.JsonElement): kotlinx.serialization.json.JsonElement = when (element) {
-        is kotlinx.serialization.json.JsonPrimitive -> {
-            val content = element.content
-            if (remaining <= 0) {
-                recordOmitted(content.length.toLong())
-                kotlinx.serialization.json.JsonPrimitive("[Additional MCP result content omitted]")
-            } else if (!element.isString || content.length <= remaining) {
-                remaining = (remaining - content.length).coerceAtLeast(0)
-                element
-            } else {
-                val kept = remaining
-                remaining = 0
-                recordOmitted((content.length - kept).toLong())
-                kotlinx.serialization.json.JsonPrimitive(
-                    content.take(kept) + "... [MCP result compacted]"
-                )
-            }
-        }
-        is kotlinx.serialization.json.JsonObject -> {
-            val values = linkedMapOf<String, kotlinx.serialization.json.JsonElement>()
-            for ((key, value) in element) {
-                if (remaining <= 0) {
-                    recordOmitted(value.toString().length.toLong())
-                    values["__aihub_context_note"] = kotlinx.serialization.json.JsonPrimitive(
-                        "Additional MCP result fields omitted"
-                    )
-                    break
-                }
-                remaining = (remaining - key.length).coerceAtLeast(0)
-                values[key] = compact(value)
-            }
-            kotlinx.serialization.json.JsonObject(values)
-        }
-        is kotlinx.serialization.json.JsonArray -> {
-            val values = mutableListOf<kotlinx.serialization.json.JsonElement>()
-            for ((index, value) in element.withIndex()) {
-                if (remaining <= 0) {
-                    recordOmitted(element.drop(index).sumOf { it.toString().length.toLong() })
-                    values += kotlinx.serialization.json.JsonPrimitive(
-                        "[${element.size - index} additional MCP result items omitted]"
-                    )
-                    break
-                }
-                values += compact(value)
-            }
-            kotlinx.serialization.json.JsonArray(values)
-        }
-    }
-
-    val compacted = compact(this)
-    return if (omittedCharacters > 0 && compacted is kotlinx.serialization.json.JsonObject) {
-        kotlinx.serialization.json.JsonObject(
-            compacted + ("__aihub_context_note" to kotlinx.serialization.json.JsonPrimitive(
-                "$omittedCharacters characters omitted from this MCP result to protect context"
-            ))
-        )
-    } else {
-        compacted
-    }
 }
 

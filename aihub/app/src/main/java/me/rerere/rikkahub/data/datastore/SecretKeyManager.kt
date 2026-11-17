@@ -185,24 +185,10 @@ class SecretKeyManager(
         }
     }
 
-    // ========== MCP OAuth Management ==========
-
-    fun getMcpOAuthSecret(serverId: Uuid, name: String): String? {
-        return secureStore.getSecret("$MCP_OAUTH_PREFIX${serverId}_$name")
-    }
-
-    fun setMcpOAuthSecret(serverId: Uuid, name: String, value: String?) {
-        val key = "$MCP_OAUTH_PREFIX${serverId}_$name"
-        if (value.isNullOrBlank()) {
-            secureStore.removeSecret(key)
-        } else {
-            secureStore.putSecret(key, value)
-        }
-    }
-
-    fun removeMcpOAuthSecrets(serverId: Uuid) {
+    /** MCP servers were removed; drop the OAuth secrets they left in the secure store. */
+    private fun removeLeftoverMcpSecrets() {
         secureStore.getAllKeys()
-            .filter { it.startsWith("$MCP_OAUTH_PREFIX${serverId}_") }
+            .filter { it.startsWith(MCP_OAUTH_PREFIX) }
             .forEach(secureStore::removeSecret)
     }
 
@@ -216,7 +202,9 @@ class SecretKeyManager(
      */
     fun migrateSecretsFromSettings(settings: Settings): Settings {
         var migrated = false
-        
+
+        removeLeftoverMcpSecrets()
+
         // Migrate provider API keys
         val migratedProviders = settings.providers.map { provider ->
             migrateProviderSecrets(provider).also { 

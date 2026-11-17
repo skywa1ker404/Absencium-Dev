@@ -36,7 +36,6 @@ securityCrypto = "1.1.0-alpha06"
 haze = "2.0.0-alpha02"
 markdown = "0.7.3"
 coil = "3.3.0"
-ktor = "3.5.1"
 pebble = "3.2.4"
 jsoup = "1.21.2"
 zxing = "3.5.4"
@@ -46,7 +45,6 @@ cameraCore = "1.5.1"
 imageViewer = "1.1.0-alpha.7"
 reorderable = "3.0.0"
 jlatexmath = "1.2"
-mcp = "0.14.0"
 floatingx = "2.3.7"
 adaptive = "1.2.0"
 
@@ -110,12 +108,6 @@ jetbrains-markdown = { group = "org.jetbrains", name = "markdown", version.ref =
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 coil-svg = { group = "io.coil-kt.coil3", name = "coil-svg", version.ref = "coil" }
-ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
-ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 pebble = { module = "io.pebbletemplates:pebble", version.ref = "pebble" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
@@ -126,7 +118,6 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reo
 jlatexmath = { module = "com.github.rikkahub.jlatexmath-android:jlatexmath", version.ref = "jlatexmath" }
 jlatexmath-font-greek = { module = "com.github.rikkahub.jlatexmath-android:jlatexmath-font-greek", version.ref = "jlatexmath" }
 jlatexmath-font-cyrillic = { module = "com.github.rikkahub.jlatexmath-android:jlatexmath-font-cyrillic", version.ref = "jlatexmath" }
-modelcontextprotocol-kotlin-sdk = { module = "io.modelcontextprotocol:kotlin-sdk", version.ref = "mcp" }
 floatingx = { module = "io.github.petterpx:floatingx", version.ref = "floatingx" }
 floatingx-compose = { module = "io.github.petterpx:floatingx-compose", version.ref = "floatingx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

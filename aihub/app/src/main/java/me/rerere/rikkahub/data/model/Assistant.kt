@@ -85,7 +85,6 @@ data class Assistant(
     val maxTokens: Int? = null,
     val customHeaders: List<CustomHeader> = emptyList(),
     val customBodies: List<CustomBody> = emptyList(),
-    val mcpServers: Set<Uuid> = emptySet(),
     @Serializable(with = LocalToolOptionListSerializer::class)
     val localTools: List<LocalToolOption> = emptyList(),
     /** Absencium tools this assistant may not use, tools that run without asking, and tools that always ask (see AiHost.ToolPolicy). */
@@ -100,8 +99,6 @@ data class Assistant(
     val materialYouColorIndex: Int = 0, // 0 = auto (default pick), 1-3 = alternative palette colors
     val customMaterialYouColor: String? = null, // Hex seed used when materialYouColorIndex == -1
     val learningMode: Boolean = false,
-    val enabledSkillIds: Set<Uuid> = emptySet(), // Skills enabled for this assistant
-    val enableAutomaticSkillInvocation: Boolean = true, // Let the model discover and activate otherwise unselected skills
 
     // Context Management Settings
     val smartContextManagement: Boolean = true,

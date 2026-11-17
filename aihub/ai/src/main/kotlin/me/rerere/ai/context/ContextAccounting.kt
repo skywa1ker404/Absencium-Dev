@@ -37,7 +37,6 @@ data class ContextUsageBreakdown(
     val systemPromptTokens: Int = 0,
     val summaryTokens: Int = 0,
     val memoryTokens: Int = 0,
-    val skillTokens: Int = 0,
     val toolDefinitionTokens: Int = 0,
     val toolCallTokens: Int = 0,
     val mediaTokens: Int = 0,
@@ -46,7 +45,6 @@ data class ContextUsageBreakdown(
         systemPromptTokens,
         summaryTokens,
         memoryTokens,
-        skillTokens,
         toolDefinitionTokens,
         toolCallTokens,
         mediaTokens,
@@ -99,7 +97,6 @@ object ContextTokenEstimator {
         val system = scaled(breakdown.systemPromptTokens)
         val summary = scaled(breakdown.summaryTokens)
         val memory = scaled(breakdown.memoryTokens)
-        val skills = scaled(breakdown.skillTokens)
         val toolDefinitions = scaled(breakdown.toolDefinitionTokens)
         val toolCalls = scaled(breakdown.toolCallTokens)
         val media = scaled(breakdown.mediaTokens)
@@ -108,7 +105,6 @@ object ContextTokenEstimator {
             system,
             summary,
             memory,
-            skills,
             toolDefinitions,
             toolCalls,
             media,
@@ -118,7 +114,6 @@ object ContextTokenEstimator {
             systemPromptTokens = system,
             summaryTokens = summary,
             memoryTokens = memory,
-            skillTokens = skills,
             toolDefinitionTokens = toolDefinitions,
             toolCallTokens = toolCalls,
             mediaTokens = media,
@@ -251,13 +246,11 @@ object ContextTokenEstimator {
         systemPromptText: String = "",
         summaryText: String = "",
         memoryText: String = "",
-        skillText: String = "",
         toolDefinitionText: String = "",
         embeddedToolText: String = "",
         namedContextEmbeddedInMessages: Boolean = false,
         pendingParts: List<UIMessagePart> = emptyList(),
         memoryTokensOverride: Int? = null,
-        skillTokensOverride: Int? = null,
         toolDefinitionTokensOverride: Int? = null,
         providerPromptTokens: Int? = null,
         usableInputTokens: Int? = null,
@@ -302,7 +295,6 @@ object ContextTokenEstimator {
         val systemPrompt = textTokens(systemPromptText, model)
         val summary = textTokens(summaryText, model)
         val memories = memoryTokensOverride?.coerceAtLeast(0) ?: textTokens(memoryText, model)
-        val skills = skillTokensOverride?.coerceAtLeast(0) ?: textTokens(skillText, model)
         val embeddedTools = textTokens(embeddedToolText, model)
         val toolDefinitions = saturatedTokenSum(
             toolDefinitionTokensOverride?.coerceAtLeast(0)
@@ -312,7 +304,7 @@ object ContextTokenEstimator {
         // Request accounting names text already embedded in built messages; live UI accounting
         // supplies raw conversation messages, so its named context must be added independently.
         val embeddedNamedTokens = if (namedContextEmbeddedInMessages) {
-            systemPrompt + summary + memories + skills + embeddedTools
+            systemPrompt + summary + memories + embeddedTools
         } else {
             0
         }
@@ -322,7 +314,6 @@ object ContextTokenEstimator {
             systemPrompt,
             summary,
             memories,
-            skills,
             toolDefinitions,
             toolCalls,
             media,
@@ -335,7 +326,6 @@ object ContextTokenEstimator {
             systemPromptTokens = scaled(systemPrompt),
             summaryTokens = scaled(summary),
             memoryTokens = scaled(memories),
-            skillTokens = scaled(skills),
             toolDefinitionTokens = scaled(toolDefinitions),
             toolCallTokens = scaled(toolCalls),
             mediaTokens = scaled(media),
