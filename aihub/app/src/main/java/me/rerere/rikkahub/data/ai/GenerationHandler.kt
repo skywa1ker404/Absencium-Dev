@@ -240,6 +240,64 @@ data class BuildMessagesResult(
     val effectiveInputBudgetTokens: Int? = null,
 )
 
+internal fun selectSmartTools(
+    tools: List<Tool>,
+    messages: List<UIMessage>,
+    model: Model,
+    inputBudgetTokens: Int,
+): List<Tool> {
+    if (tools.isEmpty()) return tools
+    val recentMessages = messages.takeLast(12)
+    val recentlyUsedNames = recentMessages.flatMap { message ->
+        message.getToolCalls().map { it.toolName }
+    }.toSet()
+    val queryTerms = recentMessages.lastOrNull { it.role == MessageRole.USER }
+        ?.toText()
+        .orEmpty()
+        .lowercase()
+        .split(Regex("[^a-z0-9_]+"))
+        .filter { it.length >= 3 }
+        .toSet()
+    data class RankedTool(val index: Int, val tool: Tool, val tokens: Int, val score: Int)
+    val ranked = tools.mapIndexed { index, tool ->
+        val systemPromptTokens = runCatching { tool.systemPrompt(model, messages) }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?.let { ContextTokenEstimator.textTokens(it, model) }
+            ?: 0
+        val searchable = "${tool.name} ${tool.description}".lowercase()
+        val semanticHits = queryTerms.count { term -> searchable.contains(term) }
+        val score = when {
+            tool.name in recentlyUsedNames -> 10_000
+            tool.name == "ask_user" -> 2_000
+            else -> semanticHits * 100 - index
+        }
+        RankedTool(
+            index = index,
+            tool = tool,
+            tokens = (ContextTokenEstimator.toolDefinitionTokens(tool, model).toLong() + systemPromptTokens)
+                .coerceAtMost(Int.MAX_VALUE.toLong())
+                .toInt(),
+            score = score,
+        )
+    }
+    val total = ranked.sumOf { it.tokens }
+    val allocation = (inputBudgetTokens * 0.22).toInt()
+        .coerceAtLeast(128)
+        .coerceAtMost((inputBudgetTokens - 128).coerceAtLeast(0))
+    if (total <= allocation) return tools
+
+    var remaining = allocation
+    val selected = mutableSetOf<Int>()
+    ranked.sortedByDescending { it.score }.forEach { candidate ->
+        if (candidate.tokens <= remaining) {
+            selected += candidate.index
+            remaining = (remaining - candidate.tokens).coerceAtLeast(0)
+        }
+    }
+    return ranked.filter { it.index in selected }.map { it.tool }
+}
+
 @Serializable
 sealed interface GenerationChunk {
     data class Messages(
