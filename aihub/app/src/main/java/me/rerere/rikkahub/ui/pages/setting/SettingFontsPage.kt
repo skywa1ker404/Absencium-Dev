@@ -166,6 +166,8 @@ internal fun FontSettingsContent(
 ) {
     val normalizedFontSettings = fontSettings.normalize()
     val lazyListState = rememberLazyListState()
+    // Inside Absencium the app's Appearance owns the text font and size, so only the chat's code font is offered here.
+    val hosted = me.rerere.rikkahub.AiHost.theme != null
 
     LazyColumn(
         modifier = Modifier
@@ -175,7 +177,7 @@ internal fun FontSettingsContent(
         contentPadding = contentPadding + PaddingValues(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        item {
+        if (!hosted) item {
             SettingsGroup(title = stringResource(R.string.setting_fonts_general)) {
                 SettingGroupItem(
                     title = stringResource(R.string.setting_fonts_use_system),
@@ -196,7 +198,7 @@ internal fun FontSettingsContent(
             }
         }
 
-        item {
+        if (!hosted) item {
             ExpandableContent(visible = !normalizedFontSettings.usePhoneSystemFont) {
                 FontConfigSection(
                     title = stringResource(R.string.setting_fonts_app_font),
@@ -226,7 +228,7 @@ internal fun FontSettingsContent(
         }
 
         item {
-            ExpandableContent(visible = !normalizedFontSettings.usePhoneSystemFont) {
+            ExpandableContent(visible = hosted || !normalizedFontSettings.usePhoneSystemFont) {
                 FontConfigSection(
                     title = stringResource(R.string.setting_fonts_code_blocks),
                     subtitle = stringResource(R.string.setting_fonts_code_blocks_desc),
@@ -249,7 +251,7 @@ internal fun FontSettingsContent(
             }
         }
 
-        item {
+        if (!hosted) item {
             Spacer(Modifier.height(8.dp))
             SettingsGroup(title = stringResource(R.string.setting_fonts_preview)) {
                 FontPreviewCard(fontSettings = normalizedFontSettings)
