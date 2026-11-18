@@ -40,8 +40,6 @@ import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.toMutableStateFlow
 import me.rerere.search.SearchCommonOptions
 import me.rerere.search.SearchServiceOptions
-import me.rerere.tts.provider.TTSProviderSetting
-import me.rerere.tts.provider.withDefaultVoices
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import kotlin.uuid.Uuid
@@ -64,7 +62,7 @@ class SettingsStore(
     private val secretKeyManager: SecretKeyManager,
 ) : KoinComponent {
     companion object {
-        private val REMOVED_KEYS = listOf("text_selection_config", "assistant_overlay_config", "modes", "lorebooks", "mcp_servers", "skills")
+        private val REMOVED_KEYS = listOf("text_selection_config", "assistant_overlay_config", "modes", "lorebooks", "mcp_servers", "skills", "tts_providers", "selected_tts_provider", "selected_tts_voice", "tts_autoplay_mode")
 
         // 版本号
         val VERSION = intPreferencesKey("data_version")
@@ -116,12 +114,6 @@ class SettingsStore(
 
         // WebDAV
         val WEBDAV_CONFIG = stringPreferencesKey("webdav_config")
-
-        // TTS
-        val TTS_PROVIDERS = stringPreferencesKey("tts_providers")
-        val SELECTED_TTS_PROVIDER = stringPreferencesKey("selected_tts_provider")
-        val SELECTED_TTS_VOICE = stringPreferencesKey("selected_tts_voice")
-        val TTS_AUTOPLAY_MODE = stringPreferencesKey("tts_autoplay_mode")
 
         // STT
         val STT_MODEL = stringPreferencesKey("stt_model")
@@ -205,20 +197,6 @@ class SettingsStore(
                     ),
                     searchServiceSelected = preferences[SEARCH_SELECTED] ?: 0,
                     webDavConfig = decodePreferenceValue(preferences[WEBDAV_CONFIG], WebDavConfig()),
-                    ttsProviders = decodePreferenceList<TTSProviderSetting>(preferences[TTS_PROVIDERS])
-                        ?: DEFAULT_TTS_PROVIDERS,
-                    selectedTTSProviderId = decodeUuid(
-                        preferences[SELECTED_TTS_PROVIDER],
-                        DEFAULT_SYSTEM_TTS_ID,
-                    ),
-                    selectedTTSVoiceId = decodeUuid(
-                        preferences[SELECTED_TTS_VOICE],
-                        DEFAULT_SYSTEM_TTS_VOICE_ID,
-                    ),
-                    ttsAutoplayMode = decodePreferenceValue(
-                        preferences[TTS_AUTOPLAY_MODE],
-                        TtsAutoplayMode.OFF,
-                    ),
                     sttModelId = decodeUuidOrNull(preferences[STT_MODEL]),
                     sttThinkingBudget = preferences[STT_THINKING_BUDGET] ?: 0,
                     sttPrompt = preferences[STT_PROMPT] ?: me.rerere.rikkahub.data.ai.prompts.DEFAULT_STT_PROMPT,
@@ -251,25 +229,10 @@ class SettingsStore(
                 } else provider
             }.toMutableList()
             val assistants = it.assistants.ifEmpty { DEFAULT_ASSISTANTS }.map { a -> a.migrateDefaultAssistant() }.toMutableList()
-            val ttsProviders = it.ttsProviders.map { provider ->
-                val defaultVoiceId = if (provider.id == DEFAULT_SYSTEM_TTS_ID) DEFAULT_SYSTEM_TTS_VOICE_ID else null
-                provider.withDefaultVoices(defaultVoiceId)
-            }.toMutableList()
-            val selectedTtsVoiceId = ttsProviders
-                .flatMap { provider -> provider.voices }
-                .firstOrNull { voice -> voice.id == it.selectedTTSVoiceId }
-                ?.id
-                ?: ttsProviders.find { provider -> provider.id == it.selectedTTSProviderId }
-                    ?.voices
-                    ?.firstOrNull()
-                    ?.id
-                ?: DEFAULT_SYSTEM_TTS_VOICE_ID
             it.copy(
                 providers = providers,
                 assistants = assistants,
-                ttsProviders = ttsProviders,
-                selectedTTSVoiceId = selectedTtsVoiceId,
-            ).normalizeWebServerSettings().normalizeFontSettings().normalizeTtsSettings()
+            ).normalizeWebServerSettings().normalizeFontSettings()
                 .normalizeLocalProvider().normalizeSearchServices().normalizeMemorySettings()
         }
         .map { settings ->
@@ -302,22 +265,6 @@ class SettingsStore(
                     }
                 },
                 assistants = settings.assistants.distinctBy { it.id },
-                ttsProviders = settings.ttsProviders.distinctBy { it.id }.map { provider ->
-                    val defaultVoiceId = if (provider.id == DEFAULT_SYSTEM_TTS_ID) DEFAULT_SYSTEM_TTS_VOICE_ID else null
-                    provider.copyProvider(
-                        voices = provider.withDefaultVoices(defaultVoiceId).voices.distinctBy { voice -> voice.id }
-                    )
-                },
-
-                selectedTTSVoiceId = settings.ttsProviders
-                    .flatMap { it.voices }
-                    .firstOrNull { it.id == settings.selectedTTSVoiceId }
-                    ?.id
-                    ?: settings.ttsProviders.find { it.id == settings.selectedTTSProviderId }
-                        ?.voices
-                        ?.firstOrNull()
-                        ?.id
-                    ?: DEFAULT_SYSTEM_TTS_VOICE_ID,
                 favoriteModels = settings.favoriteModels.filter { uuid ->
                     settings.providers.flatMap { it.models }.any { it.id == uuid }
                 }
@@ -384,7 +331,6 @@ class SettingsStore(
         dataStore.edit { preferences ->
             preferences[PROVIDERS] = JsonInstant.encodeToString(settings.providers)
             preferences[WEBDAV_CONFIG] = JsonInstant.encodeToString(settings.webDavConfig)
-            preferences[TTS_PROVIDERS] = JsonInstant.encodeToString(settings.ttsProviders)
         }
     }
 
@@ -427,7 +373,6 @@ class SettingsStore(
             .normalizeWebServerSettings()
             .normalizeFontSettings()
             .normalizeThemeId()
-            .normalizeTtsSettings()
             .normalizeLocalProvider()
             .normalizeSearchServices()
             .normalizeMemorySettings()
@@ -443,7 +388,6 @@ class SettingsStore(
 
         settingsFlow.value = secretKeyManager.populateSecretsForExport(migratedSettings)
             .normalizeFontSettings()
-            .normalizeTtsSettings()
         dataStore.edit { preferences ->
             preferences[DYNAMIC_COLOR] = normalizedSettings.dynamicColor
             preferences[SETUP_COMPLETED] = normalizedSettings.setupCompleted
@@ -494,12 +438,6 @@ class SettingsStore(
             }
 
             preferences[WEBDAV_CONFIG] = JsonInstant.encodeToString(migratedSettings.webDavConfig)
-            preferences[TTS_PROVIDERS] = JsonInstant.encodeToString(migratedSettings.ttsProviders)
-            normalizedSettings.selectedTTSProviderId?.let {
-                preferences[SELECTED_TTS_PROVIDER] = it.toString()
-            } ?: preferences.remove(SELECTED_TTS_PROVIDER)
-            preferences[SELECTED_TTS_VOICE] = normalizedSettings.selectedTTSVoiceId.toString()
-            preferences[TTS_AUTOPLAY_MODE] = JsonInstant.encodeToString(normalizedSettings.ttsAutoplayMode)
             normalizedSettings.sttModelId?.let {
                 preferences[STT_MODEL] = it.toString()
             } ?: preferences.remove(STT_MODEL)

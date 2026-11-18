@@ -34,12 +34,6 @@ import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.repository.GenMediaRepository
-import me.rerere.rikkahub.data.datastore.TtsFilterMode
-import me.rerere.rikkahub.data.datastore.getEffectiveTTSProvider
-import me.rerere.rikkahub.utils.stripMarkdown
-import me.rerere.tts.controller.TtsController
-import me.rerere.tts.controller.AudioPlayer
-import me.rerere.tts.provider.android.TTSManager
 import kotlin.uuid.Uuid
 
 @Serializable
@@ -56,6 +50,7 @@ sealed class LocalToolOption {
     @SerialName("python_engine")
     data object PythonEngine : LocalToolOption()
 
+    // Text to speech was removed. Kept only so assistants saved with it still decode; it adds no tool.
     @Serializable
     @SerialName("tts")
     data object Tts : LocalToolOption()
@@ -163,21 +158,7 @@ fun LocalToolOption.toDefinitionPreviews(): List<LocalToolDefinitionPreview> = w
         )
     )
     LocalToolOption.PythonEngine -> emptyList()
-    LocalToolOption.Tts -> listOf(
-        LocalToolDefinitionPreview(
-            name = "text_to_speech",
-            description = "Read text aloud using the currently selected Absencium AI TTS provider. Use this when the user explicitly wants spoken output.",
-            schema = InputSchema.Obj(
-                properties = buildJsonObject {
-                    put("text", buildJsonObject {
-                        put("type", "string")
-                        put("description", "The text to speak aloud")
-                    })
-                },
-                required = listOf("text")
-            )
-        )
-    )
+    LocalToolOption.Tts -> emptyList()
     LocalToolOption.AskUser -> listOf(
         LocalToolDefinitionPreview(
             name = ASK_USER_TOOL_NAME,
@@ -295,7 +276,6 @@ private fun sanitizeSandboxBaseName(rawName: String): String {
 class LocalTools(
     private val context: Context,
     private val settingsStore: SettingsStore,
-    private val ttsManager: TTSManager,
     private val providerManager: ProviderManager,
     genMediaRepository: GenMediaRepository,
     private val notificationPlatform: LocalToolNotificationPlatform = AndroidLocalToolNotificationPlatform(context),
@@ -404,50 +384,6 @@ class LocalTools(
                 }
                 buildJsonObject {
                     put("result", resultText)
-                }
-            }
-        )
-    }
-
-    private val ttsController by lazy { TtsController(ttsManager, AudioPlayer(context)) }
-
-    val ttsTool by lazy {
-        Tool(
-            name = "text_to_speech",
-            description = "Read text aloud using the currently selected Absencium AI TTS provider. Use this when the user explicitly wants spoken output.",
-            parameters = {
-                InputSchema.Obj(
-                    properties = buildJsonObject {
-                        put("text", buildJsonObject {
-                            put("type", "string")
-                            put("description", "The text to speak aloud")
-                        })
-                    },
-                    required = listOf("text")
-                )
-            },
-            execute = {
-                val rawText = it.jsonObject["text"]?.jsonPrimitive?.contentOrNull.orEmpty()
-                val provider = settingsStore.settingsFlow.value.getEffectiveTTSProvider()
-                if (provider == null) {
-                    buildJsonObject {
-                        put("success", false)
-                        put("error", "No TTS provider selected")
-                    }
-                } else {
-                    val processedText = prepareTtsText(rawText)
-                    if (processedText.isBlank()) {
-                        buildJsonObject {
-                            put("success", false)
-                            put("error", "Nothing left to speak after TTS filtering")
-                        }
-                    } else {
-                        ttsController.speakWithProvider(processedText, provider, true)
-                        buildJsonObject {
-                            put("success", true)
-                            put("provider", provider.name.ifBlank { "TTS" })
-                        }
-                    }
                 }
             }
         )
@@ -661,39 +597,6 @@ class LocalTools(
         )
     }
 
-    private fun prepareTtsText(text: String): String {
-        return applyTtsTextFilters(text).stripMarkdown().trim()
-    }
-
-    private fun applyTtsTextFilters(text: String): String {
-        val settings = settingsStore.settingsFlow.value
-        val rules = settings.displaySetting.ttsTextFilterRules.filter { it.enabled }
-        if (rules.isEmpty()) return text
-
-        var result = text
-        val onlyReadRules = rules.filter { it.mode == TtsFilterMode.ONLY_READ }
-        if (onlyReadRules.isNotEmpty()) {
-            val extracted = StringBuilder()
-            onlyReadRules.forEach { rule ->
-                val pattern = Regex.escape(rule.pattern)
-                val regex = Regex("$pattern(.+?)$pattern")
-                regex.findAll(result).forEach { match ->
-                    if (extracted.isNotEmpty()) extracted.append(" ")
-                    extracted.append(match.groupValues.getOrNull(1).orEmpty())
-                }
-            }
-            result = extracted.toString()
-        }
-
-        rules.filter { it.mode == TtsFilterMode.SKIP }.forEach { rule ->
-            val pattern = Regex.escape(rule.pattern)
-            val regex = Regex("$pattern.+?$pattern")
-            result = result.replace(regex, "")
-        }
-
-        return result
-    }
-    
     /**
      * Get all enabled local tools for the conversation.
      */
@@ -712,9 +615,6 @@ class LocalTools(
         // PythonEngine is kept only for backwards-compatible settings deserialization.
         // Linux workspace tools replace the old Chaquopy sandbox and are wired through
         // createWorkspaceTools when an assistant has a bound workspace.
-        if (options.contains(LocalToolOption.Tts)) {
-            tools.add(ttsTool)
-        }
         if (options.contains(LocalToolOption.AskUser)) {
             tools.add(askUserTool)
         }

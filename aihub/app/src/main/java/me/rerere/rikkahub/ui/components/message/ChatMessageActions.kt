@@ -48,7 +48,6 @@ import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.StopCircle
-import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import kotlinx.coroutines.delay
 import kotlinx.datetime.toJavaLocalDateTime
 import me.rerere.ai.core.MessageRole
@@ -59,13 +58,11 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.getEffectiveDisplaySetting
 import me.rerere.ai.ui.MessageNode
 import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.context.LocalTTSState
 import me.rerere.rikkahub.ui.hooks.HapticPattern
 import me.rerere.rikkahub.ui.hooks.rememberPremiumHaptics
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.utils.copyMessageToClipboard
 import me.rerere.rikkahub.utils.toLocalString
-import me.rerere.tts.provider.TTSProviderSetting
 
 @Composable
 fun ColumnScope.ChatMessageActionButtons(
@@ -76,7 +73,6 @@ fun ColumnScope.ChatMessageActionButtons(
     showRegenerate: Boolean = true,
     onOpenActionSheet: () -> Unit,
     onMemoryClick: ((me.rerere.ai.ui.UsedMemory) -> Unit)? = null,
-    ttsProviderOverride: TTSProviderSetting? = null,
 ) {
     val context = LocalContext.current
     val settings = LocalSettings.current
@@ -135,27 +131,6 @@ fun ColumnScope.ChatMessageActionButtons(
                     .clickable { onRegenerate() }
                     .padding(8.dp)
                     .size(16.dp)
-            )
-        }
-
-        if (message.role == MessageRole.ASSISTANT) {
-            val tts = LocalTTSState.current
-            val isSpeaking by tts.isSpeaking.collectAsState()
-            val isAvailable by tts.isAvailable.collectAsState()
-            AiTtsAction(
-                isSpeaking = isSpeaking,
-                isAvailable = isAvailable,
-                contentDescription = stringResource(R.string.tts),
-                onClick = {
-                    if (!isSpeaking) {
-                        tts.speak(
-                            text = message.toContentText(),
-                            overrideSetting = ttsProviderOverride,
-                        )
-                    } else {
-                        tts.stop()
-                    }
-                },
             )
         }
 

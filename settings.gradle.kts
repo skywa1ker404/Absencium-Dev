@@ -20,4 +20,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Absencium"
 include(":app")
-include(":aihub:shared", ":aihub:common", ":aihub:ai", ":aihub:search", ":aihub:highlight", ":aihub:document", ":aihub:ui-core", ":aihub:tts", ":aihub:speech", ":aihub:app")
+include(":aihub:shared", ":aihub:common", ":aihub:ai", ":aihub:search", ":aihub:highlight", ":aihub:document", ":aihub:ui-core", ":aihub:speech", ":aihub:app")

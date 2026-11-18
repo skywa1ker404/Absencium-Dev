@@ -5,7 +5,6 @@ import me.rerere.ai.provider.ApiKeyEntry
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.provider.withApiKeyPool
 import me.rerere.ai.util.PooledKey
-import me.rerere.tts.provider.TTSProviderSetting
 import kotlin.uuid.Uuid
 
 /**
@@ -25,7 +24,8 @@ class SecretKeyManager(
         private const val PROVIDER_APIKEY_PREFIX = "provider_apikey_"
         private const val PROVIDER_APIKEY_POOL_PREFIX = "provider_apikey_pool_"
         private const val PROVIDER_PRIVATEKEY_PREFIX = "provider_privatekey_"
-        private const val TTS_PROVIDER_APIKEY_PREFIX = "tts_provider_apikey_"
+        /** Keys of the removed text-to-speech providers; wiped on start so no API key is left behind. */
+        private const val REMOVED_TTS_APIKEY_PREFIX = "tts_provider_apikey_"
         private const val STT_PROVIDER_APIKEY_PREFIX = "stt_provider_apikey_"
         private const val WEBDAV_PASSWORD_KEY = "webdav_password"
         private const val HUGGINGFACE_TOKEN_KEY = "huggingface_token"
@@ -121,26 +121,6 @@ class SecretKeyManager(
         removeAllPoolApiKeys(providerId)
     }
 
-    // ========== TTS API Key Management ==========
-
-    fun getTtsApiKey(providerId: Uuid, plaintextFallback: String): String {
-        val key = "$TTS_PROVIDER_APIKEY_PREFIX$providerId"
-        return secureStore.getSecret(key) ?: plaintextFallback
-    }
-
-    fun setTtsApiKey(providerId: Uuid, apiKey: String) {
-        val key = "$TTS_PROVIDER_APIKEY_PREFIX$providerId"
-        if (apiKey.isNotBlank()) {
-            secureStore.putSecret(key, apiKey)
-        } else {
-            secureStore.removeSecret(key)
-        }
-    }
-
-    fun removeTtsProviderSecrets(providerId: Uuid) {
-        secureStore.removeSecret("$TTS_PROVIDER_APIKEY_PREFIX$providerId")
-    }
-
     // ========== STT API Key Management ==========
 
     fun getSttApiKey(providerId: Uuid, plaintextFallback: String): String {
@@ -185,10 +165,10 @@ class SecretKeyManager(
         }
     }
 
-    /** MCP servers were removed; drop the OAuth secrets they left in the secure store. */
+    /** MCP servers and text-to-speech were removed; drop the secrets they left in the secure store. */
     private fun removeLeftoverMcpSecrets() {
         secureStore.getAllKeys()
-            .filter { it.startsWith(MCP_OAUTH_PREFIX) }
+            .filter { it.startsWith(MCP_OAUTH_PREFIX) || it.startsWith(REMOVED_TTS_APIKEY_PREFIX) }
             .forEach(secureStore::removeSecret)
     }
 
@@ -221,18 +201,10 @@ class SecretKeyManager(
             settings.webDavConfig
         }
 
-        // Migrate TTS provider API keys
-        val migratedTtsProviders = settings.ttsProviders.map { provider ->
-            migrateTtsProviderSecrets(provider).also {
-                if (it != provider) migrated = true
-            }
-        }
-
         return if (migrated) {
             settings.copy(
                 providers = migratedProviders,
                 webDavConfig = migratedWebDav,
-                ttsProviders = migratedTtsProviders,
             )
         } else {
             settings
@@ -256,15 +228,6 @@ class SecretKeyManager(
             .map { it.id }
             .filterNot(newProviderIds::contains)
             .forEach(::removeProviderSecrets)
-
-        // Same for TTS providers: deleting a provider must wipe SecureStore keys
-        // or re-adding the same preset silently restores the old API key.
-        val newTtsProviderIds = newSettings.ttsProviders.asSequence().map { it.id }.toHashSet()
-        oldSettings.ttsProviders
-            .asSequence()
-            .map { it.id }
-            .filterNot(newTtsProviderIds::contains)
-            .forEach(::removeTtsProviderSecrets)
 
         // Handle provider secrets (API keys and private keys)
         for (newProvider in newSettings.providers) {
@@ -298,38 +261,6 @@ class SecretKeyManager(
                         setApiKey(newProvider.id, "")
                     }
                 }
-            }
-        }
-
-        // Handle TTS provider secrets
-        for (newTtsProvider in newSettings.ttsProviders) {
-            val oldTtsProvider = oldSettings.ttsProviders.find { it.id == newTtsProvider.id } ?: continue
-            
-            val oldKey = when (oldTtsProvider) {
-                is TTSProviderSetting.OpenAI -> oldTtsProvider.apiKey
-                is TTSProviderSetting.Gemini -> oldTtsProvider.apiKey
-                is TTSProviderSetting.MiniMax -> oldTtsProvider.apiKey
-                is TTSProviderSetting.ElevenLabs -> oldTtsProvider.apiKey
-                is TTSProviderSetting.Qwen -> oldTtsProvider.apiKey
-                is TTSProviderSetting.Cartesia -> oldTtsProvider.apiKey
-                is TTSProviderSetting.FishAudio -> oldTtsProvider.apiKey
-                is TTSProviderSetting.PlayHT -> oldTtsProvider.apiKey
-                is TTSProviderSetting.SystemTTS -> ""
-            }
-            val newKey = when (newTtsProvider) {
-                is TTSProviderSetting.OpenAI -> newTtsProvider.apiKey
-                is TTSProviderSetting.Gemini -> newTtsProvider.apiKey
-                is TTSProviderSetting.MiniMax -> newTtsProvider.apiKey
-                is TTSProviderSetting.ElevenLabs -> newTtsProvider.apiKey
-                is TTSProviderSetting.Qwen -> newTtsProvider.apiKey
-                is TTSProviderSetting.Cartesia -> newTtsProvider.apiKey
-                is TTSProviderSetting.FishAudio -> newTtsProvider.apiKey
-                is TTSProviderSetting.PlayHT -> newTtsProvider.apiKey
-                is TTSProviderSetting.SystemTTS -> ""
-            }
-            
-            if (oldKey.isNotBlank() && newKey.isBlank()) {
-                setTtsApiKey(newTtsProvider.id, "")
             }
         }
 
@@ -427,68 +358,6 @@ class SecretKeyManager(
         }
     }
 
-    private fun migrateTtsProviderSecrets(provider: TTSProviderSetting): TTSProviderSetting {
-        return when (provider) {
-            is TTSProviderSetting.OpenAI -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setTtsApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is TTSProviderSetting.Gemini -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setTtsApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is TTSProviderSetting.MiniMax -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setTtsApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is TTSProviderSetting.ElevenLabs -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setTtsApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is TTSProviderSetting.Qwen -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setTtsApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is TTSProviderSetting.Cartesia -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setTtsApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is TTSProviderSetting.FishAudio -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setTtsApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is TTSProviderSetting.PlayHT -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setTtsApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is TTSProviderSetting.SystemTTS -> provider
-        }
-    }
-
     private fun migrateSttProviderSecrets(provider: ASRProviderSetting): ASRProviderSetting {
         return when (provider) {
             is ASRProviderSetting.OpenAICompatible -> {
@@ -555,14 +424,9 @@ class SecretKeyManager(
             password = getWebDavPassword(settings.webDavConfig.password)
         )
 
-        val ttsProvidersWithSecrets = settings.ttsProviders.map { provider ->
-            populateTtsProviderSecrets(provider)
-        }
-
         return settings.copy(
             providers = providersWithSecrets,
             webDavConfig = webDavWithPassword,
-            ttsProviders = ttsProvidersWithSecrets,
         )
     }
 
@@ -651,44 +515,6 @@ class SecretKeyManager(
     private fun hydrateModelProviderOverwrite(model: me.rerere.ai.provider.Model): me.rerere.ai.provider.Model {
         val overwrite = model.providerOverwrite ?: return model
         return model.copy(providerOverwrite = populateProviderSecrets(overwrite))
-    }
-
-    private fun populateTtsProviderSecrets(provider: TTSProviderSetting): TTSProviderSetting {
-        return when (provider) {
-            is TTSProviderSetting.OpenAI -> {
-                provider.copy(apiKey = getTtsApiKey(provider.id, provider.apiKey))
-            }
-
-            is TTSProviderSetting.Gemini -> {
-                provider.copy(apiKey = getTtsApiKey(provider.id, provider.apiKey))
-            }
-
-            is TTSProviderSetting.MiniMax -> {
-                provider.copy(apiKey = getTtsApiKey(provider.id, provider.apiKey))
-            }
-
-            is TTSProviderSetting.ElevenLabs -> {
-                provider.copy(apiKey = getTtsApiKey(provider.id, provider.apiKey))
-            }
-
-            is TTSProviderSetting.Qwen -> {
-                provider.copy(apiKey = getTtsApiKey(provider.id, provider.apiKey))
-            }
-
-            is TTSProviderSetting.Cartesia -> {
-                provider.copy(apiKey = getTtsApiKey(provider.id, provider.apiKey))
-            }
-
-            is TTSProviderSetting.FishAudio -> {
-                provider.copy(apiKey = getTtsApiKey(provider.id, provider.apiKey))
-            }
-
-            is TTSProviderSetting.PlayHT -> {
-                provider.copy(apiKey = getTtsApiKey(provider.id, provider.apiKey))
-            }
-
-            is TTSProviderSetting.SystemTTS -> provider
-        }
     }
 
     private fun populateSttProviderSecrets(provider: ASRProviderSetting): ASRProviderSetting {

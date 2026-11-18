@@ -315,7 +315,6 @@ fun AssistantDetailPage(
                 AssistantModelSubPage(
                     assistant = assistant,
                     providers = providers,
-                    ttsProviders = settings.ttsProviders,
                     onUpdate = { onUpdate(it) }
                 )
             }

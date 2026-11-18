@@ -65,7 +65,6 @@ dependencies {
     implementation(project(":aihub:highlight"))
     implementation(project(":aihub:document"))
     implementation(project(":aihub:ui-core"))
-    implementation(project(":aihub:tts"))
     implementation(project(":aihub:speech"))
     // The sherpa-onnx AAR is added by the app that embeds this module (libraries cannot take a local AAR as a runtime dependency).
     compileOnly(files(rootProject.file("aihub/speech/build/sherpa/sherpa-onnx-1.13.4.aar")))

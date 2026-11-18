@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.AccountTree
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Brush
@@ -67,7 +66,6 @@ enum class SettingsDestination {
     Providers,
     ProviderModels,
     Search,
-    Tts,
     Web,
     Backup,
     BackupWebDav,
@@ -266,7 +264,6 @@ private fun handleSettingsPaneBack(navController: NavHostController) {
 private fun settingsDetailParent(route: String): Screen? {
     return when {
         route.contains("SettingProviderDetail") -> Screen.SettingProvider
-        route.contains("SettingTTSProviderDetail") -> Screen.SettingTTS
         route.contains("AssistantDetail") -> Screen.Assistant
         else -> null
     }
@@ -288,8 +285,7 @@ private fun SettingsDestination.mainDestination(): SettingsDestination {
         SettingsDestination.BackupWebDav,
         SettingsDestination.BackupLocal -> SettingsDestination.Backup
         SettingsDestination.ProviderModels,
-        SettingsDestination.Search,
-        SettingsDestination.Tts -> SettingsDestination.Providers
+        SettingsDestination.Search -> SettingsDestination.Providers
         else -> this
     }
 }

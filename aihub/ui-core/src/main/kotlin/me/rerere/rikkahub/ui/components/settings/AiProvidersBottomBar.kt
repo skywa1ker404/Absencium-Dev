@@ -28,7 +28,7 @@ data class AiProviderTab(
     val icon: ImageVector,
 )
 
-/** Android's production compact Models/Search/TTS bottom navigation. */
+/** Android's production compact Models/Search bottom navigation. */
 @Composable
 fun AiProvidersBottomBar(
     tabs: List<AiProviderTab>,

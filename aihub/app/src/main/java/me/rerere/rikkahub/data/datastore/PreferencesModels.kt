@@ -24,11 +24,6 @@ import me.rerere.rikkahub.ui.theme.PresetThemes
 import me.rerere.rikkahub.ui.theme.normalizePresetThemeId
 import me.rerere.search.SearchCommonOptions
 import me.rerere.search.SearchServiceOptions
-import me.rerere.tts.provider.TTSProviderSetting
-import me.rerere.tts.provider.TTSVoice
-import me.rerere.tts.provider.findTtsVoice
-import me.rerere.tts.provider.withDefaultVoices
-import me.rerere.tts.provider.withVoiceApplied
 import kotlin.uuid.Uuid
 
 val DISABLED_MODEL_ID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000000")
@@ -73,10 +68,6 @@ data class Settings(
     val searchCommonOptions: SearchCommonOptions = SearchCommonOptions(),
     val searchServiceSelected: Int = 0,
     val webDavConfig: WebDavConfig = WebDavConfig(),
-    val ttsProviders: List<TTSProviderSetting> = DEFAULT_TTS_PROVIDERS,
-    val selectedTTSProviderId: Uuid = DEFAULT_SYSTEM_TTS_ID,
-    val selectedTTSVoiceId: Uuid = DEFAULT_SYSTEM_TTS_VOICE_ID,
-    val ttsAutoplayMode: TtsAutoplayMode = TtsAutoplayMode.OFF,
     val sttModelId: Uuid? = null,
     val sttThinkingBudget: Int = 0,
     val sttPrompt: String = DEFAULT_STT_PROMPT,
@@ -107,35 +98,6 @@ data class RpStyleRule(
     val colorHex: String = "#808080",
     val enabled: Boolean = true
 )
-
-@Serializable
-data class TtsTextFilterRule(
-    val id: String = kotlin.uuid.Uuid.random().toString(),
-    val pattern: String = "*",
-    val mode: TtsFilterMode = TtsFilterMode.SKIP,
-    val enabled: Boolean = true
-)
-
-@Serializable
-enum class TtsFilterMode {
-    SKIP,
-    ONLY_READ
-}
-
-@Serializable
-enum class TtsAutoplayMode {
-    OFF,
-    AFTER_GENERATION,
-    WHILE_GENERATING,
-}
-
-fun TtsAutoplayMode.asEnabledMode(): TtsAutoplayMode {
-    return when (this) {
-        TtsAutoplayMode.OFF -> TtsAutoplayMode.OFF
-        TtsAutoplayMode.AFTER_GENERATION,
-        TtsAutoplayMode.WHILE_GENERATING -> TtsAutoplayMode.WHILE_GENERATING
-    }
-}
 
 @Serializable
 enum class FontSource {
@@ -234,7 +196,6 @@ data class DisplaySetting(
     val codeBlockAutoWrap: Boolean = false,
     val codeBlockAutoCollapse: Boolean = true,
     val rpStyleRules: List<RpStyleRule> = emptyList(),
-        val ttsTextFilterRules: List<TtsTextFilterRule> = emptyList(),
     val providerViewMode: ProviderViewMode = ProviderViewMode.LIST,
     val showContextStacks: Boolean = false,
     val newChatHeaderStyle: NewChatHeaderStyle = NewChatHeaderStyle.GREETING,
@@ -490,79 +451,6 @@ fun Settings.getEffectiveDisplaySetting(assistant: Assistant? = null): DisplaySe
     )
 }
 
-fun Settings.getSelectedTTSProvider(): TTSProviderSetting? {
-    return selectedTTSProviderId.let { id ->
-        ttsProviders.find { it.id == id }
-    } ?: ttsProviders.firstOrNull()
-}
-
-fun Settings.getSelectedTTSVoice(): Pair<TTSProviderSetting, TTSVoice>? {
-    val selectedProvider = getSelectedTTSProvider()
-    return ttsProviders.findTtsVoice(selectedTTSVoiceId)
-        ?: selectedProvider?.voices?.firstOrNull()?.let { voice -> selectedProvider to voice }
-        ?: ttsProviders.firstOrNull()?.voices?.firstOrNull()?.let { voice -> ttsProviders.first() to voice }
-}
-
-fun Settings.getEffectiveTTSVoice(assistant: Assistant? = null): Pair<TTSProviderSetting, TTSVoice>? {
-    val assistantVoice = assistant?.ttsVoiceId?.let { ttsProviders.findTtsVoice(it) }
-    return assistantVoice ?: getSelectedTTSVoice()
-}
-
-fun Settings.getEffectiveTTSProvider(assistant: Assistant? = null): TTSProviderSetting? {
-    val (provider, voice) = getEffectiveTTSVoice(assistant) ?: return getSelectedTTSProvider()
-    return provider.withVoiceApplied(voice)
-}
-
-fun Settings.getEffectiveTtsAutoplayMode(assistant: Assistant? = null): TtsAutoplayMode {
-    return (assistant?.ttsAutoplayMode ?: ttsAutoplayMode).asEnabledMode()
-}
-
-fun Settings.normalizeTtsSettings(): Settings {
-    val normalizedProviders = ttsProviders.distinctBy { it.id }.map { provider ->
-        if (provider is TTSProviderSetting.SystemTTS) {
-            val defaultVoiceId = if (provider.id == DEFAULT_SYSTEM_TTS_ID) DEFAULT_SYSTEM_TTS_VOICE_ID else null
-            provider.copyProvider(
-                voices = provider.withDefaultVoices(defaultVoiceId).voices.distinctBy { voice ->
-                    if (voice.providerVoiceId.isBlank()) {
-                        voice.id.toString()
-                    } else {
-                        "${voice.enginePackageName.orEmpty()}:${voice.providerVoiceId}"
-                    }
-                }
-            )
-        } else {
-            provider.withDefaultVoices().let { normalized ->
-                normalized.copyProvider(voices = normalized.voices.distinctBy { voice -> voice.id })
-            }
-        }
-    }
-    val allVoiceIds = normalizedProviders.flatMap { it.voices }.map { it.id }.toSet()
-    val allProviderIds = normalizedProviders.map { it.id }.toSet()
-    val fallbackVoiceId = normalizedProviders.find { it.id == selectedTTSProviderId }
-        ?.voices
-        ?.firstOrNull()
-        ?.id
-        ?: normalizedProviders.firstOrNull()?.voices?.firstOrNull()?.id
-        ?: DEFAULT_SYSTEM_TTS_VOICE_ID
-    val normalizedVoiceId = selectedTTSVoiceId.takeIf { it in allVoiceIds } ?: fallbackVoiceId
-    val normalizedProviderId = selectedTTSProviderId.takeIf { it in allProviderIds }
-        ?: normalizedProviders.firstOrNull { provider -> provider.voices.any { voice -> voice.id == normalizedVoiceId } }?.id
-        ?: normalizedProviders.firstOrNull()?.id
-        ?: DEFAULT_SYSTEM_TTS_ID
-    return copy(
-        ttsProviders = normalizedProviders,
-        selectedTTSProviderId = normalizedProviderId,
-        selectedTTSVoiceId = normalizedVoiceId,
-        ttsAutoplayMode = ttsAutoplayMode.asEnabledMode(),
-        assistants = assistants.map { assistant ->
-            assistant.copy(
-                ttsVoiceId = assistant.ttsVoiceId?.takeIf { it in allVoiceIds },
-                ttsAutoplayMode = assistant.ttsAutoplayMode?.asEnabledMode(),
-            )
-        }
-    )
-}
-
 internal fun Settings.ensureBuiltInProviders(): Settings {
     val defaultById = DEFAULT_PROVIDERS.associateBy { it.id }
     val normalizedProviders = providers.map { provider ->
@@ -700,21 +588,6 @@ internal fun Assistant.migrateDefaultAssistant(): Assistant {
         avatar = if (old || avatar is Avatar.Resource) Avatar.Resource(R.drawable.absencium_ai_avatar) else avatar,
     )
 }
-
-val DEFAULT_SYSTEM_TTS_ID = Uuid.parse("026a01a2-c3a0-4fd5-8075-80e03bdef200")
-val DEFAULT_SYSTEM_TTS_VOICE_ID = Uuid.parse("65e59f2d-31a4-4db4-99dd-ef2f8a9a8a38")
-internal val DEFAULT_TTS_PROVIDERS = listOf(
-    TTSProviderSetting.SystemTTS(
-        id = DEFAULT_SYSTEM_TTS_ID,
-        name = "",
-        voices = listOf(
-            TTSVoice(
-                id = DEFAULT_SYSTEM_TTS_VOICE_ID,
-                name = "System TTS",
-            )
-        ),
-    ),
-)
 
 internal val DEFAULT_ASSISTANTS_IDS = DEFAULT_ASSISTANTS.map { it.id }
 

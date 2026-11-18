@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Public
@@ -44,7 +43,6 @@ enum class ProvidersTab(
 ) {
     Models(Screen.SettingProvider, Icons.Rounded.Cloud, R.string.setting_provider_page_title),
     Search(Screen.SettingSearch, Icons.Rounded.Public, R.string.setting_page_search_title),
-    Tts(Screen.SettingTTS, Icons.AutoMirrored.Rounded.VolumeUp, R.string.setting_tts_page_title),
 }
 
 @Composable
@@ -58,7 +56,7 @@ fun ProvidersBottomBar(
     val haptics = rememberPremiumHaptics()
     val useWideLayout = LocalSettingsWideLayout.current
     AiProvidersBottomBar(
-        tabs = ProvidersTab.entries.filter { it != ProvidersTab.Tts }.map { AiProviderTab(it.name, it.icon) },
+        tabs = ProvidersTab.entries.map { AiProviderTab(it.name, it.icon) },
         selectedId = selectedTab.name,
         useWideLayout = useWideLayout,
         modifier = modifier,

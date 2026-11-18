@@ -204,24 +204,6 @@ fun AssistantToolsSubPage(
             )
             
             SettingGroupItem(
-                title = stringResource(R.string.assistant_page_local_tools_tts_title),
-                subtitle = stringResource(R.string.assistant_page_local_tools_tts_desc),
-                trailing = {
-                    HapticSwitch(
-                        checked = assistant.localTools.contains(LocalToolOption.Tts),
-                        onCheckedChange = { enabled ->
-                            val newLocalTools = if (enabled) {
-                                assistant.localTools + LocalToolOption.Tts
-                            } else {
-                                assistant.localTools - LocalToolOption.Tts
-                            }
-                            onUpdate(assistant.copy(localTools = newLocalTools))
-                        }
-                    )
-                }
-            )
-
-            SettingGroupItem(
                 title = stringResource(R.string.assistant_page_local_tools_character_questions_title),
                 subtitle = stringResource(R.string.assistant_page_local_tools_character_questions_desc),
                 trailing = {

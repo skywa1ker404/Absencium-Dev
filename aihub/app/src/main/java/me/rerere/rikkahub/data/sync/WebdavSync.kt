@@ -188,7 +188,7 @@ class WebdavSync(
             result = result.copy(assistants = emptyList())
         }
         if (BackupContentOption.PROVIDERS !in selectedContent) {
-            result = result.copy(providers = emptyList(), ttsProviders = emptyList())
+            result = result.copy(providers = emptyList())
         } else if (BackupContentOption.API_KEYS !in selectedContent) {
             // Keep providers structure, but keys are already blanked out by populateSecretsForExport
         }
@@ -208,7 +208,6 @@ class WebdavSync(
                 suggestionPrompt = defaults.suggestionPrompt,
                 learningModePrompt = defaults.learningModePrompt,
                 ocrPrompt = defaults.ocrPrompt,
-                ttsAutoplayMode = defaults.ttsAutoplayMode,
                 chatStorage = defaults.chatStorage,
                 webServerEnabled = defaults.webServerEnabled,
                 webServerPort = defaults.webServerPort,

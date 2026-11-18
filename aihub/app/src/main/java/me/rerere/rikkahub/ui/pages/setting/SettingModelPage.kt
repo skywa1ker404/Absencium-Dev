@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Chat
-import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.Psychology
@@ -79,7 +78,6 @@ import androidx.compose.material.icons.rounded.DownloadForOffline
 
 import me.rerere.rikkahub.ui.components.ai.ReasoningButton
 import me.rerere.rikkahub.ui.components.ai.ModelSelector
-import me.rerere.rikkahub.ui.components.ai.VoiceSelector
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.nav.OneUITopAppBar
@@ -119,7 +117,6 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
             item {
                 SettingsGroup(title = stringResource(R.string.setting_model_page_group_conversation)) {
                     DefaultChatModelSetting(settings = settings, vm = vm)
-                    DefaultTtsVoiceSetting(settings = settings, vm = vm)
                     DefaultSTTModelSetting(settings = settings, vm = vm)
                     DefaultTitleModelSetting(settings = settings, vm = vm)
                     DefaultSummarizerModelSetting(settings = settings, vm = vm)
@@ -137,38 +134,6 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
             }
         }
     }
-}
-
-@Composable
-private fun DefaultTtsVoiceSetting(
-    settings: Settings,
-    vm: SettingVM
-) {
-    ModelFeatureCard(
-        title = { Text("Default Voice", maxLines = 1) },
-        description = { Text("Voice used for manual and automatic TTS") },
-        icon = { Icon(Icons.AutoMirrored.Rounded.VolumeUp, null) },
-        actions = {
-            Box(modifier = Modifier.weight(1f)) {
-                VoiceSelector(
-                    voiceId = settings.selectedTTSVoiceId,
-                    providers = settings.ttsProviders,
-                    modifier = Modifier.wrapContentWidth(),
-                    onSelect = { voice ->
-                        val provider = settings.ttsProviders.firstOrNull { provider ->
-                            provider.voices.any { it.id == voice.id }
-                        }
-                        vm.updateSettings(
-                            settings.copy(
-                                selectedTTSVoiceId = voice.id,
-                                selectedTTSProviderId = provider?.id ?: settings.selectedTTSProviderId,
-                            )
-                        )
-                    }
-                )
-            }
-        }
-    )
 }
 
 @Composable

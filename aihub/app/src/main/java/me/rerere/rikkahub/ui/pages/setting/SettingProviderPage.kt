@@ -178,7 +178,6 @@ import me.rerere.rikkahub.ui.pages.setting.components.toProviderSetting
 import me.rerere.rikkahub.ui.pages.setting.components.toProviderPresets
 import me.rerere.rikkahub.ui.pages.setting.components.withSpecialProviderPresets
 import me.rerere.rikkahub.ui.theme.AppShapes
-import me.rerere.tts.provider.withDefaultVoices
 import me.rerere.rikkahub.utils.ImageUtils
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -203,7 +202,6 @@ fun SettingProviderPage(
     val currentTab = ProvidersTab.entries[pager.currentPage]
     
     var showSearchCommonOptions by remember { mutableStateOf(false) }
-    var showTtsFilterSettings by remember { mutableStateOf(false) }
     val providerPresets = remember(catalogSnapshot, settings.providers) {
         (catalogSnapshot?.toProviderPresets()?.takeIf { it.isNotEmpty() }
             ?: FALLBACK_PROVIDER_PRESETS
@@ -312,15 +310,10 @@ fun SettingProviderPage(
                             onAdd = { addProvider(it) }
                         )
 
-                        ProvidersTab.Search,
-                        ProvidersTab.Tts -> AppFab(
+                        ProvidersTab.Search -> AppFab(
                             onClick = {
                                 haptics.perform(HapticPattern.Pop)
-                                if (currentTab == ProvidersTab.Search) {
-                                    showSearchCommonOptions = true
-                                } else {
-                                    showTtsFilterSettings = true
-                                }
+                                showSearchCommonOptions = true
                             },
                             shape = AppShapes.CardLarge,
                             containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -328,10 +321,7 @@ fun SettingProviderPage(
                         ) {
                             Icon(
                                 Icons.Rounded.Settings,
-                                contentDescription = when (currentTab) {
-                                    ProvidersTab.Search -> stringResource(R.string.setting_page_search_common_options)
-                                    else -> stringResource(R.string.setting_tts_settings_title)
-                                }
+                                contentDescription = stringResource(R.string.setting_page_search_common_options)
                             )
                         }
                     }
@@ -352,19 +342,6 @@ fun SettingProviderPage(
                         vm.updateSettings(
                             settings.copy(
                                 searchServices = listOf(newService) + settings.searchServices
-                            )
-                        )
-                    }
-
-                    ProvidersTab.Tts -> AddTTSProviderButton(
-                        catalogSnapshot = catalogSnapshot,
-                        enableHaptics = settings.displaySetting.enableUIHaptics,
-                        asFab = true
-                    ) { newProvider ->
-                        val providerToAdd = newProvider.withDefaultVoices()
-                        vm.updateSettings(
-                            settings.copy(
-                                ttsProviders = listOf(providerToAdd) + settings.ttsProviders
                             )
                         )
                     }
@@ -493,11 +470,10 @@ fun SettingProviderPage(
                 }
 
                 ProvidersTab.Search -> SearchProvidersContent(vm = vm, contentPadding = innerPadding)
-                ProvidersTab.Tts -> TtsProvidersContent(vm = vm, contentPadding = innerPadding)
             }
         }
             AnimatedVisibility(
-                visible = !useWideLayout && (currentTab == ProvidersTab.Search || currentTab == ProvidersTab.Tts),
+                visible = !useWideLayout && currentTab == ProvidersTab.Search,
                 enter = slideInHorizontally(
                     animationSpec = tween(120),
                     initialOffsetX = { it }
@@ -511,11 +487,7 @@ fun SettingProviderPage(
                     AppFab(
                         onClick = {
                             haptics.perform(HapticPattern.Pop)
-                            if (currentTab == ProvidersTab.Search) {
-                                showSearchCommonOptions = true
-                            } else {
-                                showTtsFilterSettings = true
-                            }
+                            showSearchCommonOptions = true
                         },
                         shape = AppShapes.CardLarge,
                         containerColor = me.rerere.rikkahub.ui.theme.glassCard(MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -523,10 +495,7 @@ fun SettingProviderPage(
                     ) {
                         Icon(
                             Icons.Rounded.Settings,
-                            contentDescription = when (currentTab) {
-                                ProvidersTab.Search -> stringResource(R.string.setting_page_search_common_options)
-                                else -> stringResource(R.string.setting_tts_settings_title)
-                            }
+                            contentDescription = stringResource(R.string.setting_page_search_common_options)
                         )
                     }
                 }
@@ -542,22 +511,6 @@ fun SettingProviderPage(
                 vm.updateSettings(
                     settings.copy(
                         searchCommonOptions = options
-                    )
-                )
-            }
-        )
-    }
-
-    if (showTtsFilterSettings) {
-        TtsTextFilterSettingsDialog(
-            rules = settings.displaySetting.ttsTextFilterRules,
-            onDismiss = { showTtsFilterSettings = false },
-            onUpdateRules = { newRules ->
-                vm.updateSettings(
-                    settings.copy(
-                        displaySetting = settings.displaySetting.copy(
-                            ttsTextFilterRules = newRules
-                        )
                     )
                 )
             }

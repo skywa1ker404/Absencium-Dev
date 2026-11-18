@@ -48,17 +48,14 @@ import me.rerere.highlight.Highlighter
 import me.rerere.highlight.LocalHighlighter
 import me.rerere.rikkahub.data.datastore.SpontaneousMessagingStateStore
 import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.ui.components.ui.TTSController
 import me.rerere.rikkahub.ui.context.LocalAnimatedVisibilityScope
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalSharedTransitionScope
-import me.rerere.rikkahub.ui.context.LocalTTSState
 import me.rerere.rikkahub.ui.context.LocalSTTState
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.hooks.readBooleanPreference
 import me.rerere.rikkahub.ui.hooks.readStringPreference
-import me.rerere.rikkahub.ui.hooks.rememberCustomTtsState
 import me.rerere.rikkahub.ui.hooks.rememberCustomSttState
 import me.rerere.rikkahub.ui.motion.LocalMotionPolicy
 import me.rerere.rikkahub.ui.motion.rememberSystemMotionPolicy
@@ -87,8 +84,6 @@ import me.rerere.rikkahub.ui.pages.setting.SettingPage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
-import me.rerere.rikkahub.ui.pages.setting.SettingTTSProviderDetailPage
-import me.rerere.rikkahub.ui.pages.setting.SettingTTSPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.webview.WebViewPage
 import me.rerere.rikkahub.ui.pages.setting.SettingUICustomizationPage
@@ -657,7 +652,7 @@ class RouteActivity : ComponentActivity() {
     companion object {
         /** Absencium opens the chat straight on its settings (providers, models, assistants) with this extra. */
         const val EXTRA_OPEN_SETTINGS = "openSettings"
-        /** Opens one settings page of the chat directly (models, providers, assistants, search, tts, storage). */
+        /** Opens one settings page of the chat directly (models, providers, assistants, search, storage). */
         const val EXTRA_SETTINGS_DESTINATION = "settingsDestination"
         const val EXTRA_CONVERSATION_ID = "conversationId"
         const val EXTRA_ASSISTANT_ID = "assistantId"
@@ -679,7 +674,6 @@ fun ChatAppRoutes(
     val highlighter = org.koin.compose.koinInject<Highlighter>()
     val toastState = rememberAppToasterState()
     val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
-    val tts = rememberCustomTtsState()
     val stt = rememberCustomSttState()
     val motionPolicy = rememberSystemMotionPolicy()
     SharedTransitionLayout {
@@ -690,7 +684,6 @@ fun ChatAppRoutes(
             LocalHighlighter provides highlighter,
             LocalMotionPolicy provides motionPolicy,
             LocalToaster provides toastState,
-            LocalTTSState provides tts,
             LocalSTTState provides stt,
         ) {
             // Listen for API key authentication / quota errors and notify user
@@ -760,7 +753,6 @@ fun ChatAppRoutes(
                 }
             }
             Box(modifier = Modifier.fillMaxSize()) {
-            TTSController()
             // Inside Absencium the host app has its own AI settings page, so the chat's first-run provider setup never shows.
             val shouldShowSetup = AiHost.openAppSettings == null &&
                 !settings.init &&
@@ -946,8 +938,7 @@ fun ChatAppRoutes(
                         if (useWideSettingsLayout) {
                             null
                         } else if (
-                            initialState.destination.route?.contains("SettingSearch") == true ||
-                            initialState.destination.route?.contains("SettingTTS") == true
+                            initialState.destination.route?.contains("SettingSearch") == true
                         ) {
                             lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
@@ -958,8 +949,7 @@ fun ChatAppRoutes(
                         if (useWideSettingsLayout) {
                             null
                         } else if (
-                            targetState.destination.route?.contains("SettingSearch") == true ||
-                            targetState.destination.route?.contains("SettingTTS") == true
+                            targetState.destination.route?.contains("SettingSearch") == true
                         ) {
                             lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
@@ -970,8 +960,7 @@ fun ChatAppRoutes(
                         if (useWideSettingsLayout) {
                             null
                         } else if (
-                            initialState.destination.route?.contains("SettingSearch") == true ||
-                            initialState.destination.route?.contains("SettingTTS") == true
+                            initialState.destination.route?.contains("SettingSearch") == true
                         ) {
                             lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
@@ -982,8 +971,7 @@ fun ChatAppRoutes(
                         if (useWideSettingsLayout) {
                             null
                         } else if (
-                            targetState.destination.route?.contains("SettingSearch") == true ||
-                            targetState.destination.route?.contains("SettingTTS") == true
+                            targetState.destination.route?.contains("SettingSearch") == true
                         ) {
                             lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
@@ -1001,14 +989,6 @@ fun ChatAppRoutes(
                     val id = Uuid.parse(route.providerId)
                     AdaptiveSettingsScaffold(selected = SettingsDestination.Providers) {
                         SettingProviderDetailPage(id = id)
-                    }
-                }
-
-                composable<Screen.SettingTTSProviderDetail> {
-                    val route = it.toRoute<Screen.SettingTTSProviderDetail>()
-                    val id = Uuid.parse(route.providerId)
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.Tts) {
-                        SettingTTSProviderDetailPage(id = id)
                     }
                 }
 
@@ -1030,8 +1010,6 @@ fun ChatAppRoutes(
                             null
                         } else if (initialState.destination.route?.contains("SettingProvider") == true) {
                             lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
-                        } else if (initialState.destination.route?.contains("SettingTTS") == true) {
-                            lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
                             null
                         }
@@ -1041,8 +1019,6 @@ fun ChatAppRoutes(
                             null
                         } else if (targetState.destination.route?.contains("SettingProvider") == true) {
                             lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
-                        } else if (targetState.destination.route?.contains("SettingTTS") == true) {
-                            lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
                             null
                         }
@@ -1052,8 +1028,6 @@ fun ChatAppRoutes(
                             null
                         } else if (initialState.destination.route?.contains("SettingProvider") == true) {
                             lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
-                        } else if (initialState.destination.route?.contains("SettingTTS") == true) {
-                            lateralEnterTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
                             null
                         }
@@ -1063,8 +1037,6 @@ fun ChatAppRoutes(
                             null
                         } else if (targetState.destination.route?.contains("SettingProvider") == true) {
                             lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
-                        } else if (targetState.destination.route?.contains("SettingTTS") == true) {
-                            lateralExitTransition(offset = { -it }, motionPolicy = motionPolicy)
                         } else {
                             null
                         }
@@ -1074,62 +1046,6 @@ fun ChatAppRoutes(
                         SettingProviderPage(initialTab = me.rerere.rikkahub.ui.pages.setting.ProvidersTab.Search)
                     }
                 }
-
-                composable<Screen.SettingTTS>(
-                    enterTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (
-                            initialState.destination.route?.contains("SettingProvider") == true ||
-                            initialState.destination.route?.contains("SettingSearch") == true
-                        ) {
-                            lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
-                        } else {
-                            null
-                        }
-                    },
-                    exitTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (
-                            targetState.destination.route?.contains("SettingProvider") == true ||
-                            targetState.destination.route?.contains("SettingSearch") == true
-                        ) {
-                            lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
-                        } else {
-                            null
-                        }
-                    },
-                    popEnterTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (
-                            initialState.destination.route?.contains("SettingProvider") == true ||
-                            initialState.destination.route?.contains("SettingSearch") == true
-                        ) {
-                            lateralEnterTransition(offset = { it }, motionPolicy = motionPolicy)
-                        } else {
-                            null
-                        }
-                    },
-                    popExitTransition = {
-                        if (useWideSettingsLayout) {
-                            null
-                        } else if (
-                            targetState.destination.route?.contains("SettingProvider") == true ||
-                            targetState.destination.route?.contains("SettingSearch") == true
-                        ) {
-                            lateralExitTransition(offset = { it }, motionPolicy = motionPolicy)
-                        } else {
-                            null
-                        }
-                    }
-                ) {
-                    AdaptiveSettingsScaffold(selected = SettingsDestination.Tts) {
-                        SettingProviderPage(initialTab = me.rerere.rikkahub.ui.pages.setting.ProvidersTab.Tts)
-                    }
-                }
-
 
                 composable<Screen.SettingUICustomization> {
                     AdaptiveSettingsScaffold(selected = SettingsDestination.UiCustomization) {
@@ -1219,9 +1135,6 @@ sealed interface Screen {
     data object SettingLocalLlm : Screen
 
     @Serializable
-    data class SettingTTSProviderDetail(val providerId: String) : Screen
-
-    @Serializable
     data object SettingModels : Screen
 
     @Serializable
@@ -1229,9 +1142,6 @@ sealed interface Screen {
 
     @Serializable
     data object SettingSearch : Screen
-
-    @Serializable
-    data object SettingTTS : Screen
 
     @Serializable
     data object SettingWeb : Screen

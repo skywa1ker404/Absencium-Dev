@@ -156,10 +156,7 @@ import me.rerere.rikkahub.BuildConfig
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.TtsAutoplayMode
 import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.data.datastore.getEffectiveTTSProvider
-import me.rerere.rikkahub.data.datastore.getEffectiveTtsAutoplayMode
 import me.rerere.rikkahub.data.ai.contextUsageSourceKey
 import me.rerere.rikkahub.data.ai.buildTimeAwarenessBlock
 import me.rerere.rikkahub.data.ai.tools.toDefinitionPreviews
@@ -173,7 +170,6 @@ import me.rerere.rikkahub.navigation.ChatRouteTarget
 import me.rerere.rikkahub.data.repository.ChatAttachmentManager
 import me.rerere.rikkahub.ui.components.ai.MinimalChatInput
 import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.context.LocalTTSState
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.hooks.ChatInputState
 import me.rerere.rikkahub.ui.hooks.EditStateContent
@@ -513,144 +509,6 @@ private fun chatToolbarPopupTransformOrigin(placement: ChatToolbarPlacement): Tr
 private val chatTopToolbarFadeHeight = 96.dp
 private val chatBottomToolbarTopFadeHeight = 36.dp
 
-private fun latestAssistantSpeechMessage(conversation: Conversation): UIMessage? {
-    return conversation.messageNodes.asReversed().asSequence()
-        .map { it.currentMessage }
-        .firstOrNull { message ->
-            message.role == MessageRole.ASSISTANT && message.toContentText().isNotBlank()
-        }
-}
-
-private fun speakablePrefixLength(text: String, final: Boolean): Int {
-    val trimmedEnd = text.indexOfLast { !it.isWhitespace() }
-    if (trimmedEnd < 0) return 0
-
-    val paragraphBreak = text.indexOf("\n\n")
-    if (paragraphBreak >= 0) return paragraphBreak + 2
-
-    for (i in text.indices) {
-        val c = text[i]
-        if (c == '。' || c == '！' || c == '？' || c == '…') {
-            return i + 1
-        }
-        if (c == '!' || c == '?') {
-            return i + 1
-        }
-        if (c == '.') {
-            val prevIsDigit = i > 0 && text[i - 1].isDigit()
-            val nextIsDigit = i + 1 < text.length && text[i + 1].isDigit()
-            if (!prevIsDigit || !nextIsDigit) {
-                val nextIsBoundary = i + 1 == text.length || text[i + 1].isWhitespace() || text[i + 1] == '\n' || text[i + 1] == '"' || text[i + 1] == '\''
-                if (nextIsBoundary) {
-                    return i + 1
-                }
-            }
-        }
-    }
-
-    val lineBreak = text.indexOf('\n')
-    if (lineBreak >= 0) return lineBreak + 1
-
-    return if (final) trimmedEnd + 1 else 0
-}
-
-@Composable
-private fun ChatTtsAutoplayEffect(
-    settings: Settings,
-    assistant: Assistant,
-    conversation: Conversation,
-    loadingJob: Job?,
-) {
-    val tts = LocalTTSState.current
-    val mode = settings.getEffectiveTtsAutoplayMode(assistant)
-    val provider = remember(
-        settings.ttsProviders,
-        settings.selectedTTSVoiceId,
-        settings.selectedTTSProviderId,
-        assistant.ttsVoiceId,
-    ) {
-        settings.getEffectiveTTSProvider(assistant)
-    }
-    var completedMessageId by remember(conversation.id) { mutableStateOf<Uuid?>(null) }
-    var streamingMessageId by remember(conversation.id) { mutableStateOf<Uuid?>(null) }
-    var generationBaselineMessageId by remember(conversation.id) { mutableStateOf<Uuid?>(null) }
-    var generationBaselineText by remember(conversation.id) { mutableStateOf("") }
-    var spokenLength by remember(conversation.id) { mutableStateOf(0) }
-    var wasGenerating by remember(conversation.id) { mutableStateOf(false) }
-
-    // Avoid passing the full conversation.currentMessages list to LaunchedEffect,
-    // which triggers a deep O(N) List.equals comparison across 200k tokens on every chunk.
-    val ttsEnabled = mode != TtsAutoplayMode.OFF && provider != null
-    val speechTriggerKey = if (!ttsEnabled) {
-        null
-    } else if (mode == TtsAutoplayMode.AFTER_GENERATION) {
-        loadingJob == null
-    } else {
-        latestAssistantSpeechMessage(conversation)?.let { it.id to it.toContentText().length }
-    }
-
-    LaunchedEffect(conversation.id, speechTriggerKey, mode, provider) {
-        if (!ttsEnabled) return@LaunchedEffect
-        if (loadingJob == null) {
-            if (!wasGenerating) return@LaunchedEffect
-            wasGenerating = false
-            val latestMessage = latestAssistantSpeechMessage(conversation) ?: return@LaunchedEffect
-            val text = latestMessage.toContentText()
-            if (latestMessage.id == generationBaselineMessageId && text == generationBaselineText) {
-                return@LaunchedEffect
-            }
-            if (completedMessageId == latestMessage.id && spokenLength >= text.length) {
-                return@LaunchedEffect
-            }
-            if (streamingMessageId != latestMessage.id || spokenLength > text.length) {
-                streamingMessageId = latestMessage.id
-                spokenLength = 0
-            }
-            val remaining = text.drop(spokenLength)
-            val length = speakablePrefixLength(remaining, final = true)
-            val segment = remaining.take(length).trim()
-            if (segment.isNotBlank()) {
-                tts.speak(
-                    text = segment,
-                    flushCalled = spokenLength == 0,
-                    overrideSetting = provider,
-                )
-                spokenLength += length
-            }
-            completedMessageId = latestMessage.id
-            return@LaunchedEffect
-        }
-
-        if (mode != TtsAutoplayMode.WHILE_GENERATING) return@LaunchedEffect
-
-        if (!wasGenerating) {
-            val baselineMessage = latestAssistantSpeechMessage(conversation)
-            generationBaselineMessageId = baselineMessage?.id
-            generationBaselineText = baselineMessage?.toContentText().orEmpty()
-            wasGenerating = true
-        }
-        val latestMessage = latestAssistantSpeechMessage(conversation) ?: return@LaunchedEffect
-        if (latestMessage.id == generationBaselineMessageId && latestMessage.toContentText() == generationBaselineText) {
-            return@LaunchedEffect
-        }
-        val text = latestMessage.toContentText()
-        if (streamingMessageId != latestMessage.id) {
-            streamingMessageId = latestMessage.id
-            spokenLength = 0
-        }
-        if (spokenLength > text.length) {
-            spokenLength = 0
-        }
-        val remaining = text.drop(spokenLength)
-        val length = speakablePrefixLength(remaining, final = false)
-        val segment = remaining.take(length).trim()
-        if (segment.isNotBlank()) {
-            spokenLength += length
-            tts.speak(segment, flushCalled = false, overrideSetting = provider)
-        }
-    }
-}
-
 internal fun shouldUseWideChatLayout(
     windowWidth: Dp,
     windowHeight: Dp,
@@ -707,13 +565,6 @@ fun ChatPage(
         conversationPersistenceMode == ChatPersistenceMode.PERSIST_ON_REPLY -> ChatPersistenceMode.PERSIST_ON_REPLY
         else -> ChatPersistenceMode.NORMAL
     }
-    ChatTtsAutoplayEffect(
-        settings = setting,
-        assistant = conversationAssistant,
-        conversation = conversation,
-        loadingJob = loadingJob,
-    )
-
     LaunchedEffect(conversation.id) {
         manualTemporaryChat = false
     }

@@ -22,7 +22,6 @@
     <string name="later">Later</string>
     <string name="open_settings">Open Settings</string>
     <string name="not_now">Not now</string>
-    <string name="local_label">Local</string>
     <string name="clear_search">Clear</string>
 
     <!-- Context refresh -->
@@ -286,7 +285,6 @@
     <!-- MCP -->
 
     <!-- RP optimizations -->
-    <string name="setting_rp_custom_preview">Custom: %1$stext%1$s</string>
     <string name="setting_rp_color_hex">Color (Hex)</string>
 
     <!-- Search settings -->
@@ -343,25 +341,7 @@
     <!-- Skills -->
 
     <!-- TTS -->
-    <string name="setting_tts_settings_title">TTS Settings</string>
-    <string name="setting_tts_error">TTS Error: %1$s</string>
     <string name="setting_tts_delete_service">Are you sure you want to delete this TTS service?</string>
-    <string name="setting_tts_test_voice">Test TTS</string>
-    <string name="setting_tts_test_voice_preview">Hello user, this is what your characters will sound like if you use this setup!</string>
-    <string name="setting_tts_filter_title">Configure text patterns for TTS</string>
-    <string name="setting_tts_filter_desc">Skip: Text matching the pattern will be skipped.\nOnly Read: Only text matching the pattern will be read.</string>
-    <string name="setting_tts_filter_empty">No rules yet. Tap + to add one.</string>
-    <string name="setting_tts_filter_edit_rule">Edit Rule</string>
-    <string name="setting_tts_filter_add_rule">Add Rule</string>
-    <string name="setting_tts_filter_pattern">Pattern</string>
-    <string name="setting_tts_filter_pattern_placeholder">e.g., * or %</string>
-    <string name="setting_tts_filter_pattern_desc">Text wrapped like %1$stext%1$s will be filtered</string>
-    <string name="setting_tts_filter_mode">Mode</string>
-    <string name="setting_tts_filter_skip">Skip</string>
-    <string name="setting_tts_filter_only_read">Only Read</string>
-    <string name="setting_tts_filter_skip_desc">Text inside %1$s...%1$s will be skipped</string>
-    <string name="setting_tts_filter_only_read_desc">Only text inside %1$s...%1$s will be read</string>
-    <string name="setting_tts_filter_delete">Delete</string>
     <string name="setting_tts_preset_system_desc">Uses device\'s built-in TTS engine</string>
     <string name="setting_tts_preset_local_engine_desc">Local engine: %1$s</string>
     <string name="setting_tts_preset_openai_desc">High-quality voices with emotion</string>
@@ -380,8 +360,6 @@
     <string name="downloads_saved">Saved to Downloads: %1$s</string>
     <string name="downloads_create_entry_failed">Failed to create download entry</string>
     <string name="downloads_save_failed">Failed to save: %1$s</string>
-    <string name="a11y_show">Show</string>
-    <string name="a11y_hide">Hide</string>
     <string name="a11y_close">Close</string>
     <string name="a11y_show_more">Show more</string>
     <string name="a11y_expand">Expand</string>
