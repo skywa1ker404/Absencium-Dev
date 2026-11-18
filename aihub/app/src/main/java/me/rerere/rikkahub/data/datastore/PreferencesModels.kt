@@ -92,14 +92,6 @@ data class ConversationContext(
 )
 
 @Serializable
-data class RpStyleRule(
-    val id: String = kotlin.uuid.Uuid.random().toString(),
-    val pattern: String = "*",
-    val colorHex: String = "#808080",
-    val enabled: Boolean = true
-)
-
-@Serializable
 enum class FontSource {
     System,
     SystemCode,
@@ -195,7 +187,6 @@ data class DisplaySetting(
     val enableNotificationOnMessageGeneration: Boolean = false,
     val codeBlockAutoWrap: Boolean = false,
     val codeBlockAutoCollapse: Boolean = true,
-    val rpStyleRules: List<RpStyleRule> = emptyList(),
     val providerViewMode: ProviderViewMode = ProviderViewMode.LIST,
     val showContextStacks: Boolean = false,
     val newChatHeaderStyle: NewChatHeaderStyle = NewChatHeaderStyle.GREETING,

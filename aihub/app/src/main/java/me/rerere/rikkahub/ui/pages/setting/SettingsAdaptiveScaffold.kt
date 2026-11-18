@@ -74,6 +74,7 @@ enum class SettingsDestination {
     Fonts,
     UiCustomization,
     Workspaces,
+    Advanced,
 }
 
 @Composable
@@ -281,22 +282,19 @@ private fun isSettingsPaneRoute(route: String?): Boolean {
 private fun SettingsDestination.mainDestination(): SettingsDestination {
     return when (this) {
         SettingsDestination.Fonts,
-        SettingsDestination.UiCustomization -> SettingsDestination.Display
+        SettingsDestination.UiCustomization -> SettingsDestination.Advanced
         SettingsDestination.BackupWebDav,
         SettingsDestination.BackupLocal -> SettingsDestination.Backup
-        SettingsDestination.ProviderModels,
-        SettingsDestination.Search -> SettingsDestination.Providers
+        SettingsDestination.ProviderModels -> SettingsDestination.Providers
+        SettingsDestination.Search -> SettingsDestination.Advanced
         else -> this
     }
 }
 
 private fun settingsPaneGroups(): List<SettingsPaneGroup> {
-    val displayChildren = listOf(
+    val advancedChildren = listOf(
         SettingsPaneEntry(SettingsDestination.Fonts, R.string.setting_fonts_title, null, Icons.Rounded.Tune, Screen.SettingFonts),
         SettingsPaneEntry(SettingsDestination.UiCustomization, R.string.setting_ui_customization_title, null, Icons.Rounded.Brush, Screen.SettingUICustomization),
-    )
-    val providerChildren = listOf(
-        SettingsPaneEntry(SettingsDestination.ProviderModels, R.string.setting_provider_page_title, null, Icons.Rounded.Cloud, Screen.SettingProvider),
         SettingsPaneEntry(SettingsDestination.Search, R.string.setting_page_search_service, null, Icons.Rounded.Public, Screen.SettingSearch),
     )
     val backupChildren = listOf(
@@ -307,15 +305,16 @@ private fun settingsPaneGroups(): List<SettingsPaneGroup> {
         SettingsPaneGroup(
             titleRes = R.string.setting_page_general_settings,
             entries = listOf(
-                SettingsPaneEntry(SettingsDestination.Display, R.string.setting_page_display_setting, null, Icons.Rounded.Tune, Screen.SettingDisplay, displayChildren),
+                SettingsPaneEntry(SettingsDestination.Display, R.string.setting_page_display_setting, null, Icons.Rounded.Tune, Screen.SettingDisplay),
                 SettingsPaneEntry(SettingsDestination.Assistants, R.string.setting_page_assistant, null, Icons.Rounded.Group, Screen.Assistant),
+                SettingsPaneEntry(SettingsDestination.Advanced, R.string.setting_page_advanced, null, Icons.Rounded.Extension, Screen.SettingAdvanced, advancedChildren),
             )
         ),
         SettingsPaneGroup(
             titleRes = R.string.setting_page_model_and_services,
             entries = listOf(
                 SettingsPaneEntry(SettingsDestination.Models, R.string.setting_page_default_model, null, Icons.Rounded.AccountTree, Screen.SettingModels),
-                SettingsPaneEntry(SettingsDestination.Providers, R.string.setting_page_providers, null, Icons.Rounded.Cloud, Screen.SettingProvider, providerChildren),
+                SettingsPaneEntry(SettingsDestination.Providers, R.string.setting_page_providers, null, Icons.Rounded.Cloud, Screen.SettingProvider),
             )
         ),
         SettingsPaneGroup(

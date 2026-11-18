@@ -182,19 +182,7 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                             }
                         )
                     }
-                    
-                    SettingGroupItem(
-                        title = stringResource(R.string.setting_fonts_title),
-                        subtitle = stringResource(R.string.setting_fonts_app_font_desc),
-                        onClick = { navController.navigate(me.rerere.rikkahub.Screen.SettingFonts) }
-                    )
                     }
-
-                    SettingGroupItem(
-                        title = stringResource(R.string.setting_ui_customization_title),
-                        subtitle = stringResource(R.string.setting_display_ui_customization_desc),
-                        onClick = { navController.navigate(me.rerere.rikkahub.Screen.SettingUICustomization) }
-                    )
                 }
             }
 

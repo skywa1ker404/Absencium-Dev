@@ -92,7 +92,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
-import me.rerere.rikkahub.data.datastore.RpStyleRule
 import me.rerere.rikkahub.ui.components.table.DataTable
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.utils.BidiDirection
@@ -312,60 +311,41 @@ internal fun resolveInlineHtmlStyle(
     tagName: String,
     attrsString: String,
     colorScheme: ColorScheme,
-    rpStyleRules: List<RpStyleRule>
 ): SpanStyle? {
     return when (tagName) {
         "mark" -> {
-            val highlightRule = rpStyleRules.find { (it.pattern == "==" || it.pattern == "<mark>") && it.enabled }
-            val customColor = highlightRule?.let { parseColorSafe(it.colorHex) }
-            if (customColor != null) {
-                SpanStyle(
-                    background = customColor.copy(alpha = 0.25f),
-                    color = customColor,
-                    fontWeight = FontWeight.Medium
-                )
-            } else {
-                val css = parseInlineCssStyles(attrsString)
-                val cssBg = css["background-color"]?.let { parseColorSafe(it) }
-                    ?: css["background"]?.let { parseColorSafe(it) }
-                val cssFg = css["color"]?.let { parseColorSafe(it) }
+            val css = parseInlineCssStyles(attrsString)
+            val cssBg = css["background-color"]?.let { parseColorSafe(it) }
+                ?: css["background"]?.let { parseColorSafe(it) }
+            val cssFg = css["color"]?.let { parseColorSafe(it) }
 
-                SpanStyle(
-                    background = cssBg ?: colorScheme.tertiaryContainer.copy(alpha = 0.55f),
-                    color = cssFg ?: colorScheme.onTertiaryContainer,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+            SpanStyle(
+                background = cssBg ?: colorScheme.tertiaryContainer.copy(alpha = 0.55f),
+                color = cssFg ?: colorScheme.onTertiaryContainer,
+                fontWeight = FontWeight.Medium
+            )
         }
 
         "u", "ins" -> {
-            val underlineRule = rpStyleRules.find { (it.pattern == "++" || it.pattern == "<u>") && it.enabled }
-            val customColor = underlineRule?.let { parseColorSafe(it.colorHex) }
             val css = parseInlineCssStyles(attrsString)
             val cssColor = css["color"]?.let { parseColorSafe(it) }
 
             SpanStyle(
                 textDecoration = TextDecoration.Underline,
-                color = customColor ?: cssColor ?: Color.Unspecified
+                color = cssColor ?: Color.Unspecified
             )
         }
 
         "b", "strong" -> {
-            val strongRule = rpStyleRules.find { it.pattern == "**" && it.enabled }
-            val strongColor = strongRule?.let { parseColorSafe(it.colorHex) }
-            SpanStyle(fontWeight = FontWeight.Bold, color = strongColor ?: Color.Unspecified)
+            SpanStyle(fontWeight = FontWeight.Bold)
         }
 
         "i", "em" -> {
-            val emphRule = rpStyleRules.find { it.pattern == "*" && it.enabled }
-            val emphColor = emphRule?.let { parseColorSafe(it.colorHex) }
-            SpanStyle(fontStyle = FontStyle.Italic, color = emphColor ?: Color.Unspecified)
+            SpanStyle(fontStyle = FontStyle.Italic)
         }
 
         "s", "del", "strike" -> {
-            val strikeRule = rpStyleRules.find { it.pattern == "~~" && it.enabled }
-            val strikeColor = strikeRule?.let { parseColorSafe(it.colorHex) }
-            SpanStyle(textDecoration = TextDecoration.LineThrough, color = strikeColor ?: Color.Unspecified)
+            SpanStyle(textDecoration = TextDecoration.LineThrough)
         }
 
         "sub" -> {
@@ -381,13 +361,10 @@ internal fun resolveInlineHtmlStyle(
         }
 
         "code" -> {
-            val codeRule = rpStyleRules.find { it.pattern == "`" && it.enabled }
-            val codeColor = codeRule?.let { parseColorSafe(it.colorHex) }
             SpanStyle(
                 fontFamily = FontFamily.Monospace,
                 fontSize = 0.95.em,
                 background = colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                color = codeColor ?: Color.Unspecified
             )
         }
 
@@ -433,11 +410,6 @@ internal fun resolveInlineHtmlStyle(
 private const val LTR_ISOLATE = '\u2066'
 private const val POP_DIRECTIONAL_ISOLATE = '\u2069'
 
-/**
- * CompositionLocal for RP style rules - enables color customization throughout the markdown tree
- */
-val LocalRpStyleRules = compositionLocalOf<List<RpStyleRule>> { emptyList() }
-
 private data class StreamingTextReveal(
     val ranges: List<StreamingSettleRange>,
     val nowMillis: Long,
@@ -469,102 +441,6 @@ val LocalMarkdownWorkspaceId = compositionLocalOf<String?> { null }
  * nested element keeps an even optical inset on all sides.
  */
 private val BubbleEdgeCompensation = 4.dp
-
-/**
- * Safely get color from RP style rule for a given pattern.
- * Returns null if pattern not found, not enabled, or color parsing fails.
- */
-@Composable
-private fun getRpColor(pattern: String): Color? {
-    val rules = LocalRpStyleRules.current
-    val rule = rules.find { it.pattern == pattern && it.enabled } ?: return null
-    return parseColorSafe(rule.colorHex)
-}
-
-// Standard markdown patterns that are handled by the AST parser
-private val STANDARD_PATTERNS = setOf(
-    "*", "**", "~~", "`", "#", "##", "###", "####", "#####", "######", ">",
-    "==", "++", "<mark>", "<u>"
-)
-
-/**
- * Append text to AnnotatedString.Builder, scanning for custom RP patterns.
- * Custom patterns are those NOT in STANDARD_PATTERNS (which are handled by the markdown AST).
- * For each custom pattern, builds a regex like `pattern(.+?)pattern` and applies the color.
- */
-private fun AnnotatedString.Builder.appendTextWithCustomPatterns(
-    text: String,
-    rpStyleRules: List<RpStyleRule>
-) {
-    // Get custom patterns only (exclude standard markdown patterns)
-    val customRules = rpStyleRules.filter { it.enabled && it.pattern !in STANDARD_PATTERNS }
-    
-    if (customRules.isEmpty()) {
-        append(text)
-        return
-    }
-    
-    // Build a combined regex for all custom patterns
-    // Each pattern matches: pattern + content + pattern (non-greedy)
-    val patternRegexes = customRules.mapNotNull { rule ->
-        val escaped = Regex.escape(rule.pattern)
-        runCatching {
-            val color = Color(android.graphics.Color.parseColor(rule.colorHex))
-            Regex("$escaped(.+?)$escaped") to color
-        }.getOrNull()
-    }
-    
-    if (patternRegexes.isEmpty()) {
-        append(text)
-        return
-    }
-    
-    // Find all matches from all patterns
-    data class Match(val range: IntRange, val content: String, val color: Color)
-    val allMatches = mutableListOf<Match>()
-    
-    patternRegexes.forEach { (regex, color) ->
-        regex.findAll(text).forEach { matchResult ->
-            allMatches.add(Match(
-                range = matchResult.range,
-                content = matchResult.groupValues[1],
-                color = color
-            ))
-        }
-    }
-    
-    // Sort by start position
-    allMatches.sortBy { it.range.first }
-    
-    // Remove overlapping matches (keep earlier ones)
-    val nonOverlapping = mutableListOf<Match>()
-    var lastEnd = -1
-    allMatches.forEach { match ->
-        if (match.range.first > lastEnd) {
-            nonOverlapping.add(match)
-            lastEnd = match.range.last
-        }
-    }
-    
-    // Build the annotated string
-    var currentIndex = 0
-    nonOverlapping.forEach { match ->
-        // Append text before this match
-        if (match.range.first > currentIndex) {
-            append(text.substring(currentIndex, match.range.first))
-        }
-        // Append the styled content (without the pattern delimiters)
-        withStyle(SpanStyle(color = match.color)) {
-            append(match.content)
-        }
-        currentIndex = match.range.last + 1
-    }
-    
-    // Append remaining text
-    if (currentIndex < text.length) {
-        append(text.substring(currentIndex))
-    }
-}
 
 // 预处理markdown内容
 internal fun preProcess(content: String): String {
@@ -720,9 +596,7 @@ fun MarkdownBlock(
     onExpandedStreamingCodeBlockChanged: (() -> Unit)? = null,
     onClickCitation: (String) -> Unit = {}
 ) {
-    // Read rpStyleRules from settings
     val settings = LocalSettings.current
-    val rpStyleRules = settings.displaySetting.rpStyleRules
     val contentColor = style.color.takeOrElse { LocalContentColor.current }
     val streamingPresentation = remember { StreamingTextPresentationState(content) }
     var displayContent by remember { mutableStateOf(content) }
@@ -827,9 +701,7 @@ fun MarkdownBlock(
         null
     }
 
-    // Provide rpStyleRules to entire tree via CompositionLocal
     CompositionLocalProvider(
-        LocalRpStyleRules provides rpStyleRules,
         LocalStreamingTextReveal provides streamingReveal,
         LocalMarkdownParagraphSpacing provides paragraphSpacing,
         LocalMarkdownWorkspaceId provides workspaceId,
@@ -1252,10 +1124,7 @@ private fun MarkdownNode(
                 MarkdownElementTypes.ATX_6 -> HeaderStyle.H6 to "######"
                 else -> throw IllegalArgumentException("Unknown header type")
             }
-            // Get RP color for this heading level
-            val rpColor = getRpColor(pattern)
-            val style = if (rpColor != null) baseStyle.copy(color = rpColor) else baseStyle
-            ProvideTextStyle(value = style) {
+            ProvideTextStyle(value = baseStyle) {
                 node.children.fastForEach { child ->
                     if (child.type == MarkdownTokenTypes.ATX_CONTENT) {
                         Paragraph(
@@ -1325,13 +1194,10 @@ private fun MarkdownNode(
 
         // 引用块
         MarkdownElementTypes.BLOCK_QUOTE -> {
-            // Get RP color for blockquotes
-            val rpColor = getRpColor(">")
             val quoteDirection = rememberContentDirection(node.getTextInNode(content))
             val quoteLayoutDirection = quoteDirection.toLayoutDirection()
             val textStyle = LocalTextStyle.current.copy(
                 fontStyle = FontStyle.Italic,
-                color = rpColor ?: Color.Unspecified
             )
             val paragraphSpacing = LocalMarkdownParagraphSpacing.current
             val bottomPadding = if (node.nextRenderableSibling() != null && paragraphSpacing > 0.dp) paragraphSpacing else 0.dp
@@ -1905,9 +1771,8 @@ private fun Paragraph(
 
     val textStyle = LocalTextStyle.current
     val density = LocalDensity.current
-    val rpStyleRules = LocalSettings.current.displaySetting.rpStyleRules
     val streamingReveal = LocalStreamingTextReveal.current
-    val annotatedString = remember(content, rpStyleRules, streamingReveal) {
+    val annotatedString = remember(content, streamingReveal) {
         buildAnnotatedString {
             val htmlContext = InlineHtmlStyleContext()
             node.children.fastForEach { child ->
@@ -1920,7 +1785,6 @@ private fun Paragraph(
                     style = textStyle,
                     density = density,
                     trim = trim,
-                    rpStyleRules = rpStyleRules,
                     streamingReveal = streamingReveal,
                     htmlContext = htmlContext,
                 )
@@ -2025,7 +1889,6 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
     density: Density,
     style: TextStyle,
     onClickCitation: (String) -> Unit = {},
-    rpStyleRules: List<RpStyleRule> = emptyList(),
     streamingReveal: StreamingTextReveal? = null,
     htmlContext: InlineHtmlStyleContext? = null,
 ) {
@@ -2065,7 +1928,7 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                             addStyle(closed.style, closed.startOffset, length)
                         }
                     } else if (!KNOWN_INLINE_TAGS.contains(tagName)) {
-                        appendTextWithCustomPatterns(rawTag, rpStyleRules)
+                        append(rawTag)
                     }
                 }
 
@@ -2075,18 +1938,18 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                     val attrsString = tagMatch?.groupValues?.get(2)?.trim() ?: ""
 
                     val spanStyle = if (tagName != null) {
-                        resolveInlineHtmlStyle(tagName, attrsString, colorScheme, rpStyleRules)
+                        resolveInlineHtmlStyle(tagName, attrsString, colorScheme)
                     } else null
 
                     if (spanStyle != null && tagName != null) {
                         htmlContext?.open(tagName, length, spanStyle)
                     } else {
-                        appendTextWithCustomPatterns(rawTag, rpStyleRules)
+                        append(rawTag)
                     }
                 }
 
                 else -> {
-                    appendTextWithCustomPatterns(rawTag, rpStyleRules)
+                    append(rawTag)
                 }
             }
         }
@@ -2100,14 +1963,11 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                 }.replace(BREAK_LINE_REGEX, "\n")
             }
             // Use custom pattern scanning for plain text
-            appendTextWithCustomPatterns(text, rpStyleRules)
+            append(text)
         }
 
         node.type == MarkdownElementTypes.EMPH -> {
-            // Check for RP color rule for pattern "*" (single emphasis)
-            val emphRule = rpStyleRules.find { it.pattern == "*" && it.enabled }
-            val emphColor = emphRule?.let { runCatching { Color(android.graphics.Color.parseColor(it.colorHex)) }.getOrNull() }
-            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = emphColor ?: Color.Unspecified)) {
+            withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                 node.children.trim(MarkdownTokenTypes.EMPH, 1).fastForEach {
                     appendMarkdownNodeContent(
                         node = it,
@@ -2117,7 +1977,6 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                         density = density,
                         style = style,
                         onClickCitation = onClickCitation,
-                        rpStyleRules = rpStyleRules,
                         streamingReveal = streamingReveal,
                         htmlContext = htmlContext,
                     )
@@ -2126,10 +1985,7 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
         }
 
         node.type == MarkdownElementTypes.STRONG -> {
-            // Check for RP color rule for pattern "**" (strong emphasis)
-            val strongRule = rpStyleRules.find { it.pattern == "**" && it.enabled }
-            val strongColor = strongRule?.let { runCatching { Color(android.graphics.Color.parseColor(it.colorHex)) }.getOrNull() }
-            withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = strongColor ?: Color.Unspecified)) {
+            withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
                 node.children.trim(MarkdownTokenTypes.EMPH, 2).fastForEach {
                     appendMarkdownNodeContent(
                         node = it,
@@ -2139,7 +1995,6 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                         density = density,
                         style = style,
                         onClickCitation = onClickCitation,
-                        rpStyleRules = rpStyleRules,
                         streamingReveal = streamingReveal,
                         htmlContext = htmlContext,
                     )
@@ -2148,10 +2003,7 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
         }
 
         node.type == GFMElementTypes.STRIKETHROUGH -> {
-            // Check for RP color rule for pattern "~~" (strikethrough)
-            val strikeRule = rpStyleRules.find { it.pattern == "~~" && it.enabled }
-            val strikeColor = strikeRule?.let { runCatching { Color(android.graphics.Color.parseColor(it.colorHex)) }.getOrNull() }
-            withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough, color = strikeColor ?: Color.Unspecified)) {
+            withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
                 node.children.trim(GFMTokenTypes.TILDE, 2).fastForEach {
                     appendMarkdownNodeContent(
                         node = it,
@@ -2161,7 +2013,6 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                         density = density,
                         style = style,
                         onClickCitation = onClickCitation,
-                        rpStyleRules = rpStyleRules,
                         streamingReveal = streamingReveal,
                         htmlContext = htmlContext,
                     )
@@ -2278,15 +2129,11 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
 
         node.type == MarkdownElementTypes.CODE_SPAN -> {
             val code = node.getTextInNode(content).trim('`')
-            // Check for RP color rule for pattern "`" (inline code)
-            val codeRule = rpStyleRules.find { it.pattern == "`" && it.enabled }
-            val codeColor = codeRule?.let { runCatching { Color(android.graphics.Color.parseColor(it.colorHex)) }.getOrNull() }
             withStyle(
                 SpanStyle(
                     fontFamily = FontFamily.Monospace,
                     fontSize = 0.95.em,
                     background = colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                    color = codeColor ?: Color.Unspecified,
                 )
             ) {
                 append(isolateLtr(code))
@@ -2326,7 +2173,6 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                     density = density,
                     style = style,
                     onClickCitation = onClickCitation,
-                    rpStyleRules = rpStyleRules,
                     streamingReveal = streamingReveal,
                     htmlContext = htmlContext,
                 )

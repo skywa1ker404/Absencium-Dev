@@ -933,6 +933,12 @@ fun ChatAppRoutes(
                     }
                 }
 
+                composable<Screen.SettingAdvanced> {
+                    AdaptiveSettingsScaffold(selected = SettingsDestination.Advanced) {
+                        me.rerere.rikkahub.ui.pages.setting.SettingAdvancedPage()
+                    }
+                }
+
                 composable<Screen.SettingProvider>(
                     enterTransition = {
                         if (useWideSettingsLayout) {
@@ -1124,6 +1130,9 @@ sealed interface Screen {
 
     @Serializable
     data object SettingDisplay : Screen
+
+    @Serializable
+    data object SettingAdvanced : Screen
 
     @Serializable
     data object SettingProvider : Screen

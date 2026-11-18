@@ -120,6 +120,14 @@ fun SettingPage(
                         onClick = { navController.navigate(Screen.Assistant) }
                     )
 
+                    SettingGroupItem(
+                        title = stringResource(R.string.setting_page_advanced),
+                        subtitle = stringResource(R.string.setting_page_advanced_desc),
+                        icon = { Icon(Icons.Rounded.Extension, null, modifier = Modifier.size(20.dp)) },
+                        contentPadding = mainSettingItemPadding,
+                        onClick = { navController.navigate(Screen.SettingAdvanced) }
+                    )
+
                 }
             }
 

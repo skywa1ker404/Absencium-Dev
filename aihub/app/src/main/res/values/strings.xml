@@ -604,6 +604,8 @@
     <string name="setting_page_dynamic_color">Dynamic Color</string>
     <string name="setting_page_dynamic_color_desc">Use Material You dynamic colors</string>
     <string name="setting_page_general_settings">General Settings</string>
+    <string name="setting_page_advanced">Advanced</string>
+    <string name="setting_page_advanced_desc">Fonts, UI customisation and search providers</string>
     <string name="setting_page_mcp">Plugins</string>
     <string name="setting_page_mcp_desc">Connect tools and services</string>
     <string name="setting_page_model_and_services">Models &amp; Services</string>
