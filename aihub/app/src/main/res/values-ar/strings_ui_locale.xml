@@ -285,13 +285,6 @@
   <string name="search_field_include_images_desc">تضمين الصور في نتائج البحث</string>
   <string name="search_field_stealth_mode">وضع التخفي</string>
   <string name="search_field_stealth_mode_desc">استخدم وضع التخفي لتجريف الويب</string>
-  <string name="setting_tts_delete_service">هل أنت متأكد أنك تريد حذف خدمة تحويل النص إلى كلام (TTS) هذه؟</string>
-  <string name="setting_tts_preset_system_desc">يستخدم محرك TTS المدمج في الجهاز\'</string>
-  <string name="setting_tts_preset_openai_desc">أصوات عالية الجودة مع العاطفة</string>
-  <string name="setting_tts_preset_gemini_desc">Google\'s TTS بأصوات طبيعية</string>
-  <string name="setting_tts_preset_elevenlabs_desc">استنساخ الصوت الاحترافي</string>
-  <string name="setting_tts_preset_minimax_desc">تحويل النص إلى كلام الصينية مع العواطف</string>
-  <string name="setting_tts_preset_qwen_desc">DashScope يتدفق TTS مع الإعدادات الصوتية المسبقة</string>
     <string name="chat_drawer_imagine">تخيّل</string>
     <string name="clipboard_write_failed">فشل كتابة النص في الحافظة</string>
     <string name="open_url_failed">فشل فتح الرابط: %1$s</string>
