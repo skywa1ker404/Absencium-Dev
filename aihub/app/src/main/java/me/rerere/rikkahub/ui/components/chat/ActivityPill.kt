@@ -40,7 +40,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Build
@@ -55,6 +55,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -1133,7 +1134,7 @@ private fun ExpandedActivityContent(item: ActivityItem) {
 private fun getCornerRadii(
     position: PillPosition,
     connectsToBubbleBelow: Boolean
-): RoundedCornerShape {
+): Shape {
     val bottomLeft = if (connectsToBubbleBelow) SMALL_RADIUS else LARGE_RADIUS
     val bottomRight = if (connectsToBubbleBelow) SMALL_RADIUS else LARGE_RADIUS
     

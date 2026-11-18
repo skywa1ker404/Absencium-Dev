@@ -58,7 +58,7 @@ fun AssistantHostToolsGroup(assistant: Assistant, onUpdate: (Assistant) -> Unit)
                     selected = assistant.vaultApprovalAuto == auto,
                     onClick = { onUpdate(assistant.copy(vaultApprovalAuto = auto)) },
                     label = { Text(label) },
-                    shape = androidx.compose.foundation.shape.CircleShape,
+                    shape = me.rerere.rikkahub.ui.theme.CircleShape,
                 )
             }
         }

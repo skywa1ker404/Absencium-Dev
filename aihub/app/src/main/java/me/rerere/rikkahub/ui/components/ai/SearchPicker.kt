@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import me.rerere.rikkahub.ui.components.dots.Icon
@@ -273,7 +273,7 @@ private fun AppSearchSettings(
     val totalItems = 1 + numProviders
     
     // Position-based corner shape calculator
-    fun getItemShape(index: Int, totalCount: Int, isSelected: Boolean): RoundedCornerShape {
+    fun getItemShape(index: Int, totalCount: Int, isSelected: Boolean): Shape {
         if (isSelected) return AppShapes.ButtonPill
         return when {
             totalCount == 1 -> AppShapes.ListItem
@@ -376,7 +376,7 @@ private fun SearchToggleItem(
     onToggleSearch: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     navBackStack: NavHostController,
-    shape: RoundedCornerShape,
+    shape: Shape,
     isAmoled: Boolean,
     isDarkMode: Boolean
 ) {
@@ -419,7 +419,7 @@ private fun SearchProviderItem(
     service: SearchServiceOptions,
     isSelected: Boolean,
     onClick: () -> Unit,
-    shape: RoundedCornerShape,
+    shape: Shape,
     isAmoled: Boolean,
     isDarkMode: Boolean,
     catalogSnapshot: ModelCatalogSnapshot?,

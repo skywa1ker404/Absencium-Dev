@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import me.rerere.rikkahub.ui.theme.CircleShape
+import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface

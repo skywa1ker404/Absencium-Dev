@@ -5,6 +5,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -68,34 +69,34 @@ object AppSurface {
 
 /** Shared, platform-independent Absencium AI shape tokens. Android remains the visual reference. */
 object AppShapes {
-    val CardLarge = RoundedCornerShape(28.dp)
-    val CardMedium = RoundedCornerShape(24.dp)
-    val CardSmall = RoundedCornerShape(16.dp)
-    val ButtonPill = RoundedCornerShape(50)
-    val ButtonRounded = RoundedCornerShape(20.dp)
-    val ButtonSquared = RoundedCornerShape(12.dp)
-    val InputField = RoundedCornerShape(24.dp)
+    val CardLarge: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(28.dp)
+    val CardMedium: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(24.dp)
+    val CardSmall: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(16.dp)
+    val ButtonPill: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(50)
+    val ButtonRounded: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(20.dp)
+    val ButtonSquared: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(12.dp)
+    val InputField: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(24.dp)
     val SearchField = ButtonPill
-    val Chip = RoundedCornerShape(12.dp)
-    val Tag = RoundedCornerShape(50)
-    val Dialog = RoundedCornerShape(28.dp)
-    val BottomSheet = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-    val Avatar = RoundedCornerShape(50)
-    val IconButton = RoundedCornerShape(50)
-    val Indicator = RoundedCornerShape(8.dp)
-    val ListItem = RoundedCornerShape(24.dp)
-    val ListItemFirst = RoundedCornerShape(24.dp, 24.dp, 10.dp, 10.dp)
-    val ListItemMiddle = RoundedCornerShape(10.dp)
-    val ListItemLast = RoundedCornerShape(10.dp, 10.dp, 24.dp, 24.dp)
-    val CardLargeInner12 = RoundedCornerShape(16.dp)
-    val CardLargeInner8 = RoundedCornerShape(20.dp)
-    val CardMediumInner12 = RoundedCornerShape(12.dp)
-    val CardSmallInner8 = RoundedCornerShape(8.dp)
-    val MessageBubbleInner = RoundedCornerShape(8.dp)
-    val MessageOutgoing = RoundedCornerShape(
+    val Chip: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(12.dp)
+    val Tag: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(50)
+    val Dialog: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(28.dp)
+    val BottomSheet: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    val Avatar: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(50)
+    val IconButton: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(50)
+    val Indicator: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(8.dp)
+    val ListItem: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(24.dp)
+    val ListItemFirst: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(24.dp, 24.dp, 10.dp, 10.dp)
+    val ListItemMiddle: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(10.dp)
+    val ListItemLast: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(10.dp, 10.dp, 24.dp, 24.dp)
+    val CardLargeInner12: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(16.dp)
+    val CardLargeInner8: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(20.dp)
+    val CardMediumInner12: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(12.dp)
+    val CardSmallInner8: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(8.dp)
+    val MessageBubbleInner: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(8.dp)
+    val MessageOutgoing: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(
         topStart = 24.dp, topEnd = 24.dp, bottomStart = 24.dp, bottomEnd = 6.dp,
     )
-    val MessageIncoming = RoundedCornerShape(
+    val MessageIncoming: Shape get() = me.rerere.rikkahub.ui.theme.RoundedCornerShape(
         topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 24.dp,
     )
 }

@@ -84,6 +84,11 @@ class AbsenciumApp : Application() {
 
     /** The embedded Absencium AI chat wears this app's theme engine and follows its refresh-rate cap. */
     private fun installChatHost() {
+        // The chat's corners follow the app's Pixelated style: its shape tokens ask these two.
+        me.rerere.rikkahub.ui.theme.HubStyle.pixelated = { skywa1ker404.absencium.ui.theme.StyleFlags.pixelated }
+        me.rerere.rikkahub.ui.theme.HubStyle.pixelShape = { step, topStart, topEnd, bottomEnd, bottomStart ->
+            skywa1ker404.absencium.ui.theme.PixelCornerShape.of(step, topStart, topEnd, bottomEnd, bottomStart)
+        }
         me.rerere.rikkahub.AiHost.theme = { content ->
             val settings by container.settingsState.collectAsStateWithLifecycle()
             settings?.let { loaded ->

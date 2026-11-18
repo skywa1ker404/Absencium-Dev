@@ -296,7 +296,7 @@ private fun MemoryDebugger(
                     label = { Text(stringResource(R.string.assistant_memory_test_query)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                    shape = me.rerere.rikkahub.ui.theme.RoundedCornerShape(16.dp)
                 )
                 androidx.compose.material3.Button(
                     onClick = { onTestRetrieval(query) },

@@ -1298,7 +1298,7 @@ private fun UserMessageTurn(
                 // Copy button
                 Box(
                     modifier = Modifier
-                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .clip(me.rerere.rikkahub.ui.theme.CircleShape)
                         .clickable {
                             haptics.perform(HapticPattern.Pop)
                             onCopy()
@@ -1317,7 +1317,7 @@ private fun UserMessageTurn(
                 if (showRegenerate) {
                     Box(
                         modifier = Modifier
-                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .clip(me.rerere.rikkahub.ui.theme.CircleShape)
                             .clickable {
                                 haptics.perform(HapticPattern.Pop)
                                 onRegenerate()
@@ -1336,7 +1336,7 @@ private fun UserMessageTurn(
                 // More options button
                 Box(
                     modifier = Modifier
-                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .clip(me.rerere.rikkahub.ui.theme.CircleShape)
                         .clickable {
                             haptics.perform(HapticPattern.Pop)
                             onOpenMenu()

@@ -20,8 +20,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import me.rerere.rikkahub.ui.theme.CircleShape
+import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
@@ -72,7 +72,7 @@ enum class ItemPosition {
     LAST    // Last item - bottom corners rounded
 }
 
-fun ItemPosition.listItemShape(): RoundedCornerShape = when (this) {
+fun ItemPosition.listItemShape(): Shape = when (this) {
     ItemPosition.ONLY -> AppShapes.ListItem
     ItemPosition.FIRST -> AppShapes.ListItemFirst
     ItemPosition.MIDDLE -> AppShapes.ListItemMiddle

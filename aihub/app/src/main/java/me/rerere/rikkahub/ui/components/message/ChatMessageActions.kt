@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import me.rerere.rikkahub.ui.theme.CircleShape
+import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import me.rerere.rikkahub.ui.components.dots.Icon
@@ -26,6 +26,7 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -291,7 +292,7 @@ private enum class MessageActionItemPosition {
     SINGLE
 }
 
-private fun groupedMessageActionShape(position: MessageActionItemPosition): RoundedCornerShape {
+private fun groupedMessageActionShape(position: MessageActionItemPosition): Shape {
     return when (position) {
         MessageActionItemPosition.FIRST -> RoundedCornerShape(
             topStart = 24.dp,

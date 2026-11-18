@@ -1,0 +1,46 @@
+package me.rerere.rikkahub.ui.theme
+
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+
+/**
+ * What the host app plugs in so the chat's corners follow its Pixelated style. Without a host everything is Compose's own rounded
+ * corners. [pixelated] says whether the stair-step style is on right now and [pixelShape] builds a stair-step rectangle (step size,
+ * then the four corner sizes: top start, top end, bottom end, bottom start).
+ */
+object HubStyle {
+    @Volatile
+    var pixelated: () -> Boolean = { false }
+
+    @Volatile
+    var pixelShape: ((Float, Dp, Dp, Dp, Dp) -> Shape)? = null
+}
+
+private fun stepFor(radius: Dp): Float = (radius.value / 8f).coerceIn(1.5f, 3f)
+
+private fun corner(radius: Dp): Dp = if (radius.value <= 0f) 0.dp else (stepFor(radius) * 2f).dp
+
+private fun pixel(step: Float, a: Dp, b: Dp, c: Dp, d: Dp): Shape? =
+    if (HubStyle.pixelated()) HubStyle.pixelShape?.invoke(step, a, b, c, d) else null
+
+private fun fixed(): Shape? = pixel(2f, 4.dp, 4.dp, 4.dp, 4.dp)
+
+/** The chat's rounded corners: Compose's own, or the stair-step corners while the host is in its Pixelated style. */
+fun RoundedCornerShape(size: Dp): Shape =
+    pixel(stepFor(size), corner(size), corner(size), corner(size), corner(size))
+        ?: androidx.compose.foundation.shape.RoundedCornerShape(size)
+
+fun RoundedCornerShape(size: Float): Shape = fixed() ?: androidx.compose.foundation.shape.RoundedCornerShape(size)
+
+fun RoundedCornerShape(percent: Int): Shape = fixed() ?: androidx.compose.foundation.shape.RoundedCornerShape(percent)
+
+fun RoundedCornerShape(topStart: Dp = 0.dp, topEnd: Dp = 0.dp, bottomEnd: Dp = 0.dp, bottomStart: Dp = 0.dp): Shape {
+    val biggest = maxOf(topStart.value, topEnd.value, bottomEnd.value, bottomStart.value).dp
+    return pixel(stepFor(biggest), corner(topStart), corner(topEnd), corner(bottomEnd), corner(bottomStart))
+        ?: androidx.compose.foundation.shape.RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart)
+}
+
+/** The chat's circle: a true circle, or the stair-step block while the host is in its Pixelated style. */
+val CircleShape: Shape
+    get() = fixed() ?: androidx.compose.foundation.shape.CircleShape

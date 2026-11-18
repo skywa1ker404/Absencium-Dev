@@ -141,7 +141,7 @@ fun AiMemorySettingsItem(
         enabled = onClick != null,
         color = if (darkTheme) MaterialTheme.colorScheme.surfaceContainerLow
         else MaterialTheme.colorScheme.surfaceContainerHighest,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+        shape = me.rerere.rikkahub.ui.theme.RoundedCornerShape(
             topStart = topCorner,
             topEnd = topCorner,
             bottomStart = bottomCorner,
@@ -222,7 +222,7 @@ fun AiMemoryRow(
         onClick = onEdit,
         color = if (darkTheme) MaterialTheme.colorScheme.surfaceContainerLow
         else MaterialTheme.colorScheme.surfaceContainerHighest,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+        shape = me.rerere.rikkahub.ui.theme.RoundedCornerShape(
             topStart = topCorner,
             topEnd = topCorner,
             bottomStart = bottomCorner,

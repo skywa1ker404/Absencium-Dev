@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import me.rerere.rikkahub.ui.theme.CircleShape
 import androidx.compose.material3.AlertDialog
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.InputChip

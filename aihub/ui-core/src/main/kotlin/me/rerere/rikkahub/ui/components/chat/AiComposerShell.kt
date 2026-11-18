@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import me.rerere.rikkahub.ui.theme.CircleShape
 import androidx.compose.material3.MaterialTheme
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.Surface

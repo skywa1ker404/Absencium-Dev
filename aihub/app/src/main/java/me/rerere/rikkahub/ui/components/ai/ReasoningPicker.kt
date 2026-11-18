@@ -54,7 +54,7 @@ import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import me.rerere.rikkahub.ui.components.ui.ToggleSurface
 import me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode
 import androidx.compose.runtime.rememberCoroutineScope

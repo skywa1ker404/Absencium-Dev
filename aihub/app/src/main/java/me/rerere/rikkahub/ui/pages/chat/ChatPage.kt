@@ -53,7 +53,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.shape.RoundedCornerShape
+import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.lazy.LazyListState
@@ -75,6 +75,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.adaptive.currentWindowDpSize
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -2415,7 +2416,7 @@ private fun ChatToolbarActionPill(
     actionState: TopBarActionState,
     currentAssistant: Assistant,
     topPillSize: Dp,
-    buttonShape: RoundedCornerShape,
+    buttonShape: Shape,
     containerColor: Color,
     border: BorderStroke,
     onNewChat: () -> Unit,
@@ -3593,14 +3594,14 @@ private fun ContextUsagePopupContent(
             Box(
                 modifier = Modifier
                     .size(24.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .clip(me.rerere.rikkahub.ui.theme.CircleShape)
                     .background(
                         color = when {
                             isEditingLimit -> MaterialTheme.colorScheme.surfaceContainerHighest
                             isCustomLimitActive -> MaterialTheme.colorScheme.primaryContainer
                             else -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
                         },
-                        shape = androidx.compose.foundation.shape.CircleShape,
+                        shape = me.rerere.rikkahub.ui.theme.CircleShape,
                     )
                     .combinedClickable(
                         onClick = {
@@ -3725,7 +3726,7 @@ private fun glassFadeAlpha(base: Float): Float = if (me.rerere.rikkahub.LocalHos
 private fun ReadOnlyPrompt(modifier: Modifier = Modifier) {
     androidx.compose.material3.Surface(
         modifier = modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 24.dp).navigationBarsPadding(),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+        shape = me.rerere.rikkahub.ui.theme.RoundedCornerShape(28.dp),
         color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         androidx.compose.material3.Text(

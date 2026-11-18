@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import me.rerere.rikkahub.ui.theme.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -142,7 +142,7 @@ fun AssistantProfileSubPage(
                     MaterialTheme.colorScheme.surfaceContainerLow 
                 else 
                     MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+                shape = me.rerere.rikkahub.ui.theme.RoundedCornerShape(10.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
