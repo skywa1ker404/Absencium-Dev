@@ -169,3 +169,4 @@ working on it
 - Changed (branch Absencium-ai, CI green 44277091781, Batch 45): inside Absencium the AI Fonts page shows only the code font; the text font and size come from the app's Appearance.
 - Fixed (branch Absencium-ai, CI green 44444232661, Batch 45): the Absencium AI switches, sliders, progress bars and loaders now follow the app's Pixelated and Dot matrix styles.
 - Added (branch Absencium-ai, CI green 44448802700, Batch 45): in the Dot matrix style switches and sliders are drawn with dots (a row of dots and a round thumb), in the app and in Absencium AI.
+- Changed (branch Absencium-ai, CI green 44450565097, Batch 45): Reminders is now one Notifications page that also holds the AI chat's "tell me when an answer is ready" choice; the duplicate switch in the AI settings is hidden inside Absencium.
