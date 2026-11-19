@@ -245,12 +245,17 @@ fun AiAssistantPickerSheet(
                                 label = "edit_spinner",
                             ) { transitioning ->
                                 if (transitioning) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        strokeWidth = 2.dp,
-                                        color = if (checked) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    val hostSpinner = me.rerere.rikkahub.ui.theme.HubStyle.loading
+                                    if (hostSpinner != null) {
+                                        hostSpinner(Modifier.size(24.dp))
+                                    } else {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp,
+                                            color = if (checked) MaterialTheme.colorScheme.onPrimaryContainer
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                 } else {
                                     IconButton(
                                         enabled = !isTransitioning,

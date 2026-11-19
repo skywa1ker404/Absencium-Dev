@@ -27,12 +27,19 @@ fun HapticSwitch(
 ) {
     val haptics = rememberPremiumHaptics()
     
+    val change: (Boolean) -> Unit = { newValue ->
+        haptics.perform(HapticPattern.Pop)
+        onCheckedChange?.invoke(newValue)
+    }
+    val slot = me.rerere.rikkahub.ui.theme.HubStyle.switch
+    if (slot != null) {
+        // Inside Absencium the switch is the app's, so Pixelated and Dot matrix reach the chat (the app's switch takes no custom colours).
+        slot(checked, change, modifier, enabled)
+        return
+    }
     Switch(
         checked = checked,
-        onCheckedChange = { newValue ->
-            haptics.perform(HapticPattern.Pop)
-            onCheckedChange?.invoke(newValue)
-        },
+        onCheckedChange = change,
         modifier = modifier,
         thumbContent = thumbContent,
         enabled = enabled,

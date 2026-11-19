@@ -36,7 +36,7 @@ import androidx.compose.material3.CardDefaults
 import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator
 import me.rerere.rikkahub.ui.components.ui.AppFab
 import me.rerere.rikkahub.ui.components.dots.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -45,7 +45,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Slider
+import me.rerere.rikkahub.ui.components.ui.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton

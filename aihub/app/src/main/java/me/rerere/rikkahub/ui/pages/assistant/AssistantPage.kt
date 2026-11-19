@@ -100,7 +100,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.uuid.Uuid
 import androidx.compose.foundation.lazy.items as lazyItems
 
-import androidx.compose.material3.Slider
+import me.rerere.rikkahub.ui.components.ui.Slider
 import me.rerere.rikkahub.ui.components.ui.HapticSwitch
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.foundation.lazy.itemsIndexed

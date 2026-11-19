@@ -45,7 +45,7 @@ import me.rerere.rikkahub.ui.theme.CircleShape
 import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import me.rerere.rikkahub.ui.components.dots.Icon
-import androidx.compose.material3.LoadingIndicator
+import me.rerere.rikkahub.ui.components.ui.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text

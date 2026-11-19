@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.theme
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -15,6 +17,22 @@ object HubStyle {
 
     @Volatile
     var pixelShape: ((Float, Dp, Dp, Dp, Dp) -> Shape)? = null
+
+    /** The host's switch: checked, on change, modifier, enabled. Null means Material's own. */
+    @Volatile
+    var switch: (@Composable (Boolean, ((Boolean) -> Unit)?, Modifier, Boolean) -> Unit)? = null
+
+    /** The host's slider: value, on change, modifier, enabled, range, steps, on finished. */
+    @Volatile
+    var slider: (@Composable (Float, (Float) -> Unit, Modifier, Boolean, ClosedFloatingPointRange<Float>, Int, (() -> Unit)?) -> Unit)? = null
+
+    /** The host's waiting indicator (the shape-morphing loader, or its Pixelated / Dot matrix spinner). */
+    @Volatile
+    var loading: (@Composable (Modifier) -> Unit)? = null
+
+    /** The host's bar: progress (null is indeterminate), modifier, wavy. */
+    @Volatile
+    var bar: (@Composable ((() -> Float)?, Modifier, Boolean) -> Unit)? = null
 }
 
 private fun stepFor(radius: Dp): Float = (radius.value / 8f).coerceIn(1.5f, 3f)

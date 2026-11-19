@@ -3,7 +3,7 @@ package me.rerere.rikkahub.ui.pages.setting.components
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.LinearProgressIndicator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle

@@ -33,7 +33,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LoadingIndicator
+import me.rerere.rikkahub.ui.components.ui.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface

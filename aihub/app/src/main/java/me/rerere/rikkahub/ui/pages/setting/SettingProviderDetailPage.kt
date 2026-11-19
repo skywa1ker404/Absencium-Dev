@@ -53,8 +53,8 @@ import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.LinearWavyProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.LinearProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import me.rerere.rikkahub.ui.components.ui.AppFab
 import androidx.compose.material3.ModalBottomSheet

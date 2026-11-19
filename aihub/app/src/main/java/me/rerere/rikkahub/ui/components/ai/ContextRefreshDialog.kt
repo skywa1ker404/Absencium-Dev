@@ -30,7 +30,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import me.rerere.rikkahub.ui.components.dots.Icon
-import androidx.compose.material3.LoadingIndicator
+import me.rerere.rikkahub.ui.components.ui.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text

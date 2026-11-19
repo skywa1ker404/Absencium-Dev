@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import me.rerere.rikkahub.ui.theme.RoundedCornerShape
-import androidx.compose.material3.LinearProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text

@@ -48,7 +48,7 @@ import androidx.compose.material3.HorizontalDivider
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
+import me.rerere.rikkahub.ui.components.ui.Slider
 import androidx.compose.material3.Surface
 import me.rerere.rikkahub.ui.components.ui.HapticSwitch
 import me.rerere.rikkahub.ui.motion.ExpandableContent
@@ -200,7 +200,7 @@ fun AssistantMemorySettings(
                             embeddingProgress.total
                         )
                     )
-                    androidx.compose.material3.LinearProgressIndicator(
+                    me.rerere.rikkahub.ui.components.ui.LinearProgressIndicator(
                         progress = { embeddingProgress.current.toFloat() / embeddingProgress.total.coerceAtLeast(1) },
                         modifier = Modifier.fillMaxWidth(),
                     )

@@ -26,13 +26,13 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.LinearWavyProgressIndicator
+import me.rerere.rikkahub.ui.components.ui.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
+import me.rerere.rikkahub.ui.components.ui.Slider
 import me.rerere.rikkahub.ui.components.ui.HapticSwitch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults

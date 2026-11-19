@@ -23,7 +23,9 @@ fun CircularProgressIndicator(
     trackColor: Color = Color.Unspecified,
     strokeCap: StrokeCap = StrokeCap.Round,
 ) {
-    if (color == Color.Unspecified) LoadingIndicator(modifier = modifier) else LoadingIndicator(modifier = modifier, color = color)
+    val slot = me.rerere.rikkahub.ui.theme.HubStyle.loading
+    if (slot != null) slot(modifier)
+    else if (color == Color.Unspecified) LoadingIndicator(modifier = modifier) else LoadingIndicator(modifier = modifier, color = color)
 }
 
 /** A real progress value: the determinate Material ring. */

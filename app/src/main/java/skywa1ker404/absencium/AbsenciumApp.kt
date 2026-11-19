@@ -89,6 +89,18 @@ class AbsenciumApp : Application() {
         me.rerere.rikkahub.ui.theme.HubStyle.pixelShape = { step, topStart, topEnd, bottomEnd, bottomStart ->
             skywa1ker404.absencium.ui.theme.PixelCornerShape.of(step, topStart, topEnd, bottomEnd, bottomStart)
         }
+        // Switches, sliders, bars and the loader in the chat are the app's own, so Pixelated and Dot matrix reach them too.
+        me.rerere.rikkahub.ui.theme.HubStyle.switch = { checked, onChange, modifier, enabled ->
+            skywa1ker404.absencium.ui.components.AppSwitch(checked, onChange, modifier, enabled)
+        }
+        me.rerere.rikkahub.ui.theme.HubStyle.slider = { value, onChange, modifier, enabled, range, steps, finished ->
+            skywa1ker404.absencium.ui.components.AppSlider(value, onChange, modifier, enabled, range, steps, finished)
+        }
+        me.rerere.rikkahub.ui.theme.HubStyle.loading = { modifier -> skywa1ker404.absencium.ui.components.AppLoading(modifier) }
+        me.rerere.rikkahub.ui.theme.HubStyle.bar = { progress, modifier, wavy ->
+            if (wavy) skywa1ker404.absencium.ui.components.AppLinearWavy(progress, modifier)
+            else skywa1ker404.absencium.ui.components.AppLinearProgress(progress, modifier)
+        }
         me.rerere.rikkahub.AiHost.theme = { content ->
             val settings by container.settingsState.collectAsStateWithLifecycle()
             settings?.let { loaded ->

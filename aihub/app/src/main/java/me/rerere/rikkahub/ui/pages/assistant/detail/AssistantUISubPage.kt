@@ -19,7 +19,7 @@ import androidx.compose.material3.FilterChip
 import me.rerere.rikkahub.ui.components.dots.Icon
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
+import me.rerere.rikkahub.ui.components.ui.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 
