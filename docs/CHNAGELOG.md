@@ -167,3 +167,4 @@ working on it
 - Changed (branch Absencium-ai, CI green 44268786309, Batch 45): the AI hub settings now have one Advanced page (Fonts, UI customisation, Search providers); the leftover role-play text-colour rules were removed from the markdown renderer.
 - Fixed (branch Absencium-ai, CI green 44274532355, Batch 45): the Absencium AI screens now take the Pixelated style's stair-step corners (cards, bubbles, buttons, fields, sheets, chips and circles) instead of always staying round.
 - Changed (branch Absencium-ai, CI green 44277091781, Batch 45): inside Absencium the AI Fonts page shows only the code font; the text font and size come from the app's Appearance.
+- Fixed (branch Absencium-ai, CI green 44444232661, Batch 45): the Absencium AI switches, sliders, progress bars and loaders now follow the app's Pixelated and Dot matrix styles.
