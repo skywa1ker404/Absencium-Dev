@@ -51,6 +51,8 @@ data class StorageUiState(
     val passwordWasWrong: Boolean = false,
     /** What the staged backup contains, shown next to the Restart button. */
     val preview: BackupSummary? = null,
+    /** What each part of a backup holds right now (rows, files, about how many bytes); empty until counted. */
+    val parts: List<skywa1ker404.absencium.data.backup.PartEstimate> = emptyList(),
 )
 
 class StorageViewModel(private val container: AppContainer) : ViewModel() {
@@ -73,6 +75,10 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
                 container.notesStorageSettings.selectedMode() to container.notesStorage.rootFolder()?.displayPath
             }
             _state.update { it.copy(mode = mode, path = path) }
+        }
+        viewModelScope.launch {
+            val parts = withContext(Dispatchers.IO) { runCatching { backups.estimateParts() }.getOrDefault(emptyList()) }
+            _state.update { it.copy(parts = parts) }
         }
     }
 

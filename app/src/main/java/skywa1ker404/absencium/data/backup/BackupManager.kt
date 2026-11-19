@@ -338,6 +338,53 @@ class BackupManager(context: Context) {
         }
     }
 
+    /**
+     * What each part holds right now: rows, files and an approximate size, read with one small query per table (the database is
+     * never loaded into memory). Sizes are "about": the text length of every column plus the files the rows point to.
+     */
+    fun estimateParts(): List<PartEstimate> {
+        val db = AbsenciumDatabase.get(appContext).openHelper.readableDatabase
+        return BackupPart.entries.map { part ->
+            var rows = 0
+            var bytes = 0L
+            part.tables.forEach { table ->
+                val (r, b) = tableRowsAndBytes(db, table)
+                rows += r
+                bytes += b
+            }
+            var files = 0
+            if (part.hasFiles) {
+                val column = if (part == BackupPart.DOCUMENTS) "local_uri" else "file_path"
+                val (count, size) = filesOf(db, part.tables.first(), column)
+                files = count
+                bytes += size
+            }
+            PartEstimate(part, rows, files, bytes)
+        }
+    }
+
+    private fun tableRowsAndBytes(db: androidx.sqlite.db.SupportSQLiteDatabase, table: String): Pair<Int, Long> = runCatching {
+        val columns = db.query("PRAGMA table_info($table)").use { c ->
+            buildList { while (c.moveToNext()) add(c.getString(c.getColumnIndexOrThrow("name"))) }
+        }
+        val width = columns.joinToString("+") { "COALESCE(LENGTH(\"$it\"), 0)" }.ifEmpty { "0" }
+        db.query("SELECT COUNT(*), COALESCE(SUM($width), 0) FROM $table").use { if (it.moveToFirst()) it.getInt(0) to it.getLong(1) else 0 to 0L }
+    }.getOrDefault(0 to 0L)
+
+    private fun filesOf(db: androidx.sqlite.db.SupportSQLiteDatabase, table: String, column: String): Pair<Int, Long> = runCatching {
+        var count = 0
+        var size = 0L
+        db.query("SELECT $column FROM $table").use { c ->
+            while (c.moveToNext()) {
+                val raw = c.getString(0) ?: continue
+                val file = File(raw).takeIf { it.isFile } ?: File(attachmentDir, File(raw).name).takeIf { it.isFile } ?: continue
+                count++
+                size += file.length()
+            }
+        }
+        count to size
+    }.getOrDefault(0 to 0L)
+
     @Suppress("DEPRECATION")
     private fun appVersion(): String = try {
         appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName.orEmpty()

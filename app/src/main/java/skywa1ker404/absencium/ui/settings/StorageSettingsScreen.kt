@@ -126,6 +126,39 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                 )
             }
         }
+        if (storage.parts.isNotEmpty()) {
+            SectionTitle("What a backup holds")
+            AppCard(modifier = Modifier.fillMaxWidth()) {
+                storage.parts.forEach { estimate ->
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(estimate.part.title, style = MaterialTheme.typography.bodyMedium)
+                            val needs = estimate.part.needs.joinToString { it.title }
+                            val detail = buildList {
+                                add("${estimate.rows} " + if (estimate.rows == 1) "item" else "items")
+                                if (estimate.part.hasFiles) add("${estimate.files} " + if (estimate.files == 1) "file" else "files")
+                                if (needs.isNotEmpty()) add("needs $needs")
+                            }.joinToString(" · ")
+                            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text(
+                            "about " + android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, estimate.bytes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Text(
+                    text = "Today a backup holds all of these. Sizes are approximate and before compression. Choosing what to leave out comes in the next update.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        }
         val message = storage.message
         if (message != null) MessageCard(message)
         val preview = storage.preview
