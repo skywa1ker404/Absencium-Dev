@@ -64,7 +64,9 @@ fun LinearWavyProgressIndicator(modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun LoadingIndicator(modifier: Modifier = Modifier) {
+fun LoadingIndicator(modifier: Modifier = Modifier, color: Color = Color.Unspecified) {
     val slot = HubStyle.loading
-    if (slot != null) slot(modifier) else androidx.compose.material3.LoadingIndicator(modifier = modifier)
+    if (slot != null) slot(modifier)
+    else if (color == Color.Unspecified) androidx.compose.material3.LoadingIndicator(modifier = modifier)
+    else androidx.compose.material3.LoadingIndicator(modifier = modifier, color = color)
 }
