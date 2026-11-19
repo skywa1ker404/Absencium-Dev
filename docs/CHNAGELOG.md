@@ -170,3 +170,4 @@ working on it
 - Fixed (branch Absencium-ai, CI green 44444232661, Batch 45): the Absencium AI switches, sliders, progress bars and loaders now follow the app's Pixelated and Dot matrix styles.
 - Added (branch Absencium-ai, CI green 44448802700, Batch 45): in the Dot matrix style switches and sliders are drawn with dots (a row of dots and a round thumb), in the app and in Absencium AI.
 - Changed (branch Absencium-ai, CI green 44450565097, Batch 45): Reminders is now one Notifications page that also holds the AI chat's "tell me when an answer is ready" choice; the duplicate switch in the AI settings is hidden inside Absencium.
+- Added (branch Absencium-ai, CI green 44502640298, Batch 45): Storage & Data lists every part a backup holds with its item and file counts and an approximate size (first step of choosing what to back up; the switches follow in the next update). A unit test now fails if a database table is not in any backup part.

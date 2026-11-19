@@ -7,7 +7,7 @@ Owner request (2026-11-15): "the backup option has many customisations, like wha
 - `data/backup/BackupManager.kt`: one zip package, `manifest.json` (last entry, with size and SHA-256 of every entry), `settings.json`, `database/Absencium.db` (a consistent copy of the whole database) and `attachments/<file>` (all photos, documents, recordings, sketches, only if "Include files" is on). Optional AES-256 seal (`BackupCrypto.kt`, extension `.absbak`).
 - Restore: the package is checked, staged next to the database, and applied at the next start (`applyStagedRestore`), keeping one safety copy. It always replaces everything.
 - The only choice today is "Include files" and the password. The AI hub has its own separate backup pages (WebDAV and local zip) with its own options (`BackupContentOption`: characters, chats, providers, API keys, workspaces, settings).
-- Database `AbsenciumDatabase` version 3 has 15 tables: `Subjects_Table`, `Attendance_Table`, `Holidays_Table`, `Exams_Table`, `Timetable_Table`, `Notes_Table`, `Guides_Table`, `Audio_Memos_Table`, `Recall_Quiz_Table`, `AI_History_Table`, `User_Stats_Table`, `Momentum_Log_Table`, `Recall_Attempts_Table`, `Attachments_Table`, `Syllabus_Nodes_Table`. The AI hub keeps its chats in its own database (`aihub_ai`) and its settings in its own preferences and secure store.
+- Database `AbsenciumDatabase` (version 5 at phase 1, 19 tables; the original read of version 3 listed 15) has these tables: `Subjects_Table`, `Attendance_Table`, `Holidays_Table`, `Exams_Table`, `Timetable_Table`, `Notes_Table`, `Guides_Table`, `Audio_Memos_Table`, `Recall_Quiz_Table`, `AI_History_Table`, `User_Stats_Table`, `Momentum_Log_Table`, `Recall_Attempts_Table`, `Attachments_Table`, `Syllabus_Nodes_Table`, `Note_Versions_Table`, `Flashcards_Table`, `Study_Goals_Table`, `Events_Table`. The AI hub keeps its chats in its own database (`aihub_ai`) and its settings in its own preferences and secure store.
 
 ## 2. Goals
 
@@ -25,7 +25,10 @@ Owner request (2026-11-15): "the backup option has many customisations, like wha
 | Timetable | `Timetable_Table` | Subjects |
 | Attendance | `Attendance_Table` | Subjects |
 | Exams | `Exams_Table` | Subjects |
-| Holidays and events | `Holidays_Table` | none |
+| Holidays and events | `Holidays_Table`, `Events_Table` | none |
+| Flashcards | `Flashcards_Table` (subject id is not a foreign key) | none |
+| Study goals | `Study_Goals_Table` (subject id is not a foreign key) | none |
+| Note version history | `Note_Versions_Table` | Notes |
 | Syllabus | `Syllabus_Nodes_Table` | Subjects |
 | Notes (text) | `Notes_Table` | Subjects |
 | Note photos, files and sketches | `Attachments_Table` rows (`note_id`, `file_path`, `size_bytes`) plus files | Notes |
