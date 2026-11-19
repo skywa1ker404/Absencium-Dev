@@ -99,6 +99,21 @@ object AiApp {
         return chats.size
     }
 
+    /** The chat's "tell me when an answer is ready" choice, for the host's one Notifications page. */
+    fun chatNoticeFlow(application: Application): kotlinx.coroutines.flow.Flow<Boolean> {
+        start(application)
+        return get<me.rerere.rikkahub.data.datastore.SettingsStore>().settingsFlow
+            .map { it.displaySetting.enableNotificationOnMessageGeneration }
+            .distinctUntilChanged()
+    }
+
+    suspend fun setChatNotice(application: Application, on: Boolean) {
+        start(application)
+        get<me.rerere.rikkahub.data.datastore.SettingsStore>().update { settings ->
+            settings.copy(displaySetting = settings.displaySetting.copy(enableNotificationOnMessageGeneration = on))
+        }
+    }
+
     @Synchronized
     fun start(application: Application) {
         if (started) return

@@ -209,21 +209,24 @@ fun SettingDisplayPage(vm: SettingVM = koinViewModel()) {
                             )
                         }
                     )
-                    SettingGroupItem(
-                        title = stringResource(R.string.setting_display_page_notification_message_generated),
-                        subtitle = stringResource(R.string.setting_display_page_notification_message_generated_desc),
-                        trailing = {
-                            HapticSwitch(
-                                checked = displaySetting.enableNotificationOnMessageGeneration,
-                                onCheckedChange = {
-                                    if (it && !permissionState.allPermissionsGranted) {
-                                        permissionState.requestPermissions()
+                    // Inside Absencium this choice lives on the app's one Notifications page.
+                    if (me.rerere.rikkahub.AiHost.theme == null) {
+                        SettingGroupItem(
+                            title = stringResource(R.string.setting_display_page_notification_message_generated),
+                            subtitle = stringResource(R.string.setting_display_page_notification_message_generated_desc),
+                            trailing = {
+                                HapticSwitch(
+                                    checked = displaySetting.enableNotificationOnMessageGeneration,
+                                    onCheckedChange = {
+                                        if (it && !permissionState.allPermissionsGranted) {
+                                            permissionState.requestPermissions()
+                                        }
+                                        updateDisplaySetting(displaySetting.copy(enableNotificationOnMessageGeneration = it))
                                     }
-                                    updateDisplaySetting(displaySetting.copy(enableNotificationOnMessageGeneration = it))
-                                }
-                            )
-                        }
-                    )
+                                )
+                            }
+                        )
+                    }
                     SettingGroupInputItem(
                         title = stringResource(R.string.setting_display_model_catalog_title),
                         subtitle = buildModelCatalogSubtitle(context, modelCatalogStatus),

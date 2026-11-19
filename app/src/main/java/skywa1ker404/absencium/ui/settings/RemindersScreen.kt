@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -31,7 +32,7 @@ import skywa1ker404.absencium.ui.components.HintText
 import skywa1ker404.absencium.ui.components.ScreenScaffold
 import skywa1ker404.absencium.ui.components.SectionTitle
 
-/** Reminders for lectures, exams and low attendance. Everything is off until the student picks an option. */
+/** The one Notifications page: reminders for lectures, exams and low attendance, and the AI chat's answer notice. Everything is off until the student picks an option. */
 @Destination<RootGraph>
 @Composable
 fun RemindersScreen(navigator: DestinationsNavigator) {
@@ -47,7 +48,7 @@ fun RemindersScreen(navigator: DestinationsNavigator) {
         if (turnsOn && Build.VERSION.SDK_INT >= 33 && !ReminderScheduler.canNotify(context)) askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    ScreenScaffold(title = "Reminders", onBack = { navigator.navigateUp() }, largeTitle = true) {
+    ScreenScaffold(title = "Notifications", onBack = { navigator.navigateUp() }, largeTitle = true) {
         SectionTitle("Before a lecture")
         Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(0 to "Off", 5 to "5 min", 10 to "10 min", 15 to "15 min", 30 to "30 min", 60 to "1 hour").forEach { (minutes, label) ->
@@ -72,6 +73,19 @@ fun RemindersScreen(navigator: DestinationsNavigator) {
         Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ExpressiveChip(selected = !settings.remindLowAttendance, onClick = { viewModel.setRemindLowAttendance(false) }, label = { Text("Off") })
             ExpressiveChip(selected = settings.remindLowAttendance, onClick = { choose({ viewModel.setRemindLowAttendance(true) }, true) }, label = { Text("Alert when under my goal") })
+        }
+        SectionTitle("AI chat")
+        val application = context.applicationContext as android.app.Application
+        val chatNoticeFlow = remember { me.rerere.rikkahub.AiApp.chatNoticeFlow(application) }
+        val chatNotice by chatNoticeFlow.collectAsStateWithLifecycle(false)
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ExpressiveChip(selected = !chatNotice, onClick = { scope.launch { me.rerere.rikkahub.AiApp.setChatNotice(application, false) } }, label = { Text("Off") })
+            ExpressiveChip(
+                selected = chatNotice,
+                onClick = { choose({ scope.launch { me.rerere.rikkahub.AiApp.setChatNotice(application, true) } }, true) },
+                label = { Text("Tell me when an answer is ready") },
+            )
         }
         if (denied) {
             AppCard(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), container = MaterialTheme.colorScheme.errorContainer) {

@@ -41,7 +41,7 @@ fun SettingsHubScreen(navigator: DestinationsNavigator) {
             )
             NavCard(
                 icon = AppIcons.Schedule,
-                title = "Reminders",
+                title = "Notifications",
                 subtitle = "All off until you choose",
                 onClick = { navigator.navigate(RemindersScreenDestination) },
                 position = GroupPosition.Middle,
