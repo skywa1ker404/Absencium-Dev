@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearProgressIndicator
@@ -72,7 +73,7 @@ private fun isPixelStyle(): Boolean = LocalAppStyle.current == AppStyle.PIXELATE
 @Composable
 private fun isDotStyle(): Boolean = LocalDotIcons.current
 
-/** Material's Switch, or a square-thumbed block switch in the Pixelated style. [onCheckedChange] null means the parent handles the tap. */
+/** Material's Switch, a square-thumbed block switch in Pixelated, or a row of dots with a round thumb in Dot matrix. [onCheckedChange] null means the parent handles the tap. */
 @Composable
 fun AppSwitch(
     checked: Boolean,
@@ -80,7 +81,8 @@ fun AppSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    if (!isPixelStyle()) {
+    val dot = isDotStyle()
+    if (!isPixelStyle() && !dot) {
         Switch(checked = checked, onCheckedChange = onCheckedChange, modifier = modifier, enabled = enabled)
         return
     }
@@ -92,6 +94,33 @@ fun AppSwitch(
         Modifier.toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange)
     } else {
         Modifier
+    }
+    if (dot) {
+        // Dot matrix: a row of round dots for the track and a round thumb that slides along it, masking the dots it passes.
+        val trackDot = if (checked) c.primary else c.outline
+        val maskColor = c.surface
+        val thumbColor = if (checked) c.primary else c.outline
+        val glyphColor = if (checked) c.onPrimary else c.surface
+        Box(
+            modifier = modifier
+                .size(width = 52.dp, height = 28.dp)
+                .graphicsLayer { alpha = if (enabled) 1f else 0.38f }
+                .then(toggle),
+        ) {
+            Canvas(Modifier.fillMaxSize()) {
+                val n = 8
+                val r = 2.dp.toPx()
+                val pad = 4.dp.toPx() + r
+                val gap = (size.width - 2 * pad) / (n - 1)
+                for (i in 0 until n) drawCircle(trackDot.copy(alpha = 0.55f), r, Offset(pad + gap * i, size.height / 2f))
+                val thumbR = 11.dp.toPx()
+                val cx = thumbR + 3.dp.toPx() + (size.width - 2 * (thumbR + 3.dp.toPx())) * position
+                drawCircle(maskColor, thumbR + 2.dp.toPx(), Offset(cx, size.height / 2f))
+                drawCircle(thumbColor, thumbR, Offset(cx, size.height / 2f))
+                drawCircle(glyphColor, 3.dp.toPx(), Offset(cx, size.height / 2f))
+            }
+        }
+        return
     }
     Box(
         modifier = modifier
@@ -113,7 +142,7 @@ fun AppSwitch(
     }
 }
 
-/** Material's Slider, or in the Pixelated style a segmented bar with a square block thumb. */
+/** Material's Slider; in Pixelated a segmented bar with a square block thumb; in Dot matrix a row of dots with a round thumb. */
 @Composable
 fun AppSlider(
     value: Float,
@@ -124,7 +153,8 @@ fun AppSlider(
     steps: Int = 0,
     onValueChangeFinished: (() -> Unit)? = null,
 ) {
-    if (!isPixelStyle()) {
+    val dot = isDotStyle()
+    if (!isPixelStyle() && !dot) {
         Slider(
             value = value,
             onValueChange = onValueChange,
@@ -185,15 +215,16 @@ fun AppSlider(
             modifier = Modifier.fillMaxWidth().height(12.dp),
             color = ink,
             trackColor = c.surfaceContainerHighest,
-            dotted = false,
+            dotted = dot,
         )
+        val thumbW = if (dot) 24.dp else 14.dp
         Box(
             modifier = Modifier
-                .offset { IntOffset(((widthPx - 14.dp.toPx()) * fraction).roundToInt(), 0) }
-                .size(width = 14.dp, height = 28.dp)
-                .clip(shape)
+                .offset { IntOffset(((widthPx - thumbW.toPx()) * fraction).roundToInt(), 0) }
+                .size(width = thumbW, height = if (dot) 24.dp else 28.dp)
+                .clip(if (dot) CircleShape else shape)
                 .background(ink)
-                .pixelBevel(c.outline),
+                .then(if (dot) Modifier else Modifier.pixelBevel(c.outline)),
         )
     }
 }
