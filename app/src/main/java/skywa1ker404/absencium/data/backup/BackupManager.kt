@@ -319,15 +319,17 @@ class BackupManager(context: Context) {
      * Choosing every part, or a file that cannot restore in part, means a whole restore as before. Settings are dropped when
      * that part is not chosen.
      */
-    fun chooseStagedParts(parts: Set<BackupPart>?) {
+    fun chooseStagedParts(parts: Set<BackupPart>?, merge: Boolean = false) {
         val file = File(appContext.filesDir, PARTS_FILE)
         val chosen = parts?.let { BackupPart.withNeeds(it) }
-        if (chosen == null || chosen.size == BackupPart.entries.size) {
+        if (chosen == null || (!merge && chosen.size == BackupPart.entries.size)) {
             file.delete()
             return
         }
-        file.writeText(BackupPart.format(chosen))
-        if (BackupPart.SETTINGS !in chosen) File(appContext.filesDir, SETTINGS_RESTORE).delete()
+        // A merge never touches the settings: there is no way to say which of two settings is the newer one.
+        val kept = if (merge) chosen - BackupPart.SETTINGS else chosen
+        file.writeText((if (merge) "MERGE" else "REPLACE") + "\n" + BackupPart.format(kept))
+        if (BackupPart.SETTINGS !in kept) File(appContext.filesDir, SETTINGS_RESTORE).delete()
     }
 
     /** What the last start did with a restore in part, once, or null. */
@@ -577,8 +579,10 @@ class BackupManager(context: Context) {
                 if (partsFile.exists()) {
                     marker.createNewFile()
                     if (dbFile.exists()) dbFile.copyTo(bak, overwrite = true)
-                    val chosen = BackupPart.parse(runCatching { partsFile.readText() }.getOrNull()).orEmpty()
-                    val note = restoreParts(app, dbFile, staged, attachmentsStaged, attachments, chosen)
+                    val lines = runCatching { partsFile.readText() }.getOrNull().orEmpty().lines()
+                    val merge = lines.firstOrNull() == "MERGE"
+                    val chosen = BackupPart.parse(lines.getOrNull(1)).orEmpty()
+                    val note = restoreParts(app, dbFile, staged, attachmentsStaged, attachments, chosen, merge)
                     File(app.filesDir, RESULT_FILE).writeText(note)
                     partsFile.delete()
                     staged.delete()
@@ -613,20 +617,25 @@ class BackupManager(context: Context) {
          * are deleted and the backup's rows inserted, then the foreign keys are checked, and any problem rolls everything back.
          * Both files have the same schema (checked at staging). Returns the sentence shown to the owner.
          */
-        private fun restoreParts(app: Context, dbFile: File, staged: File, stagedFiles: File, filesDir: File, chosen: Set<BackupPart>): String {
+        private fun restoreParts(app: Context, dbFile: File, staged: File, stagedFiles: File, filesDir: File, chosen: Set<BackupPart>, merge: Boolean): String {
             if (chosen.isEmpty()) return "Nothing was restored: no part was chosen."
             val src = SQLiteDatabase.openDatabase(staged.path, null, SQLiteDatabase.OPEN_READONLY)
             val dst = SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READWRITE)
             try {
                 dst.setForeignKeyConstraintsEnabled(false)
                 var rows = 0
+                var stats: MergeStats? = null
                 dst.beginTransaction()
                 try {
                     val parts = BackupPart.entries.filter { it in chosen }
-                    val present = parts.flatMap { it.tables }.filter { tableColumns(src, it).isNotEmpty() }.toSet()
-                    parts.asReversed().forEach { p -> p.tables.filter { it in present }.forEach { dst.execSQL("DELETE FROM $it") } }
-                    parts.forEach { p -> p.tables.filter { it in present }.forEach { rows += copyRows(src, dst, it) } }
-                    if (BackupPart.NOTE_FILES in chosen) {
+                    if (merge) {
+                        stats = BackupMerge.merge(src, dst, chosen, filesDir)
+                    } else {
+                        val present = parts.flatMap { it.tables }.filter { tableColumns(src, it).isNotEmpty() }.toSet()
+                        parts.asReversed().forEach { p -> p.tables.filter { it in present }.forEach { dst.execSQL("DELETE FROM $it") } }
+                        parts.forEach { p -> p.tables.filter { it in present }.forEach { rows += copyRows(src, dst, it) } }
+                    }
+                    if (!merge && BackupPart.NOTE_FILES in chosen) {
                         dst.rawQuery("SELECT id, file_path FROM Attachments_Table", null).use { c ->
                             val fix = mutableListOf<Pair<Long, String>>()
                             while (c.moveToNext()) fix += c.getLong(0) to c.getString(1)
@@ -653,13 +662,22 @@ class BackupManager(context: Context) {
                             while (c.moveToNext()) {
                                 val leaf = c.getString(0)?.substringAfterLast('/')?.substringAfterLast('\\') ?: continue
                                 val from = File(stagedFiles, leaf)
-                                if (from.isFile) {
-                                    from.copyTo(File(filesDir, leaf), overwrite = true)
+                                val to = File(filesDir, leaf)
+                                if (from.isFile && (!merge || !to.exists())) {
+                                    from.copyTo(to, overwrite = true)
                                     files++
                                 }
                             }
                         }
                     }
+                }
+                val merged = stats
+                if (merged != null) {
+                    DebugLogger.i(TAG, "Merged ${chosen.size} parts: $merged, $files files")
+                    return "Merged ${chosen.size} parts from the backup: ${merged.added} added, ${merged.updated} updated to the newer version, " +
+                        "${merged.kept} already there or newer on this phone" +
+                        (if (merged.skipped > 0) ", ${merged.skipped} skipped because what they belong to is not on this phone" else "") +
+                        ", $files files. Nothing was deleted."
                 }
                 DebugLogger.i(TAG, "Restored ${chosen.size} parts ($rows rows, $files files) from the backup")
                 return "Restored ${chosen.size} parts from the backup ($rows items, $files files). Everything else was kept."

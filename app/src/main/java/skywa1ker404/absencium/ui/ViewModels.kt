@@ -74,8 +74,8 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** Records the parts to restore before the app restarts; null restores the whole file. */
-    fun chooseRestoreParts(parts: Set<skywa1ker404.absencium.data.backup.BackupPart>?) {
-        backups.chooseStagedParts(parts)
+    fun chooseRestoreParts(parts: Set<skywa1ker404.absencium.data.backup.BackupPart>?, merge: Boolean = false) {
+        backups.chooseStagedParts(parts, merge)
     }
 
     fun refresh() {

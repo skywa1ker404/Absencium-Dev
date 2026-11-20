@@ -86,4 +86,11 @@ class BackupPartsTest {
         val old = BackupManifest(1, "1", 3, 1L, true, false, emptyMap(), emptyList())
         assertEquals(emptyList<ManifestPart>(), BackupManifestJson.read(BackupManifestJson.write(old)).parts)
     }
+
+    @Test
+    fun everyLinkColumnIsKnownToTheMerge() {
+        val entities = File("src/main/java/skywa1ker404/absencium/data/db/Entities.kt").readText()
+        val links = Regex("name\\s*=\\s*\"([a-z_]+_id)\"").findAll(entities).map { it.groupValues[1] }.toSet()
+        assertEquals(emptySet<String>(), links - setOf("subject_id", "note_id", "parent_id", "syllabus_node_id", "question_id"))
+    }
 }

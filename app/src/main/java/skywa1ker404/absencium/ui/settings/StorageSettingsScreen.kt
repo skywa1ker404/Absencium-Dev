@@ -197,10 +197,25 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                     )
                 }
                 var restoreChosen by remember(preview) { mutableStateOf<Set<BackupPart>?>(null) }
+                var mergeMode by remember(preview) { mutableStateOf(false) }
                 val held = preview?.parts.orEmpty()
                 val partMode = preview?.partRestorePossible == true && held.isNotEmpty()
                 val restoreSelection = restoreChosen ?: held
                 if (partMode) {
+                    Text("How to restore", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                    Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ExpressiveChip(selected = !mergeMode, onClick = { mergeMode = false }, label = { Text("Replace") })
+                        ExpressiveChip(selected = mergeMode, onClick = { mergeMode = true }, label = { Text("Merge") })
+                    }
+                    Text(
+                        text = if (mergeMode) {
+                            "Merge adds what is missing on this phone and keeps the newer version of what is on both. Nothing is deleted, and settings are not merged."
+                        } else {
+                            "Replace swaps the chosen parts for the file's. Anything in them that is not in the file is lost."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     Text("Choose what to restore", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
                     Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         ExpressiveChip(selected = restoreSelection == held, onClick = { restoreChosen = held }, label = { Text("All in the file") })
@@ -220,7 +235,9 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                     }
                 }
                 Text(
-                    text = if (partMode) {
+                    text = if (partMode && mergeMode) {
+                        "Restart to apply. The parts you chose are merged into this phone; nothing is deleted. One safety copy is kept. Discard to keep what you have."
+                    } else if (partMode) {
                         "Restart to apply. The parts you chose replace the same parts on this phone; everything else stays. One safety copy is kept. Discard to keep what you have."
                     } else {
                         "Restart to apply. This replaces your current data with the backup; one safety copy is kept. Discard to keep what you have."
@@ -234,7 +251,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                         text = "Restart app",
                         enabled = !partMode || restoreSelection.isNotEmpty(),
                         onClick = {
-                            storageViewModel.chooseRestoreParts(if (partMode) restoreSelection else null)
+                            storageViewModel.chooseRestoreParts(if (partMode) restoreSelection else null, mergeMode)
                             DebugLogger.i("Backup", "Restarting the app so the staged restore can be applied")
                             val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
                             if (launch != null) {
