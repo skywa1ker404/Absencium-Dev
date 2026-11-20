@@ -114,6 +114,8 @@ data class AppSettings(
     val lastBackupAt: Long = 0L,
     /** What that backup was, for the status line in Settings. */
     val lastBackupNote: String = "",
+    /** The last set of backup parts the owner saved ("My choice"). Everything until they change it. */
+    val backupParts: Set<skywa1ker404.absencium.data.backup.BackupPart> = skywa1ker404.absencium.data.backup.BackupPart.everything,
 ) {
     /** The API style actually used for requests. */
     val effectiveAiStyle: ApiStyle

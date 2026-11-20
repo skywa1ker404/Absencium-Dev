@@ -12,6 +12,7 @@ enum class BackupPart(
     /** The rows of this part point at files (photos, documents, recordings) that travel with it. */
     val hasFiles: Boolean = false,
 ) {
+    SETTINGS("Profile and settings", emptyList()),
     SUBJECTS("Subjects", listOf("Subjects_Table")),
     TIMETABLE("Timetable", listOf("Timetable_Table"), setOf(SUBJECTS)),
     ATTENDANCE("Attendance", listOf("Attendance_Table"), setOf(SUBJECTS)),
@@ -30,6 +31,21 @@ enum class BackupPart(
     AI_HISTORY("AI action history", listOf("AI_History_Table"), setOf(NOTES));
 
     companion object {
+        /** The three ready-made choices; "My choice" is the last set the owner saved, kept in the settings. */
+        val everything: Set<BackupPart> get() = entries.toSet()
+        val lightWithoutMedia: Set<BackupPart> get() = entries.toSet() - setOf(NOTE_FILES, DOCUMENTS, RECORDINGS)
+        val dataOnly: Set<BackupPart> get() =
+            setOf(SUBJECTS, TIMETABLE, ATTENDANCE, EXAMS, SYLLABUS, HOLIDAYS_EVENTS, NOTES)
+
+        /** Part ids as saved in the settings: names, comma separated. Unknown names (from a newer app) are ignored. */
+        fun parse(saved: String?): Set<BackupPart>? {
+            if (saved == null) return null
+            val names = saved.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+            return withNeeds(entries.filter { it.name in names }.toSet())
+        }
+
+        fun format(parts: Set<BackupPart>): String = entries.filter { it in parts }.joinToString(",") { it.name }
+
         /** Every table that belongs to a part. A unit test fails when a table of the database is missing here. */
         val allTables: Set<String> get() = entries.flatMap { it.tables }.toSet()
 

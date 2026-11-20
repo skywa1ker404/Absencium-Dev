@@ -167,6 +167,10 @@ class SettingsRepository(context: Context) {
     suspend fun setSundayHoliday(value: Boolean) = write(Keys.SUNDAY_HOLIDAY, value)
 
 
+    suspend fun setBackupParts(parts: Set<skywa1ker404.absencium.data.backup.BackupPart>) {
+        dataStore.edit { it[Keys.BACKUP_PARTS] = skywa1ker404.absencium.data.backup.BackupPart.format(parts) }
+    }
+
     suspend fun setLastBackup(at: Long, note: String) {
         dataStore.edit {
             it[Keys.LAST_BACKUP_AT] = at
@@ -271,7 +275,8 @@ class SettingsRepository(context: Context) {
         val LAST_BACKUP_NOTE = stringPreferencesKey("last_backup_note")
 
         /** Per-phone state that a backup must not carry over. */
-        val NOT_IN_BACKUP = setOf(LAST_BACKUP_AT.name, LAST_BACKUP_NOTE.name)
+        val BACKUP_PARTS = stringPreferencesKey("backup_parts")
+        val NOT_IN_BACKUP = setOf(LAST_BACKUP_AT.name, LAST_BACKUP_NOTE.name, BACKUP_PARTS.name)
 
         // The keys a restore may set, by type. A key not listed here is never imported.
         val BOOLEANS = setOf(
@@ -350,6 +355,7 @@ class SettingsRepository(context: Context) {
             sundayHoliday = this[Keys.SUNDAY_HOLIDAY] ?: defaults.sundayHoliday,
             lastBackupAt = this[Keys.LAST_BACKUP_AT] ?: defaults.lastBackupAt,
             lastBackupNote = this[Keys.LAST_BACKUP_NOTE] ?: defaults.lastBackupNote,
+            backupParts = skywa1ker404.absencium.data.backup.BackupPart.parse(this[Keys.BACKUP_PARTS]) ?: defaults.backupParts,
         )
     }
 

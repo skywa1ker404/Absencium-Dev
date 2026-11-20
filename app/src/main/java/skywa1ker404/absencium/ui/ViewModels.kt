@@ -103,20 +103,22 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** Writes a backup package. A blank [password] leaves it unencrypted. */
-    fun backupTo(uri: Uri, password: String, includeAttachments: Boolean) {
+    fun backupTo(uri: Uri, password: String, selection: Set<skywa1ker404.absencium.data.backup.BackupPart>) {
         runBusy("Backup") {
             val settingsJson = container.settingsRepository.exportJson()
             val chars = password.toCharArray().takeIf { it.isNotEmpty() }
             val result = container.appContext.contentResolver.openOutputStream(uri, "wt")?.use { out ->
-                backups.export(out, chars, includeAttachments, settingsJson)
+                backups.export(out, chars, selection, settingsJson)
             }
             if (result == null) {
                 "Could not open the file to write the backup."
             } else {
                 val note = buildString {
-                    append(if (result.includesAttachments) "with ${result.attachmentFiles} files" else "database and settings only")
+                    append("${result.partCount} of ${skywa1ker404.absencium.data.backup.BackupPart.entries.size} parts")
+                    append(if (result.includesAttachments) ", ${result.attachmentFiles} files" else ", no files")
                     append(if (result.encrypted) ", password-protected" else ", not encrypted")
                 }
+                container.settingsRepository.setBackupParts(selection)
                 container.settingsRepository.setLastBackup(System.currentTimeMillis(), note)
                 "Backup saved ($note)."
             }

@@ -18,6 +18,8 @@ import java.util.zip.ZipOutputStream
 
 /** What a backup holds, shown to the user before a restore is staged. */
 data class BackupSummary(
+    /** The parts the backup holds; null for a format 1 file, which always held everything. */
+    val parts: Set<BackupPart>? = null,
     val createdAt: Long,
     val appVersion: String,
     val schemaVersion: Int,
@@ -35,7 +37,7 @@ sealed interface StageResult {
     data class Failed(val message: String, val passwordProblem: Boolean = false) : StageResult
 }
 
-data class ExportResult(val databaseBytes: Long, val attachmentFiles: Int, val encrypted: Boolean, val includesAttachments: Boolean)
+data class ExportResult(val databaseBytes: Long, val attachmentFiles: Int, val encrypted: Boolean, val includesAttachments: Boolean, val partCount: Int = 0)
 
 
 /**
@@ -57,21 +59,32 @@ class BackupManager(context: Context) {
      * Writes the package to [out]. [password] seals it with AES-256-GCM; null leaves it as a plain zip.
      * [includeAttachments] adds the photos, documents and recordings of the vault.
      */
-    fun export(out: OutputStream, password: CharArray?, includeAttachments: Boolean, settingsJson: String): ExportResult {
+    fun export(out: OutputStream, password: CharArray?, selection: Set<BackupPart>, settingsJson: String): ExportResult {
+        val selected = BackupPart.withNeeds(selection)
+        val excluded = BackupPart.entries.filter { it !in selected }
+        val includeAttachments = selected.any { it.hasFiles }
         val database = AbsenciumDatabase.get(appContext).openHelper.writableDatabase
-        val counts = tableCounts(database)
+        val counts = tableCounts(database, excluded.flatMap { it.tables }.toSet())
         val schemaVersion = database.version
+        val partInfo = estimateParts().filter { it.part in selected }
+            .map { ManifestPart(it.part.name, it.rows, it.files, it.bytes) }
         val consistentCopy = copyDatabaseConsistently()
         try {
+            // The exclusions are made in the copy, never in the live database; VACUUM then leaves no trace of an excluded part.
+            if (excluded.isNotEmpty()) removePartsFromCopy(consistentCopy, excluded)
+            val fileNames: Set<String>? =
+                if (BackupPart.entries.filter { it.hasFiles }.all { it in selected }) null else referencedFileNames(consistentCopy, selected)
             val sealed: OutputStream = if (password != null) BackupCrypto.encrypt(out, password) else out
             val files = mutableListOf<ManifestFile>()
             var attachmentFiles = 0
             ZipOutputStream(BufferedOutputStream(sealed)).use { zip ->
                 zip.setLevel(1)
                 files += zip.addEntry(ManifestRules.DATABASE, consistentCopy.inputStream())
-                files += zip.addEntry(ManifestRules.SETTINGS, settingsJson.toByteArray(Charsets.UTF_8).inputStream())
+                if (BackupPart.SETTINGS in selected) {
+                    files += zip.addEntry(ManifestRules.SETTINGS, settingsJson.toByteArray(Charsets.UTF_8).inputStream())
+                }
                 if (includeAttachments) {
-                    attachmentDir.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.forEach { file ->
+                    attachmentDir.listFiles()?.filter { it.isFile && (fileNames == null || it.name in fileNames) }?.sortedBy { it.name }?.forEach { file ->
                         val name = ManifestRules.ATTACHMENTS_DIR + file.name
                         if (ManifestRules.isSafeEntryName(name)) {
                             files += zip.addEntry(name, file.inputStream())
@@ -88,15 +101,18 @@ class BackupManager(context: Context) {
                     encrypted = password != null,
                     counts = counts,
                     files = files,
+                    parts = partInfo,
                 )
                 zip.putNextEntry(ZipEntry(ManifestRules.MANIFEST))
                 zip.write(BackupManifestJson.write(manifest))
                 zip.closeEntry()
             }
             DebugLogger.i(TAG, "Backup written: db ${consistentCopy.length()} bytes, $attachmentFiles attachments, encrypted=${password != null}")
-            return ExportResult(consistentCopy.length(), attachmentFiles, password != null, includeAttachments)
+            return ExportResult(consistentCopy.length(), attachmentFiles, password != null, includeAttachments, selected.size)
         } finally {
             consistentCopy.delete()
+            File(consistentCopy.path + "-wal").delete()
+            File(consistentCopy.path + "-shm").delete()
         }
     }
 
@@ -251,6 +267,9 @@ class BackupManager(context: Context) {
                 schemaVersion = manifest.schemaVersion,
                 encrypted = encrypted,
                 includesAttachments = manifest.includesAttachments,
+                parts = manifest.parts.takeIf { it.isNotEmpty() }?.let { list ->
+                    BackupPart.entries.filter { p -> list.any { it.id == p.name } }.toSet()
+                },
                 counts = manifest.counts,
                 attachmentFiles = manifest.files.count { it.path.startsWith(ManifestRules.ATTACHMENTS_DIR) },
                 sameAsCurrent = sameAsCurrent,
@@ -328,14 +347,51 @@ class BackupManager(context: Context) {
         return copy
     }
 
-    private fun tableCounts(db: androidx.sqlite.db.SupportSQLiteDatabase): Map<String, Int> {
+    private fun tableCounts(db: androidx.sqlite.db.SupportSQLiteDatabase, excludedTables: Set<String> = emptySet()): Map<String, Int> {
         val tables = mapOf(
             "subjects" to "Subjects_Table", "attendance" to "Attendance_Table", "holidays" to "Holidays_Table",
             "exams" to "Exams_Table", "timetable" to "Timetable_Table", "notes" to "Notes_Table", "attachments" to "Attachments_Table",
         )
         return tables.mapValues { (_, table) ->
+            if (table in excludedTables) return@mapValues 0
             runCatching { db.query("SELECT COUNT(*) FROM $table").use { if (it.moveToFirst()) it.getInt(0) else 0 } }.getOrDefault(0)
         }
+    }
+
+    /** Deletes the rows of the parts that are off from the backup copy (children first) and shrinks the file. */
+    private fun removePartsFromCopy(copy: File, excluded: List<BackupPart>) {
+        val db = SQLiteDatabase.openDatabase(copy.path, null, SQLiteDatabase.OPEN_READWRITE)
+        try {
+            db.setForeignKeyConstraintsEnabled(false)
+            db.beginTransaction()
+            try {
+                excluded.asReversed().forEach { part -> part.tables.forEach { db.execSQL("DELETE FROM $it") } }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            db.execSQL("VACUUM")
+            db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null).use { it.moveToFirst() }
+        } finally {
+            db.close()
+        }
+    }
+
+    /** The file names the rows of the chosen file parts point to, read from the filtered copy. */
+    private fun referencedFileNames(copy: File, selected: Set<BackupPart>): Set<String> {
+        val db = SQLiteDatabase.openDatabase(copy.path, null, SQLiteDatabase.OPEN_READONLY)
+        val names = HashSet<String>()
+        try {
+            selected.filter { it.hasFiles }.forEach { part ->
+                val column = if (part == BackupPart.DOCUMENTS) "local_uri" else "file_path"
+                db.rawQuery("SELECT $column FROM ${part.tables.first()}", null).use { c ->
+                    while (c.moveToNext()) c.getString(0)?.let { names += it.substringAfterLast('/').substringAfterLast('\\') }
+                }
+            }
+        } finally {
+            db.close()
+        }
+        return names
     }
 
     /**

@@ -37,7 +37,7 @@ class ManifestRulesTest {
     }
 
     @Test fun newerFormatIsRefused() {
-        assertFalse(ManifestRules.problems(manifest(formatVersion = 2), actual, 2).isEmpty())
+        assertFalse(ManifestRules.problems(manifest(formatVersion = 3), actual, 2).isEmpty())
     }
 
     @Test fun changedFileFailsItsChecksum() {

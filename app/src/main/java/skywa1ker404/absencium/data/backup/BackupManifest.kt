@@ -3,6 +3,9 @@ package skywa1ker404.absencium.data.backup
 import java.io.InputStream
 import java.security.MessageDigest
 
+/** What one part of a format 2 package holds, so the restore page can list it without reading the data. */
+data class ManifestPart(val id: String, val rows: Int, val files: Int, val bytes: Long)
+
 /** One file inside a backup package, as the manifest describes it. [sha256] is lower-case hex. */
 data class ManifestFile(val path: String, val size: Long, val sha256: String)
 
@@ -20,13 +23,15 @@ data class BackupManifest(
     val encrypted: Boolean,
     val counts: Map<String, Int>,
     val files: List<ManifestFile>,
+    /** The parts a format 2 package holds. Empty for format 1, which always held everything. */
+    val parts: List<ManifestPart> = emptyList(),
 )
 
 /** The rules that decide whether a package can be trusted. Pure functions, so they are unit-tested without Android. */
 object ManifestRules {
 
     /** Bumped only when the package layout changes in a way an older app cannot read. */
-    const val FORMAT_VERSION = 1
+    const val FORMAT_VERSION = 2
 
     const val MANIFEST = "manifest.json"
     const val SETTINGS = "settings.json"

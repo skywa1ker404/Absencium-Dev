@@ -24,6 +24,9 @@ object BackupManifestJson {
             .put("encrypted", manifest.encrypted)
             .put("counts", counts)
             .put("files", files)
+            .put("parts", JSONArray().also { arr ->
+                manifest.parts.forEach { arr.put(JSONObject().put("id", it.id).put("rows", it.rows).put("files", it.files).put("bytes", it.bytes)) }
+            })
         return json.toString(2).toByteArray(Charsets.UTF_8)
     }
 
@@ -53,6 +56,12 @@ object BackupManifestJson {
                 encrypted = json.optBoolean("encrypted"),
                 counts = counts,
                 files = files,
+                parts = json.optJSONArray("parts")?.let { arr ->
+                    (0 until arr.length()).map {
+                        val o = arr.getJSONObject(it)
+                        ManifestPart(o.getString("id"), o.optInt("rows"), o.optInt("files"), o.optLong("bytes"))
+                    }
+                }.orEmpty(),
             )
         } catch (e: JSONException) {
             throw IllegalArgumentException("The manifest is damaged: ${e.message}")

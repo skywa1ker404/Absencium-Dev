@@ -61,4 +61,29 @@ class BackupPartsTest {
         assertTrue(BackupPart.NOTE_FILES in dependents)
         assertFalse(BackupPart.STATS in dependents)
     }
+
+    @Test
+    fun presetsAreClosedUnderNeeds() {
+        listOf(BackupPart.everything, BackupPart.lightWithoutMedia, BackupPart.dataOnly).forEach {
+            assertEquals(it, BackupPart.withNeeds(it))
+        }
+        assertFalse(BackupPart.NOTE_FILES in BackupPart.lightWithoutMedia)
+        assertTrue(BackupPart.NOTES in BackupPart.dataOnly)
+    }
+
+    @Test
+    fun savedChoiceRoundTripsAndIgnoresUnknownNames() {
+        val choice = BackupPart.withNeeds(setOf(BackupPart.RECORDINGS, BackupPart.STATS))
+        assertEquals(choice, BackupPart.parse(BackupPart.format(choice)))
+        assertEquals(setOf(BackupPart.SUBJECTS), BackupPart.parse("SUBJECTS,FROM_A_NEWER_APP"))
+        assertEquals(null, BackupPart.parse(null))
+    }
+
+    @Test
+    fun manifestPartsSurviveJson() {
+        val m = BackupManifest(2, "1", 5, 1L, true, false, emptyMap(), emptyList(), listOf(ManifestPart("NOTES", 3, 0, 120L)))
+        assertEquals(m.parts, BackupManifestJson.read(BackupManifestJson.write(m)).parts)
+        val old = BackupManifest(1, "1", 3, 1L, true, false, emptyMap(), emptyList())
+        assertEquals(emptyList<ManifestPart>(), BackupManifestJson.read(BackupManifestJson.write(old)).parts)
+    }
 }

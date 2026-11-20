@@ -1,6 +1,10 @@
 package skywa1ker404.absencium.ui.settings
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import skywa1ker404.absencium.data.backup.BackupPart
 import skywa1ker404.absencium.ui.components.AppSwitch
+import skywa1ker404.absencium.ui.components.ExpressiveChip
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -56,14 +60,15 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
     val storage by storageViewModel.state.collectAsStateWithLifecycle()
     var confirmRestore by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
-    var includeFiles by remember { mutableStateOf(true) }
+    var chosen by remember { mutableStateOf<Set<skywa1ker404.absencium.data.backup.BackupPart>?>(null) }
+    val selection = chosen ?: settings.backupParts
     var restorePassword by remember { mutableStateOf("") }
 
     val encrypted = password.isNotEmpty()
     val backupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream"),
     ) { uri ->
-        if (uri != null) storageViewModel.backupTo(uri, password, includeFiles)
+        if (uri != null) storageViewModel.backupTo(uri, password, selection)
     }
     val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) storageViewModel.restoreFrom(uri)
@@ -72,12 +77,58 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
     ScreenScaffold(title = "Storage & Data", onBack = { navigator.navigateUp() }, largeTitle = true) {
         StorageLocationSection(storageViewModel)
 
+        SectionTitle("Choose what to back up")
+        AppCard(modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    "Everything" to BackupPart.everything,
+                    "Light, no media" to BackupPart.lightWithoutMedia,
+                    "Data only" to BackupPart.dataOnly,
+                    "My choice" to settings.backupParts,
+                ).forEach { (label, set) ->
+                    ExpressiveChip(selected = selection == set, onClick = { chosen = set }, label = { Text(label) })
+                }
+            }
+            val estimates = storage.parts.associateBy { it.part }
+            val context = androidx.compose.ui.platform.LocalContext.current
+            BackupPart.entries.forEach { part ->
+                val estimate = estimates[part]
+                Row(
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(part.title, style = MaterialTheme.typography.bodyMedium)
+                        val detail = buildList {
+                            if (estimate != null && part.tables.isNotEmpty()) {
+                                add("${estimate.rows} " + if (estimate.rows == 1) "item" else "items")
+                                if (part.hasFiles) add("${estimate.files} " + if (estimate.files == 1) "file" else "files")
+                                add("about " + android.text.format.Formatter.formatShortFileSize(context, estimate.bytes))
+                            }
+                            if (part.needs.isNotEmpty()) add("needs " + part.needs.joinToString { it.title })
+                        }.joinToString(" · ")
+                        if (detail.isNotEmpty()) Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    AppSwitch(
+                        checked = part in selection,
+                        onCheckedChange = { on -> chosen = if (on) BackupPart.withNeeds(selection + part) else BackupPart.without(selection, part) },
+                    )
+                }
+            }
+            val total = storage.parts.filter { it.part in selection }.sumOf { it.bytes }
+            Text(
+                text = "${selection.size} of ${BackupPart.entries.size} parts, about " + android.text.format.Formatter.formatShortFileSize(context, total) +
+                    " before compression. Switching a part on also switches on what it needs; switching one off also switches off what needs it.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
         SectionTitle("Backup and restore")
         AppCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Back up everything", style = MaterialTheme.typography.titleMedium)
+            Text("Back up", style = MaterialTheme.typography.titleMedium)
             Text(
-                text = "One file with your database (subjects, attendance, exams, notes, timetable), your settings and, if you " +
-                    "like, the photos, documents and recordings of your entries. Note files in your notes folder are not inside it. " +
+                text = "One file with the parts you chose above. Note files in your notes folder are not inside it. " +
                     "The AI key is never included.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -87,13 +138,6 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp),
             )
-            Row(
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            ) {
-                Text("Include photos, documents and recordings", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                AppSwitch(checked = includeFiles, onCheckedChange = { includeFiles = it })
-            }
             AppTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -126,39 +170,6 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                 )
             }
         }
-        if (storage.parts.isNotEmpty()) {
-            SectionTitle("What a backup holds")
-            AppCard(modifier = Modifier.fillMaxWidth()) {
-                storage.parts.forEach { estimate ->
-                    Row(
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(estimate.part.title, style = MaterialTheme.typography.bodyMedium)
-                            val needs = estimate.part.needs.joinToString { it.title }
-                            val detail = buildList {
-                                add("${estimate.rows} " + if (estimate.rows == 1) "item" else "items")
-                                if (estimate.part.hasFiles) add("${estimate.files} " + if (estimate.files == 1) "file" else "files")
-                                if (needs.isNotEmpty()) add("needs $needs")
-                            }.joinToString(" · ")
-                            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Text(
-                            "about " + android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, estimate.bytes),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                Text(
-                    text = "Today a backup holds all of these. Sizes are approximate and before compression. Choosing what to leave out comes in the next update.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
-        }
         val message = storage.message
         if (message != null) MessageCard(message)
         val preview = storage.preview
@@ -171,6 +182,12 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                         text = buildString {
                             if (preview.createdAt > 0L) append("Made ${whenText(preview.createdAt)}. ")
                             if (counts.isNotEmpty()) append("Contains $counts. ")
+                            preview.parts?.let { held ->
+                                val all = BackupPart.entries
+                                append("Holds ${held.size} of ${all.size} parts. ")
+                                val missing = all.filter { it !in held }
+                                if (missing.isNotEmpty()) append("Not in this file: ${missing.joinToString { it.title }}; they will be empty after this restore. ")
+                            }
                             append(if (preview.includesAttachments) "Includes ${preview.attachmentFiles} files." else "Database and settings only; your current photos and files are kept.")
                         },
                         style = MaterialTheme.typography.bodySmall,
