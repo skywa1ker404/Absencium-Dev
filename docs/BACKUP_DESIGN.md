@@ -102,3 +102,10 @@ Each phase ends with Gradle verified, the doc rows updated and the run id record
 
 - Notes carry `deleted_at` (the Trash): trashed notes are a part of Notes, backed up and restored with their flag, so a restore never revives a trashed note.
 - `Notes_Table`, `Guides_Table` and `Attachments_Table` have a `uuid`, which is what makes Merge possible; tables without one (`Attendance_Table`, `Exams_Table`, and so on) are merged by their natural key (subject and date) or, when none exists, only in Replace mode. Phase 4 lists them exactly once the schema is read table by table.
+
+## 11. Merge as built (phase 4)
+
+- Matched by `uuid`: Subjects (also by name), Attendance, Holidays, Exams, Timetable, Notes, Attachments, Documents, Syllabus. Newer `updated_at` wins, ties keep the phone's.
+- No uuid (added unless an identical row exists): Audio memos, Recall quiz and attempts, AI history, Note versions, Flashcards, Study goals, Events, Stats, Momentum.
+- Links rewritten: `subject_id`, `note_id`, `parent_id`, `syllabus_node_id`, `question_id` (a unit test fails if a new link column appears). Parts not merged still resolve their links by matching rows already on the phone.
+- Settings are never merged. Everything runs in one transaction followed by a foreign key check.
