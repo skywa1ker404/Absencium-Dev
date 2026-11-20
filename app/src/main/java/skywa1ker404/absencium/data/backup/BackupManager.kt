@@ -20,6 +20,8 @@ import java.util.zip.ZipOutputStream
 data class BackupSummary(
     /** The parts the backup holds; null for a format 1 file, which always held everything. */
     val parts: Set<BackupPart>? = null,
+    /** Only some parts can be restored: a format 2 file made by the same database version as this app. */
+    val partRestorePossible: Boolean = false,
     val createdAt: Long,
     val appVersion: String,
     val schemaVersion: Int,
@@ -270,6 +272,7 @@ class BackupManager(context: Context) {
                 parts = manifest.parts.takeIf { it.isNotEmpty() }?.let { list ->
                     BackupPart.entries.filter { p -> list.any { it.id == p.name } }.toSet()
                 },
+                partRestorePossible = manifest.parts.isNotEmpty() && manifest.schemaVersion == currentVersion,
                 counts = manifest.counts,
                 attachmentFiles = manifest.files.count { it.path.startsWith(ManifestRules.ATTACHMENTS_DIR) },
                 sameAsCurrent = sameAsCurrent,
@@ -311,11 +314,37 @@ class BackupManager(context: Context) {
 
     fun hasStagedRestore(): Boolean = stagedRestoreFile().exists()
 
+    /**
+     * Records which parts of the staged backup to restore. Those parts are replaced and everything else on the phone is kept.
+     * Choosing every part, or a file that cannot restore in part, means a whole restore as before. Settings are dropped when
+     * that part is not chosen.
+     */
+    fun chooseStagedParts(parts: Set<BackupPart>?) {
+        val file = File(appContext.filesDir, PARTS_FILE)
+        val chosen = parts?.let { BackupPart.withNeeds(it) }
+        if (chosen == null || chosen.size == BackupPart.entries.size) {
+            file.delete()
+            return
+        }
+        file.writeText(BackupPart.format(chosen))
+        if (BackupPart.SETTINGS !in chosen) File(appContext.filesDir, SETTINGS_RESTORE).delete()
+    }
+
+    /** What the last start did with a restore in part, once, or null. */
+    fun takeRestoreResult(): String? {
+        val file = File(appContext.filesDir, RESULT_FILE)
+        if (!file.exists()) return null
+        val text = runCatching { file.readText() }.getOrNull()
+        file.delete()
+        return text
+    }
+
     /** Drops a staged restore that the user decided not to apply. */
     fun cancelStagedRestore() {
         stagedRestoreFile().delete()
         File(appContext.filesDir, ATTACHMENTS_RESTORE).deleteRecursively()
         File(appContext.filesDir, SETTINGS_RESTORE).delete()
+        File(appContext.filesDir, PARTS_FILE).delete()
     }
 
     // ------------------------------------------------------------------------------------------
@@ -502,6 +531,8 @@ class BackupManager(context: Context) {
         private const val STAGING_DIR = "restore_staging"
         private const val ATTACHMENTS_RESTORE = "vault_attachments.restore"
         private const val SETTINGS_RESTORE = "settings.restore"
+        private const val PARTS_FILE = "restore_parts.txt"
+        private const val RESULT_FILE = "restore_result.txt"
         private const val ATTACHMENTS_BAK = "vault_attachments.bak"
         private const val MAX_SMALL_ENTRY = 1024 * 1024
         private const val MIN_FREE_BYTES = 32L * 1024 * 1024
@@ -537,10 +568,24 @@ class BackupManager(context: Context) {
                     staged.delete()
                     attachmentsStaged.deleteRecursively()
                     File(app.filesDir, SETTINGS_RESTORE).delete()
+                    File(app.filesDir, PARTS_FILE).delete()
                     marker.delete()
                     return
                 }
                 if (!staged.exists()) return
+                val partsFile = File(app.filesDir, PARTS_FILE)
+                if (partsFile.exists()) {
+                    marker.createNewFile()
+                    if (dbFile.exists()) dbFile.copyTo(bak, overwrite = true)
+                    val chosen = BackupPart.parse(runCatching { partsFile.readText() }.getOrNull()).orEmpty()
+                    val note = restoreParts(app, dbFile, staged, attachmentsStaged, attachments, chosen)
+                    File(app.filesDir, RESULT_FILE).writeText(note)
+                    partsFile.delete()
+                    staged.delete()
+                    attachmentsStaged.deleteRecursively()
+                    marker.delete()
+                    return
+                }
                 marker.createNewFile()
                 if (dbFile.exists()) dbFile.copyTo(bak, overwrite = true)
                 deleteDatabaseFiles(dbFile)
@@ -561,6 +606,105 @@ class BackupManager(context: Context) {
             } catch (e: Exception) {
                 DebugLogger.e(TAG, "Applying the staged restore failed", e)
             }
+        }
+
+        /**
+         * Replaces the chosen parts of the live database with those of the staged backup, in one transaction: the parts' rows
+         * are deleted and the backup's rows inserted, then the foreign keys are checked, and any problem rolls everything back.
+         * Both files have the same schema (checked at staging). Returns the sentence shown to the owner.
+         */
+        private fun restoreParts(app: Context, dbFile: File, staged: File, stagedFiles: File, filesDir: File, chosen: Set<BackupPart>): String {
+            if (chosen.isEmpty()) return "Nothing was restored: no part was chosen."
+            val src = SQLiteDatabase.openDatabase(staged.path, null, SQLiteDatabase.OPEN_READONLY)
+            val dst = SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READWRITE)
+            try {
+                dst.setForeignKeyConstraintsEnabled(false)
+                var rows = 0
+                dst.beginTransaction()
+                try {
+                    val parts = BackupPart.entries.filter { it in chosen }
+                    val present = parts.flatMap { it.tables }.filter { tableColumns(src, it).isNotEmpty() }.toSet()
+                    parts.asReversed().forEach { p -> p.tables.filter { it in present }.forEach { dst.execSQL("DELETE FROM $it") } }
+                    parts.forEach { p -> p.tables.filter { it in present }.forEach { rows += copyRows(src, dst, it) } }
+                    if (BackupPart.NOTE_FILES in chosen) {
+                        dst.rawQuery("SELECT id, file_path FROM Attachments_Table", null).use { c ->
+                            val fix = mutableListOf<Pair<Long, String>>()
+                            while (c.moveToNext()) fix += c.getLong(0) to c.getString(1)
+                            for ((id, path) in fix) {
+                                val leaf = path.substringAfterLast('/').substringAfterLast('\\')
+                                dst.execSQL("UPDATE Attachments_Table SET file_path = ? WHERE id = ?", arrayOf<Any>(File(filesDir, leaf).absolutePath, id))
+                            }
+                        }
+                    }
+                    val broken = dst.rawQuery("PRAGMA foreign_key_check", null).use { if (it.moveToFirst()) it.getString(0) else null }
+                    if (broken != null) {
+                        throw IllegalStateException("rows in $broken point to data that is not on this phone; switch on the parts they need")
+                    }
+                    dst.setTransactionSuccessful()
+                } finally {
+                    dst.endTransaction()
+                }
+                var files = 0
+                if (stagedFiles.exists()) {
+                    filesDir.mkdirs()
+                    chosen.filter { it.hasFiles }.forEach { part ->
+                        val column = if (part == BackupPart.DOCUMENTS) "local_uri" else "file_path"
+                        dst.rawQuery("SELECT $column FROM ${part.tables.first()}", null).use { c ->
+                            while (c.moveToNext()) {
+                                val leaf = c.getString(0)?.substringAfterLast('/')?.substringAfterLast('\\') ?: continue
+                                val from = File(stagedFiles, leaf)
+                                if (from.isFile) {
+                                    from.copyTo(File(filesDir, leaf), overwrite = true)
+                                    files++
+                                }
+                            }
+                        }
+                    }
+                }
+                DebugLogger.i(TAG, "Restored ${chosen.size} parts ($rows rows, $files files) from the backup")
+                return "Restored ${chosen.size} parts from the backup ($rows items, $files files). Everything else was kept."
+            } catch (e: Exception) {
+                DebugLogger.e(TAG, "Restoring parts failed; nothing was changed", e)
+                return "The restore was not applied and nothing was changed: ${e.message ?: e.javaClass.simpleName}."
+            } finally {
+                src.close()
+                dst.close()
+            }
+        }
+
+        private fun tableColumns(db: SQLiteDatabase, table: String): List<String> =
+            db.rawQuery("PRAGMA table_info($table)", null).use { c ->
+                buildList { while (c.moveToNext()) add(c.getString(c.getColumnIndexOrThrow("name"))) }
+            }
+
+        private fun copyRows(src: SQLiteDatabase, dst: SQLiteDatabase, table: String): Int {
+            val sourceColumns = tableColumns(src, table).toSet()
+            val columns = tableColumns(dst, table).filter { it in sourceColumns }
+            if (columns.isEmpty()) return 0
+            val quoted = columns.joinToString(",") { "\"$it\"" }
+            val statement = dst.compileStatement("INSERT INTO $table ($quoted) VALUES (${columns.joinToString(",") { "?" }})")
+            var count = 0
+            try {
+                src.rawQuery("SELECT $quoted FROM $table", null).use { c ->
+                    while (c.moveToNext()) {
+                        statement.clearBindings()
+                        for (i in columns.indices) {
+                            when (c.getType(i)) {
+                                android.database.Cursor.FIELD_TYPE_NULL -> statement.bindNull(i + 1)
+                                android.database.Cursor.FIELD_TYPE_INTEGER -> statement.bindLong(i + 1, c.getLong(i))
+                                android.database.Cursor.FIELD_TYPE_FLOAT -> statement.bindDouble(i + 1, c.getDouble(i))
+                                android.database.Cursor.FIELD_TYPE_BLOB -> statement.bindBlob(i + 1, c.getBlob(i))
+                                else -> statement.bindString(i + 1, c.getString(i))
+                            }
+                        }
+                        statement.executeInsert()
+                        count++
+                    }
+                }
+            } finally {
+                statement.close()
+            }
+            return count
         }
 
         private fun deleteDatabaseFiles(dbFile: File) {

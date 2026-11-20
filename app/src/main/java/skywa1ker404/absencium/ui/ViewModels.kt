@@ -67,6 +67,15 @@ class StorageViewModel(private val container: AppContainer) : ViewModel() {
 
     init {
         refresh()
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { backups.takeRestoreResult() }
+            if (result != null) _state.update { it.copy(message = result) }
+        }
+    }
+
+    /** Records the parts to restore before the app restarts; null restores the whole file. */
+    fun chooseRestoreParts(parts: Set<skywa1ker404.absencium.data.backup.BackupPart>?) {
+        backups.chooseStagedParts(parts)
     }
 
     fun refresh() {

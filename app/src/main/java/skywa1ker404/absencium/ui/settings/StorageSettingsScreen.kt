@@ -186,15 +186,45 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                                 val all = BackupPart.entries
                                 append("Holds ${held.size} of ${all.size} parts. ")
                                 val missing = all.filter { it !in held }
-                                if (missing.isNotEmpty()) append("Not in this file: ${missing.joinToString { it.title }}; they will be empty after this restore. ")
+                                if (missing.isNotEmpty()) {
+                                    append("Not in this file: ${missing.joinToString { it.title }}; ")
+                                    append(if (preview.partRestorePossible) "they stay as they are on this phone. " else "they will be empty after this restore. ")
+                                }
                             }
                             append(if (preview.includesAttachments) "Includes ${preview.attachmentFiles} files." else "Database and settings only; your current photos and files are kept.")
                         },
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+                var restoreChosen by remember(preview) { mutableStateOf<Set<BackupPart>?>(null) }
+                val held = preview?.parts.orEmpty()
+                val partMode = preview?.partRestorePossible == true && held.isNotEmpty()
+                val restoreSelection = restoreChosen ?: held
+                if (partMode) {
+                    Text("Choose what to restore", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                    Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ExpressiveChip(selected = restoreSelection == held, onClick = { restoreChosen = held }, label = { Text("All in the file") })
+                        val dataOnly = BackupPart.dataOnly.filter { it in held }.toSet()
+                        ExpressiveChip(selected = restoreSelection == dataOnly, onClick = { restoreChosen = dataOnly }, label = { Text("Data only") })
+                    }
+                    BackupPart.entries.filter { it in held }.forEach { part ->
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                            Text(part.title, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            AppSwitch(
+                                checked = part in restoreSelection,
+                                onCheckedChange = { on ->
+                                    restoreChosen = if (on) BackupPart.withNeeds(restoreSelection + part) else BackupPart.without(restoreSelection, part)
+                                },
+                            )
+                        }
+                    }
+                }
                 Text(
-                    text = "Restart to apply. This replaces your current data with the backup; one safety copy is kept. Discard to keep what you have.",
+                    text = if (partMode) {
+                        "Restart to apply. The parts you chose replace the same parts on this phone; everything else stays. One safety copy is kept. Discard to keep what you have."
+                    } else {
+                        "Restart to apply. This replaces your current data with the backup; one safety copy is kept. Discard to keep what you have."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp),
                 )
@@ -202,7 +232,9 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
                     PillButton(
                         text = "Restart app",
+                        enabled = !partMode || restoreSelection.isNotEmpty(),
                         onClick = {
+                            storageViewModel.chooseRestoreParts(if (partMode) restoreSelection else null)
                             DebugLogger.i("Backup", "Restarting the app so the staged restore can be applied")
                             val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
                             if (launch != null) {
