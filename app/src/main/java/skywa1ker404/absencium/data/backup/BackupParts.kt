@@ -28,12 +28,21 @@ enum class BackupPart(
     DOCUMENTS("Documents (Vault)", listOf("Guides_Table"), setOf(SUBJECTS), hasFiles = true),
     RECORDINGS("Recordings", listOf("Audio_Memos_Table"), setOf(NOTES), hasFiles = true),
     RECALL("Recall and quizzes", listOf("Recall_Quiz_Table", "Recall_Attempts_Table"), setOf(NOTES)),
-    AI_HISTORY("AI action history", listOf("AI_History_Table"), setOf(NOTES));
+    AI_HISTORY("AI action history", listOf("AI_History_Table"), setOf(NOTES)),
+
+    // The AI chat lives in its own database and files; it travels as one archive made by the AI hub (hub/ai.zip), so these have no tables here.
+    AI_CHATS("AI chats and workspaces", emptyList()),
+    AI_SETTINGS("AI settings, assistants and providers", emptyList()),
+    AI_KEYS("AI keys (only in a password-protected file)", emptyList(), setOf(AI_SETTINGS));
+
+    /** Part of the AI hub's archive rather than of the app's database. */
+    val isAi: Boolean get() = this == AI_CHATS || this == AI_SETTINGS || this == AI_KEYS
 
     companion object {
         /** The three ready-made choices; "My choice" is the last set the owner saved, kept in the settings. */
-        val everything: Set<BackupPart> get() = entries.toSet()
-        val lightWithoutMedia: Set<BackupPart> get() = entries.toSet() - setOf(NOTE_FILES, DOCUMENTS, RECORDINGS)
+        // Keys are never part of a preset: the owner switches them on, and only a password-protected file can hold them.
+        val everything: Set<BackupPart> get() = entries.toSet() - AI_KEYS
+        val lightWithoutMedia: Set<BackupPart> get() = everything - setOf(NOTE_FILES, DOCUMENTS, RECORDINGS, AI_CHATS)
         val dataOnly: Set<BackupPart> get() =
             setOf(SUBJECTS, TIMETABLE, ATTENDANCE, EXAMS, SYLLABUS, HOLIDAYS_EVENTS, NOTES)
 

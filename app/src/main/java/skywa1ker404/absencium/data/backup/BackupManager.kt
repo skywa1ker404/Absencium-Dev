@@ -62,8 +62,9 @@ class BackupManager(context: Context) {
      * [includeAttachments] adds the photos, documents and recordings of the vault.
      */
     fun export(out: OutputStream, password: CharArray?, selection: Set<BackupPart>, settingsJson: String): ExportResult {
-        val selected = BackupPart.withNeeds(selection)
-        val excluded = BackupPart.entries.filter { it !in selected }
+        // Keys only ever go into a password-protected file.
+        val selected = BackupPart.withNeeds(selection).let { if (password == null) it - BackupPart.AI_KEYS else it }
+        val excluded = BackupPart.entries.filter { it !in selected && !it.isAi }
         val includeAttachments = selected.any { it.hasFiles }
         val database = AbsenciumDatabase.get(appContext).openHelper.writableDatabase
         val counts = tableCounts(database, excluded.flatMap { it.tables }.toSet())
@@ -79,9 +80,19 @@ class BackupManager(context: Context) {
             val sealed: OutputStream = if (password != null) BackupCrypto.encrypt(out, password) else out
             val files = mutableListOf<ManifestFile>()
             var attachmentFiles = 0
+            var hubBytes = 0L
             ZipOutputStream(BufferedOutputStream(sealed)).use { zip ->
                 zip.setLevel(1)
                 files += zip.addEntry(ManifestRules.DATABASE, consistentCopy.inputStream())
+                hubContentFor(selected).takeIf { it.isNotEmpty() }?.let { content ->
+                    val archive = kotlinx.coroutines.runBlocking { me.rerere.rikkahub.AiApp.prepareHubBackup(appContext as android.app.Application, content) }
+                    try {
+                        files += archive.inputStream().use { zip.addEntry(ManifestRules.HUB_ARCHIVE, it) }
+                        hubBytes = archive.length()
+                    } finally {
+                        archive.delete()
+                    }
+                }
                 if (BackupPart.SETTINGS in selected) {
                     files += zip.addEntry(ManifestRules.SETTINGS, settingsJson.toByteArray(Charsets.UTF_8).inputStream())
                 }
@@ -103,7 +114,8 @@ class BackupManager(context: Context) {
                     encrypted = password != null,
                     counts = counts,
                     files = files,
-                    parts = partInfo,
+                    // The AI archive is one block: its real size goes on the first AI part, the others share it.
+                    parts = partInfo.map { if (it.id == BackupPart.AI_CHATS.name || (it.id == BackupPart.AI_SETTINGS.name && BackupPart.AI_CHATS !in selected)) it.copy(bytes = hubBytes) else if (BackupPart.valueOf(it.id).isAi) it.copy(bytes = 0L) else it },
                 )
                 zip.putNextEntry(ZipEntry(ManifestRules.MANIFEST))
                 zip.write(BackupManifestJson.write(manifest))
@@ -194,6 +206,7 @@ class BackupManager(context: Context) {
                         actual[name] = bytes.size.toLong() to ManifestRules.sha256Hex(bytes)
                     }
                     ManifestRules.DATABASE -> actual[name] = zip.copyHashed(stagedDb)
+                    ManifestRules.HUB_ARCHIVE -> actual[name] = zip.copyHashed(File(staging, "hub.zip"))
                     // Backups made before the versioned format held only the database, under this name.
                     LEGACY_DATABASE -> {
                         actual[ManifestRules.DATABASE] = zip.copyHashed(stagedDb)
@@ -261,6 +274,13 @@ class BackupManager(context: Context) {
             f.delete()
             settingsBytes?.let { f.writeBytes(it) }
         }
+        File(appContext.filesDir, HUB_RESTORE).let { f ->
+            f.delete()
+            val stagedHub = File(staging, "hub.zip")
+            if (stagedHub.isFile && !stagedHub.renameTo(f)) {
+                stagedHub.copyTo(f, overwrite = true)
+            }
+        }
         DebugLogger.i(TAG, "Restore staged (schema ${manifest.schemaVersion}, attachments=${manifest.includesAttachments}), applies on next app start")
         return StageResult.Ready(
             summary = BackupSummary(
@@ -322,6 +342,7 @@ class BackupManager(context: Context) {
     fun chooseStagedParts(parts: Set<BackupPart>?, merge: Boolean = false) {
         val file = File(appContext.filesDir, PARTS_FILE)
         val chosen = parts?.let { BackupPart.withNeeds(it) }
+        if (chosen != null && chosen.none { it.isAi }) File(appContext.filesDir, HUB_RESTORE).delete()
         if (chosen == null || (!merge && chosen.size == BackupPart.entries.size)) {
             file.delete()
             return
@@ -330,6 +351,15 @@ class BackupManager(context: Context) {
         val kept = if (merge) chosen - BackupPart.SETTINGS else chosen
         file.writeText((if (merge) "MERGE" else "REPLACE") + "\n" + BackupPart.format(kept))
         if (BackupPart.SETTINGS !in kept) File(appContext.filesDir, SETTINGS_RESTORE).delete()
+    }
+
+    /** The AI archive that came with a staged restore, or null. The AI hub restores it at start and the file is then removed. */
+    fun stagedHubArchive(): File? = File(appContext.filesDir, HUB_RESTORE).takeIf { it.isFile }
+
+    /** Adds a sentence to what the next look at Storage & Data shows about the restore. */
+    fun appendRestoreResult(note: String) {
+        val file = File(appContext.filesDir, RESULT_FILE)
+        file.writeText(listOfNotNull(runCatching { file.readText() }.getOrNull()?.takeIf { it.isNotBlank() }, note).joinToString(" "))
     }
 
     /** What the last start did with a restore in part, once, or null. */
@@ -347,6 +377,7 @@ class BackupManager(context: Context) {
         File(appContext.filesDir, ATTACHMENTS_RESTORE).deleteRecursively()
         File(appContext.filesDir, SETTINGS_RESTORE).delete()
         File(appContext.filesDir, PARTS_FILE).delete()
+        File(appContext.filesDir, HUB_RESTORE).delete()
     }
 
     // ------------------------------------------------------------------------------------------
@@ -387,6 +418,20 @@ class BackupManager(context: Context) {
             if (table in excludedTables) return@mapValues 0
             runCatching { db.query("SELECT COUNT(*) FROM $table").use { if (it.moveToFirst()) it.getInt(0) else 0 } }.getOrDefault(0)
         }
+    }
+
+    /** What the AI hub is asked to put in its archive for the chosen AI parts. */
+    private fun hubContentFor(selected: Set<BackupPart>): Set<me.rerere.rikkahub.data.sync.BackupContentOption> = buildSet {
+        if (BackupPart.AI_CHATS in selected) {
+            add(me.rerere.rikkahub.data.sync.BackupContentOption.CHATS)
+            add(me.rerere.rikkahub.data.sync.BackupContentOption.WORKSPACES)
+        }
+        if (BackupPart.AI_SETTINGS in selected) {
+            add(me.rerere.rikkahub.data.sync.BackupContentOption.CHARACTERS)
+            add(me.rerere.rikkahub.data.sync.BackupContentOption.PROVIDERS)
+            add(me.rerere.rikkahub.data.sync.BackupContentOption.SETTINGS)
+        }
+        if (BackupPart.AI_KEYS in selected) add(me.rerere.rikkahub.data.sync.BackupContentOption.API_KEYS)
     }
 
     /** Deletes the rows of the parts that are off from the backup copy (children first) and shrinks the file. */
@@ -431,7 +476,11 @@ class BackupManager(context: Context) {
      */
     fun estimateParts(): List<PartEstimate> {
         val db = AbsenciumDatabase.get(appContext).openHelper.readableDatabase
+        val (aiChats, aiSettings) = runCatching { me.rerere.rikkahub.AiApp.hubBackupSizes(appContext as android.app.Application) }.getOrDefault(0L to 0L)
         return BackupPart.entries.map { part ->
+            if (part.isAi) {
+                return@map PartEstimate(part, 0, 0, when (part) { BackupPart.AI_CHATS -> aiChats; BackupPart.AI_SETTINGS -> aiSettings; else -> 0L })
+            }
             var rows = 0
             var bytes = 0L
             part.tables.forEach { table ->
@@ -534,6 +583,7 @@ class BackupManager(context: Context) {
         private const val ATTACHMENTS_RESTORE = "vault_attachments.restore"
         private const val SETTINGS_RESTORE = "settings.restore"
         private const val PARTS_FILE = "restore_parts.txt"
+        private const val HUB_RESTORE = "hub_restore.zip"
         private const val RESULT_FILE = "restore_result.txt"
         private const val ATTACHMENTS_BAK = "vault_attachments.bak"
         private const val MAX_SMALL_ENTRY = 1024 * 1024

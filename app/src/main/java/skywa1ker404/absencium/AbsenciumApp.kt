@@ -62,6 +62,11 @@ class AbsenciumApp : Application() {
     /** Things that can wait for the database to be open: settings from a restore, the Trash clean-up. */
     private fun runStartupMaintenance() {
         try {
+            container.backupManager.stagedHubArchive()?.let { archive ->
+                val note = runBlocking { me.rerere.rikkahub.AiApp.restoreHubBackup(this@AbsenciumApp, archive) }
+                archive.delete()
+                container.backupManager.appendRestoreResult(note)
+            }
             container.backupManager.takeStagedSettings()?.let {
                 runBlocking { container.settingsRepository.importJson(it) }
             }

@@ -100,24 +100,31 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(part.title, style = MaterialTheme.typography.bodyMedium)
                         val detail = buildList {
-                            if (estimate != null && part.tables.isNotEmpty()) {
-                                add("${estimate.rows} " + if (estimate.rows == 1) "item" else "items")
-                                if (part.hasFiles) add("${estimate.files} " + if (estimate.files == 1) "file" else "files")
-                                add("about " + android.text.format.Formatter.formatShortFileSize(context, estimate.bytes))
+                            if (estimate != null) {
+                                if (part.tables.isNotEmpty()) {
+                                    add("${estimate.rows} " + if (estimate.rows == 1) "item" else "items")
+                                    if (part.hasFiles) add("${estimate.files} " + if (estimate.files == 1) "file" else "files")
+                                }
+                                if (part.tables.isNotEmpty() || estimate.bytes > 0) {
+                                    add("about " + android.text.format.Formatter.formatShortFileSize(context, estimate.bytes))
+                                }
                             }
                             if (part.needs.isNotEmpty()) add("needs " + part.needs.joinToString { it.title })
                         }.joinToString(" · ")
                         if (detail.isNotEmpty()) Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    // Keys are only ever written into a password-protected file.
+                    val keysLocked = part == BackupPart.AI_KEYS && password.isEmpty()
                     AppSwitch(
-                        checked = part in selection,
+                        checked = part in selection && !keysLocked,
+                        enabled = !keysLocked,
                         onCheckedChange = { on -> chosen = if (on) BackupPart.withNeeds(selection + part) else BackupPart.without(selection, part) },
                     )
                 }
             }
             val total = storage.parts.filter { it.part in selection }.sumOf { it.bytes }
             Text(
-                text = "${selection.size} of ${BackupPart.entries.size} parts, about " + android.text.format.Formatter.formatShortFileSize(context, total) +
+                text = "${selection.count { it != BackupPart.AI_KEYS || password.isNotEmpty() }} of ${BackupPart.entries.size} parts, about " + android.text.format.Formatter.formatShortFileSize(context, total) +
                     " before compression. Switching a part on also switches on what it needs; switching one off also switches off what needs it.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -129,7 +136,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
             Text("Back up", style = MaterialTheme.typography.titleMedium)
             Text(
                 text = "One file with the parts you chose above. Note files in your notes folder are not inside it. " +
-                    "The AI key is never included.",
+                    "AI keys go in only when you switch them on and have set a password above.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -209,7 +216,7 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                     }
                     Text(
                         text = if (mergeMode) {
-                            "Merge adds what is missing on this phone and keeps the newer version of what is on both. Nothing is deleted, and settings are not merged."
+                            "Merge adds what is missing on this phone and keeps the newer version of what is on both. Nothing is deleted, and settings are not merged. The AI parts are the exception: they are always restored whole, as saved."
                         } else {
                             "Replace swaps the chosen parts for the file's. Anything in them that is not in the file is lost."
                         },
@@ -228,7 +235,9 @@ fun StorageSettingsScreen(navigator: DestinationsNavigator) {
                             AppSwitch(
                                 checked = part in restoreSelection,
                                 onCheckedChange = { on ->
-                                    restoreChosen = if (on) BackupPart.withNeeds(restoreSelection + part) else BackupPart.without(restoreSelection, part)
+                                    // The AI parts come back as one block, as the AI hub saved them.
+                                    val group = if (part.isAi) held.filter { it.isAi }.toSet() else setOf(part)
+                                    restoreChosen = if (on) BackupPart.withNeeds(restoreSelection + group) else group.fold(restoreSelection) { acc, p -> BackupPart.without(acc, p) }
                                 },
                             )
                         }

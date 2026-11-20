@@ -158,12 +158,15 @@ fun SettingPage(
                 SettingsGroup(
                     title = stringResource(R.string.setting_page_data_settings)
                 ) {
-                    SettingGroupItem(
-                        title = stringResource(R.string.setting_page_data_backup),
-                        icon = { Icon(Icons.Rounded.CloudUpload, null, modifier = Modifier.size(20.dp)) },
-                        contentPadding = mainSettingItemPadding,
-                        onClick = { navController.navigate(Screen.Backup()) }
-                    )
+                    // Inside Absencium the chats and AI settings are part of the app's one backup (Settings > Storage & Data).
+                    if (me.rerere.rikkahub.AiHost.theme == null) {
+                        SettingGroupItem(
+                            title = stringResource(R.string.setting_page_data_backup),
+                            icon = { Icon(Icons.Rounded.CloudUpload, null, modifier = Modifier.size(20.dp)) },
+                            contentPadding = mainSettingItemPadding,
+                            onClick = { navController.navigate(Screen.Backup()) }
+                        )
+                    }
                     SettingGroupItem(
                         title = stringResource(R.string.setting_page_chat_storage),
                         icon = { Icon(Icons.Rounded.Storage, null, modifier = Modifier.size(20.dp)) },

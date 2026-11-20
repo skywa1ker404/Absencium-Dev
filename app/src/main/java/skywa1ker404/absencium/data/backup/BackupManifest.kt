@@ -38,9 +38,12 @@ object ManifestRules {
     const val DATABASE = "database/Absencium.db"
     const val ATTACHMENTS_DIR = "attachments/"
 
+    /** The AI hub's own archive of chats, settings and (in a sealed file only) keys. */
+    const val HUB_ARCHIVE = "hub/ai.zip"
+
     /** Entry names the reader will accept. Anything else is refused, so a crafted zip cannot reach outside the staging area. */
     fun isSafeEntryName(name: String): Boolean {
-        if (name == MANIFEST || name == SETTINGS || name == DATABASE) return true
+        if (name == MANIFEST || name == SETTINGS || name == DATABASE || name == HUB_ARCHIVE) return true
         if (!name.startsWith(ATTACHMENTS_DIR)) return false
         val leaf = name.removePrefix(ATTACHMENTS_DIR)
         return leaf.isNotEmpty() && leaf.length <= 200 &&

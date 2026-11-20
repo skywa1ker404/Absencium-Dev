@@ -99,6 +99,43 @@ object AiApp {
         return chats.size
     }
 
+    /**
+     * The chats, AI settings and keys as one archive (the hub's own backup format), for the host's one backup. [content] says what goes
+     * in; keys only when [BackupContentOption.API_KEYS] is in it. The caller deletes the file.
+     */
+    suspend fun prepareHubBackup(application: Application, content: Set<me.rerere.rikkahub.data.sync.BackupContentOption>): java.io.File {
+        start(application)
+        val config = get<SettingsStore>().settingsFlow.first().webDavConfig
+            .copy(items = me.rerere.rikkahub.data.datastore.WebDavConfig.BackupItem.entries)
+        return get<me.rerere.rikkahub.data.sync.WebdavSync>().prepareBackupFile(config, selectedContent = content)
+    }
+
+    /** Restores an archive made by [prepareHubBackup]; returns a sentence for the owner. Never throws. */
+    suspend fun restoreHubBackup(application: Application, file: java.io.File): String = try {
+        start(application)
+        val config = get<SettingsStore>().settingsFlow.first().webDavConfig
+        get<me.rerere.rikkahub.data.sync.WebdavSync>().restoreFromLocalFile(file, config)
+        "AI chats and settings restored from the backup."
+    } catch (e: Exception) {
+        "The AI part of the backup could not be restored: ${e.message ?: e.javaClass.simpleName}."
+    }
+
+    /** About how many bytes the AI chats and the AI settings would add to a backup (chats first); reads files only, starts nothing. */
+    fun hubBackupSizes(application: Application): Pair<Long, Long> {
+        fun dirSize(name: String): Long = me.rerere.rikkahub.data.sync.enumerateDirectoryEntries(
+            java.io.File(application.filesDir, name), name,
+            skip = { path, isDir ->
+                name == me.rerere.rikkahub.data.sync.BackupArchiveFormat.WORKSPACES_DIR &&
+                    me.rerere.rikkahub.data.sync.BackupArchiveFormat.isExcludedWorkspacePath(path, isDir)
+            },
+        ).filter { !it.isDirectory }.sumOf { it.source.length() }
+        val db = application.getDatabasePath(me.rerere.rikkahub.data.sync.BackupArchiveFormat.DB_ENTRY)
+        val chats = db.length() + java.io.File(db.path + "-wal").length() +
+            listOf("upload", "chat_files", "tool_outputs", "images", me.rerere.rikkahub.data.sync.BackupArchiveFormat.WORKSPACES_DIR).sumOf(::dirSize)
+        val settings = listOf("avatars", "assistant_backgrounds", "custom_icons", "custom_fonts").sumOf(::dirSize) + 64L * 1024
+        return chats to settings
+    }
+
     /** The chat's "tell me when an answer is ready" choice, for the host's one Notifications page. */
     fun chatNoticeFlow(application: Application): kotlinx.coroutines.flow.Flow<Boolean> {
         start(application)

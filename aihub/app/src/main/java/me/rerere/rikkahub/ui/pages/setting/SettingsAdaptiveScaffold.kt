@@ -322,7 +322,7 @@ private fun settingsPaneGroups(): List<SettingsPaneGroup> {
             entries = listOf(
                 SettingsPaneEntry(SettingsDestination.Backup, R.string.setting_page_data_backup, null, Icons.Rounded.CloudUpload, Screen.BackupWebDav, backupChildren),
                 SettingsPaneEntry(SettingsDestination.ChatStorage, R.string.setting_page_chat_storage, null, Icons.Rounded.Storage, Screen.SettingChatStorage),
-            )
+            ).filterNot { me.rerere.rikkahub.AiHost.theme != null && it.destination == SettingsDestination.Backup }
         ),
     )
 }
