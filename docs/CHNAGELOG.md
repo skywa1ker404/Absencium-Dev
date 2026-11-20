@@ -175,3 +175,4 @@ working on it
 - Added (branch Absencium-ai, CI green 44722985367, Batch 45): restore only some parts of a backup. The chosen parts replace the same parts on the phone and everything else stays; a problem rolls the restore back and says why.
 - Added (branch Absencium-ai, CI green 44735967611, Batch 45): Merge when restoring part of a backup. It adds what is missing, keeps the newer version of what is on both phones' copies, and never deletes.
 - Changed (branch Absencium-ai, CI green 44739914259, Batch 45): Absencium AI chats, settings and keys are now parts of the one backup in Storage & Data (keys only in a password-protected file); the separate backup page in the AI settings is hidden.
+- Docs (Batch 45): PRIVACY.md describes the choosable backup, what a file holds and when AI keys are included.

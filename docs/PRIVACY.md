@@ -9,14 +9,26 @@ Absencium is offline-first. It makes no network request unless the user turns on
 
 ## Backups
 
-A backup is one file: a zip with `database/Absencium.db`, optionally `attachments/*`, `settings.json` and a `manifest.json`
-written last, which lists every other entry with its size and SHA-256.
+A backup is one file: a zip with `database/Absencium.db`, optionally `attachments/*`, `settings.json`, `hub/ai.zip` and a
+`manifest.json` written last, which lists every other entry with its size and SHA-256 and (format 2) the parts the file holds.
 
-- **What is in it:** the database, the settings, and (if chosen) photos, documents and recordings of entries.
-- **What is not in it:** the AI API key (it lives in its own vault and never leaves it), "last backup" bookkeeping, and the
-  notes folder if the user keeps notes as files in a folder of their own.
+The owner chooses the parts on Storage & Data (presets: Everything, Light without media, Data only, My choice). A part that is
+off is not in the file at all: its rows are deleted from the backup copy (never from the live data) and the copy is shrunk, so
+nothing of it stays behind. The file's manifest lists exactly what it holds, and the restore page shows the same list.
+
+- **Parts:** profile and settings; subjects, timetable, attendance, exams, syllabus; holidays and events; flashcards; study goals;
+  study stats; notes (text) and their version history; note photos, files and sketches; documents; recordings; recall and
+  quizzes; AI action history; AI chats and workspaces; AI settings, assistants and providers; AI keys.
+- **AI parts:** the Absencium AI hub writes its own archive for these and it is stored inside the file as `hub/ai.zip`.
+  **AI API keys are written only when the owner switches them on and the file is password-protected;** they are never part of
+  a preset, and an unprotected backup never holds them.
+- **What is not in it:** "last backup" and "my choice" bookkeeping, the app's own AI key in its vault, and the notes folder if the
+  user keeps notes as files in a folder of their own.
 - **Settings include `ai_base_url`.** That is a server address the user typed and could identify a private server. A plain
   (unencrypted) backup therefore reveals it. Use a password if that matters.
+- **Restoring** can take the whole file or only chosen parts, as Replace (the chosen parts are swapped for the file's) or Merge
+  (rows missing on the phone are added, the newer version of a row on both is kept, nothing is deleted, settings are not
+  merged). A safety copy of the previous data is kept. Old (format 1) backups still restore, always whole.
 
 ### Password protection
 
