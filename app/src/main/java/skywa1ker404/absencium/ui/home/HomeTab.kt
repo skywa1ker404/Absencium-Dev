@@ -67,6 +67,7 @@ import skywa1ker404.absencium.ui.components.RingGauge
 import skywa1ker404.absencium.ui.components.TileGrid
 import skywa1ker404.absencium.ui.components.SectionTitle
 import skywa1ker404.absencium.ui.main.TabColumn
+import androidx.compose.ui.text.style.TextOverflow
 import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.math.cos
@@ -120,7 +121,7 @@ fun HomeTab(
             // Two weights, like the headings of the reference designs: the greeting quiet, the name strong.
             Text(
                 text = if (name.isEmpty()) greeting(now.hour) else "${greeting(now.hour)},",
-                style = MaterialTheme.typography.headlineLarge,
+                style = if (name.isEmpty()) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.titleLarge,
                 color = if (name.isEmpty()) colors.onSurface else colors.onSurfaceVariant,
             )
             if (name.isNotEmpty()) {
@@ -137,26 +138,34 @@ fun HomeTab(
             )
         }
 
-        // Adaptive: the emergency banner only appears when a High priority exam is 48 hours away or less.
-        cram.forEach { exam ->
+        // Adaptive: one emergency banner, only while a High priority exam is 48 hours away or less. It names the soonest exam and
+        // counts the others; the exam countdown below holds the full list, so nothing is shown twice.
+        cram.firstOrNull()?.let { exam ->
             val hours = Duration.between(now, exam.date.atStartOfDay()).toHours()
             AppCard(
                 modifier = Modifier.fillMaxWidth(),
                 container = colors.errorContainer,
                 onClick = { onOpenExam(exam) },
             ) {
-                Text("Exam coming up", style = MaterialTheme.typography.titleMedium, color = colors.onErrorContainer)
                 Text(
-                    text = "${exam.title} (${subjectNames[exam.subjectId] ?: "Unknown subject"}) " +
-                        if (hours <= 0) "is today." else "starts in about $hours hours.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = if (hours <= 0) "Exam today" else "Exam in about $hours hours",
+                    style = MaterialTheme.typography.titleMedium,
                     color = colors.onErrorContainer,
                 )
                 Text(
-                    text = "Tap for the exam details.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onErrorContainer.copy(alpha = 0.75f),
+                    text = subjectNames[exam.subjectId] ?: "Unknown subject",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onErrorContainer,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
+                if (cram.size > 1) {
+                    Text(
+                        text = "${cram.size - 1} more in the next 48 hours",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onErrorContainer.copy(alpha = 0.75f),
+                    )
+                }
             }
         }
 
@@ -260,19 +269,23 @@ fun HomeTab(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(modifier = Modifier.size(10.dp).clip(pillShape()).background(subjectColor(exam.subjectId)))
+                        // The subject is what you look for, so it leads; the exam's own name is the quiet line under it.
                         Text(
                             text = subjectNames[exam.subjectId] ?: "Unknown subject",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = onContainer.copy(alpha = 0.8f),
-                            maxLines = 1,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = onContainer,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
                     }
                     Text(
                         text = exam.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = onContainer,
-                        maxLines = 2,
-                        modifier = Modifier.padding(top = 6.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = onContainer.copy(alpha = 0.75f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                     Text(
                         text = daysLabel(today, exam.date),
@@ -282,9 +295,16 @@ fun HomeTab(
                         modifier = Modifier.padding(top = 14.dp),
                     )
                     Text(
-                        text = "${exam.date.pretty()} · ${exam.priority.label()} priority",
+                        text = exam.date.pretty(),
                         style = MaterialTheme.typography.labelSmall,
                         color = onContainer.copy(alpha = 0.75f),
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = "${exam.priority.label()} priority",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = onContainer.copy(alpha = 0.75f),
+                        maxLines = 1,
                     )
                 }
             }

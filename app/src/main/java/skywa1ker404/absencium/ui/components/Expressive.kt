@@ -57,7 +57,7 @@ fun ExpressiveChip(
     shape: Shape? = null,
 ) {
     val q = LocalQuality.current
-    val chipShape: Shape = shape ?: if (skywa1ker404.absencium.ui.theme.LocalAppStyle.current == skywa1ker404.absencium.data.settings.AppStyle.PIXELATED) skywa1ker404.absencium.ui.theme.PixelCornerShape(2f) else CircleShape
+    val chipShape: Shape = shape ?: if (skywa1ker404.absencium.ui.theme.LocalAppStyle.current == skywa1ker404.absencium.data.settings.AppStyle.PIXELATED) skywa1ker404.absencium.ui.theme.PixelCircleShape() else CircleShape
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(

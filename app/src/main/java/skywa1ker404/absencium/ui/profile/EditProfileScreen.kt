@@ -307,10 +307,10 @@ private fun PickerField(label: String, value: String, options: List<String>, onP
 fun AvatarPicture(fileName: String, initials: String, size: Int, modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape? = null) {
     val style = skywa1ker404.absencium.ui.theme.LocalAvatarStyle.current
     val appStyle = skywa1ker404.absencium.ui.theme.LocalAppStyle.current
-    // Pixelated: a squarish stair-step shape; Dot matrix: a full circle. The shape option only applies to the other styles.
+    // Pixelated: a circle made of square pixels; Dot matrix: a full circle. The shape option only applies to the other styles.
     val resolved = shape ?: when {
         appStyle == skywa1ker404.absencium.data.settings.AppStyle.PIXELATED ->
-            skywa1ker404.absencium.ui.theme.PixelCornerShape((size / 14f).coerceAtLeast(2f))
+            skywa1ker404.absencium.ui.theme.PixelCircleShape()
         appStyle == skywa1ker404.absencium.data.settings.AppStyle.DOT_MATRIX -> androidx.compose.foundation.shape.CircleShape
         else -> style.shape.toComposeShape()
     }

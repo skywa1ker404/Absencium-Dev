@@ -18,6 +18,10 @@ object HubStyle {
     @Volatile
     var pixelShape: ((Float, Dp, Dp, Dp, Dp) -> Shape)? = null
 
+    /** The host's circle made of square pixels. */
+    @Volatile
+    var pixelCircle: (() -> Shape)? = null
+
     /** The host's switch: checked, on change, modifier, enabled. Null means Material's own. */
     @Volatile
     var switch: (@Composable (Boolean, ((Boolean) -> Unit)?, Modifier, Boolean) -> Unit)? = null
@@ -46,12 +50,13 @@ private fun fixed(): Shape? = pixel(2f, 4.dp, 4.dp, 4.dp, 4.dp)
 
 /** The chat's rounded corners: Compose's own, or the stair-step corners while the host is in its Pixelated style. */
 fun RoundedCornerShape(size: Dp): Shape =
-    pixel(stepFor(size), corner(size), corner(size), corner(size), corner(size))
+    (if (size.value >= 48f && HubStyle.pixelated()) HubStyle.pixelCircle?.invoke() else null) ?: pixel(stepFor(size), corner(size), corner(size), corner(size), corner(size))
         ?: androidx.compose.foundation.shape.RoundedCornerShape(size)
 
 fun RoundedCornerShape(size: Float): Shape = fixed() ?: androidx.compose.foundation.shape.RoundedCornerShape(size)
 
-fun RoundedCornerShape(percent: Int): Shape = fixed() ?: androidx.compose.foundation.shape.RoundedCornerShape(percent)
+fun RoundedCornerShape(percent: Int): Shape =
+    (if (percent >= 50 && HubStyle.pixelated()) HubStyle.pixelCircle?.invoke() else null) ?: fixed() ?: androidx.compose.foundation.shape.RoundedCornerShape(percent)
 
 fun RoundedCornerShape(topStart: Dp = 0.dp, topEnd: Dp = 0.dp, bottomEnd: Dp = 0.dp, bottomStart: Dp = 0.dp): Shape {
     val biggest = maxOf(topStart.value, topEnd.value, bottomEnd.value, bottomStart.value).dp
@@ -61,4 +66,4 @@ fun RoundedCornerShape(topStart: Dp = 0.dp, topEnd: Dp = 0.dp, bottomEnd: Dp = 0
 
 /** The chat's circle: a true circle, or the stair-step block while the host is in its Pixelated style. */
 val CircleShape: Shape
-    get() = fixed() ?: androidx.compose.foundation.shape.CircleShape
+    get() = (if (HubStyle.pixelated()) HubStyle.pixelCircle?.invoke() else null) ?: androidx.compose.foundation.shape.CircleShape

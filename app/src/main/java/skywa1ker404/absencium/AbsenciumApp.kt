@@ -91,6 +91,7 @@ class AbsenciumApp : Application() {
     private fun installChatHost() {
         // The chat's corners follow the app's Pixelated style: its shape tokens ask these two.
         me.rerere.rikkahub.ui.theme.HubStyle.pixelated = { skywa1ker404.absencium.ui.theme.StyleFlags.pixelated }
+        me.rerere.rikkahub.ui.theme.HubStyle.pixelCircle = { skywa1ker404.absencium.ui.theme.PixelCircleShape() }
         me.rerere.rikkahub.ui.theme.HubStyle.pixelShape = { step, topStart, topEnd, bottomEnd, bottomStart ->
             skywa1ker404.absencium.ui.theme.PixelCornerShape.of(step, topStart, topEnd, bottomEnd, bottomStart)
         }

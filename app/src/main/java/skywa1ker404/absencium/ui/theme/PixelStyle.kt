@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
@@ -18,6 +19,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 import skywa1ker404.absencium.data.settings.AppStyle
 
 /** The style the app is drawn in right now, so shared components can switch to their pixel look. */
@@ -71,13 +74,61 @@ class PixelCornerShape private constructor(
 }
 
 /**
+ * A circle (or, in a wide box, a pill) drawn in square pixels: the round ends are built from stair steps cut from a real circle, so a
+ * round button, an avatar or a dot still looks round in the Pixelated style, only made of blocks. The pixel size follows the shape:
+ * 1.5dp to 4dp, about an eighth of the radius.
+ */
+class PixelCircleShape : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val w = size.width
+        val h = size.height
+        val r = minOf(w, h) / 2f
+        if (r <= 0f) return Outline.Rectangle(Rect(0f, 0f, w, h))
+        val cells = (r / (r / 8f).coerceIn(1.5f * density.density, 4f * density.density)).roundToInt().coerceAtLeast(1)
+        val u = r / cells
+        // How far each row of the corner is cut in from the side, in whole pixels.
+        val x = FloatArray(cells) { i ->
+            val dy = r - (i + 0.5f) * u
+            val inset = r - sqrt((r * r - dy * dy).coerceAtLeast(0f))
+            (inset / u).roundToInt() * u
+        }
+        val n = cells
+        val path = Path().apply {
+            moveTo(x[0], 0f)
+            lineTo(w - x[0], 0f)
+            for (i in 0 until n) {
+                lineTo(w - x[i], (i + 1) * u)
+                if (i < n - 1) lineTo(w - x[i + 1], (i + 1) * u)
+            }
+            lineTo(w - x[n - 1], h - n * u)
+            for (j in n - 1 downTo 0) {
+                lineTo(w - x[j], h - j * u)
+                if (j > 0) lineTo(w - x[j - 1], h - j * u)
+            }
+            lineTo(x[0], h)
+            for (j in 0 until n) {
+                lineTo(x[j], h - (j + 1) * u)
+                if (j < n - 1) lineTo(x[j + 1], h - (j + 1) * u)
+            }
+            lineTo(x[n - 1], n * u)
+            for (j in n - 1 downTo 0) {
+                lineTo(x[j], j * u)
+                if (j > 0) lineTo(x[j - 1], j * u)
+            }
+            close()
+        }
+        return Outline.Generic(path)
+    }
+}
+
+/**
  * Draws the Pixelated button edge over the content: a dark outline that follows the stepped corners, a light line along the top and left,
  * and a darker band along the bottom and right, like the keys in the reference sheet.
  */
-fun Modifier.pixelBevel(outline: Color, stepDp: Float = 2f): Modifier = drawWithContent {
+fun Modifier.pixelBevel(outline: Color, stepDp: Float = 2f, circle: Boolean = false): Modifier = drawWithContent {
     drawContent()
     val u = stepDp.dp.toPx().coerceAtMost(minOf(size.width, size.height) / 6f)
-    val shape = PixelCornerShape(stepDp).createOutline(size, LayoutDirection.Ltr, this)
+    val shape = if (circle) PixelCircleShape().createOutline(size, LayoutDirection.Ltr, this) else PixelCornerShape(stepDp).createOutline(size, LayoutDirection.Ltr, this)
     val path = (shape as Outline.Generic).path
     clipPath(path) {
         drawRect(Color.White.copy(alpha = 0.30f), Offset(u, u), Size((size.width - 2 * u).coerceAtLeast(0f), u))
@@ -88,9 +139,9 @@ fun Modifier.pixelBevel(outline: Color, stepDp: Float = 2f): Modifier = drawWith
     }
 }
 
-/** The shape of pills, bars and round buttons: a circle, or the stair-step rectangle in the Pixelated style. */
+/** The shape of pills, bars and round buttons: a circle, or the same circle made of square pixels in the Pixelated style. */
 @Composable
-fun pillShape(): Shape = if (LocalAppStyle.current == AppStyle.PIXELATED) PixelCornerShape(2f) else CircleShape
+fun pillShape(): Shape = if (LocalAppStyle.current == AppStyle.PIXELATED) PixelCircleShape() else CircleShape
 
 /** [default] normally, or the stair-step rectangle in the Pixelated style (one step is [stepDp]). */
 @Composable

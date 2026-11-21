@@ -524,14 +524,14 @@ fun PillButton(
     val tint = if (tonal) colors.secondaryContainer else colors.primary
     val glassModifier = if (glass) Modifier.glassControl(pillShape(), tint, if (active) 0.78f else 0.3f) else Modifier
     val pixelStyle = LocalAppStyle.current == AppStyle.PIXELATED
-    val buttonShape: androidx.compose.ui.graphics.Shape = if (pixelStyle) PixelCornerShape(2f) else CircleShape
+    val buttonShape: androidx.compose.ui.graphics.Shape = if (pixelStyle) skywa1ker404.absencium.ui.theme.PixelCircleShape() else CircleShape
     val pillModifier = modifier
         .graphicsLayer {
             scaleX = scale
             scaleY = scale
         }
         .then(glassModifier)
-        .then(if (pixelStyle) Modifier.pixelBevel(colors.outline) else Modifier)
+        .then(if (pixelStyle) Modifier.pixelBevel(colors.outline, circle = true) else Modifier)
     val padding = if (compact) PaddingValues(horizontal = if (maxLines > 1) 12.dp else 16.dp, vertical = 10.dp) else PaddingValues(horizontal = 28.dp, vertical = 14.dp)
     val label: @Composable RowScope.() -> Unit = {
         if (loading) {
