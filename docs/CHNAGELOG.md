@@ -177,3 +177,6 @@ working on it
 - Changed (branch Absencium-ai, CI green 44739914259, Batch 45): Absencium AI chats, settings and keys are now parts of the one backup in Storage & Data (keys only in a password-protected file); the separate backup page in the AI settings is hidden.
 - Docs (Batch 45): PRIVACY.md describes the choosable backup, what a file holds and when AI keys are included.
 - Fixed (branch Absencium-ai, CI green 44854414076, Batch 45): in the Pixelated style round things are now circles made of square pixels (not squares); Home shows one exam banner instead of one per exam, exam tiles lead with the subject and no longer cut it off, and the greeting is smaller.
+
+## 2026-11-22 (development)
+- Fixed: circles and pills in the Pixelated style had rough, chunky edges; they are now made of finer pixels so they look smooth while still pixelated.
