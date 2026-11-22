@@ -149,6 +149,10 @@ fun pillShape(): Shape = if (LocalAppStyle.current == AppStyle.PIXELATED) PixelC
 @Composable
 fun Modifier.pillBackground(color: Color): Modifier = this.clip(pillShape()).background(color)
 
+/** The same with a [brush] (a gradient). */
+@Composable
+fun Modifier.pillBackground(brush: androidx.compose.ui.graphics.Brush): Modifier = this.clip(pillShape()).background(brush)
+
 /** [default] normally, or the stair-step rectangle in the Pixelated style (one step is [stepDp]). */
 @Composable
 fun pixelOr(default: Shape, stepDp: Float = 2f): Shape = if (LocalAppStyle.current == AppStyle.PIXELATED) PixelCornerShape(stepDp) else default
