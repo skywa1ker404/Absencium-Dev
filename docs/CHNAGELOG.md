@@ -181,3 +181,4 @@ working on it
 ## 2026-11-22 (development)
 - Fixed: circles and pills in the Pixelated style had rough, chunky edges; they are now made of finer pixels so they look smooth while still pixelated.
 - Changed (branch Absencium-ai, CI green 44983609146, Batch 45): the small pills on Home and Profile are now the same component as the stat pills, so every style (including Liquid Glass) reaches them the same way.
+- Fixed (branch Absencium-ai, CI green 44985457691, Batch 45): the Providers and keys bar in Absencium AI is now the same pill as the home screen's, in every style (it was a separate near-square bar in Pixelated).
