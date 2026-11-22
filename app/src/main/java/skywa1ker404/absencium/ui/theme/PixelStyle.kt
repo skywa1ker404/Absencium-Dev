@@ -76,7 +76,7 @@ class PixelCornerShape private constructor(
 /**
  * A circle (or, in a wide box, a pill) drawn in square pixels: the round ends are built from stair steps cut from a real circle, so a
  * round button, an avatar or a dot still looks round in the Pixelated style, only made of blocks. The pixel size follows the shape:
- * 1.5dp to 4dp, about an eighth of the radius.
+ * 1.25dp to 2dp (a sixteenth of the radius), fine enough that the edge reads as a smooth circle.
  */
 class PixelCircleShape : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
@@ -84,7 +84,7 @@ class PixelCircleShape : Shape {
         val h = size.height
         val r = minOf(w, h) / 2f
         if (r <= 0f) return Outline.Rectangle(Rect(0f, 0f, w, h))
-        val cells = (r / (r / 8f).coerceIn(1.5f * density.density, 4f * density.density)).roundToInt().coerceAtLeast(1)
+        val cells = (r / (r / 16f).coerceIn(1.25f * density.density, 2f * density.density)).roundToInt().coerceAtLeast(1)
         val u = r / cells
         // How far each row of the corner is cut in from the side, in whole pixels.
         val x = FloatArray(cells) { i ->
