@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import skywa1ker404.absencium.ui.theme.CircleShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,16 +38,24 @@ import kotlin.math.sin
 
 /** A small rounded label with a tonal fill, used for counts such as Present, Absent and Total. */
 @Composable
-fun StatPill(label: String, container: Color, content: Color, modifier: Modifier = Modifier) {
+fun StatPill(
+    label: String,
+    container: Color,
+    content: Color,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false,
+    onClick: (() -> Unit)? = null,
+) {
     Text(
         text = label,
-        style = MaterialTheme.typography.labelLarge,
+        style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelLarge,
         color = content,
         maxLines = 1,
         softWrap = false,
         modifier = modifier
             .glassControl(pillShape(), container, 0.62f)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+            .padding(horizontal = if (compact) 9.dp else 12.dp, vertical = if (compact) 4.dp else 7.dp),
     )
 }
 

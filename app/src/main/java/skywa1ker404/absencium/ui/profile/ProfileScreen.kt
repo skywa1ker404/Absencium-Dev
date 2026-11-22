@@ -244,17 +244,8 @@ private fun RoundIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, des
 /** A rounded line of detail under the name. */
 @Composable
 private fun InfoPill(text: String, onClick: (() -> Unit)? = null) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSecondaryContainer,
-        maxLines = 1,
-        modifier = Modifier
-            .clip(pillShape())
-            .background(MaterialTheme.colorScheme.secondaryContainer)
-            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-    )
+    val colors = MaterialTheme.colorScheme
+    skywa1ker404.absencium.ui.components.StatPill(text, colors.secondaryContainer, colors.onSecondaryContainer, onClick = onClick)
 }
 
 /** A section title with an arrow that opens the page it belongs to. */

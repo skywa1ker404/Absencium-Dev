@@ -424,16 +424,7 @@ private fun AttendanceCard(
 
 @Composable
 private fun CompactPill(label: String, container: androidx.compose.ui.graphics.Color, content: androidx.compose.ui.graphics.Color) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelSmall,
-        color = content,
-        maxLines = 1,
-        modifier = Modifier
-            .clip(pillShape())
-            .background(container)
-            .padding(horizontal = 9.dp, vertical = 4.dp),
-    )
+    skywa1ker404.absencium.ui.components.StatPill(label, container, content, compact = true)
 }
 
 private fun marginHeadline(margin: Margin): String =
