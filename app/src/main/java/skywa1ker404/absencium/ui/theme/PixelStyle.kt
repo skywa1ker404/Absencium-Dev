@@ -8,6 +8,8 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
@@ -142,6 +144,10 @@ fun Modifier.pixelBevel(outline: Color, stepDp: Float = 2f, circle: Boolean = fa
 /** The shape of pills, bars and round buttons: a circle, or the same circle made of square pixels in the Pixelated style. */
 @Composable
 fun pillShape(): Shape = if (LocalAppStyle.current == AppStyle.PIXELATED) PixelCircleShape() else CircleShape
+
+/** A pill-shaped coloured background: [pillShape] clip plus [color]. One place for every small pill and chip. */
+@Composable
+fun Modifier.pillBackground(color: Color): Modifier = this.clip(pillShape()).background(color)
 
 /** [default] normally, or the stair-step rectangle in the Pixelated style (one step is [stepDp]). */
 @Composable

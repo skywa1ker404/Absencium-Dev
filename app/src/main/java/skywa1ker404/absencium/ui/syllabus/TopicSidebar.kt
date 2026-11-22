@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.syllabus
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.components.floatingGlass
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
@@ -163,7 +164,7 @@ fun TopicSidebar(
                             title = row.node.title,
                             count = counts[row.node.id] ?: 0,
                             chosen = selectedId == row.node.id,
-                            leading = { Box(Modifier.size(10.dp).clip(pillShape()).background(hue.accent)) },
+                            leading = { Box(Modifier.size(10.dp).pillBackground(hue.accent)) },
                             expandable = row.hasChildren,
                             expanded = row.node.id in open,
                             strong = row.depth == 0,

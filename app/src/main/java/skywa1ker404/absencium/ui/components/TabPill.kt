@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.components
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -81,8 +82,7 @@ fun <T> TabPill(
                 .offset { IntOffset((position * tabWidthPx).roundToInt(), 0) }
                 .width(tabWidth)
                 .fillMaxHeight()
-                .clip(pillShape())
-                .background(colors.primaryContainer),
+                .pillBackground(colors.primaryContainer),
         )
         Row(modifier = Modifier.fillMaxSize()) {
             options.forEach { option ->

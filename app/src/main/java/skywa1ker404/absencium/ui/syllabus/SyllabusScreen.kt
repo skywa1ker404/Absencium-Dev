@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.syllabus
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.components.AppLinearWavy
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -399,8 +400,8 @@ private fun SyllabusRow(
             if (row.hasChildren) {
                 val shown by animateFloatAsState(progress, LocalQuality.current.spring(), label = "rowProgress")
                 Box(
-                    Modifier.padding(top = 5.dp).fillMaxWidth().height(4.dp).clip(pillShape()).background(hue.accent.copy(alpha = 0.18f)),
-                ) { Box(Modifier.fillMaxWidth(shown.coerceIn(0f, 1f)).height(4.dp).clip(pillShape()).background(hue.accent)) }
+                    Modifier.padding(top = 5.dp).fillMaxWidth().height(4.dp).pillBackground(hue.accent.copy(alpha = 0.18f)),
+                ) { Box(Modifier.fillMaxWidth(shown.coerceIn(0f, 1f)).height(4.dp).pillBackground(hue.accent)) }
             }
             node.details?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis, color = hue.onContainer.copy(alpha = 0.75f), modifier = Modifier.padding(top = 2.dp))
@@ -694,7 +695,7 @@ private fun ImportDialog(
 private fun PickedChip(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, onRemove: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
-        modifier = Modifier.fillMaxWidth().clip(pillShape()).background(colors.secondaryContainer).padding(start = 14.dp, end = 4.dp),
+        modifier = Modifier.fillMaxWidth().pillBackground(colors.secondaryContainer).padding(start = 14.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {

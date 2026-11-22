@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.vault
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import android.media.MediaPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -118,8 +119,7 @@ private fun BoxScope.CornerHandle(
             .align(position)
             .padding(4.dp)
             .size(26.dp)
-            .clip(pillShape())
-            .background(colors.primary)
+            .pillBackground(colors.primary)
             .border(2.dp, colors.surface, CircleShape)
             .semantics { contentDescription = "Drag to resize" }
             .pointerInput(rowWidth, centred) {
@@ -411,8 +411,7 @@ fun TableBlock(text: String, actions: TableActions, modifier: Modifier = Modifie
                     .align(Alignment.BottomEnd)
                     .padding(4.dp)
                     .size(28.dp)
-                    .clip(pillShape())
-                    .background(colors.primary)
+                    .pillBackground(colors.primary)
                     .border(2.dp, colors.surface, CircleShape)
                     .semantics { contentDescription = "Drag down to add rows, up to remove empty rows" }
                     .pointerInput(Unit) {

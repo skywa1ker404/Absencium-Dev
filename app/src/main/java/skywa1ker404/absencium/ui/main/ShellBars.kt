@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import skywa1ker404.absencium.ui.theme.CircleShape
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import androidx.compose.material3.Button
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.ButtonDefaults
@@ -207,7 +208,7 @@ fun BottomPill(
                     if (glass) {
                         Modifier.glassPuck(backdrop, pillShape(), isDarkSurface)
                     } else {
-                        Modifier.clip(pillShape()).background(colors.secondaryContainer)
+                        Modifier.pillBackground(colors.secondaryContainer)
                     },
                 ),
         )
@@ -493,7 +494,7 @@ private fun AnchoredTab(
         verticalArrangement = Arrangement.Center,
     ) {
         Box(
-            modifier = Modifier.width(highlightWidth).height(32.dp).clip(pillShape()).background(highlight),
+            modifier = Modifier.width(highlightWidth).height(32.dp).pillBackground(highlight),
             contentAlignment = Alignment.Center,
         ) {
             Icon(imageVector = tab.icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
@@ -641,7 +642,7 @@ fun ShellFabMenu(
                             if (backdrop != null) {
                                 Modifier.floatingGlass(backdrop, pillShape())
                             } else {
-                                Modifier.clip(pillShape()).background(colors.primaryContainer)
+                                Modifier.pillBackground(colors.primaryContainer)
                             },
                         )
                         .clickable(enabled = expanded) { action.onClick() }
@@ -670,7 +671,7 @@ fun ShellFabMenu(
                     if (backdrop != null) {
                         Modifier.floatingGlass(backdrop, pillShape())
                     } else {
-                        Modifier.clip(pillShape()).background(colors.primary)
+                        Modifier.pillBackground(colors.primary)
                     },
                 )
                 .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onToggle)
@@ -763,8 +764,7 @@ fun ShellTopBar(displayName: String, avatar: String, onProfile: () -> Unit, onSt
                     scaleX = toolsScale
                     scaleY = toolsScale
                 }
-                .clip(pillShape())
-                .background(colors.secondaryContainer)
+                .pillBackground(colors.secondaryContainer)
                 .clickable(interactionSource = toolsInteraction, indication = LocalIndication.current, onClick = onStudyTools)
                 .semantics { contentDescription = "Study Tools" },
             contentAlignment = Alignment.Center,
@@ -785,8 +785,7 @@ fun ShellTopBar(displayName: String, avatar: String, onProfile: () -> Unit, onSt
                     scaleX = scale
                     scaleY = scale
                 }
-                .clip(pillShape())
-                .background(colors.primaryContainer)
+                .pillBackground(colors.primaryContainer)
                 .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onProfile)
                 .semantics { contentDescription = "Profile" },
             contentAlignment = Alignment.Center,

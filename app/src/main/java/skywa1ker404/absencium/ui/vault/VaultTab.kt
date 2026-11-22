@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.vault
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
@@ -201,8 +202,7 @@ fun VaultTab(
                         scaleY = scaleX
                     }
                     .size(48.dp)
-                    .clip(pillShape())
-                    .background(if (reached) colors.primary else colors.surfaceContainerHighest),
+                    .pillBackground(if (reached) colors.primary else colors.surfaceContainerHighest),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -263,7 +263,7 @@ private fun FolderTile(
             contentAlignment = Alignment.Center,
         ) {
             Icon(AppIcons.Folder, contentDescription = null, tint = ink)
-            Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(10.dp).clip(pillShape()).background(dot))
+            Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(10.dp).pillBackground(dot))
         }
         Column(modifier = Modifier.align(Alignment.BottomStart)) {
             Text(name, style = MaterialTheme.typography.titleMedium, color = ink, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)

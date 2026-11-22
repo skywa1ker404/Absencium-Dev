@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.vault
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.background
@@ -113,8 +114,7 @@ fun BoxScope.DraftPullBadge(draftPull: DraftPull, topPadding: Dp = 0.dp) {
                 scaleY = scaleX
             }
             .size(48.dp)
-            .clip(pillShape())
-            .background(if (reached) colors.primary else colors.surfaceContainerHighest),
+            .pillBackground(if (reached) colors.primary else colors.surfaceContainerHighest),
         contentAlignment = Alignment.Center,
     ) {
         Icon(AppIcons.Draft, contentDescription = "Release to open Drafts", tint = if (reached) colors.onPrimary else colors.onSurface)

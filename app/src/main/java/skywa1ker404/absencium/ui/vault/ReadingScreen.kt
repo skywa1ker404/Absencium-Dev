@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.vault
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.components.AppLoading
 import skywa1ker404.absencium.ui.components.AppMenu
 import skywa1ker404.absencium.ui.components.AppMenuDivider
@@ -407,8 +408,7 @@ private fun ReadingBody(note: NoteEntity, viewModel: VaultViewModel, navigator: 
                         .align(Alignment.TopEnd)
                         .statusBarsPadding()
                         .padding(8.dp)
-                        .clip(pillShape())
-                        .background(colors.surfaceContainerHigh.copy(alpha = 0.8f))
+                        .pillBackground(colors.surfaceContainerHigh.copy(alpha = 0.8f))
                         .clickable { focus = false }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 )

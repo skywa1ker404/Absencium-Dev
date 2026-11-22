@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.home
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.mutableStateOf
@@ -235,8 +236,7 @@ fun HomeTab(
                     Box(
                         modifier = Modifier
                             .size(14.dp)
-                            .clip(pillShape())
-                            .background(subjectColor(lecture.subject.id)),
+                            .pillBackground(subjectColor(lecture.subject.id)),
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(lecture.subject.name, style = MaterialTheme.typography.titleLarge, color = colors.onSecondaryContainer)
@@ -268,7 +268,7 @@ fun HomeTab(
                     onClick = { onOpenExam(exam) },
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box(modifier = Modifier.size(10.dp).clip(pillShape()).background(subjectColor(exam.subjectId)))
+                        Box(modifier = Modifier.size(10.dp).pillBackground(subjectColor(exam.subjectId)))
                         // The subject is what you look for, so it leads; the exam's own name is the quiet line under it.
                         Text(
                             text = subjectNames[exam.subjectId] ?: "Unknown subject",
@@ -405,8 +405,7 @@ private fun AttendanceCard(
                 Box(
                     modifier = Modifier
                         .requiredSize(36.dp)
-                        .clip(pillShape())
-                        .background(onContainer.copy(alpha = 0.22f))
+                        .pillBackground(onContainer.copy(alpha = 0.22f))
                         .clickable(onClick = onToggleWatch),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -443,7 +442,7 @@ private fun WatchRow(item: SubjectAttendance, threshold: Int) {
     val margin = attendanceMargin(item.present, item.held, threshold)
     val percent = item.percent ?: 0.0
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(modifier = Modifier.size(12.dp).clip(pillShape()).background(subjectColor(item.subject.id)))
+        Box(modifier = Modifier.size(12.dp).pillBackground(subjectColor(item.subject.id)))
         Column(modifier = Modifier.weight(1f)) {
             Text(item.subject.name, style = MaterialTheme.typography.titleSmall)
             Text(
@@ -476,7 +475,7 @@ private fun QuickAction(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(
-            modifier = Modifier.size(64.dp).clip(pillShape()).background(hue.container.copy(alpha = 0.8f)),
+            modifier = Modifier.size(64.dp).pillBackground(hue.container.copy(alpha = 0.8f)),
             contentAlignment = Alignment.Center,
         ) { Icon(icon, contentDescription = null, tint = hue.onContainer, modifier = Modifier.size(28.dp)) }
         Text(label, style = MaterialTheme.typography.labelMedium, color = colors.onSurface)

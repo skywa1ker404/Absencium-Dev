@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.calendar
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.components.AppLinearProgress
 import skywa1ker404.absencium.ui.components.AppSwitch
 import skywa1ker404.absencium.ui.theme.LocalQuality
@@ -387,7 +388,7 @@ fun ExamDetailSheet(
                     color = colors.onSecondaryContainer,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.clip(pillShape()).background(colors.secondaryContainer).padding(horizontal = 12.dp, vertical = 5.dp),
+                    modifier = Modifier.pillBackground(colors.secondaryContainer).padding(horizontal = 12.dp, vertical = 5.dp),
                 )
             }
             // The countdown is the one thing worth reading at a glance.

@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.vault
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -112,7 +113,7 @@ internal fun Tool(
                 if (glass && backdrop != null) {
                     if (selected) Modifier.glassPuck(backdrop, pillShape(), isDark) else Modifier.clip(pillShape())
                 } else {
-                    Modifier.clip(pillShape()).background(fill)
+                    Modifier.pillBackground(fill)
                 },
             )
             .clickable(interactionSource = source, indication = LocalIndication.current, onClick = onClick)
@@ -212,8 +213,7 @@ fun TextPanel(
                                 Box(
                                     modifier = Modifier
                                         .size(30.dp)
-                                        .clip(pillShape())
-                                        .background(Color(0xFF000000.toInt() or rgb))
+                                        .pillBackground(Color(0xFF000000.toInt() or rgb))
                                         .clickable { onUse(); onColor(rgb) }
                                         .semantics { contentDescription = "Text colour" },
                                 )

@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.calendar
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.DropdownMenu
@@ -635,7 +636,7 @@ private fun DayPanel(
     exams.forEach { exam ->
         AppCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpenExam(exam) }) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(modifier = Modifier.size(14.dp).clip(pillShape()).background(subjectColor(exam.subjectId)))
+                Box(modifier = Modifier.size(14.dp).pillBackground(subjectColor(exam.subjectId)))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(exam.title, style = MaterialTheme.typography.titleMedium)
                     Text(
@@ -670,7 +671,7 @@ private fun DayPanel(
                 Box(
                     modifier = Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(colors.surface.copy(alpha = 0.9f)),
                     contentAlignment = Alignment.Center,
-                ) { Box(modifier = Modifier.size(16.dp).clip(pillShape()).background(subjectColor(lecture.subject.id))) }
+                ) { Box(modifier = Modifier.size(16.dp).pillBackground(subjectColor(lecture.subject.id))) }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(lecture.subject.name, style = MaterialTheme.typography.titleLarge, color = hue.onContainer, maxLines = 2)
                     val room = lecture.slot.roomNumber?.takeIf { it.isNotBlank() }
@@ -872,7 +873,7 @@ internal fun TodayCard(
                         absent.forEach { record ->
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    Box(modifier = Modifier.size(12.dp).clip(pillShape()).background(subjectColor(record.subjectId)))
+                                    Box(modifier = Modifier.size(12.dp).pillBackground(subjectColor(record.subjectId)))
                                     Text(
                                         text = subjectNames[record.subjectId] ?: "Unknown subject",
                                         style = MaterialTheme.typography.titleSmall,

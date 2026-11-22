@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.vault
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import android.graphics.pdf.PdfRenderer
@@ -240,7 +241,7 @@ fun ExtractRunningDialog(step: String, onCancel: () -> Unit) {
             ) {
                 skywa1ker404.absencium.ui.vault.entry.LoadingDots(step.ifBlank { "Working" }, modifier = Modifier.weight(1f))
                 Box(
-                    modifier = Modifier.size(44.dp).clip(pillShape()).background(colors.surfaceContainerHighest).clickable(onClick = onCancel).semantics { contentDescription = "Stop" },
+                    modifier = Modifier.size(44.dp).pillBackground(colors.surfaceContainerHighest).clickable(onClick = onCancel).semantics { contentDescription = "Stop" },
                     contentAlignment = Alignment.Center,
                 ) { Icon(AppIcons.Stop, contentDescription = null) }
             }
@@ -273,14 +274,13 @@ fun ExtractResultDialog(
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier.size(48.dp).clip(pillShape()).background(colors.surfaceContainerHighest).clickable(onClick = onDismiss).semantics { contentDescription = "Discard this text" },
+                        modifier = Modifier.size(48.dp).pillBackground(colors.surfaceContainerHighest).clickable(onClick = onDismiss).semantics { contentDescription = "Discard this text" },
                         contentAlignment = Alignment.Center,
                     ) { Icon(AppIcons.Delete, contentDescription = null) }
                     Row(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(pillShape())
-                            .background(colors.primary)
+                            .pillBackground(colors.primary)
                             .clickable(enabled = edited.isNotBlank()) { onAccept(edited.trim()) }
                             .padding(horizontal = 18.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
@@ -315,13 +315,13 @@ fun ExtractProblemDialog(message: String, setupMissing: Boolean, onOpenSettings:
                             "Open Settings",
                             style = MaterialTheme.typography.labelLarge,
                             color = colors.onPrimary,
-                            modifier = Modifier.clip(pillShape()).background(colors.primary).clickable { onDismiss(); onOpenSettings() }.padding(horizontal = 18.dp, vertical = 10.dp),
+                            modifier = Modifier.pillBackground(colors.primary).clickable { onDismiss(); onOpenSettings() }.padding(horizontal = 18.dp, vertical = 10.dp),
                         )
                     }
                     Text(
                         "Close",
                         style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.clip(pillShape()).background(colors.surfaceContainerHighest).clickable(onClick = onDismiss).padding(horizontal = 18.dp, vertical = 10.dp),
+                        modifier = Modifier.pillBackground(colors.surfaceContainerHighest).clickable(onClick = onDismiss).padding(horizontal = 18.dp, vertical = 10.dp),
                     )
                 }
             }

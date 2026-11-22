@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.vault.entry
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -122,8 +123,7 @@ fun PhotoThumb(
                     .align(Alignment.TopEnd)
                     .padding(5.dp)
                     .size(26.dp)
-                    .clip(pillShape())
-                    .background(Color.Black.copy(alpha = 0.62f))
+                    .pillBackground(Color.Black.copy(alpha = 0.62f))
                     .clickable(onClick = onRemove),
                 contentAlignment = Alignment.Center,
             ) {

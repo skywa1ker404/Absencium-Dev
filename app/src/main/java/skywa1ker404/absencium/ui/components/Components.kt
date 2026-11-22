@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.components
 
 import skywa1ker404.absencium.ui.theme.pillShape
+import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -624,8 +625,7 @@ fun StepIndicator(current: Int, total: Int, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .height(12.dp)
                     .width(barWidth)
-                    .clip(pillShape())
-                    .background(barColor),
+                    .pillBackground(barColor),
             )
         }
     }
