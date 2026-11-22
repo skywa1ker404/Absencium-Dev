@@ -43,7 +43,15 @@ fun AiProvidersBottomBar(
         modifier = modifier.fillMaxWidth().navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 16.dp),
     ) {
-        if (!useWideLayout) {
+        val hostPill = me.rerere.rikkahub.ui.theme.HubStyle.tabPill
+        if (!useWideLayout && hostPill != null) {
+            hostPill(
+                tabs.map { it.icon },
+                tabs.indexOfFirst { it.id == selectedId }.coerceAtLeast(0),
+                { i -> if (tabs[i].id != selectedId) { onHaptic(); onSelect(tabs[i].id) } },
+                Modifier.align(Alignment.BottomCenter),
+            )
+        } else if (!useWideLayout) {
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter),
                 shape = RoundedCornerShape(50),

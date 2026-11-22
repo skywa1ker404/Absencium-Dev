@@ -107,6 +107,16 @@ class AbsenciumApp : Application() {
             if (wavy) skywa1ker404.absencium.ui.components.AppLinearWavy(progress, modifier)
             else skywa1ker404.absencium.ui.components.AppLinearProgress(progress, modifier)
         }
+        me.rerere.rikkahub.ui.theme.HubStyle.tabPill = { icons, selected, onSelect, modifier ->
+            skywa1ker404.absencium.ui.main.BottomPill(
+                tabs = icons.map { skywa1ker404.absencium.ui.main.MainTab("", it) },
+                selectedIndex = selected,
+                compact = { true },
+                backdrop = skywa1ker404.absencium.ui.theme.LocalBackdrop.current,
+                onSelect = onSelect,
+                modifier = modifier,
+            )
+        }
         me.rerere.rikkahub.AiHost.theme = { content ->
             val settings by container.settingsState.collectAsStateWithLifecycle()
             settings?.let { loaded ->

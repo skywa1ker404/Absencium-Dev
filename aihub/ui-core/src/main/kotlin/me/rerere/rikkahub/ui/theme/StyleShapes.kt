@@ -37,6 +37,10 @@ object HubStyle {
     /** The host's bar: progress (null is indeterminate), modifier, wavy. */
     @Volatile
     var bar: (@Composable ((() -> Float)?, Modifier, Boolean) -> Unit)? = null
+
+    /** The host's bottom pill (the one on its home screen): tab icons, selected index, select callback, modifier. */
+    @Volatile
+    var tabPill: (@Composable (List<androidx.compose.ui.graphics.vector.ImageVector>, Int, (Int) -> Unit, Modifier) -> Unit)? = null
 }
 
 private fun stepFor(radius: Dp): Float = (radius.value / 8f).coerceIn(1.5f, 3f)
