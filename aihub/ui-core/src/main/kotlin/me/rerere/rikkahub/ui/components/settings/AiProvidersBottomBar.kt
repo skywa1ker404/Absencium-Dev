@@ -46,7 +46,7 @@ fun AiProvidersBottomBar(
         if (!useWideLayout) {
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter),
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(50),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 6.dp,
                 shadowElevation = 8.dp,
