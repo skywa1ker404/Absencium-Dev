@@ -18,8 +18,6 @@ import me.rerere.rikkahub.data.datastore.WebDavConfig
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.sync.BackupContentOption
 import me.rerere.rikkahub.data.sync.WebDavBackupItem
-import me.rerere.rikkahub.data.sync.importer.ChatboxImporter
-import me.rerere.rikkahub.data.sync.importer.CherryStudioProviderImporter
 import me.rerere.rikkahub.data.sync.WebdavSync
 import me.rerere.rikkahub.utils.UiState
 import java.io.File
@@ -70,58 +68,6 @@ class BackupVM(
         val mainIntent = android.content.Intent.makeRestartActivityTask(componentName)
         context.startActivity(mainIntent)
         kotlin.system.exitProcess(0)
-    }
-
-    suspend fun restoreFromChatBox(file: File) {
-        val imported = withContext(Dispatchers.IO) {
-            ChatboxImporter.import(file)
-        }
-
-        val resolvedProviders = imported.providers.map(modelMetadataResolver::applyToProvider)
-
-        if (resolvedProviders.isEmpty() && imported.conversations.isEmpty() && imported.assistants.isEmpty()) {
-            throw IllegalArgumentException("No importable data found in ChatBox export")
-        }
-
-        imported.conversations.forEach { conversation ->
-            conversationRepository.insertConversation(conversation)
-        }
-
-        Log.i(TAG, "restoreFromChatBox: import ${resolvedProviders.size} providers, ${imported.conversations.size} conversations, ${imported.assistants.size} assistants")
-        
-        settingsStore.update { current ->
-            var updated = current
-            if (resolvedProviders.isNotEmpty()) {
-                updated = updated.copy(
-                    providers = mergeImportedProviders(current.providers, resolvedProviders)
-                )
-            }
-            if (imported.assistants.isNotEmpty()) {
-                updated = updated.copy(
-                    assistants = current.assistants + imported.assistants
-                )
-            }
-            updated
-        }
-    }
-
-    suspend fun restoreFromCherryStudio(file: File) {
-        val importedProviders = withContext(Dispatchers.IO) {
-            CherryStudioProviderImporter.importProviders(file)
-        }
-
-        val resolvedProviders = importedProviders.map(modelMetadataResolver::applyToProvider)
-
-        if (resolvedProviders.isEmpty()) {
-            throw IllegalArgumentException("No importable providers found in Cherry Studio backup")
-        }
-
-        Log.i(TAG, "restoreFromCherryStudio: import ${resolvedProviders.size} providers: $resolvedProviders")
-        settingsStore.update { current ->
-            current.copy(
-                providers = mergeImportedProviders(current.providers, resolvedProviders)
-            )
-        }
     }
 
     private fun mergeImportedProviders(

@@ -359,67 +359,7 @@ private fun ImportExportPage(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let { sourceUri ->
-            if (importType == "local") {
-                pendingLocalRestoreUri = sourceUri
-                return@rememberLauncherForActivityResult
-            }
-            scope.launch {
-                isRestoring = true
-                runCatching {
-                    when (importType) {
-                        "chatbox" -> {
-                            val tempFile =
-                                File(context.cacheDir, "temp_chatbox_${System.currentTimeMillis()}.json")
-
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
-                                        tempFile.sink().buffer().outputStream().use { outputStream ->
-                                            inputStream.copyTo(outputStream)
-                                        }
-                                    }
-                                }
-                                vm.restoreFromChatBox(tempFile)
-                            } finally {
-                                withContext(Dispatchers.IO) {
-                                    tempFile.delete()
-                                }
-                            }
-                        }
-                        "cherry" -> {
-                            val tempFile =
-                                File(context.cacheDir, "temp_cherry_${System.currentTimeMillis()}.zip")
-
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
-                                        tempFile.sink().buffer().outputStream().use { outputStream ->
-                                            inputStream.copyTo(outputStream)
-                                        }
-                                    }
-                                }
-                                vm.restoreFromCherryStudio(tempFile)
-                            } finally {
-                                withContext(Dispatchers.IO) {
-                                    tempFile.delete()
-                                }
-                            }
-                        }
-                    }
-
-                    toaster.show(
-                        context.getString(R.string.backup_page_restore_success),
-                        type = ToastType.Success
-                    )
-                }.onFailure { e ->
-                    e.printStackTrace()
-                    toaster.show(
-                        context.getString(R.string.backup_page_restore_failed, e.message ?: ""),
-                        type = ToastType.Error
-                    )
-                }
-                isRestoring = false
-            }
+            pendingLocalRestoreUri = sourceUri
         }
     }
 
@@ -545,50 +485,6 @@ private fun ImportExportPage(
             }
         }
 
-        item {
-            SettingsGroup(
-                title = stringResource(R.string.backup_page_import_from_other_app),
-                horizontalPadding = 0.dp,
-                titleStartPadding = 4.dp,
-            ) {
-                SettingGroupItem(
-                    title = stringResource(R.string.backup_page_import_from_chatbox),
-                    subtitle = stringResource(R.string.backup_page_import_chatbox_desc),
-                    icon = {
-                        if (isRestoring && importType == "chatbox") {
-                            CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            Icon(Icons.Rounded.SystemUpdateAlt, null)
-                        }
-                    },
-                    onClick = {
-                        if (!isRestoring) {
-                            importType = "chatbox"
-                            openDocumentLauncher.launch(arrayOf("application/json", "text/plain"))
-                        }
-                    }
-                )
-                SettingGroupItem(
-                    title = stringResource(R.string.backup_page_import_from_cherry_studio),
-                    subtitle = stringResource(R.string.backup_page_import_cherry_studio_desc),
-                    icon = {
-                        if (isRestoring && importType == "cherry") {
-                            CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            Icon(Icons.Rounded.Folder, null)
-                        }
-                    },
-                    onClick = {
-                        if (!isRestoring) {
-                            importType = "cherry"
-                            openDocumentLauncher.launch(
-                                arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
-                            )
-                        }
-                    }
-                )
-            }
-        }
     }
 
     // Permission explanation dialog
