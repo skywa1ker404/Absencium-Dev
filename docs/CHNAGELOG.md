@@ -189,3 +189,5 @@ working on it
 - Changed (branch Absencium-ai, CI green 45168490581, Batch 45): the two memory test screens in Absencium AI use one query row and one result card, so they look and behave alike.
 - Removed (branch Absencium-ai, CI green 45172773381, Batch 45): the ChatBox and Cherry Studio import from the AI hub (owner decision); it had no entry since the hub Backup page was hidden.
 - Fixed (branch Absencium-ai, CI green 45172996781, Batch 45): the New form in My Calendar now sits in the popup card with the dimmed background, so the calendar page no longer shows through it.
+- Removed (branch Absencium-ai, CI green 45177219504, Batch 45): the leftover Text to speech tool option from the AI hub (owner decision).
+- Fixed (branch Absencium-ai, CI green 45177264701, Batch 45): round buttons in the Pixelated style (Edit exam, Delete, Save and others) have one clean outline instead of a double ring.
