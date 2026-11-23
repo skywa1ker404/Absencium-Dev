@@ -125,7 +125,7 @@ class PixelCircleShape : Shape {
 
 /**
  * Draws the Pixelated button edge over the content: a dark outline that follows the stepped corners, a light line along the top and left,
- * and a darker band along the bottom and right, like the keys in the reference sheet.
+ * and a darker band along the bottom and right, like the keys in the reference sheet. Round buttons ([circle]) get the outline only.
  */
 fun Modifier.pixelBevel(outline: Color, stepDp: Float = 2f, circle: Boolean = false): Modifier = drawWithContent {
     drawContent()
@@ -133,6 +133,11 @@ fun Modifier.pixelBevel(outline: Color, stepDp: Float = 2f, circle: Boolean = fa
     val shape = if (circle) PixelCircleShape().createOutline(size, LayoutDirection.Ltr, this) else PixelCornerShape(stepDp).createOutline(size, LayoutDirection.Ltr, this)
     val path = (shape as Outline.Generic).path
     clipPath(path) {
+        // A round button has only its outline: the straight highlight and shade bands do not follow the round ends and drew a second ring.
+        if (circle) {
+            drawPath(path, outline, style = Stroke(width = 2 * u))
+            return@clipPath
+        }
         drawRect(Color.White.copy(alpha = 0.30f), Offset(u, u), Size((size.width - 2 * u).coerceAtLeast(0f), u))
         drawRect(Color.White.copy(alpha = 0.30f), Offset(u, u), Size(u, (size.height - 2 * u).coerceAtLeast(0f)))
         drawRect(Color.Black.copy(alpha = 0.26f), Offset(u, size.height - 3 * u), Size((size.width - 2 * u).coerceAtLeast(0f), 2 * u))
