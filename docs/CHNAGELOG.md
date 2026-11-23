@@ -183,3 +183,4 @@ working on it
 - Changed (branch Absencium-ai, CI green 44983609146, Batch 45): the small pills on Home and Profile are now the same component as the stat pills, so every style (including Liquid Glass) reaches them the same way.
 - Fixed (branch Absencium-ai, CI green 44985457691, Batch 45): the Providers and keys bar in Absencium AI is now the same pill as the home screen's, in every style (it was a separate near-square bar in Pixelated).
 - Changed (branch Absencium-ai, CI green 44986880186, Batch 45): one pill-background helper is used by 71 small pills and chips across the app, so style changes reach them all from one place.
+- Changed (branch Absencium-ai, CI green 45162139278, Batch 45): Add subject, Rename subject and the Syllabus text dialogs are now one shared dialog, so they look and behave the same.
