@@ -64,6 +64,7 @@ import skywa1ker404.absencium.domain.agendaFor
 import skywa1ker404.absencium.domain.hm
 import skywa1ker404.absencium.domain.parseTimeInput
 import skywa1ker404.absencium.domain.pretty
+import skywa1ker404.absencium.ui.components.PopupShell
 import skywa1ker404.absencium.ui.components.AnimatedPopup
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.AppTextField
@@ -153,6 +154,7 @@ fun PlannerScreen(navigator: DestinationsNavigator) {
                 if (step == 2) {
                     DatePickerPopup(initial = date, onPicked = { date = it; sheet = 1 }, onDismiss = { sheet = 1 })
                 } else {
+                    PopupShell(onDismissRequest = { sheet = 0 }, scrollable = false) {
                     PopupBody(title = "New", onClose = { sheet = 0 }) {
                         Column(modifier = Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -224,6 +226,7 @@ fun PlannerScreen(navigator: DestinationsNavigator) {
                                 },
                             )
                         }
+                    }
                     }
                 }
             }
