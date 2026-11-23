@@ -285,26 +285,7 @@ private fun MemoryDebugger(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                androidx.compose.material3.OutlinedTextField(
-                    value = query,
-                    onValueChange = setQuery,
-                    label = { Text(stringResource(R.string.assistant_memory_test_query)) },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    shape = me.rerere.rikkahub.ui.theme.RoundedCornerShape(16.dp)
-                )
-                androidx.compose.material3.Button(
-                    onClick = { onTestRetrieval(query) },
-                    enabled = query.isNotBlank()
-                ) {
-                    Text(stringResource(R.string.assistant_memory_test))
-                }
-            }
+            MemoryQueryRow(query, setQuery, running = false) { onTestRetrieval(query) }
 
             if (retrievalResults.isNotEmpty()) {
                 Text(
@@ -313,64 +294,7 @@ private fun MemoryDebugger(
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 retrievalResults.forEachIndexed { index, (memory, score) ->
-                    Card(
-                        shape = me.rerere.rikkahub.ui.theme.AppShapes.CardMedium,
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (me.rerere.rikkahub.ui.theme.LocalDarkMode.current) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "#${index + 1}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = stringResource(
-                                        R.string.assistant_memory_score,
-                                        String.format("%.4f", score)
-                                    ),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (score >= 0.5f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Text(
-                                text = memory.content,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = stringResource(
-                                        R.string.assistant_memory_type_label,
-                                        stringResource(
-                                            if (memory.type == 0) {
-                                                R.string.assistant_memory_type_core
-                                            } else {
-                                                R.string.assistant_memory_type_episodic
-                                            }
-                                        )
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = stringResource(R.string.assistant_memory_id_label, memory.id),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
+                    MemoryResultCard(index, memory, score, cutoff = null)
                 }
             } else if (query.isNotBlank()) {
                 Text(

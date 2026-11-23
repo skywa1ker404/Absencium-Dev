@@ -1325,38 +1325,7 @@ private fun MemoryDebugger(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextField(
-                    value = query,
-                    onValueChange = setQuery,
-                    placeholder = { Text(stringResource(R.string.assistant_memory_test_query_placeholder)) },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    )
-                )
-                Button(
-                    onClick = { onTestRetrieval(query) },
-                    enabled = query.isNotBlank() && !state.isRunning,
-                ) {
-                    if (state.isRunning) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
-                    } else {
-                        Text(stringResource(R.string.assistant_memory_test))
-                    }
-                }
-            }
+            MemoryQueryRow(query, setQuery, state.isRunning) { onTestRetrieval(query) }
 
             ExpandableContent(visible = state.hasRun) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1396,51 +1365,7 @@ private fun MemoryDebugger(
                         fontWeight = FontWeight.Bold
                     )
                     state.results.forEachIndexed { index, (memory, score) ->
-                        Surface(
-                            color = if (LocalDarkMode.current) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainerHighest,
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("#${index + 1}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                    Text(
-                                        stringResource(
-                                            R.string.assistant_memory_score,
-                                            String.format("%.4f", score)
-                                        ),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = if (score >= state.configuredThreshold) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.error
-                                        }
-                                    )
-                                }
-                                Text(
-                                    text = if (score >= state.configuredThreshold) {
-                                        "Score meets live cutoff"
-                                    } else {
-                                        "Score below live cutoff"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (score >= state.configuredThreshold) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.error
-                                    },
-                                )
-                                Text(
-                                    text = memory.content,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 3,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(vertical = 4.dp)
-                                )
-                            }
-                        }
+                        MemoryResultCard(index, memory, score, state.configuredThreshold)
                     }
                 }
             }
