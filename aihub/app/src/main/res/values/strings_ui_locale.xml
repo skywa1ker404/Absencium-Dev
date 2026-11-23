@@ -340,7 +340,6 @@
 
     <!-- Skills -->
 
-    <!-- TTS -->
     <string name="chat_drawer_imagine">Imagine</string>
     <string name="clipboard_write_failed">Failed to write text into clipboard</string>
     <string name="open_url_failed">Failed to open URL: %1$s</string>

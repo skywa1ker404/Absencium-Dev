@@ -50,11 +50,6 @@ sealed class LocalToolOption {
     @SerialName("python_engine")
     data object PythonEngine : LocalToolOption()
 
-    // Text to speech was removed. Kept only so assistants saved with it still decode; it adds no tool.
-    @Serializable
-    @SerialName("tts")
-    data object Tts : LocalToolOption()
-
     @Serializable
     @SerialName("character_questions")
     data object AskUser : LocalToolOption()
@@ -158,7 +153,6 @@ fun LocalToolOption.toDefinitionPreviews(): List<LocalToolDefinitionPreview> = w
         )
     )
     LocalToolOption.PythonEngine -> emptyList()
-    LocalToolOption.Tts -> emptyList()
     LocalToolOption.AskUser -> listOf(
         LocalToolDefinitionPreview(
             name = ASK_USER_TOOL_NAME,
