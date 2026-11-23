@@ -187,3 +187,5 @@ working on it
 - Changed (branch Absencium-ai, CI green 45164451066, Batch 45): the AI hub uses one section header style on its settings pages and sheets.
 - Added (branch Absencium-ai, CI green 45164675923, Batch 45): the anchored bottom bar slides off the bottom while scrolling down and returns on scrolling up; its buttons drop down with it.
 - Changed (branch Absencium-ai, CI green 45168490581, Batch 45): the two memory test screens in Absencium AI use one query row and one result card, so they look and behave alike.
+- Removed (branch Absencium-ai, CI green 45172773381, Batch 45): the ChatBox and Cherry Studio import from the AI hub (owner decision); it had no entry since the hub Backup page was hidden.
+- Fixed (branch Absencium-ai, CI green 45172996781, Batch 45): the New form in My Calendar now sits in the popup card with the dimmed background, so the calendar page no longer shows through it.
