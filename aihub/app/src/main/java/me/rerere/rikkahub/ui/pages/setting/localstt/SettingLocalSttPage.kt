@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.setting.localstt
 
+import me.rerere.rikkahub.ui.components.ui.SectionHeader
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -266,12 +267,3 @@ fun SettingLocalSttPage(
     }
 }
 
-@Composable
-private fun SectionHeader(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-    )
-}
