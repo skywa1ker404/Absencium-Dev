@@ -186,3 +186,4 @@ working on it
 - Changed (branch Absencium-ai, CI green 45162139278, Batch 45): Add subject, Rename subject and the Syllabus text dialogs are now one shared dialog, so they look and behave the same.
 - Changed (branch Absencium-ai, CI green 45164451066, Batch 45): the AI hub uses one section header style on its settings pages and sheets.
 - Added (branch Absencium-ai, CI green 45164675923, Batch 45): the anchored bottom bar slides off the bottom while scrolling down and returns on scrolling up; its buttons drop down with it.
+- Changed (branch Absencium-ai, CI green 45168490581, Batch 45): the two memory test screens in Absencium AI use one query row and one result card, so they look and behave alike.

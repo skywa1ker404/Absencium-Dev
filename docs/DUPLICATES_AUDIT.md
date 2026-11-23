@@ -20,9 +20,9 @@ Scope: copied composables and repeated components in the app UI and the AI hub. 
 | # | Duplicate | Where | One home | Risk |
 |---|-----------|-------|----------|------|
 | H1 (done, CI `45164451066`) | Two `SectionHeader` | `ui/components/message/ContextSourcesSheet.kt:140` (labelLarge), `ui/pages/setting/localstt/SettingLocalSttPage.kt:270` (titleSmall) | One `SectionHeader` in `ui/components/ui` | Low |
-| H2 | Two `MemoryDebugger` (same job: type a query, see what is retrieved) | `ui/pages/assistant/detail/AssistantMemorySubPage.kt:1308`, `AssistantRagMemorySubPage.kt:262` | One component taking the results as a list; differ in surface, text field and result type | Medium: different state types, so pass a small result model |
-| H3 | Two `MemoryItem` | `ContextSourcesSheet.kt:150`, `AssistantMemorySubPage.kt:1138` | Keep separate unless the row layout turns out the same after reading | Unknown |
-| H4 | Text fields: `TextField` and `OutlinedTextField` mixed across hub pages | the two `MemoryDebugger` copies and others | Use the host's `AppTextField` through `HubStyle` | Medium |
+| H2 (done, CI `45168490581`) | Two `MemoryDebugger` (same job: type a query, see what is retrieved) | `ui/pages/assistant/detail/AssistantMemorySubPage.kt:1308`, `AssistantRagMemorySubPage.kt:262` | One component taking the results as a list; differ in surface, text field and result type | Medium: different state types, so pass a small result model |
+| H3 (kept: layouts differ) | Two `MemoryItem` | `ContextSourcesSheet.kt:150`, `AssistantMemorySubPage.kt:1138` | Keep separate unless the row layout turns out the same after reading | Unknown |
+| H4 (skipped: no visible gain) | Text fields: `TextField` and `OutlinedTextField` mixed across hub pages | the two `MemoryDebugger` copies and others | Use the host's `AppTextField` through `HubStyle` | Medium |
 
 ## Order of merging (one per CI build)
 1. A1 + A5 (pills), 2. A3 (text dialogs), 3. A2 + A4, 4. H1 + H2 + H4.
