@@ -184,3 +184,5 @@ working on it
 - Fixed (branch Absencium-ai, CI green 44985457691, Batch 45): the Providers and keys bar in Absencium AI is now the same pill as the home screen's, in every style (it was a separate near-square bar in Pixelated).
 - Changed (branch Absencium-ai, CI green 44986880186, Batch 45): one pill-background helper is used by 71 small pills and chips across the app, so style changes reach them all from one place.
 - Changed (branch Absencium-ai, CI green 45162139278, Batch 45): Add subject, Rename subject and the Syllabus text dialogs are now one shared dialog, so they look and behave the same.
+- Changed (branch Absencium-ai, CI green 45164451066, Batch 45): the AI hub uses one section header style on its settings pages and sheets.
+- Added (branch Absencium-ai, CI green 45164675923, Batch 45): the anchored bottom bar slides off the bottom while scrolling down and returns on scrolling up; its buttons drop down with it.
