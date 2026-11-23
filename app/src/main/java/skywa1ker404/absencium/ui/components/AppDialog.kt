@@ -145,3 +145,43 @@ fun DialogMotion(content: @Composable () -> Unit) {
         exit = androidx.compose.animation.ExitTransition.None,
     ) { content() }
 }
+
+/**
+ * A dialog with one text field: [title], the field with [label], and a confirm button ([confirmLabel]) that is on while [confirmEnabled].
+ * The caller owns the text, so it can be reused after the dialog closes.
+ */
+@Composable
+fun TextInputDialog(
+    title: String,
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    confirmEnabled: Boolean = value.isNotBlank(),
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { androidx.compose.material3.Text(title) },
+        text = {
+            AppTextField(
+                value = value,
+                onValueChange = onValueChange,
+                label = { androidx.compose.material3.Text(label) },
+                singleLine = singleLine,
+                minLines = minLines,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(enabled = confirmEnabled, onClick = onConfirm) { androidx.compose.material3.Text(confirmLabel) }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { androidx.compose.material3.Text("Cancel") } },
+        modifier = modifier,
+    )
+}

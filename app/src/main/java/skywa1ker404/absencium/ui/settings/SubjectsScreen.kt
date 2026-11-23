@@ -84,30 +84,18 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
                 }
             }
             if (adding) {
-                AlertDialog(
-                    onDismissRequest = { adding = false; newName = "" },
-                    title = { Text("Add a subject") },
-                    text = {
-                        AppTextField(
-                            value = newName,
-                            onValueChange = { newName = it },
-                            label = { Text("Subject name") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                skywa1ker404.absencium.ui.components.TextInputDialog(
+                    title = "Add a subject",
+                    label = "Subject name",
+                    value = newName,
+                    onValueChange = { newName = it },
+                    confirmLabel = "Add",
+                    onConfirm = {
+                        viewModel.add(newName)
+                        newName = ""
+                        adding = false
                     },
-                    confirmButton = {
-                        TextButton(
-                            enabled = newName.isNotBlank(),
-                            onClick = {
-                                viewModel.add(newName)
-                                newName = ""
-                                adding = false
-                            },
-                        ) { Text("Add") }
-                    },
-                    dismissButton = { TextButton(onClick = { adding = false; newName = "" }) { Text("Cancel") } },
+                    onDismiss = { adding = false; newName = "" },
                 )
             }
         },
@@ -202,28 +190,17 @@ private fun SubjectCard(subject: SubjectEntity, viewModel: SubjectsViewModel) {
     }
 
     if (renaming) {
-        AlertDialog(
-            onDismissRequest = { renaming = false; newName = subject.name },
-            title = { Text("Rename subject") },
-            text = {
-                AppTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    label = { Text("Subject name") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(20.dp),
-                )
+        skywa1ker404.absencium.ui.components.TextInputDialog(
+            title = "Rename subject",
+            label = "Subject name",
+            value = newName,
+            onValueChange = { newName = it },
+            confirmLabel = "Save",
+            onConfirm = {
+                viewModel.rename(subject, newName)
+                renaming = false
             },
-            confirmButton = {
-                TextButton(
-                    enabled = newName.isNotBlank(),
-                    onClick = {
-                        viewModel.rename(subject, newName)
-                        renaming = false
-                    },
-                ) { Text("Save") }
-            },
-            dismissButton = { TextButton(onClick = { renaming = false; newName = subject.name }) { Text("Cancel") } },
+            onDismiss = { renaming = false; newName = subject.name },
         )
     }
 

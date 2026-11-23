@@ -500,21 +500,17 @@ private fun TextDialog(
     onSave: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initial) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            AppTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text(label) },
-                singleLine = !multiline,
-                minLines = if (multiline) 3 else 1,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-        confirmButton = { TextButton(enabled = allowBlank || text.isNotBlank(), onClick = { onSave(text) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    skywa1ker404.absencium.ui.components.TextInputDialog(
+        title = title,
+        label = label,
+        value = text,
+        onValueChange = { text = it },
+        confirmLabel = "Save",
+        onConfirm = { onSave(text) },
+        onDismiss = onDismiss,
+        confirmEnabled = allowBlank || text.isNotBlank(),
+        singleLine = !multiline,
+        minLines = if (multiline) 3 else 1,
     )
 }
 
