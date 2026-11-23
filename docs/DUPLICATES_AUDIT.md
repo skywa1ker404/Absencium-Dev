@@ -27,5 +27,9 @@ Scope: copied composables and repeated components in the app UI and the AI hub. 
 ## Order of merging (one per CI build)
 1. A1 + A5 (pills), 2. A3 (text dialogs), 3. A2 + A4, 4. H1 + H2 + H4.
 
-## Not checked yet
-Same-destination navigation entry points (two buttons to one page) and the hub's duplicate routes.
+## Navigation entry points and routes (checked 2026-11-23)
+- Profile: banner, avatar, camera badge, name and pills all open Edit profile (`ProfileScreen.kt:148-193`): one target from several big tap areas, kept on purpose.
+- Main: Subjects is opened from the Subjects tab, the New menu ("Edit subjects") and the search results (`MainScreen.kt:280-531`): different places, kept.
+- Study tools: four focus modes, each its own tile.
+- Hub: no route is registered twice (23 routes).
+No change needed.
