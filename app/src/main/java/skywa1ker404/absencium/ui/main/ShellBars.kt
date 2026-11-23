@@ -112,7 +112,7 @@ fun BottomPill(
 ) {
     val barStyle = skywa1ker404.absencium.ui.theme.LocalBottomBar.current
     if (barStyle.anchored) {
-        AnchoredBar(tabs, selectedIndex, barStyle.labels, backdrop, onSelect, modifier)
+        AnchoredBar(tabs, selectedIndex, barStyle.labels, backdrop, onSelect, modifier, hidden = compact())
         return
     }
     val q = LocalQuality.current
@@ -419,13 +419,21 @@ private fun AnchoredBar(
     backdrop: LayerBackdrop?,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    hidden: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
     val pixel = skywa1ker404.absencium.ui.theme.LocalAppStyle.current == skywa1ker404.absencium.data.settings.AppStyle.PIXELATED
     val glass = backdrop != null
     val edge = colors.outline
+    // Scrolling down slides the bar off the bottom edge; scrolling up brings it back (the same distances as the floating pill).
+    val away by animateFloatAsState(
+        targetValue = if (hidden) 1f else 0f,
+        animationSpec = LocalQuality.current.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "anchoredAway",
+    )
     Box(
         modifier = modifier
+            .graphicsLayer { translationY = size.height * away }
             .fillMaxWidth()
             .floatingGlass(backdrop, androidx.compose.ui.graphics.RectangleShape, bordered = false, lens = false)
             .then(
@@ -814,15 +822,23 @@ fun initialsOf(name: String): String? {
 fun SlideAway(hidden: () -> Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val q = LocalQuality.current
     val isHidden = hidden()
+    // With the anchored bar the buttons stay and drop down with it; with the floating pill they slide off to the right.
+    val anchored = skywa1ker404.absencium.ui.theme.LocalBottomBar.current.anchored
+    val drop = bottomBarReserve()
+    val offsetY by animateDpAsState(
+        targetValue = if (isHidden && anchored) drop else 0.dp,
+        animationSpec = q.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "slideDrop",
+    )
     val offsetX by animateDpAsState(
-        targetValue = if (isHidden) 120.dp else 0.dp,
+        targetValue = if (isHidden && !anchored) 120.dp else 0.dp,
         animationSpec = q.spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "slideAway",
     )
     // Slide only, no fade: a fading control is drawn into an off-screen layer, and the glass behind the button (a blur over
     // the page) then showed up as a pale square around it until the fade ended. The control leaves the screen anyway.
     Box(
-        modifier = modifier.graphicsLayer { translationX = offsetX.toPx() },
+        modifier = modifier.graphicsLayer { translationX = offsetX.toPx(); translationY = offsetY.toPx() },
     ) { content() }
 }
 
