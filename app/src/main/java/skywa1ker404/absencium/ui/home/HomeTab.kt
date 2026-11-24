@@ -470,7 +470,7 @@ private fun QuickAction(
 ) {
     val colors = MaterialTheme.colorScheme
     Column(
-        modifier = modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp)).clickable(onClick = onClick).padding(8.dp),
+        modifier = modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onClick).padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
