@@ -1,5 +1,6 @@
 package skywa1ker404.absencium
 
+import skywa1ker404.absencium.ui.theme.pixelBevel
 import skywa1ker404.absencium.data.ai.ChatAppTools
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxSize
@@ -107,6 +108,7 @@ class AbsenciumApp : Application() {
             if (wavy) skywa1ker404.absencium.ui.components.AppLinearWavy(progress, modifier)
             else skywa1ker404.absencium.ui.components.AppLinearProgress(progress, modifier)
         }
+        me.rerere.rikkahub.ui.theme.HubStyle.bevel = { modifier, outline -> modifier.pixelBevel(outline, circle = true) }
         me.rerere.rikkahub.ui.theme.HubStyle.tabPill = { icons, selected, onSelect, modifier ->
             skywa1ker404.absencium.ui.main.BottomPill(
                 tabs = icons.map { skywa1ker404.absencium.ui.main.MainTab("", it) },

@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.OutlinedButton
+import me.rerere.rikkahub.ui.components.ui.OutlinedButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -50,7 +50,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Button
+import me.rerere.rikkahub.ui.components.ui.Button
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField

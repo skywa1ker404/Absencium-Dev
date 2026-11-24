@@ -75,7 +75,7 @@ import androidx.compose.material.icons.rounded.PowerOff
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.OutlinedButton
+import me.rerere.rikkahub.ui.components.ui.OutlinedButton
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.DEFAULT_ASSISTANTS_IDS

@@ -20,7 +20,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
+import me.rerere.rikkahub.ui.components.ui.FilledTonalButton
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme

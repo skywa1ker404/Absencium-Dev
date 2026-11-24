@@ -70,3 +70,57 @@ fun LoadingIndicator(modifier: Modifier = Modifier, color: Color = Color.Unspeci
     else if (color == Color.Unspecified) androidx.compose.material3.LoadingIndicator(modifier = modifier)
     else androidx.compose.material3.LoadingIndicator(modifier = modifier, color = color)
 }
+
+/*
+ * Buttons: Material's, but in the Pixelated style they are pixel circles with the host's single outline. Same names as Material's.
+ */
+
+@Composable
+private fun buttonShape(shape: androidx.compose.ui.graphics.Shape): androidx.compose.ui.graphics.Shape =
+    if (HubStyle.pixelated() && shape == androidx.compose.material3.ButtonDefaults.shape) HubStyle.pixelCircle?.invoke() ?: shape else shape
+
+@Composable
+private fun buttonModifier(modifier: Modifier): Modifier =
+    if (HubStyle.pixelated()) HubStyle.bevel?.invoke(modifier, androidx.compose.material3.MaterialTheme.colorScheme.outline) ?: modifier else modifier
+
+@Composable
+fun Button(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: androidx.compose.ui.graphics.Shape = androidx.compose.material3.ButtonDefaults.shape,
+    colors: androidx.compose.material3.ButtonColors = androidx.compose.material3.ButtonDefaults.buttonColors(),
+    elevation: androidx.compose.material3.ButtonElevation? = androidx.compose.material3.ButtonDefaults.buttonElevation(),
+    border: androidx.compose.foundation.BorderStroke? = null,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.material3.ButtonDefaults.ContentPadding,
+    interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = androidx.compose.material3.Button(onClick, buttonModifier(modifier), enabled, buttonShape(shape), colors, elevation, border, contentPadding, interactionSource, content)
+
+@Composable
+fun FilledTonalButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: androidx.compose.ui.graphics.Shape = androidx.compose.material3.ButtonDefaults.filledTonalShape,
+    colors: androidx.compose.material3.ButtonColors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(),
+    elevation: androidx.compose.material3.ButtonElevation? = androidx.compose.material3.ButtonDefaults.filledTonalButtonElevation(),
+    border: androidx.compose.foundation.BorderStroke? = null,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.material3.ButtonDefaults.ContentPadding,
+    interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = androidx.compose.material3.FilledTonalButton(onClick, buttonModifier(modifier), enabled, buttonShape(shape), colors, elevation, border, contentPadding, interactionSource, content)
+
+@Composable
+fun OutlinedButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: androidx.compose.ui.graphics.Shape = androidx.compose.material3.ButtonDefaults.outlinedShape,
+    colors: androidx.compose.material3.ButtonColors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(),
+    elevation: androidx.compose.material3.ButtonElevation? = null,
+    border: androidx.compose.foundation.BorderStroke? = androidx.compose.material3.ButtonDefaults.outlinedButtonBorder(enabled),
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.material3.ButtonDefaults.ContentPadding,
+    interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = androidx.compose.material3.OutlinedButton(onClick, buttonModifier(modifier), enabled, buttonShape(shape), colors, elevation, border, contentPadding, interactionSource, content)

@@ -23,7 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalButton
+import me.rerere.rikkahub.ui.components.ui.FilledTonalButton
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.LargeTopAppBar
 import me.rerere.rikkahub.ui.components.ui.LinearWavyProgressIndicator

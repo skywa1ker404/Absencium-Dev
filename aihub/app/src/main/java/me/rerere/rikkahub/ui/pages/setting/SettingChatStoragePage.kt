@@ -47,9 +47,9 @@ import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.VideoFile
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import me.rerere.rikkahub.ui.components.ui.Button
 import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
+import me.rerere.rikkahub.ui.components.ui.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton

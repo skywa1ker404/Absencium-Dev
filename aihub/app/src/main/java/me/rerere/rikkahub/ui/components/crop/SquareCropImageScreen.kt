@@ -24,8 +24,8 @@ import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
+import me.rerere.rikkahub.ui.components.ui.Button
+import me.rerere.rikkahub.ui.components.ui.FilledTonalButton
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface

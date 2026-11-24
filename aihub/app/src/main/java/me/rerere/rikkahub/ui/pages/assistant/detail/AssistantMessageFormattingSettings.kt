@@ -12,7 +12,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material3.Button
+import me.rerere.rikkahub.ui.components.ui.Button
 import androidx.compose.material3.Checkbox
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton

@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import me.rerere.rikkahub.ui.theme.CircleShape
 import me.rerere.rikkahub.ui.theme.RoundedCornerShape
-import androidx.compose.material3.Button
+import me.rerere.rikkahub.ui.components.ui.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text

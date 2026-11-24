@@ -54,7 +54,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Photo
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.Button
+import me.rerere.rikkahub.ui.components.ui.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator

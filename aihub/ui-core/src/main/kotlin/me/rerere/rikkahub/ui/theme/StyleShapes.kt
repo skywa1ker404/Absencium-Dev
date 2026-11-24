@@ -38,6 +38,10 @@ object HubStyle {
     @Volatile
     var bar: (@Composable ((() -> Float)?, Modifier, Boolean) -> Unit)? = null
 
+    /** The host's button edge for the Pixelated style: modifier and the outline colour. */
+    @Volatile
+    var bevel: (@Composable (Modifier, androidx.compose.ui.graphics.Color) -> Modifier)? = null
+
     /** The host's bottom pill (the one on its home screen): tab icons, selected index, select callback, modifier. */
     @Volatile
     var tabPill: (@Composable (List<androidx.compose.ui.graphics.vector.ImageVector>, Int, (Int) -> Unit, Modifier) -> Unit)? = null

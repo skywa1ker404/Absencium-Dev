@@ -27,7 +27,7 @@ import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import me.rerere.rikkahub.ui.components.ui.Button
 import me.rerere.rikkahub.ui.components.ui.CircularProgressIndicator
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton

@@ -33,7 +33,7 @@ import me.rerere.rikkahub.ui.theme.CircleShape
 import me.rerere.rikkahub.ui.theme.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import me.rerere.rikkahub.ui.components.ui.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularWavyProgressIndicator
 import me.rerere.rikkahub.ui.components.ui.AppFab

@@ -31,7 +31,7 @@ import androidx.compose.material3.CardDefaults
 import me.rerere.rikkahub.ui.components.dots.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import me.rerere.rikkahub.ui.components.ui.OutlinedButton
 import androidx.compose.material3.Scaffold
 import me.rerere.rikkahub.ui.components.ui.Slider
 import androidx.compose.material3.Text
