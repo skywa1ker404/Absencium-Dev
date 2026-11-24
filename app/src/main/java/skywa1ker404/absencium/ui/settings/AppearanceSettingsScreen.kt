@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import skywa1ker404.absencium.ui.theme.DefaultPalette
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import skywa1ker404.absencium.ui.icons.AppIcons
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -150,11 +152,26 @@ fun AppearanceSettingsScreen(navigator: DestinationsNavigator) {
     }
 }
 
-/** A live miniature of the app in the current theme, style, corners and avatar: it changes the moment a choice below changes. */
+/**
+ * A live, playable miniature of the app in the current theme, style, corners and avatar: it changes the moment a choice below changes,
+ * and its controls work (switches, slider, chips, button, tabs) so a style can be felt before it is kept. Nothing here is saved.
+ */
 @Composable
 private fun AppearancePreview(settings: AppSettings) {
     val colors = MaterialTheme.colorScheme
     val pill = skywa1ker404.absencium.ui.theme.pillShape()
+    var focusOn by remember { mutableStateOf(true) }
+    var remindOn by remember { mutableStateOf(false) }
+    var level by remember { mutableStateOf(0.65f) }
+    var kind by remember { mutableStateOf(0) }
+    var tab by remember { mutableStateOf(0) }
+    var busy by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(busy) {
+        if (busy) {
+            kotlinx.coroutines.delay(1400)
+            busy = false
+        }
+    }
     SectionTitle("Preview")
     Column(
         modifier = Modifier
@@ -171,34 +188,47 @@ private fun AppearancePreview(settings: AppSettings) {
         Box(
             modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(colors.primaryContainer).padding(14.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.width(120.dp).height(8.dp).clip(pill).background(colors.onPrimaryContainer.copy(alpha = 0.7f)))
-                Box(Modifier.width(76.dp).height(8.dp).clip(pill).background(colors.onPrimaryContainer.copy(alpha = 0.4f)))
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(listOf("Lecture", "Lab", "Exam")[kind] + " tomorrow", style = MaterialTheme.typography.titleMedium, color = colors.onPrimaryContainer)
+                Text("Prepared ${(level * 100).toInt()}%", style = MaterialTheme.typography.bodySmall, color = colors.onPrimaryContainer.copy(alpha = 0.75f))
                 skywa1ker404.absencium.ui.components.AppLinearProgress(
-                    progress = { 0.65f },
+                    progress = { level },
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(pill),
                     color = colors.primary,
                     trackColor = colors.onPrimaryContainer.copy(alpha = 0.18f),
                 )
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f).height(44.dp).clip(MaterialTheme.shapes.medium).background(colors.secondaryContainer))
-            Box(Modifier.weight(1f).height(44.dp).clip(MaterialTheme.shapes.medium).background(colors.tertiaryContainer))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            listOf("Lecture", "Lab", "Exam").forEachIndexed { i, name ->
+                ExpressiveChip(selected = kind == i, onClick = { kind = i }, label = { Text(name) })
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            skywa1ker404.absencium.ui.components.AppSwitch(checked = true, onCheckedChange = null)
-            skywa1ker404.absencium.ui.components.AppSwitch(checked = false, onCheckedChange = null)
-            skywa1ker404.absencium.ui.components.AppSlider(value = 0.4f, onValueChange = {}, enabled = false, modifier = Modifier.weight(1f))
+            skywa1ker404.absencium.ui.components.AppSwitch(checked = focusOn, onCheckedChange = { focusOn = it })
+            skywa1ker404.absencium.ui.components.AppSwitch(checked = remindOn, onCheckedChange = { remindOn = it })
+            skywa1ker404.absencium.ui.components.AppSlider(value = level, onValueChange = { level = it }, modifier = Modifier.weight(1f))
             skywa1ker404.absencium.ui.components.AppLoading(modifier = Modifier.size(32.dp))
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            skywa1ker404.absencium.ui.components.PillButton(text = "Try me", onClick = { busy = true }, loading = busy, compact = true)
+            skywa1ker404.absencium.ui.components.PillButton(text = "Tonal", onClick = { level = 0.2f + (level + 0.3f) % 0.8f }, tonal = true, compact = true)
+        }
         Row(
-            modifier = Modifier.align(Alignment.CenterHorizontally).clip(pill).background(colors.surfaceContainerHigh).padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.align(Alignment.CenterHorizontally).clip(pill).background(colors.surfaceContainerHigh).padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.width(34.dp).height(18.dp).clip(pill).background(colors.primary))
-            repeat(3) { Box(Modifier.size(10.dp).clip(pill).background(colors.onSurfaceVariant.copy(alpha = 0.6f))) }
+            listOf(AppIcons.Home, AppIcons.CalendarMonth, AppIcons.Folder).forEachIndexed { i, icon ->
+                val on = tab == i
+                Box(
+                    modifier = Modifier.clip(pill).background(if (on) colors.secondaryContainer else Color.Transparent)
+                        .clickable { tab = i }.padding(horizontal = 18.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(icon, contentDescription = null, tint = if (on) colors.onSecondaryContainer else colors.onSurfaceVariant)
+                }
+            }
         }
     }
 }
