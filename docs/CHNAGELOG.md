@@ -192,3 +192,5 @@ working on it
 - Removed (branch Absencium-ai, CI green 45177219504, Batch 45): the leftover Text to speech tool option from the AI hub (owner decision).
 - Fixed (branch Absencium-ai, CI green 45177264701, Batch 45): round buttons in the Pixelated style (Edit exam, Delete, Save and others) have one clean outline instead of a double ring.
 - Fixed (branch Absencium-ai, CI green 45310004834, Batch 45): the Home quick-action tiles (Attendance, Timetable, Absencium AI) use the style-aware rounded shape for their press area; a code search found no other screen calling the plain Material switch, slider or progress widgets.
+- Changed (branch Absencium-ai, CI green 45363231691, Batch 45): buttons in Absencium AI follow the Pixelated style (pixel circle, one outline) like the app's buttons.
+- Changed (branch Absencium-ai, CI green 45364919366, Batch 45): the Appearance preview is playable (switches, slider, chips, buttons and tabs respond) and follows the chosen theme and style live; nothing it does is saved.
