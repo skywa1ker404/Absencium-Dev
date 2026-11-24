@@ -240,41 +240,6 @@ internal fun isTimelineAtFollowBottom(
         lastItem.offset + lastItem.size <= viewportEndOffset + lastItem.size * 0.15f + 24f
 }
 
-/**
- * Activity timeline bottom sheet.
- *
- * Shows a chronological list of all activities during the generation.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun ActivityTimelineSheet(
-    entries: List<TimelineEntry>,
-    onDismissRequest: () -> Unit,
-    modifier: Modifier = Modifier,
-    initialOpenRequest: TimelineOpenRequest? = null,
-    assistantId: String? = null,
-    isLive: Boolean = false,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    ModalBottomSheet(
-        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLow,
-        onDismissRequest = onDismissRequest,
-        sheetState = sheetState,
-        modifier = modifier,
-    ) {
-        ActivityTimelinePanel(
-            entries = entries,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp),
-            initialOpenRequest = initialOpenRequest,
-            assistantId = assistantId,
-            isLive = isLive,
-            scrollHandoffMode = TimelineScrollHandoffMode.LockedToPanel,
-        )
-    }
-}
 
 @Composable
 internal fun ActivityTimelinePanel(
@@ -1208,19 +1173,6 @@ private fun TimelineDivider(
     }
 }
 
-@Composable
-private fun ToolCallDetails(entry: TimelineEntry.ToolCall) {
-    when (entry.toolName) {
-        "search_web" -> SearchTimelineDetails(entry)
-        "search_memory" -> MemoryRecallTimelineDetails(entry)
-        "scrape_web" -> ScrapeTimelineDetails(entry)
-        "eval_python" -> PythonTimelineDetails(entry)
-        in SANDBOX_FILE_TOOLS -> SandboxFileTimelineDetails(entry)
-        in WORKSPACE_TOOLS -> WorkspaceTimelineDetails(entry)
-        "ask_user" -> AskUserTimelineDetails(entry)
-        else -> GenericToolDetails(entry)
-    }
-}
 
 @Composable
 private fun MemoryRecallTimelineDetails(entry: TimelineEntry.ToolCall) {

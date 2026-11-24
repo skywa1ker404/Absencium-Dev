@@ -203,68 +203,6 @@ fun AutoAIIcon(
     )
 }
 
-/**
- * Auto icon for Providers (used in the providers page).
- * Uses fallback strategy:
- * 1. Local pattern matching (for known provider names)
- * 2. LobeHub CDN for known provider slugs or derived from name
- * 3. Text avatar (final fallback)
- */
-@Composable
-fun AutoProviderIcon(
-    name: String,
-    baseUrl: String? = null,
-    modifier: Modifier = Modifier,
-    loading: Boolean = false,
-    color: Color = MaterialTheme.colorScheme.secondaryContainer,
-    contentColor: Color = LocalContentColor.current,
-    padding: Dp = 4.dp,
-) {
-    val darkMode = LocalDarkMode.current
-    
-    // Priority 1: Local pattern matching
-    val localPath = remember(name) { computeAIIconByName(name) }
-    if (localPath != null) {
-        AIIcon(
-            path = localPath,
-            name = name,
-            modifier = modifier,
-            loading = loading,
-            color = color,
-            padding = padding,
-        )
-        return
-    }
-    
-    // Priority 2: LobeHub CDN - try known slug first, then derive from name
-    val providerSlug = remember(name) { 
-        getProviderSlugFromName(name) ?: name.lowercase().replace(" ", "-").replace("_", "-")
-    }
-    val lobeHubUrls = getLobeHubIconUrls(providerSlug, darkMode)
-    RemoteIcon(
-        url = lobeHubUrls.coloredUrl,
-        iconKey = me.rerere.rikkahub.utils.IconStorageManager.generateIconKey(providerSlug, null, darkMode),
-        fallbackUrl = lobeHubUrls.monochromeUrl,
-        name = name,
-        modifier = modifier,
-        loading = loading,
-        color = color,
-        contentColor = contentColor,
-        tint = !providerSlug.endsWith("-color"),
-        padding = padding,
-        fallback = {
-            // Priority 3: Text avatar (final fallback)
-            TextAvatar(
-                text = name,
-                modifier = modifier,
-                loading = loading,
-                color = color,
-                contentColor = contentColor
-            )
-        }
-    )
-}
-
 
 /**
  * Helper composable for provider favicon fallback

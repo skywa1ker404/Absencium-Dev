@@ -79,23 +79,6 @@ fun AiSettingsIcon(
     )
 }
 
-/** Default centered icon content for platforms that do not add a tooltip wrapper. */
-@Composable
-fun AiDrawerActionIcon(
-    containerSize: Dp,
-    iconSize: Dp,
-    contentDescription: String?,
-) {
-    Box(
-        modifier = Modifier.size(containerSize),
-        contentAlignment = Alignment.Center,
-    ) {
-        AiSettingsIcon(
-            contentDescription = contentDescription,
-            modifier = Modifier.size(iconSize),
-        )
-    }
-}
 
 private val RoundedSettingsIcon by lazy {
     ImageVector.Builder(

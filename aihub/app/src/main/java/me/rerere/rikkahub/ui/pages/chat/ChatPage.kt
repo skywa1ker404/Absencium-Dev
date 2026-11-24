@@ -2648,61 +2648,6 @@ private fun androidx.compose.foundation.layout.BoxScope.ChatToolbarInChatLayer(
 }
 
 
-@Composable
-fun UpdatePill(
-    bigScreen: Boolean,
-    height: Dp,
-    onDismiss: () -> Unit,
-    onClick: () -> Unit
-) {
-    val haptics = me.rerere.rikkahub.ui.hooks.rememberPremiumHaptics()
-    val containerColor = MaterialTheme.colorScheme.primaryContainer
-    val contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-    val pillShape = RoundedCornerShape(999.dp)
-
-    Surface(
-        onClick = {
-            haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Pop)
-            onClick()
-        },
-        shape = pillShape,
-        color = blurredContainerColor(containerColor),
-        contentColor = contentColor,
-        border = aiSoftEdgeBorder(),
-        modifier = Modifier
-            .height(height)
-            .aiBlurEffect(containerColor, pillShape)
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 16.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = if (bigScreen) stringResource(R.string.update_available) else "New Update",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = contentColor
-            )
-            
-            Spacer(Modifier.width(8.dp))
-            
-            IconButton(
-                onClick = {
-                    haptics.perform(me.rerere.rikkahub.ui.hooks.HapticPattern.Pop)
-                    onDismiss()
-                },
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    Icons.Rounded.Close,
-                    contentDescription = "Dismiss",
-                    modifier = Modifier.size(16.dp),
-                    tint = contentColor
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun ChatToolbar(

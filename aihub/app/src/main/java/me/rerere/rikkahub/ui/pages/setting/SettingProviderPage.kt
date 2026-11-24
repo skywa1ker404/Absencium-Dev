@@ -516,43 +516,6 @@ fun SettingProviderPage(
     }
 }
 
-@Composable
-private fun SearchBarWithToggle(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    viewMode: ProviderViewMode,
-    onToggleViewMode: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            placeholder = { Text(stringResource(R.string.setting_provider_page_search_placeholder)) },
-            modifier = Modifier.weight(1f),
-            shape = AppShapes.SearchField,
-            singleLine = true,
-            leadingIcon = { Icon(Icons.Rounded.Search, null) },
-            trailingIcon = if (searchQuery.isNotEmpty()) {
-                {
-                    IconButton(onClick = { onSearchQueryChange("") }) {
-                        Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.clear_search))
-                    }
-                }
-            } else null
-        )
-        IconButton(onClick = onToggleViewMode) {
-            Icon(
-                imageVector = if (viewMode == ProviderViewMode.LIST) Icons.Rounded.GridView else Icons.AutoMirrored.Rounded.ViewList,
-                contentDescription = stringResource(R.string.a11y_toggle_view_mode)
-            )
-        }
-    }
-}
 
 @Composable
 private fun ProviderListView(

@@ -77,68 +77,6 @@ import me.rerere.rikkahub.ui.components.ai.AiAssistantPickerTag
 import me.rerere.rikkahub.ui.components.ai.AiAssistantPickerSheet
 import kotlin.uuid.Uuid
 
-@Composable
-fun AssistantPicker(
-    settings: Settings,
-    onUpdateSettings: (Settings) -> Unit,
-    onNavigate: (Assistant) -> Unit = {},  // Called after panels close
-    modifier: Modifier = Modifier,
-    onClickSetting: () -> Unit,
-) {
-    val state = rememberAssistantState(settings, onUpdateSettings)
-    val defaultAssistantName = stringResource(R.string.assistant_page_default_assistant)
-    var showPicker by remember { mutableStateOf(false) }
-
-    NavigationDrawerItem(
-        icon = null,
-        label = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = state.currentAssistant.name.ifEmpty { defaultAssistantName },
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(Modifier.weight(1f))
-
-                UIAvatar(
-                    name = state.currentAssistant.name.ifEmpty { defaultAssistantName },
-                    value = state.currentAssistant.avatar,
-                    onClick = onClickSetting
-                )
-            }
-        },
-        onClick = {
-            showPicker = true
-        },
-        modifier = modifier,
-        selected = false,
-    )
-
-    if (showPicker) {
-        AssistantPickerSheet(
-            settings = settings,
-            currentAssistant = state.currentAssistant,
-            onAssistantSelected = { assistant ->
-                // Settings update happens immediately inside the sheet
-                state.setSelectAssistant(assistant)
-            },
-            onNavigate = { assistant ->
-                // Navigation callback - called after animation
-                showPicker = false
-                onNavigate(assistant)
-            },
-            onDismiss = {
-                showPicker = false
-            }
-        )
-    }
-}
 
 @Composable
 fun AssistantPickerSheet(
@@ -195,48 +133,4 @@ fun AssistantPickerSheet(
     )
 }
 
-@Composable
-private fun AssistantItem(
-    assistant: Assistant,
-    defaultAssistantName: String,
-    onEdit: () -> Unit
-) {
-    ListItem(
-        headlineContent = {
-            Text(
-                text = assistant.name.ifEmpty { defaultAssistantName },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        supportingContent = {
-            Text(
-                text = assistant.systemPrompt.ifBlank { stringResource(R.string.assistant_page_no_system_prompt) },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        },
-        leadingContent = {
-            UIAvatar(
-                name = assistant.name.ifEmpty { defaultAssistantName },
-                value = assistant.avatar,
-                modifier = Modifier.size(32.dp)
-            )
-        },
-        trailingContent = {
-            IconButton(
-                onClick = {
-                    onEdit()
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Edit,
-                    contentDescription = null
-                )
-            }
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-    )
-}
+

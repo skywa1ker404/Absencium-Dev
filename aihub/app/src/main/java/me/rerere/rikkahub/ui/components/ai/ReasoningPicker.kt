@@ -432,69 +432,6 @@ private fun ReasoningOptionItem(
     }
 }
 
-@Composable
-private fun ReasoningLevelCard(
-    modifier: Modifier = Modifier,
-    selected: Boolean = false,
-    icon: @Composable () -> Unit = {},
-    title: @Composable () -> Unit = {},
-    description: @Composable () -> Unit = {},
-    onClick: () -> Unit,
-    shape: Shape = me.rerere.rikkahub.ui.theme.AppShapes.CardLarge,
-    containerColor: Color? = null
-) {
-    val amoledMode by rememberAmoledDarkMode()
-    val isDarkMode = LocalDarkMode.current
-    val isAmoled = amoledMode && isDarkMode
-    
-    val defaultContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-    val resolvedContainerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else (containerColor ?: defaultContainerColor)
-    
-    val defaultContentColor = if (isAmoled) Color.White else MaterialTheme.colorScheme.onSurface
-    val resolvedContentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else defaultContentColor
-    
-    val elevation = if (isAmoled) 0.dp else 6.dp
-    val tonalElevation = if (isAmoled) 0.dp else LocalAbsoluteTonalElevation.current
-
-    CompositionLocalProvider(LocalAbsoluteTonalElevation provides tonalElevation) {
-        val cardElevation = CardDefaults.cardElevation(defaultElevation = elevation)
-        val cardColors = CardDefaults.cardColors(
-            containerColor = resolvedContainerColor,
-            contentColor = resolvedContentColor
-        )
-        // Selected items are completely round, non-selected use 10.dp corners
-        val resolvedShape = if (selected) RoundedCornerShape(50) else RoundedCornerShape(10.dp)
-        Card(
-            onClick = onClick,
-            modifier = modifier,
-            shape = resolvedShape,
-            elevation = cardElevation,
-            colors = cardColors
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                icon()
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    ProvideTextStyle(MaterialTheme.typography.titleMedium) {
-                        title()
-                    }
-                    ProvideTextStyle(MaterialTheme.typography.bodySmall) {
-                        description()
-                    }
-                }
-            }
-        }
-
-    }
-}
 
 @Composable
 @Preview(showBackground = true)

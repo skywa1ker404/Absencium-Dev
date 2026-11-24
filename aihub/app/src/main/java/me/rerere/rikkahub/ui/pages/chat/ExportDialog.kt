@@ -15,32 +15,4 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.rerere.rikkahub.R
 
-@Composable
-fun ExportDialog(
-    title: String,
-    onDismissRequest: () -> Unit,
-    formats: List<Pair<String, String>>, // formatId -> Display Name
-    onExport: (String) -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(title) },
-        text = {
-            Column {
-                formats.forEach { (id, name) ->
-                    ListItem(
-                        headlineContent = { Text(name) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onExport(id) }
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
-}
+

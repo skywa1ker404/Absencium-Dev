@@ -179,29 +179,6 @@ fun AiComposerActionButton(
     }
 }
 
-@Composable
-fun AiComposerDefaultActionContent(
-    action: AiComposerAction,
-    pickerContent: @Composable () -> Unit,
-) {
-    when (action) {
-        AiComposerAction.Picker -> pickerContent()
-        AiComposerAction.Send,
-        AiComposerAction.QuestionnaireSubmit -> Icon(
-            RoundedArrowUpwardIcon,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.onPrimary,
-        )
-        AiComposerAction.Loading -> Icon(
-            RoundedStopIcon,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.onErrorContainer,
-        )
-        else -> Unit
-    }
-}
 
 @Composable
 private fun AiComposerAction.defaultContainerColor(): Color = when (this) {
@@ -228,15 +205,6 @@ private fun AiComposerAction.depthRank(): Int = when (this) {
     AiComposerAction.ToolApprovalDeny -> 2
 }
 
-@Composable
-fun AiComposerAddIcon(contentDescription: String? = null) {
-    Icon(
-        RoundedAddIcon,
-        contentDescription = contentDescription,
-        modifier = Modifier.size(24.dp),
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
 
 private fun composerIcon(name: String, path: String): ImageVector = ImageVector.Builder(
     name = name,
