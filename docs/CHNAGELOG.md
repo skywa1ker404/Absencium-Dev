@@ -191,3 +191,4 @@ working on it
 - Fixed (branch Absencium-ai, CI green 45172996781, Batch 45): the New form in My Calendar now sits in the popup card with the dimmed background, so the calendar page no longer shows through it.
 - Removed (branch Absencium-ai, CI green 45177219504, Batch 45): the leftover Text to speech tool option from the AI hub (owner decision).
 - Fixed (branch Absencium-ai, CI green 45177264701, Batch 45): round buttons in the Pixelated style (Edit exam, Delete, Save and others) have one clean outline instead of a double ring.
+- Fixed (branch Absencium-ai, CI green 45310004834, Batch 45): the Home quick-action tiles (Attendance, Timetable, Absencium AI) use the style-aware rounded shape for their press area; a code search found no other screen calling the plain Material switch, slider or progress widgets.
