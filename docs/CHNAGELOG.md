@@ -194,3 +194,4 @@ working on it
 - Fixed (branch Absencium-ai, CI green 45310004834, Batch 45): the Home quick-action tiles (Attendance, Timetable, Absencium AI) use the style-aware rounded shape for their press area; a code search found no other screen calling the plain Material switch, slider or progress widgets.
 - Changed (branch Absencium-ai, CI green 45363231691, Batch 45): buttons in Absencium AI follow the Pixelated style (pixel circle, one outline) like the app's buttons.
 - Changed (branch Absencium-ai, CI green 45364919366, Batch 45): the Appearance preview is playable (switches, slider, chips, buttons and tabs respond) and follows the chosen theme and style live; nothing it does is saved.
+- Removed (branch Absencium-ai, CI green 45384570035, Batch 45): the camera QR scanner in Absencium AI (ML Kit barcode, Quickie, CameraX core); a provider is still imported from a QR picture. The APK is 3.5 MB smaller (25.6 MB, arm64 dev).
