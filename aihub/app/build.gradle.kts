@@ -116,9 +116,6 @@ dependencies {
     implementation(libs.kotlinx.datetime)
 
     implementation(libs.zxing.core)
-    implementation(libs.quickie.bundled)
-    implementation(libs.barcode.scanning)
-    implementation(libs.androidx.camera.core)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

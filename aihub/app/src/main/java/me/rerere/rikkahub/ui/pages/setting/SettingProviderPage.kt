@@ -142,8 +142,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.ui.components.ui.ToastType
 import me.rerere.rikkahub.ui.components.ui.AiDestructiveConfirmDialog
 import me.rerere.rikkahub.ui.components.ui.AppToasterState
-import io.github.g00fy2.quickie.QRResult
-import io.github.g00fy2.quickie.ScanQRCode
 import kotlinx.coroutines.launch
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.common.platform.PlatformHttpClient
@@ -841,20 +839,6 @@ private fun ImportProviderButton(
     var showImportDialog by remember { mutableStateOf(false) }
     var importSession by remember { mutableStateOf<ProviderQrImportSession?>(null) }
 
-    val scanQrCodeLauncher = rememberLauncherForActivityResult(ScanQRCode()) { result ->
-        handleQRResult(
-            result = result,
-            onAdd = onAdd,
-            toaster = toaster,
-            context = context,
-            importSession = importSession,
-            onImportSessionChange = { importSession = it },
-            onSuccess = { haptics.perform(HapticPattern.Success) },
-            onProgress = { haptics.perform(HapticPattern.Pop) },
-            onError = { haptics.perform(HapticPattern.Error) }
-        )
-    }
-
     val pickImageLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -916,35 +900,6 @@ private fun ImportProviderButton(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Button(
-                            onClick = {
-                                haptics.perform(HapticPattern.Pop)
-                                showImportDialog = false
-                                scanQrCodeLauncher.launch(null)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = MaterialTheme.shapes.large
-                        ) {
-                            Row(
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.CameraAlt,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = stringResource(R.string.setting_provider_page_scan_qr_code),
-                                    style = MaterialTheme.typography.labelLarge
-                                )
-                            }
-                        }
-
                         OutlinedButton(
                             onClick = {
                                 haptics.perform(HapticPattern.Pop)
@@ -1032,7 +987,9 @@ private fun ImportProviderButton(
                 Button(
                     onClick = {
                         haptics.perform(HapticPattern.Pop)
-                        scanQrCodeLauncher.launch(null)
+                        pickImageLauncher.launch(
+                            androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
                     },
                     shape = MaterialTheme.shapes.large
                 ) {
@@ -1090,62 +1047,6 @@ private data class ProviderQrImportSession(
         } else {
             copy(parts = nextParts, scanOrder = nextScanOrder)
         }
-    }
-}
-
-private fun handleQRResult(
-    result: QRResult,
-    onAdd: (ProviderSetting) -> Unit,
-    toaster: AppToasterState,
-    context: android.content.Context,
-    importSession: ProviderQrImportSession?,
-    onImportSessionChange: (ProviderQrImportSession?) -> Unit,
-    onSuccess: () -> Unit,
-    onProgress: () -> Unit,
-    onError: () -> Unit
-) {
-    runCatching {
-        when (result) {
-            is QRResult.QRError -> {
-                onError()
-                toaster.show(
-                    context.getString(
-                        R.string.setting_provider_page_scan_error,
-                        result
-                    ), type = ToastType.Error
-                )
-            }
-
-            QRResult.QRMissingPermission -> {
-                onError()
-                toaster.show(
-                    context.getString(R.string.setting_provider_page_no_permission),
-                    type = ToastType.Error
-                )
-            }
-
-            is QRResult.QRSuccess -> {
-                handleProviderShareQrValue(
-                    value = result.content.rawValue ?: "",
-                    onAdd = onAdd,
-                    toaster = toaster,
-                    context = context,
-                    importSession = importSession,
-                    onImportSessionChange = onImportSessionChange,
-                    onSuccess = onSuccess,
-                    onProgress = onProgress,
-                    onError = onError
-                )
-            }
-
-            QRResult.QRUserCanceled -> {}
-        }
-    }.onFailure { error ->
-        onError()
-        toaster.show(
-            context.getString(R.string.setting_provider_page_qr_decode_failed, error.message ?: ""),
-            type = ToastType.Error
-        )
     }
 }
 

@@ -740,7 +740,7 @@
     <string name="setting_provider_page_multi_qr_title">Multi-QR Import</string>
     <string name="setting_provider_page_multi_qr_wrong_transfer">This QR code belongs to another provider transfer</string>
     <string name="setting_provider_page_back_step">Back a step</string>
-    <string name="setting_provider_page_scan_next_qr">Scan next QR</string>
+    <string name="setting_provider_page_scan_next_qr">Pick next QR image</string>
     <string name="setting_provider_page_input_modality">Input Modality</string>
     <string name="setting_provider_page_location">Location (e.g. us-central1)</string>
     <string name="setting_provider_page_model_count">%d models</string>
