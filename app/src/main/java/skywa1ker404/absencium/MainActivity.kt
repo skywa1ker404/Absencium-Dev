@@ -158,6 +158,7 @@ class MainActivity : ComponentActivity() {
                     // Absencium AI grows in over the page, inside this same window.
                     if (phase == AppPhase.APP) skywa1ker404.absencium.ui.AiLayer(dark = dark)
                     if (phase == AppPhase.APP) UndoHost(container.undoBus)
+                    if (phase == AppPhase.APP) skywa1ker404.absencium.ui.components.ToastHost()
                     if (phase == AppPhase.APP) skywa1ker404.absencium.ui.components.AiErrorHost(container.aiClient.failures)
                     // The in-app splash sits on top once per launch, in the chosen theme, then fades into the app.
                     var showSplash by rememberSaveable { mutableStateOf(true) }

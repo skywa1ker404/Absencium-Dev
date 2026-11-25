@@ -372,7 +372,7 @@ fun GuideViewer(guide: GuideEntity, onClose: () -> Unit) {
             onClose = onClose,
             onExtract = null,
             onOpenElsewhere = {
-                openGuide(context, guide)?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
+                openGuide(context, guide)?.let { skywa1ker404.absencium.ui.components.ToastBus.show(it) }
             },
         )
     }

@@ -89,7 +89,7 @@ fun AboutScreen(navigator: DestinationsNavigator) {
             try {
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
             } catch (e: ActivityNotFoundException) {
-                Toast.makeText(context, "No app can open links on this phone.", Toast.LENGTH_SHORT).show()
+                skywa1ker404.absencium.ui.components.ToastBus.show("No app can open links on this phone.")
             }
         }
         NavCard(

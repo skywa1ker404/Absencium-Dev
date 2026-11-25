@@ -40,7 +40,7 @@ fun VoiceInputButton(onText: (String) -> Unit, modifier: Modifier = Modifier, en
             try {
                 launcher.launch(intent)
             } catch (e: ActivityNotFoundException) {
-                Toast.makeText(context, "This phone has no speech recogniser installed.", Toast.LENGTH_LONG).show()
+                ToastBus.show("This phone has no speech recogniser installed.")
             }
         },
         modifier = modifier,
