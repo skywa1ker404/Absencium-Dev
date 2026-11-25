@@ -138,14 +138,16 @@ fun TimetableDay(
                 if (gap >= 30) BreakBlock(minutesText(gap))
             }
             if (index == lineAt) NowLine(if (now != null) now.hm() else "")
-            SlotCard(
-                slot = slot,
-                name = subjectName(slot.subjectId),
-                phase = phases[index],
-                now = now,
-                onEdit = { onEdit(slot) },
-                onDelete = { onDelete(slot) },
-            )
+            skywa1ker404.absencium.ui.components.SwipeToDelete(onDelete = { onDelete(slot) }) {
+                SlotCard(
+                    slot = slot,
+                    name = subjectName(slot.subjectId),
+                    phase = phases[index],
+                    now = now,
+                    onEdit = { onEdit(slot) },
+                    onDelete = { onDelete(slot) },
+                )
+            }
         }
     }
 }

@@ -49,11 +49,11 @@ Last updated: 031126 (web search made universal; last green build `b5918fe`, 031
 
 | # | Task | Status |
 | - | --- | --- |
-| 40.1 | Text fields: one input style (shape, label, error, clear, keyboard) across the app and the chat | pending |
+| 40.1 | **Built, CI green `45609900091`; to check on a device.** Text fields: one input style (shape, label, error, clear, keyboard) across the app and the chat | done |
 | 40.2 | **Partly built, CI green `42443059455` (the Settings hub's joined cards; still to do: the cards inside each settings page, the toggles, dropdowns and popups).** Settings layouts: grouped cards with the chat's corner shapes, rows, switches (haptic switch, toggle surface), dropdowns and popups all of one kind | partly done |
 | 40.3 | Page switching: one springy transition and tab animation for every screen change | pending |
 | 40.4 | Swipe-to-delete with physics on notes, exams, timetable rows and Trash | pending |
-| 40.5 | Toasts and auto-save indicator in the chat's style for every message in the app | pending |
+| 40.5 | **Toasts built, CI green `45612371095` (one `ToastBus` and `ToastHost` in the Undo bar's look; the system toasts in voice input, About and Vault are replaced); the auto-save indicator is still to do.** Toasts and auto-save indicator in the chat's style for every message in the app | partly done |
 | 40.6 | **Partly built, CI green `42443059455` (large title on Settings, General, Appearance, Storage, AI settings and Profile; still to do: Home, Vault, Calendar and the rest, sticky headers).** Large collapsing title bar on top-level pages; sticky headers on grouped lists | partly done |
 | 40.7 | Empty-state card, suggestion pills and time-based greeting on Home and empty pages | pending |
 | 40.8 | **Partly built, CI green `42586074037` (owner 2026-11-09: "the app has too many texts info in every page"): explanatory hints removed and row subtitles shortened or dropped on Settings, General, AI settings, Appearance, Onboarding, About, Profile, Trash; still to do: the same rule on the rest (Vault, Calendar, Subjects, Home, Syllabus, popups): a title says what it is, a short line only when it is essential, errors, loading and empty states keep their text.** Typography, info shapes, expand / collapse and scrolling prompts unified; audit for any element left in two styles | partly done |
@@ -283,7 +283,7 @@ Last updated: 031126 (web search made universal; last green build `b5918fe`, 031
 - Test on a device: the lecture-type chips, Grades marks entry, Reminders (allow notifications, set 5 minutes before a lecture), an event with a reminder, Flashcards review and "Make with AI", the note History popup, and the new Study and calendar look.
 - Test on a device (Batch 44): the one topic sheet from the note chip, File under a topic and Add Entry; the AI Vault tabs; the profile picture in the top bar and the AI drawer; Auto / Manual Vault access; hub settings buttons; the New popup opening.
 - Test on a device (Batch 43): Back buttons in the AI hub and its settings, "Ask Absencium AI" in a note's menu, a long AI note that used to stop midway, Excused chip beside Notes collected, Vault link tiles in the chat, tab slide on the main pages (and the old 1-second bleed), dialog open animation, the collapsed topic trees, Edit profile with a picture and the joined course line, the pill and button row on Home / Attendance / Vault.
-- APK is now 43.8 MB (was 74.1 MB). Say if you want to go smaller: remove on-device speech (about 31 MB), PDF text reading (about 9 MB), the QR scanner (about 5 MB) or QuickJS (1.3 MB); each removes a feature.
+- APK is now 25.6 MB (arm64 dev; was 43.8 MB, 74.1 MB at the start). The QR camera scanner is removed. Say if you want to go smaller: remove on-device speech (about 31 MB), PDF text reading (about 9 MB, kept by owner decision) or QuickJS (1.3 MB); each removes a feature.
 - Paste the text of the Material 3 guide pages (19.3) so the Expressive component set can be applied from verified sources.
 - Decide the open items in `docs/MASTER_SPEC.md`: in-app updater, Operations card, power and thermal handling.
 - Re-import the 89-page syllabus PDF to check the formatting (19.30); if AI requests still fail, send the debug log (the phone must be able to reach the provider's host).
