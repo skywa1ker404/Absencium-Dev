@@ -341,16 +341,26 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
             items(activeShown, key = { "note-${it.id}" }) { note ->
-                if (cardMode) {
+                skywa1ker404.absencium.ui.components.SwipeToDelete(onDelete = { viewModel.deleteNote(note) }) {
                     if (cardMode) {
-                        NoteCard(
-                            note,
-                            photoCount = loaded.attachmentsOf(note.id).size,
-                            selected = note.id in selectedIds,
-                            topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
-                            onLongClick = { toggle(note.id) },
-                            onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
-                        )
+                        if (cardMode) {
+                            NoteCard(
+                                note,
+                                photoCount = loaded.attachmentsOf(note.id).size,
+                                selected = note.id in selectedIds,
+                                topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
+                                onLongClick = { toggle(note.id) },
+                                onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
+                            )
+                        } else {
+                            NoteRow(
+                                note,
+                                selected = note.id in selectedIds,
+                                topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
+                                onLongClick = { toggle(note.id) },
+                                onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
+                            )
+                        }
                     } else {
                         NoteRow(
                             note,
@@ -360,14 +370,6 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                             onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
                         )
                     }
-                } else {
-                    NoteRow(
-                        note,
-                        selected = note.id in selectedIds,
-                        topic = note.syllabusNodeId?.let { syllabusLabel(nodes, it).substringAfterLast(" › ") },
-                        onLongClick = { toggle(note.id) },
-                        onClick = { if (selecting) toggle(note.id) else navigator.navigate(NoteEditorScreenDestination(noteId = note.id)) },
-                    )
                 }
             }
 

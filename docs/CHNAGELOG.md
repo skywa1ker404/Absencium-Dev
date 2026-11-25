@@ -200,3 +200,5 @@ working on it
 - Changed (branch Absencium-ai, CI green 45612371095, Batch 40.5): messages appear as one toast in the Undo bar's style instead of the system toast (voice input, About, Vault).
 - Added (branch Absencium-ai, CI green 45614652202, Batch 40.4): swipe a timetable row left to delete it; the row follows the finger, the red layer and bin grow, a haptic marks the point of no return and the row springs off or back (the delete goes to the Trash with Undo).
 - Added (branch Absencium-ai, CI green 45616735601, Batch 40.7): empty states can show tappable suggestion pills (used on Search) and the empty Vault sits in a soft card.
+- Added (branch Absencium-ai, CI pending, Batch 40.4): swipe left to delete exam rows and active notes, like the timetable rows; every delete still goes to the Trash with Undo.
+- Changed (branch Absencium-ai, CI pending, Batch 40.5): the note editor's save state shows a coloured dot and a word that swap with a spring (Saving, Saved, Not saved yet, Could not save).

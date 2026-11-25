@@ -11,6 +11,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
+import skywa1ker404.absencium.ui.theme.pillBackground
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -729,12 +730,43 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
         val visibleCount = remember(parts) {
             parts.filter { it.kind == PartKind.TEXT }.sumOf { LiveFormat.plan(it.text).visible.length }
         }
-        Text(
-            text = "$dateText  |  ${"%,d".format(visibleCount)} ${if (visibleCount == 1) "character" else "characters"}  |  $saveText",
-            style = MaterialTheme.typography.labelSmall,
-            color = if (saveState == SaveState.FAILED) colors.error else colors.onSurfaceVariant,
-            modifier = if (saveState == SaveState.FAILED) Modifier.clickable { scope.launch { saveNow() } } else Modifier,
+        val saveTint by androidx.compose.animation.animateColorAsState(
+            when (saveState) {
+                SaveState.SAVED -> colors.primary
+                SaveState.SAVING -> colors.tertiary
+                SaveState.UNSAVED -> colors.onSurfaceVariant
+                SaveState.FAILED -> colors.error
+            },
+            animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+            label = "saveTint",
         )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = if (saveState == SaveState.FAILED) Modifier.clickable { scope.launch { saveNow() } } else Modifier,
+        ) {
+            Text(
+                text = "$dateText  |  ${"%,d".format(visibleCount)} ${if (visibleCount == 1) "character" else "characters"}  |  ",
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.onSurfaceVariant,
+            )
+            // The save state: a small dot and a word that change with a springy swap as the note saves.
+            Box(modifier = Modifier.size(6.dp).pillBackground(saveTint))
+            androidx.compose.animation.AnimatedContent(
+                targetState = saveText,
+                transitionSpec = {
+                    (androidx.compose.animation.fadeIn(androidx.compose.animation.core.spring(stiffness = 400f)) +
+                        androidx.compose.animation.slideInVertically(androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 400f)) { it / 2 }) togetherWith
+                        androidx.compose.animation.fadeOut(androidx.compose.animation.core.spring(stiffness = 600f))
+                },
+                label = "saveText",
+            ) { label ->
+                Text(
+                    text = " $label",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = saveTint,
+                )
+            }
+        }
         var topicMenuOpen by remember { mutableStateOf(false) }
         Box {
             Row(
