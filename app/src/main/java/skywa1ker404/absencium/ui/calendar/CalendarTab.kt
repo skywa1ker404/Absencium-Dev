@@ -121,7 +121,6 @@ fun CalendarTab(
     contentPadding: PaddingValues,
     viewModel: CalendarViewModel,
     onOpenExam: (ExamEntity) -> Unit,
-    onDeleteExam: (ExamEntity) -> Unit,
     onEditHoliday: (HolidayEntity) -> Unit,
     onOpenTimetable: () -> Unit,
     onOpenPlanner: () -> Unit = {},
@@ -598,6 +597,7 @@ private fun DayPanel(
     onSetStatus: (Long, AttendanceStatus) -> Unit,
     onSetNotes: (Long, Boolean) -> Unit,
     onOpenExam: (ExamEntity) -> Unit,
+    onDeleteExam: (ExamEntity) -> Unit,
     onEditHoliday: (HolidayEntity) -> Unit,
     onDeleteHoliday: (HolidayEntity) -> Unit,
 ) {
