@@ -1,5 +1,7 @@
 # Unused code scan (2026-11-24)
 
+**Done 2026-11-25:** the composables, pages and block-bodied helpers listed below were removed (CI green `45386504337` and `45607166373`). Left in place: one-line helpers (`= ...`), Room, navigation and interface code.
+
 Method: every `fun` name that appears exactly once in the whole repository (its own definition). This finds dead code but also false positives: navigation screens (reached through generated destinations), Room DAO queries and type converters (called by Room), and interface or serialization hooks. The release build already strips unused code (R8), so removing dead code helps readability and maintenance, not the APK size.
 
 ## Likely dead, AI hub UI (composables nobody calls)
