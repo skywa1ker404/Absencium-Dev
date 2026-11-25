@@ -198,3 +198,4 @@ working on it
 - Removed (branch Absencium-ai, CI green 45386504337 and 45607166373, Batch 45): about 6,000 lines of code nobody called: 45 unused composables and pages in Absencium AI and 94 unused helper functions in the hub and app. No change in behaviour or APK size (the optimized build already left them out).
 - Changed (branch Absencium-ai, CI green 45609900091, Batch 40.1): text fields share one input style (shape, label, error, clear button, keyboard) across the app and Absencium AI.
 - Changed (branch Absencium-ai, CI green 45612371095, Batch 40.5): messages appear as one toast in the Undo bar's style instead of the system toast (voice input, About, Vault).
+- Added (branch Absencium-ai, CI green 45614652202, Batch 40.4): swipe a timetable row left to delete it; the row follows the finger, the red layer and bin grow, a haptic marks the point of no return and the row springs off or back (the delete goes to the Trash with Undo).

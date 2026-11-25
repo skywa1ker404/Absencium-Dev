@@ -54,6 +54,7 @@ import skywa1ker404.absencium.data.vault.VaultData
 import skywa1ker404.absencium.ui.calendar.subjectColor
 import skywa1ker404.absencium.ui.components.AppCard
 import skywa1ker404.absencium.ui.components.PillButton
+import skywa1ker404.absencium.ui.components.emptyCard
 import skywa1ker404.absencium.ui.icons.AppIcons
 
 /** How far (in dp, after resistance) the list must be pulled down before Drafts opens on release. */
@@ -170,6 +171,7 @@ fun VaultTab(
                         title = "No folders yet",
                         text = "Each subject gets its own folder for notes, finished notes and guides.",
                         action = { PillButton(text = "Add subjects", onClick = onManageSubjects) },
+                        modifier = Modifier.emptyCard(),
                     )
                 }
             }

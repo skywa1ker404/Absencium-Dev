@@ -156,7 +156,7 @@ fun SearchSheet(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 when {
-                    query.isBlank() -> ExpressiveEmptyState(AppIcons.Search, "Search everything", "Search notes, study material and subjects.")
+                    query.isBlank() -> ExpressiveEmptyState(AppIcons.Search, "Search everything", "Search notes, study material and subjects.", suggestions = listOf("Syllabus", "Exam", "Notes", "Guide").map { word -> word to { query = word } })
                     results.isEmpty -> ExpressiveEmptyState(AppIcons.Search, "No matches", "Nothing found for \"${query.trim()}\". Try another word.")
                 }
 

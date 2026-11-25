@@ -58,6 +58,7 @@ fun ExpressiveEmptyState(
     text: String,
     modifier: Modifier = Modifier,
     action: (@Composable () -> Unit)? = null,
+    suggestions: List<Pair<String, () -> Unit>> = emptyList(),
     titleStyle: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.titleLarge,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -133,8 +134,27 @@ fun ExpressiveEmptyState(
         Text(title, style = titleStyle, textAlign = TextAlign.Center)
         if (text.isNotBlank()) Text(text, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
         if (action != null) Box(modifier = Modifier.padding(top = 6.dp)) { action() }
+        if (suggestions.isNotEmpty()) {
+            // Things to try, as tappable pills.
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 4.dp),
+            ) {
+                suggestions.forEach { (label, onClick) ->
+                    skywa1ker404.absencium.ui.components.StatPill(label, colors.secondaryContainer, colors.onSecondaryContainer, onClick = onClick)
+                }
+            }
+        }
     }
 }
+
+/** Gives an empty-state a soft card behind it, like the cards of the reference designs. */
+@Composable
+fun Modifier.emptyCard(): Modifier = this
+    .padding(horizontal = 16.dp, vertical = 8.dp)
+    .clip(MaterialTheme.shapes.extraLarge)
+    .background(MaterialTheme.colorScheme.surfaceContainerLow)
 
 
 /** The outline of a [Morph] part of the way between its two shapes (0 is the first, 1 the second), scaled to fill the box. */
