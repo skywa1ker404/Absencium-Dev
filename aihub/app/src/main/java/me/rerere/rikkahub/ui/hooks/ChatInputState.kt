@@ -118,13 +118,6 @@ class ChatInputState {
         addAttachments(uris.map { uri -> UIMessagePart.Image(uri.toString()) })
     }
 
-    fun addVideos(uris: List<Uri>) {
-        addAttachments(uris.map { uri -> UIMessagePart.Video(uri.toString()) })
-    }
-
-    fun addAudios(uris: List<Uri>) {
-        addAttachments(uris.map { uri -> UIMessagePart.Audio(uri.toString()) })
-    }
 
     fun addFiles(uris: List<UIMessagePart.Document>) {
         addAttachments(uris)

@@ -606,33 +606,6 @@ fun List<UIMessage>.stripEphemeralToolImagePayloads(): List<UIMessage> {
     return if (changed) updated else this
 }
 
-fun List<UIMessage>.coalesceConsecutiveToolMessages(): List<UIMessage> {
-    if (size <= 1) return this
-    val result = ArrayList<UIMessage>(size)
-    var i = 0
-    var changed = false
-    while (i < size) {
-        val current = this[i]
-        if (current.role == MessageRole.TOOL) {
-            val toolMessages = mutableListOf<UIMessage>()
-            while (i < size && this[i].role == MessageRole.TOOL) {
-                toolMessages.add(this[i])
-                i++
-            }
-            if (toolMessages.size > 1) {
-                changed = true
-                val mergedParts = toolMessages.flatMap { it.parts }
-                result.add(toolMessages.first().copy(parts = mergedParts))
-            } else {
-                result.add(toolMessages.first())
-            }
-        } else {
-            result.add(current)
-            i++
-        }
-    }
-    return if (changed) result else this
-}
 
 private fun mergeToolName(existing: String, incoming: String): String {
     return when {
@@ -853,6 +826,4 @@ private fun extractTitleFromLine(line: String, hasMultipleLines: Boolean): Strin
     return stripped?.takeIf { it.isNotBlank() }?.take(80)
 }
 
-private fun JsonObject?.isReasoningSummary(): Boolean {
-    return this?.get("reasoning_kind")?.jsonPrimitiveOrNull?.contentOrNull == "summary"
-}
+

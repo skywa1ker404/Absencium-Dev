@@ -758,21 +758,6 @@ private fun iconFileExtension(context: android.content.Context, uri: android.net
 
 
 
-@Composable
-private fun ReasoningBodiesSection(
-    title: String,
-    bodies: List<me.rerere.ai.provider.CustomBody>,
-    onUpdate: (List<me.rerere.ai.provider.CustomBody>) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        CustomBodies(customBodies = bodies, onUpdate = onUpdate)
-    }
-}
 
 @Composable
 private fun ColumnScope.ProviderConfigureClaude(

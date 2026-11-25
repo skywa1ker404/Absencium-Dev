@@ -136,10 +136,4 @@ internal fun isHazeDetachedCoordinateCrash(error: Throwable): Boolean {
         }
 }
 
-internal inline fun <T> runCatchingDetachedLayout(block: () -> T): T? {
-    return try {
-        block()
-    } catch (error: IllegalStateException) {
-        if (isDetachedLayoutCoordinate(error)) null else throw error
-    }
-}
+

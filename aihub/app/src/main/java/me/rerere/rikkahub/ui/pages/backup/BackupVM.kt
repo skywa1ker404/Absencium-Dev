@@ -70,14 +70,6 @@ class BackupVM(
         kotlin.system.exitProcess(0)
     }
 
-    private fun mergeImportedProviders(
-        existingProviders: List<ProviderSetting>,
-        importedProviders: List<ProviderSetting>,
-    ): List<ProviderSetting> {
-        val importedKeys = importedProviders.map(::providerImportKey).toSet()
-        return importedProviders.distinctBy(::providerImportKey) +
-            existingProviders.filterNot { providerImportKey(it) in importedKeys }
-    }
 
     private fun providerImportKey(provider: ProviderSetting): String {
         return when (provider) {

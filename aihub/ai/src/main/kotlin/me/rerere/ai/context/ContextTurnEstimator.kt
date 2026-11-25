@@ -36,30 +36,7 @@ object ContextTurnEstimator {
         return maxOf(FLOOR_TOKENS.toDouble(), current)
     }
 
-    /**
-     * Estimates remaining conversational runway in turns.
-     */
-    fun estimateRunwayTurns(
-        usableInputTokens: Int,
-        usedTokens: Int,
-        velocityTokensPerTurn: Double,
-    ): Int {
-        val remaining = (usableInputTokens - usedTokens).coerceAtLeast(0)
-        val safeVelocity = maxOf(FLOOR_TOKENS.toDouble(), velocityTokensPerTurn)
-        return (remaining / safeVelocity).toInt()
-    }
 
-    /**
-     * Convenience method to calculate turn velocity directly from messages.
-     */
-    fun estimateVelocityFromMessages(messages: List<UIMessage>, model: Model): Double {
-        val groups = messages.toTurnGroups()
-        if (groups.isEmpty()) return FLOOR_TOKENS.toDouble()
-        val counts = groups.map { group ->
-            ContextTokenEstimator.messagesTokens(group.messages, model)
-        }
-        return estimateTurnVelocity(counts)
-    }
 
     /**
      * Returns the minimum unsummarized turns ($N_{\text{min}}$) required before auto-summarizing.

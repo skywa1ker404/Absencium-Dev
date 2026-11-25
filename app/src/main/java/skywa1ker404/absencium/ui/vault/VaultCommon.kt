@@ -118,14 +118,6 @@ fun formatNoteDate(epochMs: Long): String = DateText.format(Date(epochMs))
 fun NoteEntity.snippet(): String =
     bodyText.trim().replace(Regex("\\s+"), " ").take(90)
 
-/** "2 photos, #maths #exam": what an entry carries, shown under its title so a folder can be scanned without opening anything. */
-fun noteBadges(note: NoteEntity, photoCount: Int): String {
-    val parts = mutableListOf<String>()
-    if (photoCount > 0) parts += if (photoCount == 1) "1 photo" else "$photoCount photos"
-    val tags = skywa1ker404.absencium.ui.vault.markdown.NoteTags.parse(note.tags)
-    if (tags.isNotEmpty()) parts += tags.take(3).joinToString(" ") { "#$it" } + if (tags.size > 3) " +${tags.size - 3}" else ""
-    return parts.joinToString("  \u00b7  ")
-}
 
 /** A small rounded label on a tinted card: a topic, a count, a status. */
 @Composable

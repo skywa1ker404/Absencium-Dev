@@ -76,16 +76,9 @@ interface LocalToolNotificationPlatform {
 }
 
 internal object AndroidLocalToolPlatform {
-    fun pathExists(path: String): Boolean {
-        return File(path).exists()
-    }
 
-    fun shortStableHash(value: String): String {
-        return MessageDigest.getInstance("SHA-256")
-            .digest(value.toByteArray())
-            .joinToString(separator = "") { byte -> "%02x".format(byte) }
-            .take(8)
-    }
+
+
 }
 
 class AndroidLocalToolNotificationPlatform(

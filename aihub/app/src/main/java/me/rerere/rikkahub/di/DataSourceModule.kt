@@ -309,8 +309,4 @@ val dataSourceModule = module {
     }
 }
 
-private fun String.toCheckedHttpUrl(label: String): HttpUrl {
-    val normalized = normalizeHttpUrl()
-        ?: throw IllegalArgumentException("$label must be an absolute http or https URL, got: '${trim()}'")
-    return normalized.toHttpUrl()
-}
+

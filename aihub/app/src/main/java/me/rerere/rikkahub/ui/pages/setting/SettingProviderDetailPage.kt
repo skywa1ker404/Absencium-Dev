@@ -196,16 +196,6 @@ import me.rerere.rikkahub.data.model.Tag as DataTag
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.pages.backup.ExportKeySelectionDialog
 
-internal fun resolveProviderModel(
-    resolver: ModelMetadataResolver,
-    provider: ProviderSetting,
-    model: Model,
-): Model {
-    return resolver.applyToModel(
-        model = model,
-        providerHint = provider,
-    )
-}
 
 internal fun resolveProviderModels(
     resolver: ModelMetadataResolver,

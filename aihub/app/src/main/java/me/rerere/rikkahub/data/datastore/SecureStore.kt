@@ -108,13 +108,6 @@ class SecureStore(context: Context) {
         }
     }
 
-    /**
-     * Check if a secret exists.
-     * @param key The identifier to check
-     */
-    fun hasSecret(key: String): Boolean {
-        return encryptedPrefs?.contains(key) ?: fallbackMap?.containsKey(key) ?: false
-    }
 
     /**
      * Get all secret keys (not values!) for enumeration.
@@ -133,30 +126,5 @@ class SecureStore(context: Context) {
         return getSecret(key)
     }
 
-    /**
-     * Import a secret from a backup file.
-     * This takes a plaintext value (from backup) and encrypts it.
-     */
-    fun importSecret(key: String, plaintextValue: String) {
-        putSecret(key, plaintextValue)
-    }
 
-    /**
-     * Clear all secrets.
-     * Use with caution - typically only for debugging or factory reset.
-     */
-    fun clearAll() {
-        val prefs = encryptedPrefs
-        if (prefs != null) {
-            val success = prefs.edit().clear().commit()
-            if (!success) {
-                Log.e(TAG, "Failed to clear encrypted secrets")
-            }
-        } else {
-            fallbackMap?.clear()
-        }
-        if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Cleared all secrets")
-        }
-    }
 }

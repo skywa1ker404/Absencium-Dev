@@ -488,13 +488,6 @@ private fun ExamStat(label: String, value: String, modifier: Modifier, accent: a
     }
 }
 
-@Composable
-private fun DetailLine(label: String, value: String) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-        Text(value, style = MaterialTheme.typography.bodyLarge)
-    }
-}
 
 /** 40.0 becomes "40" and 12.5 stays "12.5". */
 private fun trimNumber(value: Double): String =

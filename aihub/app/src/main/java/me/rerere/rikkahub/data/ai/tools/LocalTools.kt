@@ -259,13 +259,6 @@ internal fun notificationsToolJson(notifications: List<LocalToolNotificationSnap
     }
 }
 
-private fun sanitizeSandboxBaseName(rawName: String): String {
-    val cleaned = rawName
-        .replace(Regex("[^A-Za-z0-9._-]+"), "-")
-        .trim('-', '.', '_')
-        .take(40)
-    return cleaned.ifBlank { "attachment" }
-}
 
 class LocalTools(
     private val context: Context,

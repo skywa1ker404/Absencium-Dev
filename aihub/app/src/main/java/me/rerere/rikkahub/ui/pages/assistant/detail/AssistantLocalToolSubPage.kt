@@ -31,42 +31,4 @@ import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
 
 
-@Composable
-private fun LocalToolCard(
-    title: String,
-    description: String,
-    isEnabled: Boolean,
-    onToggle: (Boolean) -> Unit,
-    content: @Composable (() -> Unit)? = null
-) {
-    Card(
-        shape = me.rerere.rikkahub.ui.theme.AppShapes.CardMedium,
-        colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = if (me.rerere.rikkahub.ui.theme.LocalDarkMode.current) androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerLow else androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
-        FormItem(
-            modifier = Modifier.padding(8.dp),
-            label = {
-                Text(title)
-            },
-            description = {
-                Text(description)
-            },
-            tail = {
-                Switch(
-                    checked = isEnabled,
-                    onCheckedChange = onToggle
-                )
-            },
-            content = {
-                if (isEnabled && content != null) {
-                    content()
-                } else {
-                    null
-                }
-            }
-        )
-    }
-}
 

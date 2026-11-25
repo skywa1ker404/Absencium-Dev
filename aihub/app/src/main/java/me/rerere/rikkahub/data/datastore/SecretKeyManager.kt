@@ -153,17 +153,7 @@ class SecretKeyManager(
 
     // ========== HuggingFace Token Management ==========
 
-    fun getHuggingFaceToken(): String? {
-        return secureStore.getSecret(HUGGINGFACE_TOKEN_KEY)
-    }
 
-    fun setHuggingFaceToken(token: String) {
-        if (token.isNotBlank()) {
-            secureStore.putSecret(HUGGINGFACE_TOKEN_KEY, token)
-        } else {
-            secureStore.removeSecret(HUGGINGFACE_TOKEN_KEY)
-        }
-    }
 
     /** MCP servers and text-to-speech were removed; drop the secrets they left in the secure store. */
     private fun removeLeftoverMcpSecrets() {
@@ -358,53 +348,6 @@ class SecretKeyManager(
         }
     }
 
-    private fun migrateSttProviderSecrets(provider: ASRProviderSetting): ASRProviderSetting {
-        return when (provider) {
-            is ASRProviderSetting.OpenAICompatible -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setSttApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is ASRProviderSetting.OpenAIRealtime -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setSttApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is ASRProviderSetting.DashScope -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setSttApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is ASRProviderSetting.Volcengine -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setSttApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is ASRProviderSetting.MiMo -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setSttApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is ASRProviderSetting.Step -> {
-                if (provider.apiKey.isNotBlank()) {
-                    setSttApiKey(provider.id, provider.apiKey)
-                    provider.copy(apiKey = "")
-                } else provider
-            }
-
-            is ASRProviderSetting.SystemSTT -> provider
-        }
-    }
 
     // ========== Backup/Export Support ==========
 
@@ -517,35 +460,6 @@ class SecretKeyManager(
         return model.copy(providerOverwrite = populateProviderSecrets(overwrite))
     }
 
-    private fun populateSttProviderSecrets(provider: ASRProviderSetting): ASRProviderSetting {
-        return when (provider) {
-            is ASRProviderSetting.OpenAICompatible -> provider.copy(apiKey = getSttApiKey(provider.id, provider.apiKey))
-            is ASRProviderSetting.OpenAIRealtime -> provider.copy(apiKey = getSttApiKey(provider.id, provider.apiKey))
-            is ASRProviderSetting.DashScope -> provider.copy(apiKey = getSttApiKey(provider.id, provider.apiKey))
-            is ASRProviderSetting.Volcengine -> provider.copy(apiKey = getSttApiKey(provider.id, provider.apiKey))
-            is ASRProviderSetting.MiMo -> provider.copy(apiKey = getSttApiKey(provider.id, provider.apiKey))
-            is ASRProviderSetting.Step -> provider.copy(apiKey = getSttApiKey(provider.id, provider.apiKey))
-            is ASRProviderSetting.SystemSTT -> provider
-        }
-    }
 
-    /**
-     * Import secrets from backup settings and store them encrypted.
-     * This should be called after restoring settings from a backup file.
-     */
-    fun importSecretsFromBackup(settings: Settings): Settings {
-        // Same as migration - store secrets and clear plaintext
-        return migrateSecretsFromSettings(settings)
-    }
 }
-private fun ASRProviderSetting.apiKeyOrBlank(): String {
-    return when (this) {
-        is ASRProviderSetting.OpenAICompatible -> apiKey
-        is ASRProviderSetting.OpenAIRealtime -> apiKey
-        is ASRProviderSetting.DashScope -> apiKey
-        is ASRProviderSetting.Volcengine -> apiKey
-        is ASRProviderSetting.MiMo -> apiKey
-        is ASRProviderSetting.Step -> apiKey
-        is ASRProviderSetting.SystemSTT -> ""
-    }
-}
+

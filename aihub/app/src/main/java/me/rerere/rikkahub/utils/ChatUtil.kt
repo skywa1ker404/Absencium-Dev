@@ -341,12 +341,6 @@ suspend fun Context.deleteChatFiles(uris: List<Uri>) = withContext(Dispatchers.I
     }
 }
 
-fun Context.deleteAllChatFiles() {
-    val dir = this.filesDir.resolve("upload")
-    if (dir.exists()) {
-        dir.deleteRecursively()
-    }
-}
 
 suspend fun Context.countChatFiles(): Pair<Int, Long> = withContext(Dispatchers.IO) {
     val dir = filesDir.resolve("upload")
@@ -383,12 +377,6 @@ fun Context.createImageFileFromBase64(base64Data: String, filePath: String): Fil
     return file
 }
 
-fun Context.listImageFiles(): List<File> {
-    val imagesDir = getImagesDir()
-    return imagesDir.listFiles()
-        ?.filter { it.isFile && it.extension.lowercase() in listOf("png", "jpg", "jpeg", "webp") }?.toList()
-        ?: emptyList()
-}
 
 private fun Context.openUriInputStream(uri: Uri): InputStream? {
     return when (uri.scheme) {

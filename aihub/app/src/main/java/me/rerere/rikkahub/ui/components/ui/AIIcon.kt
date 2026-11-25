@@ -204,54 +204,6 @@ fun AutoAIIcon(
 }
 
 
-/**
- * Helper composable for provider favicon fallback
- */
-@Composable
-private fun ProviderFaviconFallback(
-    name: String,
-    baseUrl: String?,
-    modifier: Modifier,
-    loading: Boolean,
-    color: Color,
-    contentColor: Color,
-    padding: Dp
-) {
-    val faviconUrl = remember(baseUrl) {
-        baseUrl?.urlPartsOrNull()?.host?.let { host ->
-            "https://favicone.com/$host"
-        }
-    }
-    
-    if (faviconUrl != null) {
-        RemoteIcon(
-            url = faviconUrl,
-            iconKey = "favicon_${baseUrl?.hashCode()}",
-            name = name,
-            modifier = modifier,
-            loading = loading,
-            color = color,
-            padding = padding,
-            fallback = {
-                TextAvatar(
-                    text = name,
-                    modifier = modifier,
-                    loading = loading,
-                    color = color,
-                    contentColor = contentColor
-                )
-            }
-        )
-    } else {
-        TextAvatar(
-            text = name,
-            modifier = modifier,
-            loading = loading,
-            color = color,
-            contentColor = contentColor
-        )
-    }
-}
 
 /**
  * Get a provider slug from a provider name for LobeHub CDN lookup

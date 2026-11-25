@@ -13,16 +13,6 @@ data class PdfPageContent(
 object PdfParser {
     private const val DEFAULT_RENDER_DPI = 150
 
-    fun parserPdf(file: File): String {
-        return extractPages(file).joinToString(separator = "") { page ->
-            buildString {
-                append("---")
-                append("Page ${page.pageNumber}:\n")
-                append(page.text)
-                appendLine()
-            }
-        }
-    }
 
     fun extractPages(file: File): List<PdfPageContent> {
         val document = PDFDocument.openDocument(file.absolutePath).asPDF()

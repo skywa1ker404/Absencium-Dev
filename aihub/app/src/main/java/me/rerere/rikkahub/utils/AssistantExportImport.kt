@@ -120,11 +120,6 @@ object AssistantExportImport : KoinComponent {
         return json.encodeToString(AssistantExportV1.serializer(), export)
     }
 
-    /** Import an Assistant from Absencium AI Bundle JSON format. */
-    suspend fun importFromAiBundle(jsonContent: String, context: Context): Assistant {
-        val export = json.decodeFromString<AssistantExportV1>(jsonContent)
-        return finalizeAiImport(export, context, true)
-    }
 
     /** Finalize the import from a parsed ExportV1 object. Restores files and, when asked, memories. */
     suspend fun finalizeAiImport(

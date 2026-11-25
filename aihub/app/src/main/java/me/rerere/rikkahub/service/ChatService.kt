@@ -410,23 +410,6 @@ internal suspend fun buildForkConversationSnapshot(
     )
 }
 
-private fun repairAssistantTurnSelections(
-    nodes: MutableList<MessageNode>,
-    turnStart: Int,
-    turnEndExclusive: Int,
-) {
-    if (turnStart !in nodes.indices || turnEndExclusive <= turnStart) return
-
-    val turnNodes = nodes.subList(turnStart, turnEndExclusive)
-    val selectedTag = chooseAssistantTurnVersionTag(turnNodes)
-    for (index in turnStart until turnEndExclusive) {
-        val node = nodes[index]
-        val bestIndex = findBestMessageIndex(node, selectedTag)
-        if (node.selectIndex != bestIndex) {
-            nodes[index] = node.copy(selectIndex = bestIndex)
-        }
-    }
-}
 
 private fun chooseAssistantTurnVersionTag(turnNodes: List<MessageNode>): String? {
     if (turnNodes.isEmpty()) return null
@@ -2680,10 +2663,6 @@ class ChatService(
         )
     }
 
-    // 检查文件删除
-    private suspend fun checkFilesDelete(newConversation: Conversation, oldConversation: Conversation) {
-        // Attachment lifecycle is synchronized through ChatAttachmentRepository.
-    }
 
     // Context Refresh result
     data class ContextRefreshResult(
@@ -2975,50 +2954,6 @@ class ChatService(
         )
     }
 
-    // 翻译消息
-    fun translateMessage(
-        conversationId: Uuid,
-        message: UIMessage,
-        targetLanguage: Locale
-    ) {
-        appScope.launch(Dispatchers.IO) {
-            try {
-                val settings = settingsStore.settingsFlow.first()
-                val conversation = getConversationFlow(conversationId).value
-                val assistant = settings.getAssistantById(conversation.assistantId)
-                val chatModelId = assistant?.chatModelId ?: settings.chatModelId
-
-                val messageText = message.parts.filterIsInstance<UIMessagePart.Text>()
-                    .joinToString("\n\n") { it.text }
-                    .trim()
-
-                if (messageText.isBlank()) return@launch
-
-                // Set loading state for translation
-                val loadingText = context.getString(R.string.translating)
-                updateTranslationField(conversationId, message.id, loadingText)
-
-                generationHandler.translateText(
-                    settings = settings,
-                    sourceText = messageText,
-                    targetLanguage = targetLanguage,
-                    modelIdOverride = chatModelId,
-                ) { translatedText ->
-                    // Update translation field in real-time
-                    appScope.launch {
-                        updateTranslationField(conversationId, message.id, translatedText)
-                    }
-                }.collect { /* Final translation already handled in onStreamUpdate */ }
-
-                // Save the conversation after translation is complete
-                saveConversation(conversationId, getConversationFlow(conversationId).value)
-            } catch (e: Exception) {
-                // Clear translation field on error
-                clearTranslationField(conversationId, message.id)
-                _errorFlow.emit(e)
-            }
-        }
-    }
 
     private suspend fun updateTranslationField(
         conversationId: Uuid,

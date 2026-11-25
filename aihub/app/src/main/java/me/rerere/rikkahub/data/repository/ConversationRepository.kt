@@ -306,28 +306,6 @@ class ConversationRepository(
         return memoryRepository.getEpisodeCountFlow()
     }
 
-    fun getAllConversations(): Flow<List<Conversation>> {
-        return conversationDAO.getAll()
-            .map { list ->
-                list.map { entity ->
-                    runCatching { conversationEntityToConversation(entity) }.getOrElse { error ->
-                        Log.e(TAG, "Failed to load conversation ${entity.id}", error)
-                        conversationSummaryToConversation(
-                            LightConversationEntity(
-                                id = entity.id,
-                                assistantId = entity.assistantId,
-                                title = entity.title,
-                                isPinned = entity.isPinned,
-                                createAt = entity.createAt,
-                                updateAt = entity.updateAt,
-                                isConsolidated = entity.isConsolidated,
-                                isFork = entity.isFork,
-                            )
-                        )
-                    }
-                }
-            }
-    }
 
     suspend fun hasSuccessfulAssistantReply(): Boolean = withContext(Dispatchers.IO) {
         conversationDAO.hasUserAssistantConversation()

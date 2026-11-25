@@ -91,44 +91,6 @@ class OnboardingVM(
         }
     }
 
-    fun completeLocalSetup(onDone: () -> Unit) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val syncedSettings = withTimeoutOrNull(5_000) {
-                    settingsStore.settingsFlow.first { current ->
-                        current.providers
-                            .filterIsInstance<ProviderSetting.LiteRtLocal>()
-                            .firstOrNull()
-                            ?.models
-                            ?.any { it.type == ModelType.CHAT } == true
-                    }
-                } ?: settingsStore.settingsFlow.value
-                val localProvider = syncedSettings.providers
-                    .filterIsInstance<ProviderSetting.LiteRtLocal>()
-                    .firstOrNull()
-                val chatModel = localProvider?.models?.firstOrNull { it.type == ModelType.CHAT }
-                val visionModel = localProvider?.models?.firstOrNull {
-                    it.type == ModelType.CHAT && Modality.IMAGE in it.inputModalities
-                }
-                val embeddingModel = localProvider?.models?.firstOrNull {
-                    it.type == ModelType.EMBEDDING
-                }
-
-                settingsStore.update(
-                    syncedSettings.copy(
-                        setupCompleted = true,
-                        chatModelId = chatModel?.id ?: syncedSettings.chatModelId,
-                        titleModelId = chatModel?.id ?: syncedSettings.titleModelId,
-                        summarizerModelId = chatModel?.id ?: syncedSettings.summarizerModelId,
-                        ocrModelId = visionModel?.id ?: syncedSettings.ocrModelId,
-                        embeddingModelId = embeddingModel?.id ?: syncedSettings.embeddingModelId,
-                    )
-                )
-                localProviderBeforeSetup = null
-            }
-            onDone()
-        }
-    }
 
     fun completeGuided(preset: ProviderPreset, apiKey: String, onDone: () -> Unit) {
         viewModelScope.launch {
@@ -197,9 +159,6 @@ class OnboardingVM(
         }
     }
 
-    fun presetToProvider(preset: ProviderPreset): ProviderSetting {
-        return preset.toProviderSetting()
-    }
 
     private fun applyDefaults(
         settings: Settings,

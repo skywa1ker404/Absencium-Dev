@@ -36,61 +36,7 @@ import me.rerere.rikkahub.data.datastore.normalize
  * - Varied weights for emphasis
  */
 
-// Create font with specific variation settings for M3 Expressive mode
-@Composable
-fun rememberGoogleSansFlexExpressive(
-    weight: FontWeight = FontWeight.Normal,
-    width: Float = 100f,  // 75-125, 100 = normal
-    roundness: Float = 100f, // 0-100, 100 = fully rounded (M3E style)
-    grade: Float = 0f,    // -50 to 150
-): FontFamily {
-    return remember(weight, width, roundness, grade) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            FontFamily(
-                Font(
-                    R.font.google_sans_flex,
-                    weight = weight,
-                    variationSettings = FontVariation.Settings(
-                        FontVariation.weight(weight.weight),
-                        FontVariation.width(width),
-                        FontVariation.Setting("ROND", roundness),
-                        FontVariation.Setting("GRAD", grade)
-                    )
-                )
-            )
-        } else {
-            // Fallback for older Android versions
-            FontFamily(Font(R.font.google_sans_flex, weight = weight))
-        }
-    }
-}
 
-// Create font for Normal mode (no roundness, standard settings)
-@Composable
-fun rememberGoogleSansFlexNormal(
-    weight: FontWeight = FontWeight.Normal,
-    width: Float = 100f,
-    grade: Float = 0f,
-): FontFamily {
-    return remember(weight, width, grade) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            FontFamily(
-                Font(
-                    R.font.google_sans_flex,
-                    weight = weight,
-                    variationSettings = FontVariation.Settings(
-                        FontVariation.weight(weight.weight),
-                        FontVariation.width(width),
-                        FontVariation.Setting("ROND", 0f), // No roundness
-                        FontVariation.Setting("GRAD", grade)
-                    )
-                )
-            )
-        } else {
-            FontFamily(Font(R.font.google_sans_flex, weight = weight))
-        }
-    }
-}
 
 // Static font families for non-composable contexts
 private fun createGoogleSansFlex(roundness: Float, wideForExpressive: Boolean = false): FontFamily {

@@ -253,13 +253,6 @@ private fun BackupTabPillBar(
     }
 }
 
-@Composable
-private fun BackupCardLabel(@StringRes titleRes: Int) {
-    Text(
-        text = stringResource(titleRes),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
 
 @Composable
 private fun ImportExportPage(

@@ -100,31 +100,6 @@ fun UIMessagePart.chatAttachmentMimeHint(): String? {
     return metadata?.get(ChatAttachmentMetadataKeys.MIME)?.jsonPrimitiveOrNull?.contentOrNull
 }
 
-fun UIMessagePart.withChatAttachmentMetadata(
-    fileId: String,
-    state: ChatAttachmentState = chatAttachmentState(),
-    ocrText: String? = chatAttachmentOcrText(),
-    ocrStatus: ChatAttachmentOcrStatus = chatAttachmentOcrStatus(),
-    displayName: String? = chatAttachmentDisplayName(),
-    mime: String? = chatAttachmentMimeHint(),
-): UIMessagePart {
-    val mergedMetadata = buildChatAttachmentMetadata(
-        existing = metadata,
-        fileId = fileId,
-        state = state,
-        ocrText = ocrText,
-        ocrStatus = ocrStatus,
-        displayName = displayName,
-        mime = mime,
-    )
-    return when (this) {
-        is UIMessagePart.Image -> copy(metadata = mergedMetadata)
-        is UIMessagePart.Document -> copy(metadata = mergedMetadata)
-        is UIMessagePart.Video -> copy(metadata = mergedMetadata)
-        is UIMessagePart.Audio -> copy(metadata = mergedMetadata)
-        else -> this
-    }
-}
 
 fun buildChatAttachmentMetadata(
     existing: JsonObject?,

@@ -103,13 +103,6 @@ class LruCache<K, V>(
 
     fun size(): Int = state.load().entries.size
 
-    fun keysInMemory(): Set<K> {
-        val current = state.load()
-        val now = now()
-        return current.order
-            .filter { key -> current.entries[key]?.isExpired(now) == false }
-            .toSet()
-    }
 
     private fun putInMemory(key: K, entry: CacheEntry<V>) {
         while (true) {

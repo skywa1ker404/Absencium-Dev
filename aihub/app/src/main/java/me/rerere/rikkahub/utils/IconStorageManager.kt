@@ -238,38 +238,11 @@ class IconStorageManager private constructor(
         }
     }
     
-    /**
-     * Get the total size of stored icons in bytes.
-     */
-    fun getStorageSize(): Long {
-        return try {
-            iconsDir.listFiles()?.sumOf { it.length() } ?: 0L
-        } catch (e: Exception) {
-            0L
-        }
-    }
+
     
-    /**
-     * Get the count of stored icons.
-     */
-    fun getIconCount(): Int {
-        return try {
-            iconsDir.listFiles()?.size ?: 0
-        } catch (e: Exception) {
-            0
-        }
-    }
+
     
-    /**
-     * Clear all auto-fetched icons.
-     */
-    fun clearAllIcons() {
-        try {
-            iconsDir.listFiles()?.forEach { it.delete() }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
+
 
     private fun calculateInSampleSize(srcWidth: Int, srcHeight: Int, reqWidth: Int, reqHeight: Int): Int {
         var inSampleSize = 1

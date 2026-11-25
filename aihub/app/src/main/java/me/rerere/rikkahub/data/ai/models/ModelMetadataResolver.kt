@@ -107,16 +107,6 @@ class ModelMetadataResolver(
         }
     }
 
-    fun estimateCostUsd(
-        model: Model,
-        promptTokens: Int,
-        completionTokens: Int,
-    ): Double? {
-        val catalogEntry = resolveCatalogEntry(model = model) ?: return null
-        val inputCost = catalogEntry.inputCostPerToken ?: return null
-        val outputCost = catalogEntry.outputCostPerToken ?: return null
-        return (promptTokens * inputCost) + (completionTokens * outputCost)
-    }
 
     private fun resolveCatalogEntry(
         model: Model,

@@ -387,9 +387,6 @@ fun List<ProviderSetting>.findModelById(uuid: Uuid): Model? {
     return null
 }
 
-fun Settings.getCurrentChatModel(): Model? {
-    return getChatModelForAssistant(getCurrentAssistant())
-}
 
 fun Settings.getChatModelForAssistant(assistant: Assistant): Model? {
     return findModelById(assistant.chatModelId ?: chatModelId)
@@ -442,30 +439,6 @@ fun Settings.getEffectiveDisplaySetting(assistant: Assistant? = null): DisplaySe
     )
 }
 
-internal fun Settings.ensureBuiltInProviders(): Settings {
-    val defaultById = DEFAULT_PROVIDERS.associateBy { it.id }
-    val normalizedProviders = providers.map { provider ->
-        defaultById[provider.id]?.let { defaultProvider ->
-            provider.copyProvider(
-                id = defaultProvider.id,
-                builtIn = defaultProvider.builtIn,
-            )
-        } ?: provider
-    }
-
-    val missingDefaults = DEFAULT_PROVIDERS
-        .filterNot { default -> normalizedProviders.any { it.id == default.id } }
-
-    val updatedProviders = buildList {
-        addAll(normalizedProviders)
-        addAll(missingDefaults)
-    }
-    return if (updatedProviders != providers) {
-        copy(providers = updatedProviders)
-    } else {
-        this
-    }
-}
 
 internal fun Settings.clearMissingModelReferences(): Settings {
     val allModels = providers.flatMap { it.models }

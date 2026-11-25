@@ -234,15 +234,6 @@ internal fun shouldOfferMessageRegenerate(
     }
 }
 
-internal fun isCharacterIntroMessage(
-    messages: List<me.rerere.ai.ui.UIMessage>,
-    message: me.rerere.ai.ui.UIMessage,
-): Boolean {
-    if (message.role != me.rerere.ai.core.MessageRole.ASSISTANT) return false
-    val index = messages.indexOfFirst { it.id == message.id }
-    if (index < 0) return false
-    return messages.take(index).none { it.role == me.rerere.ai.core.MessageRole.USER }
-}
 
 internal fun completedGenerationIdsAfterDone(
     currentCompleted: Set<Uuid>,

@@ -194,12 +194,6 @@ internal val EXPLICIT_BINARY_MIME_TYPES = setOf(
     "application/java-archive"
 )
 
-fun isArchiveOrBinaryFile(fileName: String, mime: String): Boolean {
-    val ext = fileName.substringAfterLast('.', "").lowercase()
-    if (ext in ARCHIVE_AND_BINARY_EXTENSIONS) return true
-    if (mime.lowercase() in EXPLICIT_BINARY_MIME_TYPES) return true
-    return false
-}
 
 internal fun isSupportedTextDocument(
     documentUrl: String,

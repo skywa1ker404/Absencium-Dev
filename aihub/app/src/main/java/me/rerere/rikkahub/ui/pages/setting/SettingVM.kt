@@ -115,33 +115,6 @@ class SettingVM(
 
     private val pendingFileCleanupJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
 
-    fun cleanupFilesIfUnreferenced(
-        fileRefs: Collection<String>,
-        delayMs: Long = 0L,
-        cleanupKey: String? = null,
-    ) {
-        if (cleanupKey != null) {
-            cancelUnreferencedFileCleanup(cleanupKey)
-        }
-        if (fileRefs.isEmpty()) {
-            return
-        }
-        val job = viewModelScope.launch(Dispatchers.IO) {
-            try {
-                if (delayMs > 0L) {
-                    delay(delayMs)
-                }
-                appStorageRepository.deleteFilesIfUnreferenced(fileRefs)
-            } finally {
-                if (cleanupKey != null) {
-                    pendingFileCleanupJobs.remove(cleanupKey, coroutineContext[Job])
-                }
-            }
-        }
-        if (cleanupKey != null) {
-            pendingFileCleanupJobs[cleanupKey] = job
-        }
-    }
 
     fun cancelUnreferencedFileCleanup(cleanupKey: String) {
         pendingFileCleanupJobs.remove(cleanupKey)?.cancel()

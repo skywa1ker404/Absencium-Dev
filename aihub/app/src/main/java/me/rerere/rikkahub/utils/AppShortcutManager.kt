@@ -126,51 +126,7 @@ class AppShortcutManager(
         }
     }
     
-    /**
-     * Creates a circular adaptive icon from a bitmap.
-     * Adaptive icons have a safe zone in the center (inner 66%), so we need to
-     * scale the content to fit within that area with proper padding.
-     */
-    private fun createCircularAdaptiveIcon(sourceBitmap: Bitmap): Icon {
-        val fullSize = 108 // Full adaptive icon size
-        val safeSize = 72 // Inner safe zone (66% of 108)
-        val padding = (fullSize - safeSize) / 2 // 18dp padding on each side
-        
-        // Scale source to fit in safe zone
-        val scaledBitmap = Bitmap.createScaledBitmap(sourceBitmap, safeSize, safeSize, true)
-        val resultBitmap = createBitmap(fullSize, fullSize)
-        val canvas = Canvas(resultBitmap)
-        
-        // Fill with background color
-        val bgPaint = Paint().apply {
-            color = 0xFFE0E0E0.toInt()
-            isAntiAlias = true
-        }
-        canvas.drawCircle(fullSize / 2f, fullSize / 2f, fullSize / 2f, bgPaint)
-        
-        // Create shader for the circular image, positioned in center
-        val matrix = android.graphics.Matrix()
-        matrix.setTranslate(padding.toFloat(), padding.toFloat())
-        
-        val shader = android.graphics.BitmapShader(
-            scaledBitmap,
-            android.graphics.Shader.TileMode.CLAMP,
-            android.graphics.Shader.TileMode.CLAMP
-        )
-        shader.setLocalMatrix(matrix)
-        
-        val paint = Paint().apply {
-            isAntiAlias = true
-            this.shader = shader
-        }
-        canvas.drawCircle(fullSize / 2f, fullSize / 2f, safeSize / 2f, paint)
-        
-        if (sourceBitmap != scaledBitmap) {
-            scaledBitmap.recycle()
-        }
-        
-        return Icon.createWithAdaptiveBitmap(resultBitmap)
-    }
+
 
     /**
      * Creates an icon with an emoji.
@@ -301,19 +257,6 @@ class AppShortcutManager(
         return Icon.createWithAdaptiveBitmap(circularBitmap)
     }
 
-    /**
-     * Removes all dynamic assistant shortcuts.
-     */
-    fun clearAssistantShortcuts() {
-        val manager = shortcutManager ?: return
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return
-        
-        try {
-            manager.removeAllDynamicShortcuts()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
     private fun calculateInSampleSize(srcWidth: Int, srcHeight: Int, reqWidth: Int, reqHeight: Int): Int {
         var inSampleSize = 1

@@ -80,27 +80,7 @@ class FontFileManager(private val context: Context) {
         }
     }
     
-    /**
-     * List all custom fonts stored in internal storage.
-     */
-    fun listFonts(): List<CustomFontInfo> {
-        return fontsDir.listFiles()?.mapNotNull { file ->
-            try {
-                val typeface = Typeface.createFromFile(file)
-                if (typeface != null) {
-                    CustomFontInfo(
-                        path = file.absolutePath,
-                        displayName = extractFontName(file.name),
-                        size = file.length(),
-                        isVariable = isVariableFont(file),
-                        supportedAxes = detectAxesTags(file)
-                    )
-                } else null
-            } catch (e: Exception) {
-                null
-            }
-        } ?: emptyList()
-    }
+
     
     /**
      * Detect variable font axes from a font file.
@@ -144,17 +124,7 @@ class FontFileManager(private val context: Context) {
         }
     }
     
-    /**
-     * Get the file bytes for backup/export purposes.
-     */
-    fun getFontBytes(fontPath: String): ByteArray? {
-        return try {
-            File(fontPath).readBytes()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to read font bytes: $fontPath", e)
-            null
-        }
-    }
+
     
     /**
      * Restore a font from backup bytes.

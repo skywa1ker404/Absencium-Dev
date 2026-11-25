@@ -184,18 +184,6 @@ object ImageUtils {
         }
     }
 
-    /**
-     * 安全地回收Bitmap内存
-     *
-     * @param bitmap 要回收的bitmap
-     */
-    fun recycleBitmapSafely(bitmap: Bitmap?) {
-        bitmap?.let {
-            if (!it.isRecycled) {
-                it.recycle()
-            }
-        }
-    }
 
     /**
      * Copy an image to app's internal storage for persistence

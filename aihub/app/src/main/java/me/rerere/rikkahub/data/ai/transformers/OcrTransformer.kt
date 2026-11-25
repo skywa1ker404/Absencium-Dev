@@ -60,12 +60,6 @@ internal fun isOcrConfigured(settings: Settings): Boolean {
     return model.findProvider(settings.providers) != null
 }
 
-internal fun shouldSilentlyPreloadImageForOcrFallback(
-    model: Model,
-    settings: Settings,
-): Boolean {
-    return !model.inputModalities.contains(Modality.IMAGE) && isOcrConfigured(settings)
-}
 
 object OcrTransformer : InputMessageTransformer, KoinComponent {
     private val cache by lazy {

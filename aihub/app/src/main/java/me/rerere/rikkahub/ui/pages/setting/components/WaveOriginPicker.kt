@@ -45,16 +45,4 @@ import androidx.compose.ui.window.DialogProperties
 import kotlin.math.roundToInt
 
 
-/** Snap a point in [0,1]² to the nearest screen edge (perimeter). */
-private fun snapToEdge(fx: Float, fy: Float): Pair<Float, Float> {
-    val left = fx
-    val right = 1f - fx
-    val top = fy
-    val bottom = 1f - fy
-    return when (minOf(left, right, top, bottom)) {
-        left -> 0f to fy
-        right -> 1f to fy
-        top -> fx to 0f
-        else -> fx to 1f
-    }
-}
+

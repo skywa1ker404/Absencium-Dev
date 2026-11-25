@@ -364,9 +364,6 @@ class AssistantDetailVM(
         }
     }
 
-    fun clearRetrievalResults() {
-        _retrievalDebugState.value = MemoryRetrievalDebugState()
-    }
 
     fun regenerateEmbeddings() {
         viewModelScope.launch {

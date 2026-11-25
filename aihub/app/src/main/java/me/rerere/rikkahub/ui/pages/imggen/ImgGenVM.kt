@@ -97,9 +97,6 @@ class ImgGenVM(
         _prompt.value = prompt
     }
 
-    fun updateNumberOfImages(count: Int) {
-        _numberOfImages.value = count.coerceIn(1, 4)
-    }
 
     fun updateAspectRatio(aspectRatio: ImageAspectRatio) {
         _aspectRatio.value = aspectRatio

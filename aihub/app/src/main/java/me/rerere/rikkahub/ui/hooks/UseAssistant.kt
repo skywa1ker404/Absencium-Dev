@@ -28,11 +28,5 @@ class AssistantState(
     )
     val currentAssistant get() = _currentAssistant
 
-    fun setSelectAssistant(assistant: Assistant) {
-        onUpdateSettings(
-            settings.copy(
-                assistantId = assistant.id
-            )
-        )
-    }
+
 }

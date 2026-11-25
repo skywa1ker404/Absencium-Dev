@@ -50,9 +50,4 @@ internal fun searchResultImage(
     )
 }
 
-internal fun SearchResultItem.withSource(source: String?, publishedAt: String? = this.publishedAt): SearchResultItem {
-    return copy(
-        source = source?.takeIf { it.isNotBlank() },
-        publishedAt = publishedAt?.takeIf { it.isNotBlank() },
-    )
-}
+

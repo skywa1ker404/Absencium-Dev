@@ -624,39 +624,6 @@ data class ModelCatalogResolutionTrace(
     val entry: ModelCatalogEntry?,
 )
 
-fun ModelCatalogSnapshot.explainModelResolution(
-    modelId: String,
-    canonicalHint: String? = null,
-    providerHint: ProviderSetting? = null,
-    providerSlugHint: String? = null,
-): ModelCatalogResolutionTrace {
-    if (modelId.isBlank()) {
-        return ModelCatalogResolutionTrace(emptyList(), null, emptyList(), emptyList(), null)
-    }
-    val fingerprint = ModelCatalogFingerprint(
-        modelId = modelId,
-        canonicalHint = canonicalHint,
-        providerHint = providerHint,
-        providerSlugHint = providerSlugHint,
-    )
-    val matchedGlobalRules = globalRules.filter { it.matches(fingerprint) }
-    val family = modelFamilies.firstOrNull { it.matches(fingerprint) }
-    val matchedVersions = family?.versions?.filter { it.matches(fingerprint) }.orEmpty()
-    val matchedOverrides = modelOverrides.filter { it.matches(fingerprint) }
-    val entry = resolveModelEntry(
-        modelId = modelId,
-        canonicalHint = canonicalHint,
-        providerHint = providerHint,
-        providerSlugHint = providerSlugHint,
-    )
-    return ModelCatalogResolutionTrace(
-        globalRules = matchedGlobalRules.map { it.id.ifBlank { it.matchPatterns.joinToString() } },
-        familyId = family?.id,
-        familyVersions = matchedVersions.map { it.id.ifBlank { it.matchPatterns.joinToString() } },
-        overrides = matchedOverrides.map { it.id.ifBlank { it.matchPatterns.joinToString() } },
-        entry = entry,
-    )
-}
 
 private data class ModelCatalogFingerprint(
     val modelId: String,
@@ -993,12 +960,6 @@ fun ModelCatalogSnapshot.searchProviderIconUri(providerIdOrName: String): String
         ?.toCatalogIconUrl()
 }
 
-fun ModelCatalogSnapshot.sttProviderIconUri(providerIdOrName: String): String? {
-    return sttProviders
-        .firstOrNull { provider -> provider.matchesCatalogServiceProvider(providerIdOrName) }
-        ?.icon
-        ?.toCatalogIconUrl()
-}
 
 private fun CatalogServiceProvider.matchesCatalogServiceProvider(value: String): Boolean {
     val normalizedValue = value.normalizeCatalogToken()

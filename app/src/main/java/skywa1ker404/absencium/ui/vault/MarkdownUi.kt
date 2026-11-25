@@ -86,15 +86,6 @@ enum class MarkdownAction(val label: String) {
     TEMPLATE("Template"),
 }
 
-/** One scrolling row of formatting buttons above the editor. */
-@Composable
-fun MarkdownToolbar(onAction: (MarkdownAction) -> Unit, modifier: Modifier = Modifier) {
-    LazyRow(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(MarkdownAction.entries.toList()) { action ->
-            ExpressiveChip(selected = false, onClick = { onAction(action) }, label = { Text(action.label) })
-        }
-    }
-}
 
 @Composable
 private fun spansToText(spans: List<Span>, onLink: (String) -> Unit, strikeAll: Boolean = false): AnnotatedString {
@@ -389,29 +380,4 @@ fun LinkNoteDialog(notes: List<NoteEntity>, onPick: (title: String) -> Unit, onD
     )
 }
 
-@Composable
-fun TemplateDialog(onPick: (NoteTemplate) -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(28.dp),
-        title = { Text("Start from a template") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                NoteTemplates.all.forEach { template ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(14.dp))
-                            .clickable { onPick(template) }
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                    ) {
-                        Text(template.name, style = MaterialTheme.typography.titleSmall)
-                        Text(template.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}
+

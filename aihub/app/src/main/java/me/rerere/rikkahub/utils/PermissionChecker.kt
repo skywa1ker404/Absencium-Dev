@@ -106,13 +106,6 @@ object PermissionChecker {
         )
     }
 
-    /**
-     * Check which permissions are missing for the given assistants.
-     * @return List of permission strings that need to be requested
-     */
-    fun getMissingPermissions(context: Context, assistants: List<Assistant>): List<String> {
-        return getMissingFeatureAccess(context, assistants).runtimePermissions
-    }
 
     /**
      * Check if a specific permission is granted.
@@ -121,13 +114,6 @@ object PermissionChecker {
         return ActivityCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
     }
 
-    /**
-     * Check if location permission is granted (either coarse or fine).
-     */
-    fun hasLocationPermission(context: Context): Boolean {
-        return isPermissionGranted(context, Manifest.permission.ACCESS_COARSE_LOCATION) ||
-               isPermissionGranted(context, Manifest.permission.ACCESS_FINE_LOCATION)
-    }
 
     fun hasNotificationListenerAccess(context: Context): Boolean {
         return NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)

@@ -86,60 +86,8 @@ class ApiKeyVault(context: Context) {
     fun keys(provider: AiProvider): List<String> =
         listOfNotNull(read(provider)) + extraSlots(provider).mapNotNull { prefs.getString(extraCipher(provider, it), null)?.let(::decrypt) }
 
-    /** Adds another key for [provider], tried when the earlier ones hit their limit. Returns false when it is empty, a duplicate, or there is no room. */
-    fun addKey(provider: AiProvider, apiKey: String): Boolean {
-        val trimmed = apiKey.trim()
-        if (trimmed.isEmpty() || keys(provider).any { it == trimmed }) return false
-        if (!hasKey(provider)) return save(provider, trimmed)
-        val slot = (1..MAX_EXTRA).firstOrNull { !prefs.contains(extraCipher(provider, it)) } ?: return false
-        return try {
-            prefs.edit {
-                putString(extraCipher(provider, slot), encrypt(trimmed))
-                putString(extraLast(provider, slot), trimmed.takeLast(4))
-            }
-            true
-        } catch (e: Exception) {
-            DebugLogger.e(TAG, "Could not encrypt and save the extra API key", e)
-            false
-        }
-    }
 
-    /** Removes the key at [index] of [lastFours]. Removing the main key promotes the next one. */
-    fun removeKey(provider: AiProvider, index: Int) {
-        val slots = extraSlots(provider)
-        if (index == 0) {
-            val next = slots.firstOrNull()
-            if (next == null) {
-                clear(provider)
-            } else {
-                prefs.edit {
-                    putString(cipherKey(provider), prefs.getString(extraCipher(provider, next), null))
-                    putString(lastKey(provider), prefs.getString(extraLast(provider, next), null))
-                    remove(extraCipher(provider, next))
-                    remove(extraLast(provider, next))
-                }
-            }
-        } else {
-            slots.getOrNull(index - 1)?.let { slot -> prefs.edit { remove(extraCipher(provider, slot)); remove(extraLast(provider, slot)) } }
-        }
-    }
 
-    /** Makes the key at [index] of [lastFours] the one in use: it is tried first, the others only when it reaches its limit. */
-    fun useKey(provider: AiProvider, index: Int) {
-        if (index <= 0) return
-        adopt(provider)
-        val slot = extraSlots(provider).getOrNull(index - 1) ?: return
-        val mainCipher = prefs.getString(cipherKey(provider), null) ?: return
-        val mainLast = prefs.getString(lastKey(provider), null)
-        val cipher = prefs.getString(extraCipher(provider, slot), null) ?: return
-        val last = prefs.getString(extraLast(provider, slot), null)
-        prefs.edit {
-            putString(cipherKey(provider), cipher)
-            putString(lastKey(provider), last)
-            putString(extraCipher(provider, slot), mainCipher)
-            putString(extraLast(provider, slot), mainLast)
-        }
-    }
 
     private val limitedUntil = HashMap<String, Long>()
 

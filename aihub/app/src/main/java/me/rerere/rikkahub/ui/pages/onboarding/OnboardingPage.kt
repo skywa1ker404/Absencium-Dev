@@ -443,53 +443,6 @@ fun OnboardingPage(vm: OnboardingVM = koinViewModel()) {
 
 private val SetupEdgePadding = 16.dp
 
-@Composable
-private fun LocalModelSetupBottomBar(
-    canContinue: Boolean,
-    loading: Boolean,
-    onContinue: () -> Unit,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 3.dp,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = SetupEdgePadding, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = if (canContinue) {
-                    "Your local model is ready."
-                } else {
-                    "Download at least one chat model to continue."
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
-            Button(
-                onClick = onContinue,
-                enabled = canContinue && !loading,
-                shape = AppShapes.ButtonRounded,
-            ) {
-                if (loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Text("Continue")
-                    Spacer(Modifier.width(8.dp))
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null)
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun IntroPage(
@@ -1752,20 +1705,4 @@ private fun CustomProviderKeyPage(
     }
 }
 
-private fun previousPage(page: SetupPage): SetupPage? {
-    return when (page) {
-        SetupPage.Intro -> null
-        SetupPage.Bridge -> SetupPage.Intro
-        SetupPage.ProviderOverview -> SetupPage.Bridge
-        SetupPage.GuidedChoice -> SetupPage.ProviderOverview
-        SetupPage.GuidedSignup -> SetupPage.GuidedChoice
-        SetupPage.GuidedKeyLink -> SetupPage.GuidedSignup
-        SetupPage.GuidedPasteKey -> SetupPage.GuidedKeyLink
-        SetupPage.LocalModels -> SetupPage.ProviderOverview
-        SetupPage.ManualKeyLink -> SetupPage.ProviderOverview
-        SetupPage.ManualKey -> SetupPage.ManualKeyLink
-        SetupPage.ManualModels -> SetupPage.ManualKey
-        SetupPage.ManualDefaults -> SetupPage.ManualModels
-        SetupPage.Success -> null
-    }
-}
+

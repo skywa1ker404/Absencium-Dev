@@ -53,30 +53,4 @@ internal fun decodeUuidOrNull(raw: String?): Uuid? {
 
 internal fun decodeUuid(raw: String?, fallback: Uuid): Uuid = decodeUuidOrNull(raw) ?: fallback
 
-/**
- * Re-attach stub assistants for conversation rows whose character was dropped from
- * DataStore (typical after a settings parse failure). Does not invent assistants
- * when there are no matching chats.
- */
-internal fun Settings.withRecoveredAssistantsFromConversations(
-    conversationAssistantIds: Collection<String>,
-): Settings {
-    val known = assistants.map { it.id }.toSet()
-    val recovered = conversationAssistantIds
-        .mapNotNull(::decodeUuidOrNull)
-        .distinct()
-        .filter { it !in known }
-        .map { id ->
-            Assistant(
-                id = id,
-                name = "Recovered",
-            )
-        }
-    if (recovered.isEmpty()) return this
-    val mergedAssistants = assistants + recovered
-    val selectedExists = mergedAssistants.any { it.id == assistantId }
-    return copy(
-        assistants = mergedAssistants,
-        assistantId = if (selectedExists) assistantId else recovered.first().id,
-    )
-}
+

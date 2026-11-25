@@ -108,60 +108,6 @@ internal fun combineSharedStreamUris(
     }.distinct()
 }
 
-internal fun Intent?.toRawSharePayload(): RawSharePayload {
-    if (this == null) {
-        return RawSharePayload()
-    }
-
-    val sharedText = runCatching {
-        getStringExtra(Intent.EXTRA_TEXT)
-            ?: getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
-            ?: getStringExtra(Intent.EXTRA_HTML_TEXT)
-            ?: ""
-    }.getOrElse {
-        android.util.Log.w(TAG, "Failed to parse shared text extra", it)
-        ""
-    }
-    val sharedSubject = runCatching {
-        getStringExtra(Intent.EXTRA_SUBJECT)?.takeIf { it.isNotBlank() }
-    }.getOrElse {
-        android.util.Log.w(TAG, "Failed to parse shared subject extra", it)
-        null
-    }
-    val streamUris = runCatching {
-        val clipDataUris = buildList {
-            clipData?.let { clip ->
-                for (index in 0 until clip.itemCount) {
-                    clip.getItemAt(index).uri?.toString()?.let(::add)
-                }
-            }
-        }
-        combineSharedStreamUris(
-            singleStreamUri = runCatching {
-                @Suppress("DEPRECATION")
-                getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.toString()
-                    ?: getStringExtra(Intent.EXTRA_STREAM)
-            }.getOrNull(),
-            multipleStreamUris = runCatching {
-                @Suppress("DEPRECATION")
-                getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
-                    ?.map(Uri::toString)
-                    .orEmpty()
-            }.getOrDefault(emptyList()),
-            clipDataUris = clipDataUris
-        )
-    }.getOrElse {
-        android.util.Log.w(TAG, "Failed to parse shared stream extras", it)
-        emptyList()
-    }
-
-    return buildRawSharePayload(
-        text = sharedText,
-        subject = sharedSubject,
-        mimeType = type,
-        streamUris = streamUris
-    )
-}
 
 internal suspend fun resolveSharePayload(
     context: android.content.Context,
@@ -194,9 +140,6 @@ internal suspend fun resolveSharePayload(
     }
 }
 
-internal fun Intent.putResolvedSharePayload(payload: ResolvedSharePayload) {
-    putExtra(EXTRA_RESOLVED_SHARE_PAYLOAD, JsonInstant.encodeToString(payload))
-}
 
 internal fun Intent.readResolvedSharePayload(): ResolvedSharePayload? {
     val rawPayload = getStringExtra(EXTRA_RESOLVED_SHARE_PAYLOAD) ?: return null
@@ -208,10 +151,6 @@ internal fun Intent.readResolvedSharePayload(): ResolvedSharePayload? {
     }
 }
 
-internal fun Intent.copyShareGrantFlagsFrom(source: Intent) {
-    addFlags(source.flags and SHARE_PERMISSION_FLAGS)
-    clipData = source.clipData
-}
 
 private suspend fun android.content.Context.copyShareAttachment(
     rawUri: String,
