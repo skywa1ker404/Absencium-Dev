@@ -266,7 +266,7 @@ fun ExtractResultDialog(
         Surface(shape = RoundedCornerShape(30.dp), color = colors.surfaceContainerHigh, tonalElevation = 6.dp) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
-                OutlinedTextField(
+                skywa1ker404.absencium.ui.components.AppTextField(
                     value = edited,
                     onValueChange = { edited = it },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp, max = 360.dp),

@@ -569,7 +569,7 @@ private fun DoodleSetup(onStart: (PageSetup) -> Unit, onCancel: () -> Unit) {
         }
         if (custom) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
+                skywa1ker404.absencium.ui.components.AppTextField(
                     value = customWidth,
                     onValueChange = { customWidth = it.filter(Char::isDigit).take(4) },
                     label = { Text("Width (px)") },
@@ -577,7 +577,7 @@ private fun DoodleSetup(onStart: (PageSetup) -> Unit, onCancel: () -> Unit) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                 )
-                OutlinedTextField(
+                skywa1ker404.absencium.ui.components.AppTextField(
                     value = customHeight,
                     onValueChange = { customHeight = it.filter(Char::isDigit).take(4) },
                     label = { Text("Height (px)") },

@@ -467,7 +467,7 @@ fun TableEditorDialog(text: String, onCancel: () -> Unit, onDone: (String) -> Un
                 rows.forEachIndexed { r, row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         row.forEachIndexed { c, cell ->
-                            OutlinedTextField(
+                            skywa1ker404.absencium.ui.components.AppTextField(
                                 value = cell,
                                 onValueChange = { v ->
                                     rows = rows.mapIndexed { ri, rr -> if (ri == r) rr.mapIndexed { ci, cc -> if (ci == c) v else cc } else rr }
