@@ -121,6 +121,7 @@ fun CalendarTab(
     contentPadding: PaddingValues,
     viewModel: CalendarViewModel,
     onOpenExam: (ExamEntity) -> Unit,
+    onDeleteExam: (ExamEntity) -> Unit,
     onEditHoliday: (HolidayEntity) -> Unit,
     onOpenTimetable: () -> Unit,
     onOpenPlanner: () -> Unit = {},
@@ -172,6 +173,7 @@ fun CalendarTab(
             onSetStatus = { subjectId, status -> viewModel.setAttendance(subjectId, selected, status) },
             onSetNotes = { subjectId, collected -> viewModel.setNotesCollected(listOf(subjectId), selected, collected) },
             onOpenExam = onOpenExam,
+            onDeleteExam = viewModel::deleteExam,
             onEditHoliday = onEditHoliday,
             onDeleteHoliday = { holidayToDelete = it },
         )
@@ -634,18 +636,20 @@ private fun DayPanel(
         }
     }
     exams.forEach { exam ->
-        AppCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpenExam(exam) }) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(modifier = Modifier.size(14.dp).pillBackground(subjectColor(exam.subjectId)))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(exam.title, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text = subjectNames[exam.subjectId] ?: "Unknown subject",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
-                    )
+        skywa1ker404.absencium.ui.components.SwipeToDelete(onDelete = { onDeleteExam(exam) }) {
+            AppCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpenExam(exam) }) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(modifier = Modifier.size(14.dp).pillBackground(subjectColor(exam.subjectId)))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(exam.title, style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = subjectNames[exam.subjectId] ?: "Unknown subject",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    Icon(AppIcons.ChevronRight, contentDescription = null, tint = colors.onSurfaceVariant)
                 }
-                Icon(AppIcons.ChevronRight, contentDescription = null, tint = colors.onSurfaceVariant)
             }
         }
     }

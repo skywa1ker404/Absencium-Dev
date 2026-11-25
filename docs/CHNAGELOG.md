@@ -199,3 +199,4 @@ working on it
 - Changed (branch Absencium-ai, CI green 45609900091, Batch 40.1): text fields share one input style (shape, label, error, clear button, keyboard) across the app and Absencium AI.
 - Changed (branch Absencium-ai, CI green 45612371095, Batch 40.5): messages appear as one toast in the Undo bar's style instead of the system toast (voice input, About, Vault).
 - Added (branch Absencium-ai, CI green 45614652202, Batch 40.4): swipe a timetable row left to delete it; the row follows the finger, the red layer and bin grow, a haptic marks the point of no return and the row springs off or back (the delete goes to the Trash with Undo).
+- Added (branch Absencium-ai, CI green 45616735601, Batch 40.7): empty states can show tappable suggestion pills (used on Search) and the empty Vault sits in a soft card.
