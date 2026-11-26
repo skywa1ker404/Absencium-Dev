@@ -202,4 +202,4 @@ working on it
 - Added (branch Absencium-ai, CI green 45616735601, Batch 40.7): empty states can show tappable suggestion pills (used on Search) and the empty Vault sits in a soft card.
 - Added (branch Absencium-ai, CI green 45666674777, Batch 40.4): swipe left to delete exam rows and active notes, like the timetable rows; every delete still goes to the Trash with Undo.
 - Changed (branch Absencium-ai, CI green 45666674777, Batch 40.5): the note editor's save state shows a coloured dot and a word that swap with a spring (Saving, Saved, Not saved yet, Could not save).
-- Changed (branch Absencium-ai, CI pending, Batch 40.6): Trash, Changelog, About and Syllabus overview have the large collapsing title like Settings.
+- Changed (branch Absencium-ai, CI green 45764870834, Batch 40.6): Trash, Changelog, About and Syllabus overview have the large collapsing title like Settings.
