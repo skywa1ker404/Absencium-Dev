@@ -72,6 +72,7 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
     ScreenScaffold(
         title = "Subjects",
         onBack = { navigator.navigateUp() },
+        largeTitle = true,
         overlay = {
             Box(Modifier.fillMaxSize()) {
                 Box(
