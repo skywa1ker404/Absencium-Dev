@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.home
 
+import skywa1ker404.absencium.ui.components.emptyCard
 import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.theme.RoundedCornerShape
@@ -185,6 +186,7 @@ fun HomeTab(
                 title = "Add your subjects",
                 text = "Attendance, the timetable and exams all start from your subject list.",
                 action = { PillButton(text = "Add subjects", onClick = onManageSubjects) },
+                modifier = Modifier.emptyCard(),
             )
         } else {
             val watch = perSubject.filter { s -> s.percent?.let { it < threshold + APPROACHING_POINTS } == true }

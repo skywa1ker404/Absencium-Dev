@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.vault
 
+import skywa1ker404.absencium.ui.components.emptyCard
 import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.components.AppLinearProgress
@@ -332,6 +333,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                             icon = AppIcons.Description,
                             title = "This folder is empty",
                             text = "Add your first note with New entry.",
+                            modifier = Modifier.emptyCard(),
                         )
                     } else HintText(
                         if (topicFilter != null) "No notes under this topic. Clear the topic to see every note."

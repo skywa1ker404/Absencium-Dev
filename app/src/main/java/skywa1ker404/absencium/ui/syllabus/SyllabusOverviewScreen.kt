@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.syllabus
 
+import skywa1ker404.absencium.ui.components.emptyCard
 import skywa1ker404.absencium.ui.components.AppLinearWavy
 import skywa1ker404.absencium.ui.icons.AppIcons
 import skywa1ker404.absencium.ui.components.ExpressiveEmptyState
@@ -68,7 +69,7 @@ fun SyllabusOverviewScreen(navigator: DestinationsNavigator) {
     val summaries by viewModel.summaries.collectAsStateWithLifecycle()
 
     ScreenScaffold(title = "Syllabus", onBack = { navigator.navigateUp() }, largeTitle = true) {
-        if (summaries.isEmpty()) ExpressiveEmptyState(AppIcons.School, "No subjects yet", "Add a subject first (Vault, Edit subjects), then build its syllabus here.")
+        if (summaries.isEmpty()) ExpressiveEmptyState(AppIcons.School, "No subjects yet", "Add a subject first (Vault, Edit subjects), then build its syllabus here.", modifier = Modifier.emptyCard())
         summaries.forEachIndexed { index, s ->
             androidx.compose.runtime.key(s.subjectId) { SubjectSection(s, index, navigator) }
         }

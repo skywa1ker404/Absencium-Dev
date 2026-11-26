@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.settings
 
+import skywa1ker404.absencium.ui.components.emptyCard
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.height
@@ -106,7 +107,7 @@ fun SubjectsScreen(navigator: DestinationsNavigator) {
 
         SectionTitle("Your subjects")
         if (subjects.isEmpty()) {
-            ExpressiveEmptyState(AppIcons.Folder, "No subjects yet", "Add a subject with the button below.")
+            ExpressiveEmptyState(AppIcons.Folder, "No subjects yet", "Add a subject with the button below.", modifier = Modifier.emptyCard())
         }
         subjects.forEach { subject ->
             key(subject.id) { SubjectCard(subject, viewModel) }

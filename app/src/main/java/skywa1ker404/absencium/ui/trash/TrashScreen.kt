@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.trash
 
+import skywa1ker404.absencium.ui.components.emptyCard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -112,6 +113,7 @@ fun TrashScreen(navigator: DestinationsNavigator) {
                 icon = AppIcons.Delete,
                 title = "The Trash is empty",
                 text = "Entries, exams, holidays and lectures you delete wait here for ${TrashRepository.RETENTION_DAYS} days.",
+                modifier = Modifier.emptyCard(),
             )
         }
         if (!list.isNullOrEmpty()) {
