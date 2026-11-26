@@ -204,5 +204,5 @@ working on it
 - Changed (branch Absencium-ai, CI green 45666674777, Batch 40.5): the note editor's save state shows a coloured dot and a word that swap with a spring (Saving, Saved, Not saved yet, Could not save).
 - Changed (branch Absencium-ai, CI green 45764870834, Batch 40.6): Trash, Changelog, About and Syllabus overview have the large collapsing title like Settings.
 - Changed (branch Absencium-ai, CI green 45770970730, Batch 40.8): shorter helper lines on the empty Syllabus, Edit profile and the text-size slider; errors, loading and empty states keep their text.
-- Changed (branch Absencium-ai, CI pending, Batch 40.6): Subjects has the large collapsing title.
+- Changed (branch Absencium-ai, CI green 45772488811, Batch 40.6): Subjects has the large collapsing title.
 - Changed (branch Absencium-ai, CI pending, Batch 40.7): empty Home, folder, Subjects, Syllabus overview and Trash show their empty state in the same soft card as the Vault.
