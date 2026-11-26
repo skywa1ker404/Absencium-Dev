@@ -502,7 +502,7 @@ Unchanged from the earlier plan; it needs the migration of Step 4 (teacher colum
 | 6.5 | "Add a lecture on Monday" becomes a button that opens a popup with a day button (phone's first day by default) and a dropdown (Mon–Fri or Mon–Sun by the app setting) | pending |
 | 6.6 | Edit (pen) and delete icons on entries, ~~"Edit" / "Remove" text~~ | pending |
 | 6.7 | Delete asks for confirmation, then a toast "Entry deleted" with Undo for about 4–5 s (uses the Trash of Step 4) | pending |
-| 6.8 | Swipe an entry left to delete | pending |
+| 6.8 | **Built with 40.4, CI green `45666674777`.** Swipe an entry left to delete | done |
 | 6.9 | "Import Lecture Timetable" with the same popup style as the other two imports | pending |
 | 6.10 | After AI scanning: tick options for room number, teacher name, and time gaps between classes as duration (yes/no) | pending |
 | 6.11 | A/B (alternating) schedules, replacement classes and reliable schedule changes | pending |
