@@ -294,7 +294,7 @@ private fun DisplaySizeChoices(selected: DisplaySize, onSelect: (DisplaySize) ->
             }
         }
     }
-    HintText("Scales text, icons and spacing everywhere in Absencium. Your phone's own display size and font size still apply.")
+    HintText("Scales text, icons and spacing in Absencium.")
 }
 
 /** Avatar shapes as tiles, then the frame switch. */

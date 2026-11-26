@@ -228,8 +228,7 @@ internal fun SyllabusContent(viewModel: SyllabusViewModel, ui: SyllabusUiState, 
 
     if (scoped.isEmpty()) {
         HintText(
-            "Add the units of this subject, then the chapters and topics inside them. Notes and study material can be filed under " +
-                "any of them. You can also paste an outline or pick a file and let your AI turn it into a tree.",
+            "Add units, then chapters and topics. Or paste an outline or pick a file and let your AI build the tree.",
         )
     } else {
         SectionTitle("Units, chapters and topics")

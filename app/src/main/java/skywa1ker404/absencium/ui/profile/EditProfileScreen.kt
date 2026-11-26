@@ -158,7 +158,7 @@ fun EditProfileScreen(navigator: DestinationsNavigator) {
                     value = department, onValueChange = { department = it }, label = { Text("Department or branch") }, singleLine = true,
                     shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth(),
                 )
-                HintText("Course and year are saved together as one line. Everything stays on this phone.")
+                HintText("Course and year are saved as one line.")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
                     PillButton(text = "Save", onClick = {
                         settingsViewModel.setDisplayName(name.trim())
