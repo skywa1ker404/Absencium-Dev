@@ -67,7 +67,7 @@ fun SyllabusOverviewScreen(navigator: DestinationsNavigator) {
     val viewModel = containerViewModel { SyllabusOverviewViewModel(it) }
     val summaries by viewModel.summaries.collectAsStateWithLifecycle()
 
-    ScreenScaffold(title = "Syllabus", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(title = "Syllabus", onBack = { navigator.navigateUp() }, largeTitle = true) {
         if (summaries.isEmpty()) ExpressiveEmptyState(AppIcons.School, "No subjects yet", "Add a subject first (Vault, Edit subjects), then build its syllabus here.")
         summaries.forEachIndexed { index, s ->
             androidx.compose.runtime.key(s.subjectId) { SubjectSection(s, index, navigator) }

@@ -43,7 +43,7 @@ fun AboutScreen(navigator: DestinationsNavigator) {
         }
     }
 
-    ScreenScaffold(title = "About", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(title = "About", onBack = { navigator.navigateUp() }, largeTitle = true) {
         AppCard(modifier = Modifier.fillMaxWidth()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

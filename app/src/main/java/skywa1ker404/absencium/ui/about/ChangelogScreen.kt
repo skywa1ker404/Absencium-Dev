@@ -46,7 +46,7 @@ private val Releases = listOf(
 @Destination<RootGraph>
 @Composable
 fun ChangelogScreen(navigator: DestinationsNavigator) {
-    ScreenScaffold(title = "Changelog", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(title = "Changelog", onBack = { navigator.navigateUp() }, largeTitle = true) {
         Releases.forEach { release ->
             SectionTitle("${release.version} · ${release.date}")
             AppCard(modifier = Modifier.fillMaxWidth()) {

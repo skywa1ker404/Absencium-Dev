@@ -104,7 +104,7 @@ fun TrashScreen(navigator: DestinationsNavigator) {
     var confirmPurge by remember { mutableStateOf<TrashItem?>(null) }
     val list = items
 
-    ScreenScaffold(title = "Trash", onBack = { navigator.navigateUp() }) {
+    ScreenScaffold(title = "Trash", onBack = { navigator.navigateUp() }, largeTitle = true) {
         HintText("Items are removed for good after ${TrashRepository.RETENTION_DAYS} days.")
         message?.let { MessageCard(it) }
         if (list != null && list.isEmpty()) {
