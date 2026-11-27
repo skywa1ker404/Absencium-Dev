@@ -212,7 +212,7 @@ working on it
 - Fixed (branch Absencium-ai, CI green 45950825004, Step 6.3): the duration and time wheels now report their value as soon as a number reaches the centre.
 - Changed (branch Absencium-ai, CI green 45950825004, Step 6.5): adding a lecture is one card with day chips (one day, several or every day), quick duration chips, a start time and duration filled in from the day's last lecture, and an overlap warning.
 - Added (branch Absencium-ai, CI green 45950825004, Step 6.14): Home's Next up card opens the lecture's details; the AI chat sees and can set a lecture's teacher and type.
-- Changed (branch Absencium-ai, CI pending, Step 6.5): Add a lecture is a button that opens its own page in the timetable popup instead of a dropdown card.
-- Changed (branch Absencium-ai, CI pending, Step 6.15): Add exam and Add holiday forms: close button, quick title names, subject dropdown, quick dates, One day or Several days with a day count.
-- Fixed (branch Absencium-ai, CI pending, Batch 31.9): AI holidays can run over several days, be edited and removed as a break; bulk plans keep every field of each step and hold up to 100 changes; the AI thinks less before simple changes (new assistants start at Medium thinking).
-- Changed (branch Absencium-ai, CI pending): the time wheels redraw instead of recomposing while they scroll; the link-note list has stable keys.
+- Changed (branch Absencium-ai, CI green `45991346850`, Step 6.5): Add a lecture is a button that opens its own page in the timetable popup instead of a dropdown card.
+- Changed (branch Absencium-ai, CI green `45991346850`, Step 6.15): Add exam and Add holiday forms: close button, quick title names, subject dropdown, quick dates, One day or Several days with a day count.
+- Fixed (branch Absencium-ai, CI green `45991346850`, Batch 31.9): AI holidays can run over several days, be edited and removed as a break; bulk plans keep every field of each step and hold up to 100 changes; the AI thinks less before simple changes (new assistants start at Medium thinking).
+- Changed (branch Absencium-ai, CI green `45991346850`): the time wheels redraw instead of recomposing while they scroll; the link-note list has stable keys.
