@@ -499,9 +499,9 @@ Unchanged from the earlier plan; it needs the migration of Step 4 (teacher colum
 | 6.2 | **Built, CI pending; to check on a device.** Start time is a button that opens a wheel picker (hour, minute, AM/PM when the phone uses 12 h, hours and minutes loop round, springy settle with a tick). Required. `WheelPicker`, `TimeWheels` in `components/WheelPicker.kt`; the wheels open inline under the button, not in a separate popup | done |
 | 6.3 | **Built, CI pending; to check on a device.** Duration is an optional button shown only after a start time is chosen; wheel of 0–12 h and 0–59 min; both buttons re-open to edit. A lecture needs an end time, so with no duration chosen it ends 1 hour after it starts (owner to confirm) | done |
 | 6.4 | **Built, CI pending.** Subject chosen from a dropdown, ~~horizontal chips~~ | done |
-| 6.5 | "Add a lecture on Monday" becomes a button that opens a popup with a day button (phone's first day by default) and a dropdown (Mon–Fri or Mon–Sun by the app setting) | pending |
+| 6.5 | **Partly done (owner to decide):** a week strip above the list already picks the day (Mon–Fri or Mon–Sun by the setting) and the add form opens from a button; the separate day dropdown inside the form is not built. "Add a lecture on Monday" becomes a button that opens a popup with a day button (phone's first day by default) and a dropdown | partly done |
 | 6.6 | **Already built (pen and bin icons on every lecture row).** Edit (pen) and delete icons on entries | done |
-| 6.7 | Delete asks for confirmation, then a toast "Entry deleted" with Undo for about 4–5 s (uses the Trash of Step 4) | pending |
+| 6.7 | **Partly done (owner to decide):** a delete moves the lecture to the Trash and shows the Undo bar "Lecture moved to the Trash" for 6 s; the extra confirmation dialog is left out on purpose because swipe-to-delete (6.8) and Undo already cover a wrong delete. Delete asks for confirmation, then a toast "Entry deleted" with Undo for about 4–5 s | partly done |
 | 6.8 | **Built with 40.4, CI green `45666674777`.** Swipe an entry left to delete | done |
 | 6.9 | "Import Lecture Timetable" with the same popup style as the other two imports | pending |
 | 6.10 | After AI scanning: tick options for room number, teacher name, and time gaps between classes as duration (yes/no) | pending |
