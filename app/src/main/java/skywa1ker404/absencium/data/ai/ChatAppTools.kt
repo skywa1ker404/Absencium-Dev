@@ -268,7 +268,7 @@ ${NotePrompts.EDITOR}
             container.vaultRepository.setNoteStatus(note, status)
             ok("Note is now ${status.name}.")
         },
-        write("add_timetable_slot", "Adds a weekly lecture.", mapOf("subject" to text("Subject name"), "day" to text("MONDAY..SUNDAY"), "start" to text("HH:mm"), "end" to text("HH:mm"), "room" to text("Room, optional"), "type" to text("LECTURE (default), PRACTICAL, LAB or TUTORIAL")), required = listOf("subject", "day", "start", "end")) { a ->
+        write("add_timetable_slot", "Adds a weekly lecture.", mapOf("subject" to text("Subject name"), "day" to text("MONDAY..SUNDAY"), "start" to text("HH:mm"), "end" to text("HH:mm"), "room" to text("Room, optional"), "teacher" to text("Teacher, optional"), "type" to text("LECTURE (default), PRACTICAL, LAB or TUTORIAL")), required = listOf("subject", "day", "start", "end")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
             val start = time(a.req("start")) ?: return@write fail("Start must look like 09:30.")
             val end = time(a.req("end")) ?: return@write fail("End must look like 10:30.")
@@ -278,16 +278,17 @@ ${NotePrompts.EDITOR}
             container.database.timetableDao().observeAll().first()
                 .firstOrNull { it.dayOfWeek == d && it.startTime < end && start < it.endTime && (it.subjectId == s.id || it.startTime == start) }
                 ?.let { return@write fail("${d.name} already has ${names[it.subjectId].orEmpty()} at ${it.startTime}-${it.endTime}, which overlaps. Change that lecture with update_timetable_slot instead of adding another.") }
-            container.calendarRepository.addSlot(d, s.id, start, end, a.str("room"), a.str("type")?.let { t -> runCatching { skywa1ker404.absencium.data.db.LectureType.valueOf(t.trim().uppercase()) }.getOrNull() } ?: skywa1ker404.absencium.data.db.LectureType.LECTURE)
+            container.calendarRepository.addSlot(d, s.id, start, end, a.str("room"), a.str("type")?.let { t -> runCatching { skywa1ker404.absencium.data.db.LectureType.valueOf(t.trim().uppercase()) }.getOrNull() } ?: skywa1ker404.absencium.data.db.LectureType.LECTURE, a.str("teacher"))
             ok("Added to the timetable.")
         },
-        write("update_timetable_slot", "Moves or edits a lecture. Identify it by subject and day (and start when the subject has several that day).", mapOf("subject" to text("Subject name"), "day" to text("Current day"), "start" to text("Current start HH:mm, only if needed"), "new_day" to text("New day"), "new_start" to text("New start HH:mm"), "new_end" to text("New end HH:mm"), "room" to text("New room")), required = listOf("subject", "day")) { a ->
+        write("update_timetable_slot", "Moves or edits a lecture. Identify it by subject and day (and start when the subject has several that day).", mapOf("subject" to text("Subject name"), "day" to text("Current day"), "start" to text("Current start HH:mm, only if needed"), "new_day" to text("New day"), "new_start" to text("New start HH:mm"), "new_end" to text("New end HH:mm"), "room" to text("New room"), "teacher" to text("New teacher")), required = listOf("subject", "day")) { a ->
             val slot = slot(a) ?: return@write fail("No single lecture matches. Say the subject, day and start time.")
             val changed = slot.copy(
                 dayOfWeek = a.str("new_day")?.let { day(it) } ?: slot.dayOfWeek,
                 startTime = a.str("new_start")?.let { time(it) } ?: slot.startTime,
                 endTime = a.str("new_end")?.let { time(it) } ?: slot.endTime,
                 roomNumber = a.str("room") ?: slot.roomNumber,
+                teacher = a.str("teacher") ?: slot.teacher,
             )
             if (!changed.endTime.isAfter(changed.startTime)) return@write fail("The lecture must end after it starts.")
             container.calendarRepository.updateSlot(changed)
@@ -946,6 +947,8 @@ ${NotePrompts.EDITOR}
         put("start", t.startTime.toString())
         put("end", t.endTime.toString())
         t.roomNumber?.let { put("room", it) }
+        t.teacher?.takeIf { it.isNotBlank() }?.let { put("teacher", it) }
+        put("type", t.type.name)
     }
 
     private suspend fun gradesJson(): JsonElement {

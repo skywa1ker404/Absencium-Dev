@@ -209,3 +209,6 @@ working on it
 - Changed (branch Absencium-ai, CI green 45938881815, Batch 40.7): the empty Syllabus page and the empty Syllabus and Study material tabs of a subject use the soft empty-state card.
 - Added (branch Absencium-ai, CI green 45941237493, Step 6.1): the lecture popup has an optional Teacher field when adding or editing a lecture; it shows on the timetable row.
 - Changed (branch Absencium-ai, CI green 45941237493, Step 6.2 to 6.4): the lecture popup picks the start time and the duration with wheel pickers (12 or 24 hour as the phone uses) and the subject from a dropdown; no duration means a lecture of 1 hour.
+- Fixed (branch Absencium-ai, CI pending, Step 6.3): the duration and time wheels now report their value as soon as a number reaches the centre.
+- Changed (branch Absencium-ai, CI pending, Step 6.5): adding a lecture is one card with day chips (one day, several or every day), quick duration chips, a start time and duration filled in from the day's last lecture, and an overlap warning.
+- Added (branch Absencium-ai, CI pending, Step 6.14): Home's Next up card opens the lecture's details; the AI chat sees and can set a lecture's teacher and type.

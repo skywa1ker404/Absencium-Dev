@@ -105,6 +105,7 @@ fun HomeTab(
     onOpenAttendance: () -> Unit,
     onLogAttendance: () -> Unit,
     onOpenTimetable: () -> Unit,
+    onOpenLecture: (java.time.LocalDate, skywa1ker404.absencium.domain.Lecture) -> Unit = { _, _ -> },
     onOpenAiHub: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -224,7 +225,11 @@ fun HomeTab(
         }
 
         SectionTitle("Next up")
-        AppCard(modifier = Modifier.fillMaxWidth(), container = colors.secondaryContainer, onClick = onOpenTimetable) {
+        AppCard(
+            modifier = Modifier.fillMaxWidth(),
+            container = colors.secondaryContainer,
+            onClick = { if (next == null) onOpenTimetable() else onOpenLecture(next.first, next.second) },
+        ) {
             if (next == null) {
                 Text("No upcoming lectures", style = MaterialTheme.typography.titleMedium, color = colors.onSecondaryContainer)
                 Text(

@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.draw.clip
@@ -56,24 +57,33 @@ fun WheelPicker(
     val state = rememberLazyListState(initialFirstVisibleItemIndex = base + value.coerceIn(0, count - 1))
     val latest by rememberUpdatedState(onValueChange)
     val haptic = LocalHapticFeedback.current
-    var lastReported = value
+    var lastReported = value.coerceIn(0, count - 1)
 
     LaunchedEffect(state) {
+        // The value is reported as soon as another number reaches the centre, so it never depends on the settling animation finishing.
+        launch {
+            snapshotFlow {
+                val info = state.layoutInfo
+                val center = (info.viewportStartOffset + info.viewportEndOffset) / 2
+                info.visibleItemsInfo.minByOrNull { abs(it.offset + it.size / 2 - center) }?.index
+            }.collect { index ->
+                if (index != null) {
+                    val v = index % count
+                    if (v != lastReported) {
+                        lastReported = v
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        latest(v)
+                    }
+                }
+            }
+        }
+        // When the finger and the fling stop, the nearest number springs to the exact centre.
         snapshotFlow { state.isScrollInProgress }.filter { !it }.collect {
             val info = state.layoutInfo
             val center = (info.viewportStartOffset + info.viewportEndOffset) / 2
             val nearest = info.visibleItemsInfo.minByOrNull { abs(it.offset + it.size / 2 - center) } ?: return@collect
             val delta = (nearest.offset + nearest.size / 2 - center).toFloat()
-            if (abs(delta) > 1f) {
-                state.animateScrollBy(delta, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
-            } else {
-                val v = nearest.index % count
-                if (v != lastReported) {
-                    lastReported = v
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    latest(v)
-                }
-            }
+            if (abs(delta) > 1f) state.animateScrollBy(delta, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
         }
     }
 

@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.main
 
+import skywa1ker404.absencium.domain.subjectAttendance
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
@@ -159,6 +160,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var viewGuide by remember { mutableStateOf<skywa1ker404.absencium.data.db.GuideEntity?>(null) }
     var openExam by remember { mutableStateOf<ExamEntity?>(null) }
+    var openLecture by remember { mutableStateOf<Pair<java.time.LocalDate, skywa1ker404.absencium.domain.Lecture>?>(null) }
     var editExam by remember { mutableStateOf<ExamEntity?>(null) }
     var editHoliday by remember { mutableStateOf<HolidayEntity?>(null) }
 
@@ -282,6 +284,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onOpenAttendance = { tab = TAB_ATTENDS },
                             onLogAttendance = { showAttendancePopup = true },
                             onOpenTimetable = { showTimetable = true },
+                            onOpenLecture = { date, lecture -> openLecture = date to lecture },
                             onOpenAiHub = if (settings.askAiEnabled) ({ navigator.navigate(AiHubScreenDestination()) }) else null,
                         )
 
@@ -520,6 +523,22 @@ fun MainScreen(navigator: DestinationsNavigator) {
                         tab = TAB_ATTENDS
                     },
                     onDismiss = { showAttendancePopup = false },
+                )
+            }
+
+            val lectureShown = openLecture
+            AnimatedPopup(if (lectureShown != null && loaded != null) lectureShown else null) { (lectureDate, lecture) ->
+                if (loaded != null) skywa1ker404.absencium.ui.calendar.LectureDetailSheet(
+                    date = lectureDate,
+                    lecture = lecture,
+                    now = now,
+                    attendance = loaded.subjectAttendance().firstOrNull { it.subject.id == lecture.subject.id },
+                    threshold = settings.attendanceThresholdPercent,
+                    onDismiss = { openLecture = null },
+                    onOpenTimetable = {
+                        openLecture = null
+                        showTimetable = true
+                    },
                 )
             }
 
