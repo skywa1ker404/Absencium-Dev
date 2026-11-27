@@ -73,6 +73,10 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
     var end by remember { mutableStateOf("") }
     var room by remember { mutableStateOf("") }
     var teacher by remember { mutableStateOf("") }
+    var startOpen by remember { mutableStateOf(false) }
+    var durOpen by remember { mutableStateOf(false) }
+    var durMin by remember { mutableStateOf(60) }
+    var durSet by remember { mutableStateOf(false) }
     var lectureType by remember { mutableStateOf(skywa1ker404.absencium.data.db.LectureType.LECTURE) }
     var sameEveryDay by remember { mutableStateOf(false) }
     // The saved lecture being changed, or null while adding a new one.
@@ -117,6 +121,8 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                 end = slot.endTime.hm()
                 room = slot.roomNumber.orEmpty()
                 teacher = slot.teacher.orEmpty()
+                durMin = java.time.Duration.between(slot.startTime, slot.endTime).toMinutes().toInt().coerceAtLeast(1)
+                durSet = true
                 lectureType = slot.type
             },
             onDelete = { slot ->
@@ -155,14 +161,21 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                         )
                         PillButton(text = "Manage subjects", onClick = onManageSubjects)
                     } else {
-            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                subjects.forEach { subject ->
-                    ExpressiveChip(
-                        selected = subjectId == subject.id,
-                        onClick = { subjectId = subject.id },
-                        label = { Text(subject.name) },
-                        shape = CircleShape,
-                    )
+            var subjectMenu by remember { mutableStateOf(false) }
+            Box {
+                PillButton(
+                    text = subjects.firstOrNull { it.id == subjectId }?.name ?: "Choose a subject",
+                    tonal = true,
+                    onClick = { subjectMenu = true },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                androidx.compose.material3.DropdownMenu(expanded = subjectMenu, onDismissRequest = { subjectMenu = false }) {
+                    subjects.forEach { subject ->
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text(subject.name) },
+                            onClick = { subjectId = subject.id; subjectMenu = false },
+                        )
+                    }
                 }
             }
             if (editing == null) Row(
@@ -182,32 +195,66 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
             }
             val startTime = parseTimeInput(start)
             val endTime = parseTimeInput(end)
-            val startBad = start.isNotBlank() && startTime == null
-            val endBad = end.isNotBlank() && endTime == null
             val order = startTime != null && endTime != null && !endTime.isAfter(startTime)
+            val is24 = android.text.format.DateFormat.is24HourFormat(androidx.compose.ui.platform.LocalContext.current)
+            val timeFormat = java.time.format.DateTimeFormatter.ofPattern(if (is24) "HH:mm" else "h:mm a")
+            fun endFor(from: java.time.LocalTime, minutes: Int): java.time.LocalTime =
+                if (from.hour * 60 + from.minute + minutes >= 24 * 60) java.time.LocalTime.of(23, 59) else from.plusMinutes(minutes.toLong())
             Row(
                 modifier = Modifier.padding(top = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                AppTextField(
-                    value = start,
-                    onValueChange = { start = it },
-                    label = { Text("Start (9:30)") },
-                    isError = startBad,
-                    singleLine = true,
-                    shape = RoundedCornerShape(20.dp),
+                PillButton(
+                    text = startTime?.format(timeFormat) ?: "Start time",
+                    tonal = !startOpen,
+                    onClick = {
+                        startOpen = !startOpen
+                        durOpen = false
+                        if (startTime == null) {
+                            val first = java.time.LocalTime.of(9, 0)
+                            start = first.hm()
+                            end = endFor(first, if (durSet) durMin else 60).hm()
+                        }
+                    },
                     modifier = Modifier.weight(1f),
                 )
-                AppTextField(
-                    value = end,
-                    onValueChange = { end = it },
-                    label = { Text("End (10:30)") },
-                    isError = endBad || order,
-                    singleLine = true,
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.weight(1f),
-                )
+                // The length is optional and shown only once a start time is chosen.
+                if (startTime != null) {
+                    PillButton(
+                        text = if (durSet) "${durMin / 60} h ${durMin % 60} min" else "Duration (1 h)",
+                        tonal = !durOpen,
+                        onClick = { durOpen = !durOpen; startOpen = false },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
+            androidx.compose.animation.AnimatedVisibility(visible = startOpen && startTime != null) {
+                if (startTime != null) {
+                    skywa1ker404.absencium.ui.components.TimeWheels(
+                        value = startTime,
+                        is24Hour = is24,
+                        onChange = { picked ->
+                            start = picked.hm()
+                            end = endFor(picked, if (durSet) durMin else 60).hm()
+                        },
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
+            androidx.compose.animation.AnimatedVisibility(visible = durOpen && startTime != null) {
+                if (startTime != null) {
+                    skywa1ker404.absencium.ui.components.DurationWheels(
+                        minutes = if (durSet) durMin else 60,
+                        onChange = { minutes ->
+                            durMin = minutes
+                            durSet = true
+                            end = endFor(startTime, minutes.coerceAtLeast(1)).hm()
+                        },
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
+            if (order) Text("The lecture must end after it starts.", style = MaterialTheme.typography.bodySmall, color = colors.error, modifier = Modifier.padding(top = 4.dp))
             AppTextField(
                 value = room,
                 onValueChange = { room = it },
@@ -273,6 +320,9 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                         end = ""
                         room = ""
                         teacher = ""
+                        startOpen = false
+                        durOpen = false
+                        durSet = false
                         addOpen = false
                     }
                 },
@@ -286,6 +336,9 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                         end = ""
                         room = ""
                         teacher = ""
+                        startOpen = false
+                        durOpen = false
+                        durSet = false
                     },
                 ) { Text("Cancel editing") }
             }

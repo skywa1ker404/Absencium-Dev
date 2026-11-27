@@ -208,3 +208,4 @@ working on it
 - Changed (branch Absencium-ai, CI green 45774072015, Batch 40.7): empty Home, folder, Subjects, Syllabus overview and Trash show their empty state in the same soft card as the Vault.
 - Changed (branch Absencium-ai, CI pending, Batch 40.7): the empty Syllabus page and the empty Syllabus and Study material tabs of a subject use the soft empty-state card.
 - Added (branch Absencium-ai, CI pending, Step 6.1): the lecture popup has an optional Teacher field when adding or editing a lecture; it shows on the timetable row.
+- Changed (branch Absencium-ai, CI pending, Step 6.2 to 6.4): the lecture popup picks the start time and the duration with wheel pickers (12 or 24 hour as the phone uses) and the subject from a dropdown; no duration means a lecture of 1 hour.

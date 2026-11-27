@@ -496,9 +496,9 @@ Unchanged from the earlier plan; it needs the migration of Step 4 (teacher colum
 | # | Task | Status |
 | - | --- | --- |
 | 6.1 | **Built, CI pending.** Teacher (optional) when adding or editing a lecture (the column and the display on the timetable already existed; the lecture popup now has the field) | done |
-| 6.2 | ~~Start time as a text field~~ Start time is a button that opens a frosted wheel picker (HH : MM, AM/PM for 12 h, 1–24 for 24 h, infinite scroll, minutes 0–59). Required | pending |
-| 6.3 | ~~End time~~ Lecture duration is an optional button, shown only after a start time is chosen; wheel of 0–12 h and 0–59 min, default 0:00, no AM/PM; both buttons re-open to edit | pending |
-| 6.4 | Subject chosen from a dropdown, ~~horizontal chips~~ | pending |
+| 6.2 | **Built, CI pending; to check on a device.** Start time is a button that opens a wheel picker (hour, minute, AM/PM when the phone uses 12 h, hours and minutes loop round, springy settle with a tick). Required. `WheelPicker`, `TimeWheels` in `components/WheelPicker.kt`; the wheels open inline under the button, not in a separate popup | done |
+| 6.3 | **Built, CI pending; to check on a device.** Duration is an optional button shown only after a start time is chosen; wheel of 0–12 h and 0–59 min; both buttons re-open to edit. A lecture needs an end time, so with no duration chosen it ends 1 hour after it starts (owner to confirm) | done |
+| 6.4 | **Built, CI pending.** Subject chosen from a dropdown, ~~horizontal chips~~ | done |
 | 6.5 | "Add a lecture on Monday" becomes a button that opens a popup with a day button (phone's first day by default) and a dropdown (Mon–Fri or Mon–Sun by the app setting) | pending |
 | 6.6 | **Already built (pen and bin icons on every lecture row).** Edit (pen) and delete icons on entries | done |
 | 6.7 | Delete asks for confirmation, then a toast "Entry deleted" with Undo for about 4–5 s (uses the Trash of Step 4) | pending |
