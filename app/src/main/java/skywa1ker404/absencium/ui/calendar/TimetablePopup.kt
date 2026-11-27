@@ -254,7 +254,6 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                     )
                 }
             }
-            if (order) Text("The lecture must end after it starts.", style = MaterialTheme.typography.bodySmall, color = colors.error, modifier = Modifier.padding(top = 4.dp))
             AppTextField(
                 value = room,
                 onValueChange = { room = it },
@@ -284,11 +283,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                     )
                 }
             }
-            if (startBad || endBad) {
-                HintText("Use 24 hour times like 9:30 or 14:00.", modifier = Modifier.padding(top = 8.dp))
-            } else if (order) {
-                HintText("The end time must be after the start time.", modifier = Modifier.padding(top = 8.dp))
-            }
+            if (order) HintText("The end time must be after the start time.", modifier = Modifier.padding(top = 8.dp))
             val chosen = subjectId
             val slotBeingEdited = editing
             PillButton(
