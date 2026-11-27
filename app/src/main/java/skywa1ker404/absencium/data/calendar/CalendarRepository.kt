@@ -167,6 +167,13 @@ class CalendarRepository(
         return true
     }
 
+    /** Sets one subject's attendance goal in percent; null goes back to the general threshold. */
+    suspend fun setAttendanceGoal(subjectId: Long, goal: Int?) {
+        val dao = database.subjectDao()
+        val subject = dao.getById(subjectId) ?: return
+        dao.update(subject.copy(attendanceGoal = goal?.coerceIn(1, 100)))
+    }
+
     suspend fun updateSlot(slot: TimetableEntity) = database.timetableDao().update(slot)
 
     /** Adds the same lecture to every weekday in [days] (the "same time every day" option). */

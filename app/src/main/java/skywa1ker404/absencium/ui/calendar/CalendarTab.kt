@@ -135,7 +135,8 @@ fun CalendarTab(
     var holidayToDelete by remember { mutableStateOf<HolidayEntity?>(null) }
     val selected = LocalDate.parse(selectedIso)
     val month = YearMonth.from(today).plusMonths(monthOffset.toLong())
-    val overall = remember(data) { data.subjectAttendance().overall() }
+    val perSubject = remember(data) { data.subjectAttendance() }
+    val overall = remember(perSubject) { perSubject.overall() }
 
     TabColumn(contentPadding) {
         TodayCard(
@@ -176,6 +177,11 @@ fun CalendarTab(
             onEditHoliday = onEditHoliday,
             onDeleteHoliday = { holidayToDelete = it },
         )
+
+        if (perSubject.isNotEmpty()) {
+            SectionTitle("Subjects")
+            SubjectAttendanceRows(rows = perSubject, threshold = threshold, onSetGoal = viewModel::setAttendanceGoal)
+        }
 
         SectionTitle("Schedule")
         NavCard(

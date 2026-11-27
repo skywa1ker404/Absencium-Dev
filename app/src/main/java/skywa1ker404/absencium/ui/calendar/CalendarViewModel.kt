@@ -96,6 +96,8 @@ class CalendarViewModel(container: AppContainer) : ViewModel() {
         }
     }
 
+    fun setAttendanceGoal(subjectId: Long, goal: Int?) = perform("save the goal") { repository.setAttendanceGoal(subjectId, goal) }
+
     fun updateSlot(slot: TimetableEntity) = perform("save the lecture") { repository.updateSlot(slot) }
 
     fun addSlot(day: DayOfWeek, subjectId: Long, start: LocalTime, end: LocalTime, room: String?, type: skywa1ker404.absencium.data.db.LectureType = skywa1ker404.absencium.data.db.LectureType.LECTURE, teacher: String? = null) =
