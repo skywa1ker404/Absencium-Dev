@@ -206,3 +206,4 @@ working on it
 - Changed (branch Absencium-ai, CI green 45770970730, Batch 40.8): shorter helper lines on the empty Syllabus, Edit profile and the text-size slider; errors, loading and empty states keep their text.
 - Changed (branch Absencium-ai, CI green 45772488811, Batch 40.6): Subjects has the large collapsing title.
 - Changed (branch Absencium-ai, CI green 45774072015, Batch 40.7): empty Home, folder, Subjects, Syllabus overview and Trash show their empty state in the same soft card as the Vault.
+- Changed (branch Absencium-ai, CI pending, Batch 40.7): the empty Syllabus page and the empty Syllabus and Study material tabs of a subject use the soft empty-state card.

@@ -417,6 +417,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                             icon = AppIcons.Book,
                             title = "No study material yet",
                             text = "Add question papers, guides and the syllabus as PDFs, and file each under its topic.",
+                            modifier = Modifier.emptyCard(),
                         )
                     }
                 } else {
@@ -486,6 +487,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                             icon = AppIcons.School,
                             title = "No syllabus yet",
                             text = "Add units, chapters and topics, or import an outline, then file notes under them.",
+                            modifier = Modifier.emptyCard(),
                         )
                     }
                 } else {

@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.syllabus
 
+import skywa1ker404.absencium.ui.components.emptyCard
 import skywa1ker404.absencium.ui.theme.pillShape
 import skywa1ker404.absencium.ui.theme.pillBackground
 import skywa1ker404.absencium.ui.components.AppLinearWavy
@@ -227,8 +228,11 @@ internal fun SyllabusContent(viewModel: SyllabusViewModel, ui: SyllabusUiState, 
     }
 
     if (scoped.isEmpty()) {
-        HintText(
-            "Add units, then chapters and topics. Or paste an outline or pick a file and let your AI build the tree.",
+        skywa1ker404.absencium.ui.components.ExpressiveEmptyState(
+            icon = AppIcons.School,
+            title = "No syllabus yet",
+            text = "Add units, then chapters and topics. Or paste an outline or pick a file and let your AI build the tree.",
+            modifier = Modifier.emptyCard(),
         )
     } else {
         SectionTitle("Units, chapters and topics")
