@@ -17,6 +17,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -121,13 +122,13 @@ fun AddEntrySheet(
                 .padding(top = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = when {
+            skywa1ker404.absencium.ui.components.PopupHeader(
+                title = when {
                     editExam != null -> "Edit exam"
                     editHoliday != null -> "Edit holiday"
                     else -> "Add Calendar Entry"
                 },
-                style = MaterialTheme.typography.headlineSmall,
+                onClose = onDismiss,
             )
 
             if (!editing) Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -169,62 +170,91 @@ fun AddEntrySheet(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            // Common names, one tap to fill the title.
+            if (title.isBlank()) {
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (if (type == EntryType.EXAM) listOf("Unit test", "Mid-term", "Final exam", "Practical", "Viva") else listOf("Semester break", "Festival", "Sports day", "Public holiday"))
+                        .forEach { name -> ExpressiveChip(selected = false, onClick = { title = name }, label = { Text(name) }, shape = CircleShape) }
+                }
+            }
+
             if (type == EntryType.EXAM) {
-                Text("Subject", style = MaterialTheme.typography.labelLarge)
                 if (subjects.isEmpty()) {
                     HintText("Add a subject first in Settings, General, Subjects.")
                 } else {
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        subjects.forEach { subject ->
-                            ExpressiveChip(
-                                selected = subjectId == subject.id,
-                                onClick = { subjectId = subject.id },
-                                label = { Text(subject.name) },
-                                shape = CircleShape,
-                            )
+                    var subjectMenu by remember { mutableStateOf(false) }
+                    Box {
+                        PillButton(
+                            text = subjects.firstOrNull { it.id == subjectId }?.name ?: "Choose a subject",
+                            tonal = true,
+                            onClick = { subjectMenu = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        androidx.compose.material3.DropdownMenu(expanded = subjectMenu, onDismissRequest = { subjectMenu = false }) {
+                            subjects.forEach { subject ->
+                                androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text(subject.name) },
+                                    onClick = { subjectId = subject.id; subjectMenu = false },
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            Text(if (type == EntryType.HOLIDAY && multiDay) "From" else "Date", style = MaterialTheme.typography.labelLarge)
-            OutlinedButton(onClick = { pickingEnd = false; showPicker = true }, shape = CircleShape) {
-                Icon(AppIcons.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text("${date.pretty()} ${date.year}", modifier = Modifier.padding(start = 8.dp))
-            }
+            val todayDate = remember { LocalDate.now() }
+            fun dayText(d: LocalDate) = "${d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())}, ${d.pretty()} ${d.year}"
             if (type == EntryType.HOLIDAY && !editing) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Several days in a row", style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            "One festival or break across a range of days, for example Diwali break.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onSurfaceVariant,
-                        )
-                    }
-                    AppSwitch(
-                        checked = multiDay,
-                        onCheckedChange = {
-                            multiDay = it
-                            if (it && endDate.isBefore(date)) endDate = date
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExpressiveChip(selected = !multiDay, onClick = { multiDay = false }, label = { Text("One day") }, shape = CircleShape)
+                    ExpressiveChip(
+                        selected = multiDay,
+                        onClick = {
+                            multiDay = true
+                            if (endDate.isBefore(date)) endDate = date
                         },
+                        label = { Text("Several days") },
+                        shape = CircleShape,
                     )
                 }
+            }
+            Text(if (type == EntryType.HOLIDAY && multiDay) "From" else "Date", style = MaterialTheme.typography.labelLarge)
+            PillButton(
+                text = dayText(date),
+                tonal = true,
+                onClick = { pickingEnd = false; showPicker = true },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (!(type == EntryType.HOLIDAY && multiDay)) {
+                // Quick dates, then how far away the chosen one is.
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Today" to 0L, "Tomorrow" to 1L, "In a week" to 7L, "In 2 weeks" to 14L).forEach { (label, days) ->
+                        ExpressiveChip(
+                            selected = date == todayDate.plusDays(days),
+                            onClick = { date = todayDate.plusDays(days) },
+                            label = { Text(label) },
+                            shape = CircleShape,
+                        )
+                    }
+                }
+                HintText(daysLabel(todayDate, date))
+            }
+            if (type == EntryType.HOLIDAY && !editing) {
                 Reveal(visible = multiDay) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("To", style = MaterialTheme.typography.labelLarge)
-                        OutlinedButton(onClick = { pickingEnd = true; showPicker = true }, shape = CircleShape) {
-                            Icon(AppIcons.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("${endDate.pretty()} ${endDate.year}", modifier = Modifier.padding(start = 8.dp))
+                        PillButton(
+                            text = dayText(endDate),
+                            tonal = true,
+                            onClick = { pickingEnd = true; showPicker = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        if (rangeInvalid) {
+                            HintText("The last day must not be before the first day.")
+                        } else {
+                            val days = java.time.temporal.ChronoUnit.DAYS.between(date, endDate) + 1
+                            HintText("$days day${if (days == 1L) "" else "s"}")
                         }
-                        if (rangeInvalid) HintText("The last day must not be before the first day.")
                     }
                 }
             }

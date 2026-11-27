@@ -1,6 +1,7 @@
 package skywa1ker404.absencium.ui.calendar
 
 import skywa1ker404.absencium.ui.components.AppSwitch
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -85,16 +86,60 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
     var addOpen by rememberSaveable { mutableStateOf(false) }
 
     PopupShell(onDismissRequest = onDismiss, dismissOnOutsideTap = true) {
-    PopupBody(title = "Timetable", onClose = onDismiss) {
         val loaded = data
         if (loaded == null) {
-            HintText("Loading...")
-            return@PopupBody
+            PopupBody(title = "Timetable", onClose = onDismiss) { HintText("Loading...") }
+            return@PopupShell
         }
         val subjects = loaded.subjects.filter { it.isActive }
         val weekDays = loaded.timetableDays()
         // Opened on a weekend that is a holiday: start on the first working day instead of a day that is not in the strip.
         androidx.compose.runtime.LaunchedEffect(weekDays) { if (weekDays.isNotEmpty() && day !in weekDays) day = weekDays.first() }
+        val slots = loaded.timetable.filter { it.dayOfWeek == day }.sortedBy { it.startTime }
+        val subjectById = loaded.subjects.associateBy { it.id }
+        val formDays = chosenDays.ifEmpty { setOf(day) }
+        val is24 = android.text.format.DateFormat.is24HourFormat(androidx.compose.ui.platform.LocalContext.current)
+        val timeFormat = java.time.format.DateTimeFormatter.ofPattern(if (is24) "HH:mm" else "h:mm a")
+        // Start where the day's last lecture ends and last as long as it did, so a new lecture is usually one tap from done.
+        fun suggest(forDay: DayOfWeek) {
+            val last = loaded.timetable.filter { it.dayOfWeek == forDay }.maxByOrNull { it.endTime }
+            val first = if (last != null && last.endTime.hour < 22) last.endTime else java.time.LocalTime.of(9, 0)
+            val minutes = last?.let { java.time.Duration.between(it.startTime, it.endTime).toMinutes().toInt() }?.coerceIn(15, 240) ?: 60
+            start = first.hm()
+            durMin = minutes
+            durSet = true
+            end = endFor(first, minutes).hm()
+        }
+        fun resetForm() {
+            editing = null
+            chosenDays = emptySet()
+            start = ""
+            end = ""
+            room = ""
+            teacher = ""
+            startOpen = false
+            durOpen = false
+            durSet = false
+            addOpen = false
+        }
+        val onFormPage = addOpen || editing != null
+        androidx.compose.animation.AnimatedContent(
+            targetState = onFormPage,
+            transitionSpec = {
+                val spec = androidx.compose.animation.core.spring<androidx.compose.ui.unit.IntOffset>(dampingRatio = 0.9f, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
+                val fade = androidx.compose.animation.core.tween<Float>(160)
+                if (targetState) {
+                    (androidx.compose.animation.slideInHorizontally(spec) { it / 4 } + androidx.compose.animation.fadeIn(fade)) togetherWith
+                        (androidx.compose.animation.slideOutHorizontally(spec) { -it / 4 } + androidx.compose.animation.fadeOut(fade))
+                } else {
+                    (androidx.compose.animation.slideInHorizontally(spec) { -it / 4 } + androidx.compose.animation.fadeIn(fade)) togetherWith
+                        (androidx.compose.animation.slideOutHorizontally(spec) { it / 4 } + androidx.compose.animation.fadeOut(fade))
+                }
+            },
+            label = "timetablePage",
+        ) { onForm ->
+            if (!onForm) {
+                PopupBody(title = "Timetable", onClose = onDismiss) {
         if (message != null) {
             AppCard(modifier = Modifier.fillMaxWidth(), highlighted = true, onClick = { viewModel.clearMessage() }) {
                 Text(message.orEmpty(), style = MaterialTheme.typography.bodyMedium)
@@ -105,8 +150,6 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
         WeekStrip(days = weekDays, selected = day, today = today, onSelect = { day = it })
 
         SectionTitle(day.full() + if (day == today.dayOfWeek) " \u00b7 today" else "")
-        val slots = loaded.timetable.filter { it.dayOfWeek == day }.sortedBy { it.startTime }
-        val subjectById = loaded.subjects.associateBy { it.id }
         if (slots.isEmpty()) {
             HintText("No lectures on ${day.full()}.")
         }
@@ -132,48 +175,17 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
             },
         )
 
-        // The add form lives in a card that is closed by default; changing a saved lecture opens it.
-        val formOpen = addOpen || editing != null
-        val formDays = chosenDays.ifEmpty { setOf(day) }
-        val is24 = android.text.format.DateFormat.is24HourFormat(androidx.compose.ui.platform.LocalContext.current)
-        val timeFormat = java.time.format.DateTimeFormatter.ofPattern(if (is24) "HH:mm" else "h:mm a")
-        // Start where the day's last lecture ends and last as long as it did, so a new lecture is usually one tap from done.
-        fun suggest(forDay: DayOfWeek) {
-            val last = loaded.timetable.filter { it.dayOfWeek == forDay }.maxByOrNull { it.endTime }
-            val first = if (last != null && last.endTime.hour < 22) last.endTime else java.time.LocalTime.of(9, 0)
-            val minutes = last?.let { java.time.Duration.between(it.startTime, it.endTime).toMinutes().toInt() }?.coerceIn(15, 240) ?: 60
-            start = first.hm()
-            durMin = minutes
-            durSet = true
-            end = endFor(first, minutes).hm()
-        }
-        fun resetForm() {
-            editing = null
-            chosenDays = emptySet()
-            start = ""
-            end = ""
-            room = ""
-            teacher = ""
-            startOpen = false
-            durOpen = false
-            durSet = false
-        }
-        AppCard(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable(enabled = editing == null) {
-                        addOpen = !addOpen
-                        if (addOpen && start.isBlank()) suggest(formDays.minOrNull() ?: day)
-                    },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(if (editing != null) "Edit lecture" else "Add a lecture", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                ExpandChevron(expanded = formOpen, description = if (formOpen) "Close the form" else "Open the form")
-            }
-            Reveal(visible = formOpen) {
-                androidx.compose.foundation.layout.Column(modifier = Modifier.padding(top = 12.dp)) {
+                    PillButton(
+                        text = "Add a lecture",
+                        onClick = {
+                            addOpen = true
+                            if (start.isBlank()) suggest(formDays.minOrNull() ?: day)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            } else {
+                PopupBody(title = if (editing != null) "Edit lecture" else "Add a lecture", onClose = { resetForm() }) {
                     if (subjects.isEmpty()) {
                         Text("Add a subject first", style = MaterialTheme.typography.titleSmall)
                         Text(
@@ -403,7 +415,6 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                 }
             }
         }
-    }
     }
 }
 

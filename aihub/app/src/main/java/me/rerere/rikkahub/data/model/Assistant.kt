@@ -79,7 +79,7 @@ data class Assistant(
     val regexes: List<AssistantRegex> = emptyList(),
     val alternateGreetings: List<String> = emptyList(),
     val cycleIntrosOnNewChat: Boolean = false,
-    val thinkingBudget: Int? = -1,
+    val thinkingBudget: Int? = 16_000, // Medium: enough to reason well, a ceiling so it does not think for minutes (was Auto)
     val maxTokens: Int? = null,
     val customHeaders: List<CustomHeader> = emptyList(),
     val customBodies: List<CustomBody> = emptyList(),

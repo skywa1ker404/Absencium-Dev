@@ -20,7 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
@@ -102,16 +102,20 @@ fun WheelPicker(
             modifier = Modifier.fillMaxHeight(),
         ) {
             items(total) { index ->
-                val center = state.layoutInfo.let { (it.viewportStartOffset + it.viewportEndOffset) / 2 }
-                val item = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
-                val away = if (item == null) 2f else abs(item.offset + item.size / 2 - center) / item.size.toFloat()
                 Box(modifier = Modifier.fillMaxWidth().height(ItemHeight), contentAlignment = Alignment.Center) {
                     Text(
                         text = label(index % count),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.alpha((1f - away * 0.55f).coerceIn(0.25f, 1f)),
+                        // The fade with distance is set while drawing, so scrolling redraws the numbers instead of recomposing every one.
+                        modifier = Modifier.graphicsLayer {
+                            val info = state.layoutInfo
+                            val centre = (info.viewportStartOffset + info.viewportEndOffset) / 2
+                            val item = info.visibleItemsInfo.firstOrNull { it.index == index }
+                            val away = if (item == null) 2f else abs(item.offset + item.size / 2 - centre) / item.size.toFloat()
+                            alpha = (1f - away * 0.55f).coerceIn(0.25f, 1f)
+                        },
                     )
                 }
             }

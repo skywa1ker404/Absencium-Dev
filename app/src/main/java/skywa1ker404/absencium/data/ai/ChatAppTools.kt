@@ -96,7 +96,7 @@ class ChatAppTools(private val container: AppContainer, private val chatId: Stri
             "add_note" to "notes", "update_note" to "notes", "append_to_note" to "notes", "set_note_status" to "notes",
             "add_timetable_slot" to "timetable", "update_timetable_slot" to "timetable",
             "add_exam" to "exams", "update_exam" to "exams",
-            "add_holiday" to "holidays",
+            "add_holiday" to "holidays", "update_holiday" to "holidays",
             "set_attendance" to "attendance",
             "add_syllabus" to "syllabus", "set_syllabus_status" to "syllabus",
         )
@@ -127,7 +127,7 @@ class ChatAppTools(private val container: AppContainer, private val chatId: Stri
             listOf("search_notes", "list_vault", "list_attachments", "read_note", "add_note", "update_note", "append_to_note", "delete_note", "set_note_status").forEach { put(it, "Vault and notes") }
             listOf("get_timetable", "add_timetable_slot", "update_timetable_slot", "delete_timetable_slot").forEach { put(it, "Timetable") }
             listOf("list_exams", "add_exam", "update_exam", "delete_exam").forEach { put(it, "Exams") }
-            listOf("list_holidays", "add_holiday", "delete_holiday").forEach { put(it, "Holidays") }
+            listOf("list_holidays", "add_holiday", "update_holiday", "delete_holiday").forEach { put(it, "Holidays") }
             listOf("get_attendance", "set_attendance").forEach { put(it, "Attendance") }
             listOf("get_syllabus", "add_syllabus", "set_syllabus_status", "edit_syllabus_topic", "move_syllabus_topic", "delete_syllabus_topic").forEach { put(it, "Syllabus") }
             put("read_material", "Materials")
@@ -148,6 +148,8 @@ class ChatAppTools(private val container: AppContainer, private val chatId: Stri
 You can look things up and change them with the app tools. Look the answer up with a tool instead of guessing, and never say something was added, changed or deleted unless the tool answered ok.
 Rules for changes: (1) Today's date and weekday come from app_overview; work out every date from it and never guess one. Pass weekday along with a date when you know it. (2) Before adding anything, look it up first (list_subjects, get_timetable, list_exams, list_holidays, list_vault, get_syllabus) and do not add what already exists. (3) For two or more changes, or anything in bulk, use apply_plan once with a plain-words summary instead of many separate calls, so the student approves once. Do each change once; if a tool answered ok, do not repeat it, and if it refused, read why instead of trying again. (4) A syllabus goes into add_syllabus, a lecture into the timetable, an exam into exams, a holiday into holidays. Never put a syllabus, timetable, exam list or study material into a note. Notes are only for text the student asked to keep as a note. (5) Study material and files can only be added by the student in the app. (6) When the request is unclear (which subject, which date, which time), ask the student instead of guessing.
 A message may hold links the student attached from the Vault: [Vault note: title (id N)], [Vault syllabus: subject] or [Vault syllabus: subject › unit, chapter or topic] (only that part of the syllabus) and [Vault material: name, subject (id N)]. A link is only a reference, not the content: read a note with read_note, a syllabus with get_syllabus, and look a material up with list_vault only when the question needs it. Read a material's text with read_material (long ones in parts with offset) only when the question needs it.
+How to work: think only as much as the request needs. A clear request (add, move, mark, list, explain) takes a few lines of thinking, then act: at most one look-up per area, then the change; do not re-check what a tool already told you, and do not list options when one reading is clearly meant. Ask only when something that changes the result is missing (which subject, which date or time, which year).
+Know-how: "next Monday" is the first Monday after today, "this Friday" the coming Friday, "tomorrow" is today plus one; check the weekday you worked out against app_overview. A break such as "5 to 8 Nov" is ONE add_holiday with date and end_date, never one call per day. Attendance percentage is present / (present + absent); cancelled and excused are left out. When the student pastes or photographs a timetable, an exam schedule or a holiday list, read every row and add them all in one apply_plan, asking only for what the text does not give. If some steps of a plan fail, say which and why in one line and never redo the ones that worked.
 Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain.""" + "\n" + NOTE_RULES }
 
         private val NOTE_RULES: String = """
@@ -320,17 +322,38 @@ ${NotePrompts.EDITOR}
             container.calendarRepository.deleteExam(exam)
             ok("Moved the exam to the Trash.")
         },
-        write("add_holiday", "Adds a holiday.", mapOf("date" to text("YYYY-MM-DD"), "title" to text("Holiday name"), "weekday" to text("Weekday of that date, to double-check it")), required = listOf("date", "title")) { a ->
+        write("add_holiday", "Adds a holiday on one day, or on every day from date to end_date (a break of several days, at most a year). Days that already have a holiday are left as they are.", mapOf("date" to text("YYYY-MM-DD, the first day"), "end_date" to text("YYYY-MM-DD, the last day, only for a break of several days"), "title" to text("Holiday name"), "weekday" to text("Weekday of the first date, to double-check it")), required = listOf("date", "title")) { a ->
             val d = date(a.req("date")) ?: return@write fail("Date must look like 2026-12-25.")
             dateProblem(d, a.str("weekday"), future = false)?.let { return@write fail(it) }
-            container.database.holidayDao().getForDate(d)?.let { return@write fail("That day already has the holiday \"${it.title}\".") }
-            container.calendarRepository.addHoliday(d, a.req("title"), true, Priority.LOW)
-            ok("Holiday added.")
+            val last = a.str("end_date")?.takeIf { it.isNotBlank() }?.let { date(it) ?: return@write fail("end_date must look like 2026-12-28.") } ?: d
+            if (last.isBefore(d)) return@write fail("end_date ($last) is before date ($d).")
+            dateProblem(last, null, future = false)?.let { return@write fail(it) }
+            if (java.time.temporal.ChronoUnit.DAYS.between(d, last) >= 366) return@write fail("A break can be at most a year long. Split it.")
+            val (added, skipped) = container.calendarRepository.addHolidayRange(d, last, a.req("title"), true, Priority.LOW)
+            when {
+                added == 0 -> fail(if (last == d) "That day already has a holiday." else "Every day from $d to $last already has a holiday.")
+                last == d -> ok("Holiday added.")
+                else -> ok("Holiday added on $added day${if (added == 1) "" else "s"}" + if (skipped > 0) " ($skipped already had one)." else ".")
+            }
         },
-        write("delete_holiday", "Moves the holiday on a date to the Trash.", mapOf("date" to text("YYYY-MM-DD")), required = listOf("date")) { a ->
+        write("update_holiday", "Renames a holiday or moves it to another day. Identify it by its date.", mapOf("date" to text("YYYY-MM-DD, the holiday's current day"), "title" to text("New name"), "new_date" to text("YYYY-MM-DD, the new day")), required = listOf("date")) { a ->
             val h = container.database.holidayDao().getForDate(date(a.req("date")) ?: return@write fail("Date must look like 2026-12-25.")) ?: return@write fail("No holiday on that day.")
-            container.calendarRepository.deleteHoliday(h)
-            ok("Moved the holiday to the Trash.")
+            val newDate = a.str("new_date")?.takeIf { it.isNotBlank() }?.let { date(it) ?: return@write fail("new_date must look like 2026-12-26.") } ?: h.date
+            dateProblem(newDate, null, future = false)?.let { return@write fail(it) }
+            val changed = h.copy(date = newDate, title = a.str("title")?.takeIf { it.isNotBlank() } ?: h.title)
+            if (container.calendarRepository.updateHoliday(changed)) ok("Holiday changed.") else fail("$newDate already has a holiday.")
+        },
+        write("delete_holiday", "Moves the holiday on a date to the Trash, or every holiday from date to end_date.", mapOf("date" to text("YYYY-MM-DD"), "end_date" to text("YYYY-MM-DD, the last day, to remove a whole break")), required = listOf("date")) { a ->
+            val first = date(a.req("date")) ?: return@write fail("Date must look like 2026-12-25.")
+            val last = a.str("end_date")?.takeIf { it.isNotBlank() }?.let { date(it) ?: return@write fail("end_date must look like 2026-12-28.") } ?: first
+            if (last.isBefore(first)) return@write fail("end_date ($last) is before date ($first).")
+            var removed = 0
+            var day = first
+            while (!day.isAfter(last) && removed < 366) {
+                container.database.holidayDao().getForDate(day)?.let { container.calendarRepository.deleteHoliday(it); removed++ }
+                day = day.plusDays(1)
+            }
+            if (removed == 0) fail("No holiday on that day.") else ok(if (removed == 1) "Moved the holiday to the Trash." else "Moved $removed holiday days to the Trash.")
         },
         write("set_attendance", "Marks a subject PRESENT, ABSENT, CANCELLED or EXCUSED (a medical or approved absence, left out of the percentage like CANCELLED) on a date that is today or earlier. Marking the same status again does nothing.", mapOf("subject" to text("Subject name"), "date" to text("YYYY-MM-DD"), "status" to text("PRESENT, ABSENT or CANCELLED"), "weekday" to text("Weekday of that date, to double-check it")), required = listOf("subject", "date", "status")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
@@ -679,10 +702,27 @@ ${NotePrompts.EDITOR}
 
     private suspend fun holidays(all: Boolean): JsonElement {
         val today = LocalDate.now()
+        val rows = container.calendarRepository.data.first().holidays.filter { all || !it.date.isBefore(today) }.sortedBy { it.date }
+        // Days next to each other with the same name are one break, listed once with its first and last day.
+        val breaks = mutableListOf<Triple<String, LocalDate, LocalDate>>()
+        rows.forEach { h ->
+            val prev = breaks.lastOrNull()
+            if (prev != null && prev.first == h.title && prev.third.plusDays(1) == h.date) breaks[breaks.size - 1] = Triple(prev.first, prev.second, h.date)
+            else breaks.add(Triple(h.title, h.date, h.date))
+        }
         return buildJsonObject {
             put("holidays", buildJsonArray {
-                container.calendarRepository.data.first().holidays.filter { all || !it.date.isBefore(today) }.sortedBy { it.date }
-                    .forEach { h -> add(buildJsonObject { put("date", h.date.toString()); put("title", h.title) }) }
+                breaks.forEach { (title, from, to) ->
+                    add(buildJsonObject {
+                        put("title", title)
+                        put("date", from.toString())
+                        put("weekday", from.dayOfWeek.name)
+                        if (to != from) {
+                            put("end_date", to.toString())
+                            put("days", java.time.temporal.ChronoUnit.DAYS.between(from, to) + 1)
+                        }
+                    })
+                }
             })
         }
     }
@@ -870,13 +910,19 @@ ${NotePrompts.EDITOR}
         return t.toLongOrNull()
     }
 
+    /** Every field any plan operation takes, read from the operations' own definitions so a step never loses one (type, teacher, end_date...). */
+    private fun planFields(byName: Map<String, Tool>): JsonObject = buildJsonObject {
+        put("op", buildJsonObject { put("type", "string") })
+        val seen = mutableSetOf("op")
+        PLAN_OPS.forEach { op ->
+            (byName[op]?.parameters?.invoke() as? InputSchema.Obj)?.properties?.forEach { (key, def) ->
+                if (seen.add(key)) put(key, buildJsonObject { put("type", ((def as? JsonObject)?.get("type") as? JsonPrimitive)?.contentOrNull ?: "string") })
+            }
+        }
+    }
+
     /** One step of a plan: the same tool the AI would have called alone, so every guard and duplicate check still applies. */
     private fun planTool(byName: Map<String, Tool>): Tool {
-        val fields = linkedMapOf(
-            "op" to "string", "subject" to "string", "name" to "string", "title" to "string", "body" to "string", "text" to "string",
-            "note_id" to "string", "day" to "string", "start" to "string", "end" to "string", "room" to "string", "date" to "string",
-            "weekday" to "string", "status" to "string", "outline" to "string", "under" to "string", "topic" to "string", "weightage" to "number",
-        )
         return Tool(
             name = "apply_plan",
             description = "Makes several additions or changes after ONE approval from the student. Use it whenever you would call two or more of the add and set tools, or anything in bulk. summary is a short list in plain words of everything the plan does, which the student reads before approving. Each change has an op (${PLAN_OPS.joinToString(", ")}) and the same fields that tool takes. Deleting is not allowed here.",
@@ -889,7 +935,7 @@ ${NotePrompts.EDITOR}
                             put("description", "The changes, in the order to make them (a subject must be added before things that use it)")
                             put("items", buildJsonObject {
                                 put("type", "object")
-                                put("properties", buildJsonObject { fields.forEach { (k, t) -> put(k, buildJsonObject { put("type", t) }) } })
+                                put("properties", planFields(byName))
                                 put("required", JsonArray(listOf(JsonPrimitive("op"))))
                             })
                         })
@@ -901,7 +947,7 @@ ${NotePrompts.EDITOR}
             execute = { input ->
                 val changes = ((input as? JsonObject)?.get("changes") as? JsonArray).orEmpty()
                 if (changes.isEmpty()) fail("The plan has no changes.")
-                else if (changes.size > 60) fail("A plan can hold at most 60 changes. Split it.")
+                else if (changes.size > 100) fail("A plan can hold at most 100 changes. Split it.")
                 else buildJsonObject {
                     val skipped = AiContext.takeSkippedSteps((input.jsonObject["summary"] as? JsonPrimitive)?.contentOrNull.orEmpty())
                     var done = 0

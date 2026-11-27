@@ -360,7 +360,7 @@ fun LinkNoteDialog(notes: List<NoteEntity>, onPick: (title: String) -> Unit, onD
                 )
                 if (shown.isEmpty()) HintText("No notes match.")
                 LazyColumn(modifier = Modifier.heightIn(max = 280.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(shown) { note ->
+                    items(shown, key = { it.id }) { note ->
                         Text(
                             text = note.title,
                             style = MaterialTheme.typography.bodyLarge,
