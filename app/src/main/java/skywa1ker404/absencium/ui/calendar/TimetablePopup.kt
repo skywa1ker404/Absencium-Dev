@@ -72,6 +72,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
     var start by remember { mutableStateOf("") }
     var end by remember { mutableStateOf("") }
     var room by remember { mutableStateOf("") }
+    var teacher by remember { mutableStateOf("") }
     var lectureType by remember { mutableStateOf(skywa1ker404.absencium.data.db.LectureType.LECTURE) }
     var sameEveryDay by remember { mutableStateOf(false) }
     // The saved lecture being changed, or null while adding a new one.
@@ -115,6 +116,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                 start = slot.startTime.hm()
                 end = slot.endTime.hm()
                 room = slot.roomNumber.orEmpty()
+                teacher = slot.teacher.orEmpty()
                 lectureType = slot.type
             },
             onDelete = { slot ->
@@ -214,6 +216,14 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
+            AppTextField(
+                value = teacher,
+                onValueChange = { teacher = it },
+                label = { Text("Teacher (optional)") },
+                singleLine = true,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
             Row(
                 modifier = Modifier.padding(top = 8.dp).horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -240,6 +250,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                 onClick = {
                     if (chosen != null && startTime != null && endTime != null) {
                         val roomText = room.trim().ifEmpty { null }
+                        val teacherText = teacher.trim().ifEmpty { null }
                         if (slotBeingEdited != null) {
                             viewModel.updateSlot(
                                 slotBeingEdited.copy(
@@ -249,17 +260,19 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                                     endTime = endTime,
                                     roomNumber = roomText,
                                     type = lectureType,
+                                    teacher = teacherText,
                                 ),
                             )
                             editing = null
                         } else if (sameEveryDay) {
-                            viewModel.addSlots(weekDays, chosen, startTime, endTime, roomText, lectureType)
+                            viewModel.addSlots(weekDays, chosen, startTime, endTime, roomText, lectureType, teacherText)
                         } else {
-                            viewModel.addSlot(day, chosen, startTime, endTime, roomText, lectureType)
+                            viewModel.addSlot(day, chosen, startTime, endTime, roomText, lectureType, teacherText)
                         }
                         start = ""
                         end = ""
                         room = ""
+                        teacher = ""
                         addOpen = false
                     }
                 },
@@ -272,6 +285,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
                         start = ""
                         end = ""
                         room = ""
+                        teacher = ""
                     },
                 ) { Text("Cancel editing") }
             }

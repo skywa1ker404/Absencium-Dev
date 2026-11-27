@@ -21,13 +21,13 @@ Last updated: 031126 (web search made universal; last green build `b5918fe`, 031
 | # | Task | Status |
 | - | --- | --- |
 | 30.1 | Permission areas widened (Tasks, Reminders, Vault records, Trash, Drafts, saved chats); "what was sent" view; edit / replace / delete of notes and records through the confirmation gate (11.28) | pending |
-| 30.2 | Embedded JavaScript runtime (QuickJS), off by default (11.29) | pending |
-| 30.3 | Memory page: modes, similarity slider, statistics, debugger, auto-summary, semantic embeddings (11.30) | pending |
+| 30.2 | **Provided by the embedded hub (`:aihub`), found in the code on 271126; to check on a device.** Embedded JavaScript runtime (QuickJS), off by default (11.29) (`data/ai/tools/LocalTools.kt`) | done |
+| 30.3 | **Provided by the embedded hub (`:aihub`), found in the code on 271126; to check on a device.** Memory page: modes, similarity slider, statistics, debugger, auto-summary, semantic embeddings (11.30) (`AssistantMemorySubPage`, `AssistantRagMemorySubPage`, `MemoryDebuggerParts`) | done |
 | 30.4 | Keyless / custom search providers, result size (11.31); needs your approval of the sites contacted | pending |
-| 30.5 | Thinking levels Off / Low / Medium (default) / High, Temperature, Top P, Max tokens (11.32) | pending |
-| 30.6 | LaTeX, code highlighting, Mermaid (11.33) | pending |
+| 30.5 | **Provided by the embedded hub (`:aihub`), found in the code on 271126; to check on a device.** Thinking levels, Temperature, Top P, Max tokens (11.32) (`Reasoning.kt`, `AssistantModelSubPage`) | done |
+| 30.6 | **Provided by the embedded hub (`:aihub`), found in the code on 271126; to check on a device.** LaTeX, code highlighting, Mermaid (11.33) (`LatexText`, `HighlightCodeBlock`, `Mermaid`) | done |
 | 30.7 | Schema versioning and import validation (11.34) | pending |
-| 30.8 | Assistants editor as sub-pages with prompt variables, intros, clone, reorder; read aloud (11.35) | pending |
+| 30.8 | **Provided by the embedded hub (`:aihub`), found in the code on 271126; to check on a device.** Assistants editor as sub-pages with prompt variables, clone, reorder (11.35) (`AssistantDetailPage` sub-pages, `AssistantPage`) | done |
 
 
 ### Batch 38: Intelligent adaptive AI upgrade (owner spec 2026-11-02, rows 11.43 to 11.52; improves the existing AI service, no duplicate system)
@@ -495,12 +495,12 @@ Unchanged from the earlier plan; it needs the migration of Step 4 (teacher colum
 
 | # | Task | Status |
 | - | --- | --- |
-| 6.1 | Teacher (optional) when adding or editing a lecture | pending |
+| 6.1 | **Built, CI pending.** Teacher (optional) when adding or editing a lecture (the column and the display on the timetable already existed; the lecture popup now has the field) | done |
 | 6.2 | ~~Start time as a text field~~ Start time is a button that opens a frosted wheel picker (HH : MM, AM/PM for 12 h, 1–24 for 24 h, infinite scroll, minutes 0–59). Required | pending |
 | 6.3 | ~~End time~~ Lecture duration is an optional button, shown only after a start time is chosen; wheel of 0–12 h and 0–59 min, default 0:00, no AM/PM; both buttons re-open to edit | pending |
 | 6.4 | Subject chosen from a dropdown, ~~horizontal chips~~ | pending |
 | 6.5 | "Add a lecture on Monday" becomes a button that opens a popup with a day button (phone's first day by default) and a dropdown (Mon–Fri or Mon–Sun by the app setting) | pending |
-| 6.6 | Edit (pen) and delete icons on entries, ~~"Edit" / "Remove" text~~ | pending |
+| 6.6 | **Already built (pen and bin icons on every lecture row).** Edit (pen) and delete icons on entries | done |
 | 6.7 | Delete asks for confirmation, then a toast "Entry deleted" with Undo for about 4–5 s (uses the Trash of Step 4) | pending |
 | 6.8 | **Built with 40.4, CI green `45666674777`.** Swipe an entry left to delete | done |
 | 6.9 | "Import Lecture Timetable" with the same popup style as the other two imports | pending |
