@@ -124,6 +124,7 @@ fun CalendarTab(
     onEditHoliday: (HolidayEntity) -> Unit,
     onOpenTimetable: () -> Unit,
     onOpenPlanner: () -> Unit = {},
+    onOpenTimeline: () -> Unit = {},
     onAddNotes: (subjectId: Long, date: LocalDate) -> Unit,
     onPickMonth: (MonthPickRequest) -> Unit,
     threshold: Int = 75,
@@ -190,6 +191,12 @@ fun CalendarTab(
             title = "Timetable",
             subtitle = "Weekly lectures",
             onClick = onOpenTimetable,
+        )
+        NavCard(
+            icon = AppIcons.CalendarMonth,
+            title = "Timeline",
+            subtitle = "Lectures, exams and holidays, day by day",
+            onClick = onOpenTimeline,
         )
         NavCard(
             icon = AppIcons.Check,

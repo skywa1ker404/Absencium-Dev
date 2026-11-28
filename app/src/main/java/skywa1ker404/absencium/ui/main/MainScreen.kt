@@ -155,6 +155,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
     var addEntry by remember { mutableStateOf<AddEntryRequest?>(null) }
     var importKind by remember { mutableStateOf<ImportKind?>(null) }
     var showTimetable by rememberSaveable { mutableStateOf(false) }
+    var showTimeline by rememberSaveable { mutableStateOf(false) }
     var showAttendancePopup by rememberSaveable { mutableStateOf(false) }
     var monthPicker by remember { mutableStateOf<MonthPickRequest?>(null) }
     var showDrafts by rememberSaveable { mutableStateOf(false) }
@@ -297,6 +298,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                             onOpenExam = { openExam = it },
                             onEditHoliday = { editHoliday = it },
                             onOpenTimetable = { showTimetable = true },
+                            onOpenTimeline = { showTimeline = true },
                             onOpenPlanner = { navigator.navigate(com.ramcosta.composedestinations.generated.destinations.PlannerScreenDestination) },
                             threshold = settings.attendanceThresholdPercent,
                             onAddNotes = { subjectId, date -> addEntry = AddEntryRequest(subjectId, date) },
@@ -542,6 +544,16 @@ fun MainScreen(navigator: DestinationsNavigator) {
                         openLecture = null
                         showTimetable = true
                     },
+                )
+            }
+
+            AnimatedPopup(if (showTimeline && loaded != null) true else null) {
+                if (loaded != null) skywa1ker404.absencium.ui.calendar.TimelinePopup(
+                    data = loaded,
+                    today = now.toLocalDate(),
+                    onOpenLecture = { d, l -> showTimeline = false; openLecture = d to l },
+                    onOpenExam = { showTimeline = false; openExam = it },
+                    onDismiss = { showTimeline = false },
                 )
             }
 

@@ -545,7 +545,7 @@ Needs the notification groundwork of Step 5 and the attendance logic of Step 7.
 | 9.4 | Main search popup with a horizontally scrolling category row (All, Notes, Calendar, later AI Chat); language-aware search; filters; responsive on large databases | pending |
 | 9.5 | Replace the remaining custom dropdowns with `InlineDropdown`; consistent empty states, loading states and error messages | pending |
 | 9.6 | AI can add day-by-day calendar entries from uploaded media | pending |
-| 9.7 | **One timeline and calendar export:** lectures, exams and holidays on one timeline; export the calendar to a file (`.ics`) | **Partly done, CI green `43140074665`:** export of the timetable (weekly), exams, holidays and your own events to `.ics`, plus attendance and marks CSV and a PDF report (Study Tools > Export & share). Left: `.ics` import, the one-timeline page | partly done |
+| 9.7 | **One timeline and calendar export:** lectures, exams and holidays on one timeline; export the calendar to a file (`.ics`) | **Partly done, CI green `43140074665`:** export of the timetable (weekly), exams, holidays and your own events to `.ics`, plus attendance and marks CSV and a PDF report (Study Tools > Export & share). **One timeline built, CI pending:** Attendance tab > Timeline lists lectures, exams and holidays day by day for two weeks (Show more adds two weeks; tap a lecture or exam to open it). Left: `.ics` import | partly done |
 
 **Tests:** Import a real .ics with repeats and zones; search a database of thousands of rows without a visible stall. · **Effort:** L
 
