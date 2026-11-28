@@ -149,7 +149,7 @@ You can look things up and change them with the app tools. Look the answer up wi
 Rules for changes: (1) Today's date and weekday come from app_overview; work out every date from it and never guess one. Pass weekday along with a date when you know it. (2) Before adding anything, look it up first (list_subjects, get_timetable, list_exams, list_holidays, list_vault, get_syllabus) and do not add what already exists. (3) For two or more changes, or anything in bulk, use apply_plan once with a plain-words summary instead of many separate calls, so the student approves once. Do each change once; if a tool answered ok, do not repeat it, and if it refused, read why instead of trying again. (4) A syllabus goes into add_syllabus, a lecture into the timetable, an exam into exams, a holiday into holidays. Never put a syllabus, timetable, exam list or study material into a note. Notes are only for text the student asked to keep as a note. (5) Study material and files can only be added by the student in the app. (6) When the request is unclear (which subject, which date, which time), ask the student instead of guessing.
 A message may hold links the student attached from the Vault: [Vault note: title (id N)], [Vault syllabus: subject] or [Vault syllabus: subject › unit, chapter or topic] (only that part of the syllabus) and [Vault material: name, subject (id N)]. A link is only a reference, not the content: read a note with read_note, a syllabus with get_syllabus, and look a material up with list_vault only when the question needs it. Read a material's text with read_material (long ones in parts with offset) only when the question needs it.
 How to work: think only as much as the request needs. A clear request (add, move, mark, list, explain) takes a few lines of thinking, then act: at most one look-up per area, then the change; do not re-check what a tool already told you, and do not list options when one reading is clearly meant. Ask only when something that changes the result is missing (which subject, which date or time, which year).
-Know-how: "next Monday" is the first Monday after today, "this Friday" the coming Friday, "tomorrow" is today plus one; check the weekday you worked out against app_overview. A break such as "5 to 8 Nov" is ONE add_holiday with date and end_date, never one call per day. Attendance percentage is present / (present + absent); cancelled and excused are left out. Each subject has its own attendance goal (set_subject_goals; 0 goes back to the general goal); get_attendance and app_overview give goal, can_still_miss and must_attend_to_reach_goal, so use those numbers instead of working them out. Lectures carry a teacher and a type (lecture, practical, lab, tutorial); get_timetable can search by subject, room, teacher or type. When the student pastes or photographs a timetable, an exam schedule or a holiday list, read every row and add them all in one apply_plan, asking only for what the text does not give. If some steps of a plan fail, say which and why in one line and never redo the ones that worked.
+Know-how: "next Monday" is the first Monday after today, "this Friday" the coming Friday, "tomorrow" is today plus one; check the weekday you worked out against app_overview. A break such as "5 to 8 Nov" is ONE add_holiday with date and end_date, never one call per day. Attendance percentage is present / (present + absent); cancelled and excused are left out. Each subject has its own attendance goal (set_subject_goals; 0 goes back to the general goal); get_attendance and app_overview give goal, can_still_miss and must_attend_to_reach_goal, so use those numbers instead of working them out. Exams take notes (what they cover) and a priority; a holiday has an auto_skip switch (its lectures are marked skipped) and a priority. Lectures carry a teacher and a type (lecture, practical, lab, tutorial); get_timetable can search by subject, room, teacher or type. When the student pastes or photographs a timetable, an exam schedule or a holiday list, read every row and add them all in one apply_plan, asking only for what the text does not give. If some steps of a plan fail, say which and why in one line and never redo the ones that worked.
 Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain.""" + "\n" + NOTE_RULES }
 
         private val NOTE_RULES: String = """
@@ -301,7 +301,7 @@ ${NotePrompts.EDITOR}
             container.calendarRepository.deleteSlot(slot)
             ok("Moved the lecture to the Trash.")
         },
-        write("add_exam", "Adds an exam.", mapOf("subject" to text("Subject name"), "title" to text("Exam title"), "date" to text("YYYY-MM-DD"), "room" to text("Room"), "weightage" to num("Weightage percent"), "weekday" to text("Weekday of that date, to double-check it")), required = listOf("subject", "title", "date")) { a ->
+        write("add_exam", "Adds an exam.", mapOf("subject" to text("Subject name"), "title" to text("Exam title"), "date" to text("YYYY-MM-DD"), "room" to text("Room"), "weightage" to num("Weightage percent"), "notes" to text("What the exam covers (syllabus notes), optional"), "priority" to text("HIGH, NORMAL or LOW"), "weekday" to text("Weekday of that date, to double-check it")), required = listOf("subject", "title", "date")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
             val d = date(a.req("date")) ?: return@write fail("Date must look like 2026-12-05.")
             dateProblem(d, a.str("weekday"), future = true)?.let { return@write fail(it) }
@@ -309,12 +309,14 @@ ${NotePrompts.EDITOR}
             container.database.examDao().observeAll().first()
                 .firstOrNull { it.subjectId == s.id && (it.date == d || it.title.trim().equals(title, true)) }
                 ?.let { return@write fail("${s.name} already has the exam \"${it.title}\" on ${it.date}. Use update_exam to change it instead of adding another.") }
-            container.calendarRepository.addExam(s.id, d, title, a.dbl("weightage"), a.str("room"), null, Priority.HIGH)
+            container.calendarRepository.addExam(s.id, d, title, a.dbl("weightage"), a.str("room"), a.str("notes")?.takeIf { it.isNotBlank() }, priorityOf(a.str("priority"), Priority.HIGH))
             ok("Exam added.")
         },
-        write("update_exam", "Changes an exam found by words in its title or subject.", mapOf("match" to text("Words from the exam title or subject"), "title" to text("New title"), "date" to text("New date YYYY-MM-DD"), "room" to text("New room")), required = listOf("match")) { a ->
+        write("update_exam", "Changes an exam found by words in its title or subject.", mapOf("match" to text("Words from the exam title or subject"), "title" to text("New title"), "date" to text("New date YYYY-MM-DD"), "room" to text("New room"), "subject" to text("Move the exam to this subject"), "weightage" to num("New weightage percent"), "notes" to text("New syllabus notes"), "priority" to text("HIGH, NORMAL or LOW")), required = listOf("match")) { a ->
             val exam = exam(a.req("match")) ?: return@write fail("No single exam matches \"${a.req("match")}\".")
-            container.calendarRepository.updateExam(exam.copy(title = a.str("title") ?: exam.title, date = a.str("date")?.let { date(it) } ?: exam.date, room = a.str("room") ?: exam.room))
+            val newSubject = a.str("subject")?.takeIf { it.isNotBlank() }?.let { subject(it) ?: return@write missing(it) }
+            val newDate = a.str("date")?.takeIf { it.isNotBlank() }?.let { date(it) ?: return@write fail("Date must look like 2026-12-05.") } ?: exam.date
+            container.calendarRepository.updateExam(exam.copy(subjectId = newSubject?.id ?: exam.subjectId, title = a.str("title") ?: exam.title, date = newDate, room = a.str("room") ?: exam.room, weightage = a.dbl("weightage") ?: exam.weightage, syllabusNotes = a.str("notes") ?: exam.syllabusNotes, priority = priorityOf(a.str("priority"), exam.priority)))
             ok("Exam changed.")
         },
         write("delete_exam", "Moves an exam to the Trash.", mapOf("match" to text("Words from the exam title or subject")), required = listOf("match")) { a ->
@@ -322,25 +324,25 @@ ${NotePrompts.EDITOR}
             container.calendarRepository.deleteExam(exam)
             ok("Moved the exam to the Trash.")
         },
-        write("add_holiday", "Adds a holiday on one day, or on every day from date to end_date (a break of several days, at most a year). Days that already have a holiday are left as they are.", mapOf("date" to text("YYYY-MM-DD, the first day"), "end_date" to text("YYYY-MM-DD, the last day, only for a break of several days"), "title" to text("Holiday name"), "weekday" to text("Weekday of the first date, to double-check it")), required = listOf("date", "title")) { a ->
+        write("add_holiday", "Adds a holiday on one day, or on every day from date to end_date (a break of several days, at most a year). Days that already have a holiday are left as they are.", mapOf("date" to text("YYYY-MM-DD, the first day"), "end_date" to text("YYYY-MM-DD, the last day, only for a break of several days"), "title" to text("Holiday name"), "auto_skip" to bool("Mark that day's lectures as skipped automatically (default true)"), "priority" to text("HIGH, NORMAL or LOW"), "weekday" to text("Weekday of the first date, to double-check it")), required = listOf("date", "title")) { a ->
             val d = date(a.req("date")) ?: return@write fail("Date must look like 2026-12-25.")
             dateProblem(d, a.str("weekday"), future = false)?.let { return@write fail(it) }
             val last = a.str("end_date")?.takeIf { it.isNotBlank() }?.let { date(it) ?: return@write fail("end_date must look like 2026-12-28.") } ?: d
             if (last.isBefore(d)) return@write fail("end_date ($last) is before date ($d).")
             dateProblem(last, null, future = false)?.let { return@write fail(it) }
             if (java.time.temporal.ChronoUnit.DAYS.between(d, last) >= 366) return@write fail("A break can be at most a year long. Split it.")
-            val (added, skipped) = container.calendarRepository.addHolidayRange(d, last, a.req("title"), true, Priority.LOW)
+            val (added, skipped) = container.calendarRepository.addHolidayRange(d, last, a.req("title"), a.bool("auto_skip") ?: true, priorityOf(a.str("priority"), Priority.LOW))
             when {
                 added == 0 -> fail(if (last == d) "That day already has a holiday." else "Every day from $d to $last already has a holiday.")
                 last == d -> ok("Holiday added.")
                 else -> ok("Holiday added on $added day${if (added == 1) "" else "s"}" + if (skipped > 0) " ($skipped already had one)." else ".")
             }
         },
-        write("update_holiday", "Renames a holiday or moves it to another day. Identify it by its date.", mapOf("date" to text("YYYY-MM-DD, the holiday's current day"), "title" to text("New name"), "new_date" to text("YYYY-MM-DD, the new day")), required = listOf("date")) { a ->
+        write("update_holiday", "Renames a holiday or moves it to another day. Identify it by its date.", mapOf("date" to text("YYYY-MM-DD, the holiday's current day"), "title" to text("New name"), "new_date" to text("YYYY-MM-DD, the new day"), "auto_skip" to bool("Mark that day's lectures as skipped automatically"), "priority" to text("HIGH, NORMAL or LOW")), required = listOf("date")) { a ->
             val h = container.database.holidayDao().getForDate(date(a.req("date")) ?: return@write fail("Date must look like 2026-12-25.")) ?: return@write fail("No holiday on that day.")
             val newDate = a.str("new_date")?.takeIf { it.isNotBlank() }?.let { date(it) ?: return@write fail("new_date must look like 2026-12-26.") } ?: h.date
             dateProblem(newDate, null, future = false)?.let { return@write fail(it) }
-            val changed = h.copy(date = newDate, title = a.str("title")?.takeIf { it.isNotBlank() } ?: h.title)
+            val changed = h.copy(date = newDate, title = a.str("title")?.takeIf { it.isNotBlank() } ?: h.title, autoSkip = a.bool("auto_skip") ?: h.autoSkip, priority = priorityOf(a.str("priority"), h.priority))
             if (container.calendarRepository.updateHoliday(changed)) ok("Holiday changed.") else fail("$newDate already has a holiday.")
         },
         write("delete_holiday", "Moves the holiday on a date to the Trash, or every holiday from date to end_date.", mapOf("date" to text("YYYY-MM-DD"), "end_date" to text("YYYY-MM-DD, the last day, to remove a whole break")), required = listOf("date")) { a ->
@@ -719,6 +721,7 @@ ${NotePrompts.EDITOR}
                         put("title", title)
                         put("date", from.toString())
                         put("weekday", from.dayOfWeek.name)
+                        rows.firstOrNull { it.date == from }?.let { h -> put("auto_skip", h.autoSkip); put("priority", h.priority.name) }
                         if (to != from) {
                             put("end_date", to.toString())
                             put("days", java.time.temporal.ChronoUnit.DAYS.between(from, to) + 1)
@@ -974,6 +977,9 @@ ${NotePrompts.EDITOR}
         )
     }
 
+    private fun priorityOf(name: String?, fallback: Priority): Priority =
+        name?.trim()?.uppercase()?.let { n -> Priority.entries.firstOrNull { it.name == n } } ?: fallback
+
     private fun attendanceJson(s: SubjectEntity, rows: List<skywa1ker404.absencium.data.db.AttendanceEntity>, general: Int): JsonObject {
         val present = rows.count { it.status == AttendanceStatus.PRESENT }
         val absent = rows.count { it.status == AttendanceStatus.ABSENT }
@@ -1079,6 +1085,8 @@ ${NotePrompts.EDITOR}
         put("date", e.date.toString())
         e.room?.let { put("room", it) }
         e.weightage?.let { put("weightage", it) }
+        e.syllabusNotes?.takeIf { it.isNotBlank() }?.let { put("notes", it) }
+        put("priority", e.priority.name)
         put("days_left", java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), e.date))
         e.marksObtained?.let { put("marks_obtained", it) }
         e.maxMarks?.let { put("max_marks", it) }
