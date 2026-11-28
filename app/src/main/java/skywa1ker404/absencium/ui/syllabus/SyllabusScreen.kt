@@ -264,6 +264,7 @@ internal fun SyllabusContent(viewModel: SyllabusViewModel, ui: SyllabusUiState, 
                             onAddInside = { ui.editing = Editing.Add(row.node.id, SyllabusTree.levelName(row.depth + 1)) },
                             onRename = { ui.editing = Editing.Rename(row.node) },
                             onDetails = { ui.editing = Editing.Details(row.node) },
+                            onWriteNotes = if (viewModel.aiReady()) ({ viewModel.writeNotes(row.node) }) else null,
                             onMoveUp = { viewModel.move(row.node.id, up = true) },
                             onMoveDown = { viewModel.move(row.node.id, up = false) },
                             onDelete = { ui.deleting = row.node },
@@ -357,6 +358,7 @@ private fun SyllabusRow(
     onAddInside: () -> Unit,
     onRename: () -> Unit,
     onDetails: () -> Unit,
+    onWriteNotes: (() -> Unit)?,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onDelete: () -> Unit,
@@ -431,6 +433,7 @@ private fun SyllabusRow(
                 }
                 AppMenuItem(AppIcons.Edit, "Rename", { menu = false; onRename() })
                 AppMenuItem(AppIcons.Description, "Details", { menu = false; onDetails() })
+                if (onWriteNotes != null) AppMenuItem(AppIcons.AutoAwesome, "Write notes with AI", { menu = false; onWriteNotes() })
                 AppMenuDivider()
                 AppMenuItem(AppIcons.ArrowUp, "Move up", { menu = false; onMoveUp() })
                 AppMenuItem(AppIcons.ArrowDown, "Move down", { menu = false; onMoveDown() })

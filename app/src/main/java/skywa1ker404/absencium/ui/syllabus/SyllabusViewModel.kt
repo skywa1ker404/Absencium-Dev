@@ -63,6 +63,51 @@ class SyllabusViewModel(private val container: AppContainer, private val subject
 
     fun aiReady(): Boolean = container.aiConnection() != null
 
+    private var writingNotes = false
+
+    /**
+     * Asks the AI hub to write study notes for one unit, chapter or topic and save them in this subject's Vault under that node.
+     * It runs as a hidden chat listed in the AI actions folder; a toast says when it starts and how it ended.
+     */
+    fun writeNotes(node: SyllabusNodeEntity) {
+        if (container.aiConnection() == null) {
+            skywa1ker404.absencium.ui.components.ToastBus.show("AI Features are off or not set up.")
+            return
+        }
+        if (writingNotes) {
+            skywa1ker404.absencium.ui.components.ToastBus.show("Notes are already being written. Wait for them to finish.")
+            return
+        }
+        writingNotes = true
+        skywa1ker404.absencium.ui.components.ToastBus.show("Writing notes for \u201c${node.title}\u201d. They will appear in the Vault.")
+        viewModelScope.launch {
+            try {
+                val subject = _subjectName.value.ifEmpty { container.database.subjectDao().getById(subjectId)?.name.orEmpty() }
+                val all = nodes.value
+                val brief = skywa1ker404.absencium.data.ai.NoteBrief(
+                    request = "Study notes on \u201c${node.title}\u201d" + (node.details?.takeIf { it.isNotBlank() }?.let { ". It covers: $it" } ?: ""),
+                    subject = subject,
+                    syllabus = skywa1ker404.absencium.data.ai.SyllabusPath.context(all, node.id, ""),
+                )
+                val save = "\n\nWhen the notes are finished, save them yourself with one add_note call: subject \"$subject\", a short title you choose, " +
+                    "kind AI_NOTES, syllabus_topic \"${node.title}\". Put the whole text in body and do not write it in the chat."
+                val task = container.aiTasks.run("Notes: ${node.title}", skywa1ker404.absencium.data.ai.NotePrompts.notes(brief, null) + save)
+                val saved = container.aiActionLog.targetOf(task.chatId, skywa1ker404.absencium.data.ai.AiTargetType.NOTE)
+                skywa1ker404.absencium.ui.components.ToastBus.show(
+                    if (saved != null) "Notes for \u201c${node.title}\u201d are in the Vault."
+                    else task.error ?: "The AI did not save the notes.",
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLogger.e("Syllabus", "Writing notes failed", e)
+                skywa1ker404.absencium.ui.components.ToastBus.show("Writing the notes failed: ${e.message ?: e.javaClass.simpleName}")
+            } finally {
+                writingNotes = false
+            }
+        }
+    }
+
     // ---- Editing the tree ----
 
     fun add(parentId: Long?, title: String, details: String? = null) {
