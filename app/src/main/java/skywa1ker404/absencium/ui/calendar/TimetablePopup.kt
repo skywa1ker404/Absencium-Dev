@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import skywa1ker404.absencium.ui.theme.CircleShape
 import skywa1ker404.absencium.ui.theme.RoundedCornerShape
 import skywa1ker404.absencium.ui.components.ExpressiveChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import skywa1ker404.absencium.ui.components.AppTextField
 import androidx.compose.material3.Switch
@@ -84,6 +85,7 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
     // The saved lecture being changed, or null while adding a new one.
     var editing by remember { mutableStateOf<TimetableEntity?>(null) }
     var addOpen by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
 
     PopupShell(onDismissRequest = onDismiss, dismissOnOutsideTap = true) {
         val loaded = data
@@ -122,6 +124,22 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
             durSet = false
             addOpen = false
         }
+        val editSlot: (TimetableEntity) -> Unit = { slot ->
+            editing = slot
+            chosenDays = setOf(slot.dayOfWeek)
+            subjectId = slot.subjectId
+            start = slot.startTime.hm()
+            end = slot.endTime.hm()
+            room = slot.roomNumber.orEmpty()
+            teacher = slot.teacher.orEmpty()
+            durMin = java.time.Duration.between(slot.startTime, slot.endTime).toMinutes().toInt().coerceAtLeast(1)
+            durSet = true
+            lectureType = slot.type
+        }
+        val deleteSlot: (TimetableEntity) -> Unit = { slot ->
+            if (editing?.id == slot.id) editing = null
+            viewModel.deleteSlot(slot)
+        }
         val onFormPage = addOpen || editing != null
         androidx.compose.animation.AnimatedContent(
             targetState = onFormPage,
@@ -146,6 +164,38 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
             }
         }
 
+        if (loaded.timetable.isNotEmpty()) {
+            AppTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text("Search subject, room, teacher or type") },
+                leadingIcon = { Icon(skywa1ker404.absencium.ui.icons.AppIcons.Search, contentDescription = null) },
+                singleLine = true,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        val needle = query.trim().lowercase()
+        if (needle.isNotEmpty()) {
+            val found = loaded.timetable.filter { slot ->
+                (subjectById[slot.subjectId]?.name.orEmpty() + " " + slot.roomNumber.orEmpty() + " " + slot.teacher.orEmpty() + " " + slot.type.name)
+                    .lowercase().contains(needle)
+            }
+            if (found.isEmpty()) HintText("Nothing in the timetable matches \u201c${query.trim()}\u201d.")
+            DayOfWeek.values().forEach { d ->
+                val inDay = found.filter { it.dayOfWeek == d }.sortedBy { it.startTime }
+                if (inDay.isNotEmpty()) {
+                    SectionTitle(d.full())
+                    TimetableDay(
+                        slots = inDay,
+                        subjectName = { subjectById[it]?.name ?: "Unknown subject" },
+                        now = if (d == today.dayOfWeek) clock else null,
+                        onEdit = editSlot,
+                        onDelete = deleteSlot,
+                    )
+                }
+            }
+        } else {
         // Saturday and Sunday only appear when they are not set as holidays in Settings.
         WeekStrip(days = weekDays, selected = day, today = today, onSelect = { day = it })
 
@@ -157,23 +207,10 @@ fun TimetablePopup(onDismiss: () -> Unit, onManageSubjects: () -> Unit) {
             slots = slots,
             subjectName = { subjectById[it]?.name ?: "Unknown subject" },
             now = if (day == today.dayOfWeek) clock else null,
-            onEdit = { slot ->
-                editing = slot
-                chosenDays = setOf(slot.dayOfWeek)
-                subjectId = slot.subjectId
-                start = slot.startTime.hm()
-                end = slot.endTime.hm()
-                room = slot.roomNumber.orEmpty()
-                teacher = slot.teacher.orEmpty()
-                durMin = java.time.Duration.between(slot.startTime, slot.endTime).toMinutes().toInt().coerceAtLeast(1)
-                durSet = true
-                lectureType = slot.type
-            },
-            onDelete = { slot ->
-                if (editing?.id == slot.id) editing = null
-                viewModel.deleteSlot(slot)
-            },
+            onEdit = editSlot,
+            onDelete = deleteSlot,
         )
+        }
 
                     PillButton(
                         text = "Add a lecture",
