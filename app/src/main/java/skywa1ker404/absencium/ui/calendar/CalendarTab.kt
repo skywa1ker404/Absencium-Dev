@@ -171,6 +171,7 @@ fun CalendarTab(
             today = today,
             data = data,
             onSetStatus = { subjectId, status -> viewModel.setAttendance(subjectId, selected, status) },
+            onMarkAll = { status -> viewModel.markDay(data.lecturesOn(selected).map { it.subject.id }.distinct(), selected, status) },
             onSetNotes = { subjectId, collected -> viewModel.setNotesCollected(listOf(subjectId), selected, collected) },
             onOpenExam = onOpenExam,
             onDeleteExam = viewModel::deleteExam,
@@ -601,6 +602,7 @@ private fun DayPanel(
     today: LocalDate,
     data: CalendarData,
     onSetStatus: (Long, AttendanceStatus) -> Unit,
+    onMarkAll: (AttendanceStatus) -> Unit,
     onSetNotes: (Long, Boolean) -> Unit,
     onOpenExam: (ExamEntity) -> Unit,
     onDeleteExam: (ExamEntity) -> Unit,
@@ -667,6 +669,12 @@ private fun DayPanel(
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )
+        }
+    }
+    if (lectures.map { it.subject.id }.distinct().size > 1 && !isFuture) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PillButton(text = "All present", onClick = { onMarkAll(AttendanceStatus.PRESENT) }, tonal = true, modifier = Modifier.weight(1f))
+            PillButton(text = "All absent", onClick = { onMarkAll(AttendanceStatus.ABSENT) }, tonal = true, modifier = Modifier.weight(1f))
         }
     }
     lectures.forEachIndexed { index, lecture ->
