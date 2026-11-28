@@ -226,3 +226,4 @@ working on it
 - Added (branch Absencium-ai, CI green `46135473111`, Step 9.7): a Timeline popup (Attendance tab > Timeline) shows lectures, exams and holidays for the coming days on one list, two weeks at first and two more with Show more.
 - Added (branch Absencium-ai, CI green `46137908865`, Step 9.3 / 9.7): Export & share can import an .ics calendar file into your own events with a preview and duplicate skipping; unit tests for the parser.
 - Added (branch Absencium-ai, CI pending, Step 10.16): the three-dot menu of a syllabus unit, chapter or topic has Write notes with AI; the notes are saved in the subject's Vault under that node.
+- Changed (branch Absencium-ai, CI pending, Step 10.18): "File under a topic" is now "Link to a topic" in the note menu, the note editor, the topic sheet and the picker; a syllabus row says "N linked here" and an empty topic says "No notes are linked to this topic".

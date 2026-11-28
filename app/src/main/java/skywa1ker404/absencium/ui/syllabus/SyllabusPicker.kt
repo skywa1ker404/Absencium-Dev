@@ -48,7 +48,7 @@ fun SyllabusPickerDialog(
     onOpenSyllabus: (() -> Unit)? = null,
     /** What the "no topic" row says: Uncategorized when filing, All topics when filtering. */
     noneLabel: String = "Uncategorized",
-    title: String = "File under a topic",
+    title: String = "Link to a topic",
 ) {
     TopicSheet(
         choices = remember(nodes) { SyllabusPath.choices(nodes) },

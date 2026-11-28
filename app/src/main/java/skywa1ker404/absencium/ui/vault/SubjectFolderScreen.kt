@@ -336,7 +336,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                             modifier = Modifier.emptyCard(),
                         )
                     } else HintText(
-                        if (topicFilter != null) "No notes under this topic. Clear the topic to see every note."
+                        if (topicFilter != null) "No notes are linked to this topic. Clear the topic to see every note."
                         else if (finished.isEmpty() && drafts.isEmpty()) "This folder is empty. Add a note with New entry."
                         else "No notes here right now. Notes you mark as finished move to the archive below.",
                     )

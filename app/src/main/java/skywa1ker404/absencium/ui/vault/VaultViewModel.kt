@@ -102,7 +102,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
         container.database.syllabusDao().observeBySubject(subjectId)
 
     /** Files a note under a unit, chapter or topic, or back to Uncategorized (null). */
-    fun setNoteSyllabus(noteId: Long, nodeId: Long?) = perform("file the note under a topic") {
+    fun setNoteSyllabus(noteId: Long, nodeId: Long?) = perform("link the note to a topic") {
         container.database.noteDao().setSyllabusNode(noteId, nodeId)
     }
 
@@ -112,7 +112,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** Files several pieces of study material under one topic (or back to Uncategorized). */
-    fun setGuidesSyllabus(guideIds: Collection<Long>, nodeId: Long?) = perform("file the material under a topic") {
+    fun setGuidesSyllabus(guideIds: Collection<Long>, nodeId: Long?) = perform("link the material to a topic") {
         guideIds.forEach { container.database.guideDao().setSyllabusNode(it, nodeId) }
     }
 
@@ -122,7 +122,7 @@ class VaultViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** The same for a piece of study material. */
-    fun setGuideSyllabus(guideId: Long, nodeId: Long?) = perform("file the material under a topic") {
+    fun setGuideSyllabus(guideId: Long, nodeId: Long?) = perform("link the material to a topic") {
         container.database.guideDao().setSyllabusNode(guideId, nodeId)
     }
 

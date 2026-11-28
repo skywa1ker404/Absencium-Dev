@@ -399,7 +399,7 @@ private fun SyllabusRow(
             val line = buildString {
                 append(SyllabusTree.levelName(row.depth))
                 if (row.hasChildren) append(" \u00b7 ${(progress * 100).toInt()}%")
-                if (linked > 0) append(" \u00b7 $linked filed here")
+                if (linked > 0) append(" \u00b7 $linked linked here")
             }
             Text(line, style = MaterialTheme.typography.labelMedium, color = hue.onContainer.copy(alpha = 0.7f))
             if (row.hasChildren) {

@@ -573,7 +573,7 @@ private fun EditorBody(note: NoteEntity, viewModel: VaultViewModel, navigator: D
                                 skywa1ker404.absencium.ui.AbsenciumAi.askAboutNote(appContext, note.id, cleanTitle(title))
                             }
                         })
-                        AppMenuItem(AppIcons.Folder, "File under a topic", { menuOpen = false; showTopicPicker = true })
+                        AppMenuItem(AppIcons.Folder, "Link to a topic", { menuOpen = false; showTopicPicker = true })
                         AppMenuItem(AppIcons.Info, "Notes info", { menuOpen = false; showInfo = true })
                         AppMenuItem(AppIcons.History, "History", {
                             menuOpen = false

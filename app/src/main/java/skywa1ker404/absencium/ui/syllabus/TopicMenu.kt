@@ -23,7 +23,7 @@ fun topicNodes(choices: List<SyllabusPath.Choice>): List<TopicNode> =
     choices.map { TopicNode(it.id, it.label.substringAfterLast(" › "), it.depth) }
 
 /**
- * THE one sheet for choosing a syllabus unit, chapter or topic: "File under a topic", the note's topic chip, the syllabus pick in
+ * THE one sheet for choosing a syllabus unit, chapter or topic: "Link to a topic", the note's topic chip, the syllabus pick in
  * Add Entry and every other place a topic is chosen. The rows are the shared collapsed-by-default tree with an arrow at the left of
  * every unit and chapter. The tree area has a fixed height, so opening and closing rows never resizes the sheet.
  */
@@ -77,7 +77,7 @@ fun TopicMenu(
         choices = remember(nodes) { SyllabusPath.choices(nodes) },
         selectedId = selectedId,
         noneLabel = noneLabel,
-        title = "File under a topic",
+        title = "Link to a topic",
         onPick = onPick,
         onDismiss = onDismiss,
         onOpenSyllabus = onOpenSyllabus,

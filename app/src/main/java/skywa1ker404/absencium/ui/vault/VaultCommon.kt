@@ -253,7 +253,7 @@ fun GuideCard(
             Box {
                 IconButton(onClick = { menu = true }) { Icon(AppIcons.MoreVert, contentDescription = "More", tint = hue.onContainer) }
                 AppMenu(expanded = menu, onDismiss = { menu = false }) {
-                    if (onFile != null) AppMenuItem(AppIcons.Folder, "File under a topic", { menu = false; onFile() })
+                    if (onFile != null) AppMenuItem(AppIcons.Folder, "Link to a topic", { menu = false; onFile() })
                     AppMenuItem(AppIcons.Delete, "Remove", { menu = false; onDelete() }, destructive = true)
                 }
             }
