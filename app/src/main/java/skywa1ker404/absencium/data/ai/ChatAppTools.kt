@@ -149,7 +149,7 @@ You can look things up and change them with the app tools. Look the answer up wi
 Rules for changes: (1) Today's date and weekday come from app_overview; work out every date from it and never guess one. Pass weekday along with a date when you know it. (2) Before adding anything, look it up first (list_subjects, get_timetable, list_exams, list_holidays, list_vault, get_syllabus) and do not add what already exists. (3) For two or more changes, or anything in bulk, use apply_plan once with a plain-words summary instead of many separate calls, so the student approves once. Do each change once; if a tool answered ok, do not repeat it, and if it refused, read why instead of trying again. (4) A syllabus goes into add_syllabus, a lecture into the timetable, an exam into exams, a holiday into holidays. Never put a syllabus, timetable, exam list or study material into a note. Notes are only for text the student asked to keep as a note. (5) Study material and files can only be added by the student in the app. (6) When the request is unclear (which subject, which date, which time), ask the student instead of guessing.
 A message may hold links the student attached from the Vault: [Vault note: title (id N)], [Vault syllabus: subject] or [Vault syllabus: subject › unit, chapter or topic] (only that part of the syllabus) and [Vault material: name, subject (id N)]. A link is only a reference, not the content: read a note with read_note, a syllabus with get_syllabus, and look a material up with list_vault only when the question needs it. Read a material's text with read_material (long ones in parts with offset) only when the question needs it.
 How to work: think only as much as the request needs. A clear request (add, move, mark, list, explain) takes a few lines of thinking, then act: at most one look-up per area, then the change; do not re-check what a tool already told you, and do not list options when one reading is clearly meant. Ask only when something that changes the result is missing (which subject, which date or time, which year).
-Know-how: "next Monday" is the first Monday after today, "this Friday" the coming Friday, "tomorrow" is today plus one; check the weekday you worked out against app_overview. A break such as "5 to 8 Nov" is ONE add_holiday with date and end_date, never one call per day. Attendance percentage is present / (present + absent); cancelled and excused are left out. When the student pastes or photographs a timetable, an exam schedule or a holiday list, read every row and add them all in one apply_plan, asking only for what the text does not give. If some steps of a plan fail, say which and why in one line and never redo the ones that worked.
+Know-how: "next Monday" is the first Monday after today, "this Friday" the coming Friday, "tomorrow" is today plus one; check the weekday you worked out against app_overview. A break such as "5 to 8 Nov" is ONE add_holiday with date and end_date, never one call per day. Attendance percentage is present / (present + absent); cancelled and excused are left out. Each subject has its own attendance goal (set_subject_goals; 0 goes back to the general goal); get_attendance and app_overview give goal, can_still_miss and must_attend_to_reach_goal, so use those numbers instead of working them out. Lectures carry a teacher and a type (lecture, practical, lab, tutorial); get_timetable can search by subject, room, teacher or type. When the student pastes or photographs a timetable, an exam schedule or a holiday list, read every row and add them all in one apply_plan, asking only for what the text does not give. If some steps of a plan fail, say which and why in one line and never redo the ones that worked.
 Changes wait for the student's approval in the chat. Deleted items go to the Trash and can be restored. Dates are YYYY-MM-DD and times HH:mm. Keep answers short and plain.""" + "\n" + NOTE_RULES }
 
         private val NOTE_RULES: String = """
@@ -199,7 +199,7 @@ ${NotePrompts.EDITOR}
         // Looking things up
         read("app_overview", "Today's date, the subjects, the lectures today, upcoming exams and the attendance percentage per subject. Call this first when the question is about the student's college life.", emptyMap()) { overview() }.copy(systemPrompt = { _, _ -> APP_PROMPT }),
         read("list_subjects", "All subjects.", emptyMap()) { subjectsJson() },
-        read("get_timetable", "The weekly timetable. Optional day (MONDAY..SUNDAY) to get one day only, and an optional room to list only the lectures held there.", mapOf("day" to text("MONDAY..SUNDAY"), "room" to text("Room, optional"))) { a -> timetable(a.str("day"), a.str("room")) },
+        read("get_timetable", "The weekly timetable. Optional day (MONDAY..SUNDAY) to get one day only, an optional room to list only the lectures held there, and an optional search that matches the subject, room, teacher or type (LECTURE, PRACTICAL, LAB, TUTORIAL) like the search field in the app.", mapOf("day" to text("MONDAY..SUNDAY"), "room" to text("Room, optional"), "search" to text("Words from the subject, room, teacher or type, optional"))) { a -> timetable(a.str("day"), a.str("room"), a.str("search")) },
         read("list_exams", "Exams with dates and rooms. upcoming_only defaults to true.", mapOf("upcoming_only" to bool("Only exams from today on"))) { a -> exams(a.bool("upcoming_only") ?: true) },
         read("list_holidays", "Holidays from today on, or all of them when all is true.", mapOf("all" to bool("Include past holidays"))) { a -> holidays(a.bool("all") ?: false) },
         read("get_attendance", "Attendance counts (present, absent, cancelled, percentage) for one subject or all, and its last 15 marked days.", mapOf("subject" to text("Subject name; leave out for all"))) { a -> attendance(a.str("subject")) },
@@ -378,13 +378,13 @@ ${NotePrompts.EDITOR}
             container.database.examDao().update(exam.copy(marksObtained = got, maxMarks = max))
             ok("Saved ${trim(got)} out of ${trim(max)} for ${exam.title}.")
         },
-        write("set_subject_goals", "Sets the pass mark (percent of marks) and/or the attendance goal (percent) of a subject.", mapOf("subject" to text("Subject name"), "pass_mark" to num("Percent needed to pass, 1 to 100"), "attendance_goal" to num("Attendance percent to keep, 1 to 100")), required = listOf("subject")) { a ->
+        write("set_subject_goals", "Sets the pass mark (percent of marks) and/or the attendance goal (percent) of a subject.", mapOf("subject" to text("Subject name"), "pass_mark" to num("Percent needed to pass, 1 to 100"), "attendance_goal" to num("Attendance percent to keep for this subject, 1 to 100; 0 goes back to the general goal")), required = listOf("subject")) { a ->
             val s = subject(a.req("subject")) ?: return@write missing(a.req("subject"))
             val pass = a.dbl("pass_mark")
             val goal = a.long("attendance_goal")
             if (pass == null && goal == null) return@write fail("Give a pass_mark or an attendance_goal.")
-            if (pass != null && pass !in 1.0..100.0 || goal != null && goal !in 1L..100L) return@write fail("Percentages must be between 1 and 100.")
-            container.database.subjectDao().update(s.copy(passMark = pass ?: s.passMark, attendanceGoal = goal?.toInt() ?: s.attendanceGoal))
+            if (pass != null && pass !in 1.0..100.0 || goal != null && goal !in 0L..100L) return@write fail("Percentages must be between 1 and 100 (0 for the general goal).")
+            container.database.subjectDao().update(s.copy(passMark = pass ?: s.passMark, attendanceGoal = if (goal == null) s.attendanceGoal else goal.toInt().takeIf { it > 0 }))
             ok("Updated the goals of ${s.name}.")
         },
         write("restore_note_version", "Puts back an earlier text of a note (from list_note_versions). The current text is kept as a version first.", mapOf("version_id" to num("Version id")), required = listOf("version_id")) { a ->
@@ -636,8 +636,9 @@ ${NotePrompts.EDITOR}
             put("upcoming_exams", buildJsonArray {
                 data.exams.filter { !it.date.isBefore(today) }.sortedBy { it.date }.take(8).forEach { add(examJson(it, names)) }
             })
+            val general = container.settingsState.value?.attendanceThresholdPercent ?: 75
             put("attendance", buildJsonArray {
-                data.subjects.forEach { s -> add(attendanceJson(s, data.attendance.filter { it.subjectId == s.id })) }
+                data.subjects.forEach { s -> add(attendanceJson(s, data.attendance.filter { it.subjectId == s.id }, general)) }
             })
         }
     }
@@ -650,13 +651,14 @@ ${NotePrompts.EDITOR}
         })
     }
 
-    private suspend fun timetable(dayName: String?, room: String? = null): JsonElement {
+    private suspend fun timetable(dayName: String?, room: String? = null, search: String? = null): JsonElement {
         val data = container.calendarRepository.data.first()
         val names = data.subjects.associate { it.id to it.name }
         val wanted = dayName?.let { day(it) ?: return fail("Unknown day.") }
         return buildJsonObject {
             put("lectures", buildJsonArray {
-                data.timetable.filter { (wanted == null || it.dayOfWeek == wanted) && (room == null || it.roomNumber.orEmpty().contains(room.trim(), true)) }
+                data.timetable.filter { (wanted == null || it.dayOfWeek == wanted) && (room == null || it.roomNumber.orEmpty().contains(room.trim(), true)) &&
+                        (search.isNullOrBlank() || (names[it.subjectId].orEmpty() + " " + it.roomNumber.orEmpty() + " " + it.teacher.orEmpty() + " " + it.type.name).contains(search.trim(), true)) }
                     .sortedWith(compareBy({ it.dayOfWeek }, { it.startTime })).forEach { add(slotJson(it, names)) }
             })
         }
@@ -730,12 +732,13 @@ ${NotePrompts.EDITOR}
     private suspend fun attendance(subjectName: String?): JsonElement {
         val data = container.calendarRepository.data.first()
         val chosen = if (subjectName == null) data.subjects else listOf(subject(subjectName) ?: return missing(subjectName))
+        val general = container.settingsState.value?.attendanceThresholdPercent ?: 75
         return buildJsonObject {
             put("attendance", buildJsonArray {
                 chosen.forEach { s ->
                     val rows = data.attendance.filter { it.subjectId == s.id }
                     add(buildJsonObject {
-                        attendanceJson(s, rows).forEach { (k, v) -> put(k, v) }
+                        attendanceJson(s, rows, general).forEach { (k, v) -> put(k, v) }
                         put("recent", buildJsonArray {
                             rows.sortedByDescending { it.date }.take(15).forEach { r -> add(buildJsonObject { put("date", r.date.toString()); put("status", r.status.name) }) }
                         })
@@ -971,7 +974,7 @@ ${NotePrompts.EDITOR}
         )
     }
 
-    private fun attendanceJson(s: SubjectEntity, rows: List<skywa1ker404.absencium.data.db.AttendanceEntity>): JsonObject {
+    private fun attendanceJson(s: SubjectEntity, rows: List<skywa1ker404.absencium.data.db.AttendanceEntity>, general: Int): JsonObject {
         val present = rows.count { it.status == AttendanceStatus.PRESENT }
         val absent = rows.count { it.status == AttendanceStatus.ABSENT }
         val cancelled = rows.count { it.status == AttendanceStatus.CANCELLED }
@@ -984,6 +987,14 @@ ${NotePrompts.EDITOR}
             put("cancelled", cancelled)
             put("excused", excused)
             put("percentage", if (counted == 0) JsonPrimitive("no classes counted yet") else JsonPrimitive(String.format(Locale.US, "%.1f", present * 100.0 / counted)))
+            val goal = s.attendanceGoal ?: general
+            put("goal", goal)
+            put("goal_is_own", s.attendanceGoal != null)
+            if (counted > 0) {
+                val margin = skywa1ker404.absencium.domain.attendanceMargin(present, counted, goal)
+                put("can_still_miss", margin.canSkip)
+                put("must_attend_to_reach_goal", margin.mustAttend)
+            }
         }
     }
 

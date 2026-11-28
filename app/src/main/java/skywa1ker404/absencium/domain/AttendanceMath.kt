@@ -27,12 +27,14 @@ data class Margin(val canSkip: Int, val mustAttend: Int)
 
 fun attendanceMargin(present: Int, held: Int, thresholdPercent: Int): Margin {
     if (held == 0) return Margin(canSkip = 0, mustAttend = 0)
-    val surplus = 100 * present - thresholdPercent * held
+    // A goal of 100 % would divide by zero below, so it is treated as 99 %.
+    val goal = thresholdPercent.coerceIn(1, 99)
+    val surplus = 100 * present - goal * held
     return if (surplus >= 0) {
-        Margin(canSkip = surplus / thresholdPercent, mustAttend = 0)
+        Margin(canSkip = surplus / goal, mustAttend = 0)
     } else {
-        // Smallest y with (present + y) * 100 >= threshold * (held + y); the threshold is at most 85.
-        val denominator = 100 - thresholdPercent
+        // Smallest y with (present + y) * 100 >= goal * (held + y).
+        val denominator = 100 - goal
         Margin(canSkip = 0, mustAttend = (-surplus + denominator - 1) / denominator)
     }
 }
