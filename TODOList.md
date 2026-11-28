@@ -504,7 +504,7 @@ These are the numbers students rely on, so they are fixed and tested before new 
 
 | # | Task | Status |
 | - | --- | --- |
-| 7.1 | Zero classes never divides by zero; correct rounding; recalculation after every edit; configurable institutional target (default 60–85 % slider already exists) and a per-subject override | pending |
+| 7.1 | Zero classes never divides by zero; correct rounding; recalculation after every edit; configurable institutional target (default 60–85 % slider already exists) and a per-subject override | **Partly done, CI pending:** per-subject override is in the Attendance tab; a goal of 100 % no longer divides by zero; unit tests `AttendanceMathTest` for zero lectures, held / cancelled / excused counting, overall, margins and the 100 % goal. Left: rounding and holiday / leap-day tests | partly done |
 | 7.2 | Statuses: present, absent, cancelled, extra class and bunked, counted correctly; holidays and cancelled classes excluded; weekends, custom holidays, unexpected closures and duplicate holidays handled | pending |
 | 7.3 | Weighted lectures and practicals; optional attendance units (class duration divided by a chosen time increment) | pending |
 | 7.4 | Safe-absence projections and bunk buffer per subject, with per-subject history; cancelled and bunked counts in analytics | pending |
