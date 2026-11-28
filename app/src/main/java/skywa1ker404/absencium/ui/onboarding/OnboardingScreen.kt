@@ -110,10 +110,14 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-/** Pages 0..2 are essential (look, attendance, notes folder); 3 and 4 are optional and can be skipped. */
-private const val PAGE_COUNT = 5
-private const val ESSENTIAL_PAGES = 3
-private const val STORAGE_PAGE = 2
+/**
+ * Pages: 0 welcome, 1 you, 2 look, 3 notes folder (these four are essential), 4 attendance rules, 5 subjects, 6 timetable
+ * (together "your classes"), 7 AI Features and 8 optional modules. From page 4 on the rest can be skipped.
+ */
+private const val PAGE_COUNT = 9
+private const val ESSENTIAL_PAGES = 4
+private const val CLASSES_END = 7
+private const val STORAGE_PAGE = 3
 private const val LAST_PAGE = PAGE_COUNT - 1
 
 private const val PANEL_NONE = -1
@@ -210,9 +214,9 @@ fun OnboardingScreen() {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         StepIndicator(current = page, total = PAGE_COUNT)
-                        Crossfade(targetState = page >= ESSENTIAL_PAGES, label = "stage") { optional ->
+                        Crossfade(targetState = if (page < ESSENTIAL_PAGES) "Essential" else if (page < CLASSES_END) "Your classes" else "Optional", label = "stage") { stage ->
                             Text(
-                                text = if (optional) "Optional" else "Essential",
+                                text = stage,
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier
@@ -235,17 +239,30 @@ fun OnboardingScreen() {
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             when (index) {
-                                0 -> LookPage(settings, settingsViewModel, panel) { panel = it }
+                                0 -> WelcomePage()
                                 1 -> {
-                                    PageHeader("Attendance rules", "Set the attendance you want to stay above, and which weekend days are holidays.")
-                                    AttendanceStep(settings, settingsViewModel)
+                                    PageHeader("About you", "So the app can greet you and fill your profile.")
+                                    YouPage(settings, settingsViewModel)
                                 }
-                                2 -> {
+                                2 -> LookPage(settings, settingsViewModel, panel) { panel = it }
+                                3 -> {
                                     PageHeader("Where your notes live", "Choose a folder for your notes, PDFs and recordings. This one is required.")
                                     StorageLocationSection(storageViewModel)
                                     if (!storageChosen) HintText("Choose a folder to continue.")
                                 }
-                                3 -> {
+                                4 -> {
+                                    PageHeader("Attendance rules", "Set the attendance goal you want to stay above, and which weekend days are holidays.")
+                                    AttendanceStep(settings, settingsViewModel)
+                                }
+                                5 -> {
+                                    PageHeader("Your subjects", "Add what you study this semester.")
+                                    SubjectsPage()
+                                }
+                                6 -> {
+                                    PageHeader("Your timetable", "Add when each subject meets. Everything here can be changed later.")
+                                    TimetablePage(settings)
+                                }
+                                7 -> {
                                     PageHeader("AI Features", "Optional. Connect an AI to explain notes and read photos. You can set this up later in Settings.")
                                     AskAiToggle(settings, settingsViewModel, ready = true)
                                     HintText("Choose your provider, key and model in Absencium AI after setup: Settings, then Absencium AI.")
@@ -286,9 +303,9 @@ fun OnboardingScreen() {
         AnimatedPopup(if (showSkipDialog) true else null) {
         PopupShell(onDismissRequest = { showSkipDialog = false }) {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Skip the optional steps?", style = MaterialTheme.typography.headlineSmall)
+                Text("Skip the rest of the setup?", style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    text = "You can change every setting later in Settings. Skip setup?",
+                    text = "Subjects, timetable and every setting can be added later in the app.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -645,7 +662,7 @@ private fun OnboardingBar(
                     primary = false,
                     enabled = true,
                     backdrop = backdrop,
-                    description = "Skip the optional steps",
+                    description = "Skip the rest of the setup",
                     height = SkipSize,
                     onClick = onSkip,
                 )
