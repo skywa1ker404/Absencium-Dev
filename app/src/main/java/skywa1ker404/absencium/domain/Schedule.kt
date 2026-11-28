@@ -56,6 +56,21 @@ fun CalendarData.nextLecture(now: LocalDateTime): Pair<LocalDate, Lecture>? {
     return null
 }
 
+/** Up to [limit] lectures after [from] (the same day later, then the following days, two weeks ahead at most). */
+fun CalendarData.lecturesAfter(from: Pair<LocalDate, Lecture>, limit: Int = 5): List<Pair<LocalDate, Lecture>> {
+    val (date, current) = from
+    val out = ArrayList<Pair<LocalDate, Lecture>>()
+    for (offset in 0..14) {
+        val day = date.plusDays(offset.toLong())
+        for (lecture in lecturesOn(day)) {
+            val later = offset > 0 || lecture.slot.startTime.isAfter(current.slot.startTime)
+            if (later) out.add(day to lecture)
+            if (out.size >= limit) return out
+        }
+    }
+    return out
+}
+
 private val TimeFormat = DateTimeFormatter.ofPattern("HH:mm")
 private val TimeInputFormat = DateTimeFormatter.ofPattern("H:mm")
 private val DayFormat = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())

@@ -222,3 +222,4 @@ working on it
 - Changed (branch Absencium-ai, CI pending, Batch 31.9): the AI knows the new Add exam and Add holiday pages. `add_exam` and `update_exam` take notes (what the exam covers) and a priority, and `update_exam` can also change the subject and weightage; `add_holiday` and `update_holiday` take auto_skip and a priority; `list_exams` and `list_holidays` show them.
 - Added (branch Absencium-ai, CI pending, Step 7.1): unit tests for the attendance maths (zero lectures, held and cancelled counts, overall, can-miss and must-attend margins, a 100 % goal).
 - Added (branch Absencium-ai, CI pending, Step 7.11): the Attendance day panel has All present and All absent buttons for a past or today date that has two or more subjects.
+- Added (branch Absencium-ai, CI pending, Step 8.6): the lecture details sheet has an expandable Next lectures list (up to five, tap one to open it) and shows the subject's own attendance goal.

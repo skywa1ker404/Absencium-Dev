@@ -1,5 +1,6 @@
 package skywa1ker404.absencium.ui.main
 
+import skywa1ker404.absencium.domain.lecturesAfter
 import skywa1ker404.absencium.domain.subjectAttendance
 import skywa1ker404.absencium.ui.theme.LocalQuality
 import androidx.activity.compose.BackHandler
@@ -534,6 +535,8 @@ fun MainScreen(navigator: DestinationsNavigator) {
                     now = now,
                     attendance = loaded.subjectAttendance().firstOrNull { it.subject.id == lecture.subject.id },
                     threshold = settings.attendanceThresholdPercent,
+                    later = loaded.lecturesAfter(lectureDate to lecture),
+                    onOpenLecture = { d, l -> openLecture = d to l },
                     onDismiss = { openLecture = null },
                     onOpenTimetable = {
                         openLecture = null
