@@ -2,6 +2,7 @@ package skywa1ker404.absencium.ui.study
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +48,43 @@ fun ExportScreen(navigator: DestinationsNavigator) {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf<StudyExportKind?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
+    // Events found in a chosen calendar file that are not already in the student's own events, waiting to be added.
+    var importing by remember { mutableStateOf(false) }
+    var pending by remember { mutableStateOf<List<skywa1ker404.absencium.data.db.EventEntity>>(emptyList()) }
+    var foundCount by remember { mutableStateOf(0) }
+    val context = LocalContext.current
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        importing = true
+        message = null
+        scope.launch {
+            val text = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        // Reads at most the limit plus one byte, so a huge file is refused without being loaded whole.
+                        val limit = skywa1ker404.absencium.data.export.IcsImport.MAX_BYTES
+                        val out = java.io.ByteArrayOutputStream()
+                        val buffer = ByteArray(16 * 1024)
+                        while (out.size() <= limit) {
+                            val n = input.read(buffer, 0, minOf(buffer.size, limit + 1 - out.size()))
+                            if (n < 0) break
+                            out.write(buffer, 0, n)
+                        }
+                        if (out.size() > limit) null else out.toString(Charsets.UTF_8.name())
+                    }
+                }.getOrNull()
+            }
+            if (text == null) {
+                message = "That file could not be read, or it is larger than 2 MB."
+            } else {
+                val found = skywa1ker404.absencium.data.export.IcsImport.parse(text)
+                foundCount = found.size
+                pending = skywa1ker404.absencium.data.export.IcsImport.newEvents(found, events)
+                message = if (found.isEmpty()) "No events were found in that file." else null
+            }
+            importing = false
+        }
+    }
 
     ScreenScaffold(title = "Export & share", onBack = { navigator.navigateUp() }, largeTitle = true) {
         StudyHero(
@@ -77,6 +115,53 @@ fun ExportScreen(navigator: DestinationsNavigator) {
                             },
                         )
                     }
+                }
+            }
+        }
+        AppCard(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Import a calendar file", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "Reads an .ics file on this phone and adds its events to your own events. Events you already have are skipped, and nothing is added until you confirm.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (foundCount > 0) {
+                    Text(
+                        "${pending.size} new of $foundCount found" + if (pending.size < foundCount) " (${foundCount - pending.size} already there)" else "",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    pending.take(8).forEach { e ->
+                        Text(
+                            "${e.date}" + (e.startTime?.let { " $it" } ?: "") + " · " + e.title,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (pending.size > 8) HintText("and ${pending.size - 8} more")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PillButton(
+                            text = if (pending.isEmpty()) "Nothing new" else "Add ${pending.size}",
+                            enabled = pending.isNotEmpty(),
+                            compact = true,
+                            onClick = {
+                                val toAdd = pending
+                                scope.launch {
+                                    toAdd.forEach { container.database.eventDao().insert(it) }
+                                    message = "Added ${toAdd.size} event${if (toAdd.size == 1) "" else "s"} to your own events."
+                                    pending = emptyList()
+                                    foundCount = 0
+                                }
+                            },
+                        )
+                        PillButton(text = "Cancel", tonal = true, compact = true, onClick = { pending = emptyList(); foundCount = 0 })
+                    }
+                } else {
+                    PillButton(
+                        text = "Choose a file", tonal = true, compact = true, loading = importing, enabled = !importing,
+                        onClick = { picker.launch(arrayOf("text/calendar", "text/plain", "application/octet-stream", "*/*")) },
+                    )
                 }
             }
         }

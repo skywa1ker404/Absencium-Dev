@@ -224,3 +224,4 @@ working on it
 - Added (branch Absencium-ai, CI green `46135473111`, Step 7.11): the Attendance day panel has All present and All absent buttons for a past or today date that has two or more subjects.
 - Added (branch Absencium-ai, CI green `46135473111`, Step 8.6): the lecture details sheet has an expandable Next lectures list (up to five, tap one to open it) and shows the subject's own attendance goal.
 - Added (branch Absencium-ai, CI green `46135473111`, Step 9.7): a Timeline popup (Attendance tab > Timeline) shows lectures, exams and holidays for the coming days on one list, two weeks at first and two more with Show more.
+- Added (branch Absencium-ai, CI pending, Step 9.3 / 9.7): Export & share can import an .ics calendar file into your own events with a preview and duplicate skipping; unit tests for the parser.
