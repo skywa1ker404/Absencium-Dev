@@ -194,7 +194,7 @@ fun CalendarTab(
         )
         NavCard(
             icon = AppIcons.CalendarMonth,
-            title = "Timeline",
+            title = "Coming up",
             subtitle = "Lectures, exams and holidays, day by day",
             onClick = onOpenTimeline,
         )

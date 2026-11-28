@@ -375,7 +375,7 @@ fun SubjectFolderScreen(subjectId: Long, navigator: DestinationsNavigator) {
                 }
             }
 
-            item(key = "finished-title") { SectionTitle("Finished / Written Notes") }
+            item(key = "finished-title") { SectionTitle("Finished notes") }
             item(key = "finished-toggle") {
                 AppCard(modifier = Modifier.fillMaxWidth(), onClick = { finishedOpen = !finishedOpen }) {
                     Row(

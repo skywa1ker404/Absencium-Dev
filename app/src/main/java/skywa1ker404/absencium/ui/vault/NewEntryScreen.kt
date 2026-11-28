@@ -182,7 +182,7 @@ fun NewEntryScreen(
         }
     }
 
-    ScreenScaffold(title = "New Entry", onBack = { requestExit() }) {
+    ScreenScaffold(title = "New entry", onBack = { requestExit() }) {
         val shownProblem = problem ?: message
         if (shownProblem != null) {
             AppCard(

@@ -148,7 +148,7 @@ fun PlannerScreen(navigator: DestinationsNavigator) {
     }
 
     ScreenScaffold(
-        title = "My Calendar", onBack = { navigator.navigateUp() }, largeTitle = true,
+        title = "To-do & upcoming", onBack = { navigator.navigateUp() }, largeTitle = true,
         overlay = {
             AnimatedPopup(sheet.takeIf { it != 0 }) { step ->
                 if (step == 2) {

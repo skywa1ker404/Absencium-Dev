@@ -176,7 +176,7 @@ fun SearchSheet(
                     }
                 }
                 if (results.guides.isNotEmpty()) {
-                    SectionTitle("Guides and PDFs")
+                    SectionTitle("Study material")
                     results.guides.forEach { guide ->
                         ResultCard(
                             title = guide.fileName,

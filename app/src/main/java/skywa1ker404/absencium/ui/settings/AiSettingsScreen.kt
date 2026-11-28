@@ -65,7 +65,7 @@ fun AiSettingsScreen(navigator: DestinationsNavigator) {
                 onClick = { AbsenciumAi.open(context, destination = "providers") }, position = GroupPosition.Middle,
             )
             NavCard(
-                icon = AppIcons.Person, title = "Assistants", subtitle = "Study coach and your own",
+                icon = AppIcons.Person, title = "Assistants", subtitle = "The study coach and the ones you make",
                 onClick = { AbsenciumAi.open(context, destination = "assistants") }, position = GroupPosition.Middle,
             )
             NavCard(

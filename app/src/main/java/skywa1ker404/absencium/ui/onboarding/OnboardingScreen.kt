@@ -534,9 +534,9 @@ private fun OptionTile(
 
 @Composable
 private fun AttendanceStep(settings: AppSettings, viewModel: SettingsViewModel) {
-    SectionTitle("Attendance target")
+    SectionTitle("Attendance goal")
     SliderCard(
-        title = "Minimum safe attendance",
+        title = "Attendance goal",
         subtitle = "Warn me below this",
         value = settings.attendanceThresholdPercent,
         range = AppSettings.MIN_ATTENDANCE_THRESHOLD..AppSettings.MAX_ATTENDANCE_THRESHOLD,

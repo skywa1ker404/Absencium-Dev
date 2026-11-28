@@ -646,7 +646,7 @@ private fun ExtractionPanel(state: AddEntryState, viewModel: AddEntryViewModel, 
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PillButton(text = "Cancel", compact = true, tonal = true, onClick = viewModel::cancelExtraction, modifier = Modifier.weight(1f))
-                PillButton(text = "Add to Text Notes", compact = true, onClick = viewModel::acceptExtraction, modifier = Modifier.weight(1.4f))
+                PillButton(text = "Add to notes", compact = true, onClick = viewModel::acceptExtraction, modifier = Modifier.weight(1.4f))
             }
         }
 

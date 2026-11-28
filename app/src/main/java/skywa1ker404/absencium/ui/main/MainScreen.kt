@@ -383,7 +383,7 @@ fun MainScreen(navigator: DestinationsNavigator) {
                         },
                         FabAction("Drafts", AppIcons.Draft) { fabOpen = false; showDrafts = true },
                         FabAction("Syllabus", AppIcons.School) { fabOpen = false; navigator.navigate(SyllabusOverviewScreenDestination) },
-                        FabAction("Edit subjects", AppIcons.Edit) { fabOpen = false; navigator.navigate(SubjectsScreenDestination) },
+                        FabAction("Manage subjects", AppIcons.Edit) { fabOpen = false; navigator.navigate(SubjectsScreenDestination) },
                     )
                 }
                 SlideAway(

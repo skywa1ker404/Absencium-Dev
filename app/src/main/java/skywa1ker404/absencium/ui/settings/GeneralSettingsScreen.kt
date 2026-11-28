@@ -24,7 +24,7 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
     ScreenScaffold(title = "General", onBack = { navigator.navigateUp() }, largeTitle = true) {
         SectionTitle("Attendance")
         SliderCard(
-            title = "Attendance threshold",
+            title = "Attendance goal",
             subtitle = "Warn me below this",
             value = settings.attendanceThresholdPercent,
             range = AppSettings.MIN_ATTENDANCE_THRESHOLD..AppSettings.MAX_ATTENDANCE_THRESHOLD,
@@ -48,8 +48,8 @@ fun GeneralSettingsScreen(navigator: DestinationsNavigator) {
 
         SectionTitle("Focus")
         SliderCard(
-            title = "Focus Guard grace timer",
-            subtitle = "Time away before Focus Guard steps in",
+            title = "Time away allowed",
+            subtitle = "How long you can be away before Focus Guard steps in",
             value = settings.focusGraceMinutes,
             range = 1..30,
             valueLabel = { "$it min" },

@@ -49,7 +49,7 @@ fun TimelinePopup(
 ) {
     var days by remember { mutableIntStateOf(14) }
     PopupShell(onDismissRequest = onDismiss, dismissOnOutsideTap = true) {
-        PopupBody(title = "Timeline", onClose = onDismiss) {
+        PopupBody(title = "Coming up", onClose = onDismiss) {
             val colors = MaterialTheme.colorScheme
             val names = remember(data) { data.subjects.associate { it.id to it.name } }
             var shown = 0
